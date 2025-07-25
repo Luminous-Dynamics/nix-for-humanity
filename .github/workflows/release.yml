@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           
@@ -205,7 +205,7 @@ jobs:
         with:
           ref: main
           
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v31
         
       - name: Update package version
         run: |
