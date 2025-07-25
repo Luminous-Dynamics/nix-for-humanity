@@ -44,7 +44,7 @@ COPY tauri.conf.json ./
 RUN cargo tauri build
 
 # Stage 2: Python Builder (fallback server)
-FROM python:3.11-slim AS python-builder
+FROM python:3.13-slim AS python-builder
 
 WORKDIR /app
 
