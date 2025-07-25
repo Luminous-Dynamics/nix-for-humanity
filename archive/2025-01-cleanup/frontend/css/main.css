@@ -1,0 +1,113 @@
+/* Main CSS - Base styles for NixOS GUI */
+
+/* Import consciousness-first design system */
+@import url('consciousness-first.css');
+
+/* Base Layout */
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sacred-nav {
+        flex-wrap: wrap;
+    }
+    
+    .nav-tab {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .health-dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .package-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: var(--sacred-space-xs); }
+.mt-2 { margin-top: var(--sacred-space-sm); }
+.mt-3 { margin-top: var(--sacred-space-md); }
+.mt-4 { margin-top: var(--sacred-space-lg); }
+
+.mb-1 { margin-bottom: var(--sacred-space-xs); }
+.mb-2 { margin-bottom: var(--sacred-space-sm); }
+.mb-3 { margin-bottom: var(--sacred-space-md); }
+.mb-4 { margin-bottom: var(--sacred-space-lg); }
+
+/* Loading States */
+.loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--sacred-primary);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Error States */
+.error {
+    color: #ff6b6b;
+    padding: var(--sacred-space-sm);
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 4px;
+}
+
+/* Success States */
+.success {
+    color: #6bcf7f;
+    padding: var(--sacred-space-sm);
+    background: rgba(107, 207, 127, 0.1);
+    border: 1px solid rgba(107, 207, 127, 0.3);
+    border-radius: 4px;
+}
+
+/* Canvas Elements */
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Print Styles */
+@media print {
+    .sacred-nav,
+    .sacred-footer,
+    button {
+        display: none;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+}

@@ -1,0 +1,53 @@
+[package]
+name = "nixos-gui"
+version = "0.1.0"
+description = "A consciousness-first GUI for NixOS system management"
+authors = ["Luminous Dynamics Contributors"]
+license = "MIT"
+repository = "https://github.com/Luminous-Dynamics/nixos-gui"
+edition = "2021"
+
+[dependencies]
+# Core dependencies without Tauri GUI
+# This allows us to test the backend logic
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# System interaction
+sysinfo = "0.30"
+nix = "0.27"
+libc = "0.2"
+
+# Command execution
+subprocess = "0.2"
+
+# Configuration parsing
+toml = "0.8"
+
+# Authentication & Security
+jsonwebtoken = "9.2"
+argon2 = "0.5"
+rand = "0.8"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Sacred additions
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+[[bin]]
+name = "nixos-gui-test"
+path = "src/test_main.rs"

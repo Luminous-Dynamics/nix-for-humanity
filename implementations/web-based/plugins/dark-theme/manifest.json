@@ -1,0 +1,26 @@
+{
+    "id": "dark-theme",
+    "name": "Dark Theme",
+    "version": "1.0.0",
+    "description": "Beautiful dark theme for Nix for Humanity",
+    "author": "Luminous Dynamics",
+    "main": "plugin.js",
+    "minVersion": "1.0.0",
+    "permissions": [
+        "ui.theme",
+        "storage"
+    ],
+    "preview": "preview.png",
+    "settings": {
+        "accentColor": {
+            "type": "color",
+            "default": "#3b82f6",
+            "label": "Accent Color"
+        },
+        "animations": {
+            "type": "boolean",
+            "default": true,
+            "label": "Enable Animations"
+        }
+    }
+}

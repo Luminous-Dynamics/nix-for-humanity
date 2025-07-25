@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nix for Humanity - Natural Language NixOS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🗣️ Nix for Humanity</h1>
+      <p class="tagline">Speak naturally to your NixOS system</p>
+    </header>
+
+    <main>
+      <div class="chat-container">
+        <div id="messages" class="messages">
+          <div class="message system">
+            <p>👋 Hi! I can help you with NixOS. Try asking things like:</p>
+            <ul>
+              <li>"search for firefox"</li>
+              <li>"show me what's installed"</li>
+              <li>"check system health"</li>
+              <li>"tell me about python"</li>
+            </ul>
+          </div>
+        </div>
+
+        <form id="input-form" class="input-form">
+          <input 
+            type="text" 
+            id="user-input" 
+            class="user-input"
+            placeholder="Type your command in plain English..."
+            autocomplete="off"
+            autofocus
+          >
+          <button type="submit" class="send-button">Send</button>
+        </form>
+      </div>
+
+      <div class="info-panel">
+        <h3>💡 Tips</h3>
+        <ul>
+          <li>Use natural language - no need for exact commands</li>
+          <li>I'll learn your preferences over time</li>
+          <li>All commands are safe (no system changes)</li>
+          <li>Type "help" if you get stuck</li>
+        </ul>
+      </div>
+    </main>
+
+    <footer>
+      <p>MVP v0.1.0 | <a href="https://github.com/Luminous-Dynamics/nix-for-humanity">GitHub</a></p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

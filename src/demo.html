@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nix for Humanity - IPC Demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .demo-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #4a90e2;
+            background: #4a90e2;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌟 Nix for Humanity - IPC Demo</h1>
+    
+    <div class="demo-section">
+        <h2>Test Tauri IPC Connection</h2>
+        <button onclick="testIPC()">Test Basic IPC</button>
+        <button onclick="getSystemInfo()">Get System Info</button>
+        <button onclick="testNixCommand()">Test Nix Command (Dry Run)</button>
+    </div>
+
+    <div class="demo-section">
+        <h2>Natural Language Test</h2>
+        <input type="text" id="nlp-input" placeholder="Try: install firefox" style="width: 300px; padding: 0.5rem;">
+        <button onclick="testNLP()">Process</button>
+    </div>
+
+    <div class="demo-section">
+        <h2>Output</h2>
+        <div id="output">Ready for testing...</div>
+    </div>
+
+    <script type="module">
+        // Make functions global for onclick handlers
+        window.testIPC = async function() {
+            try {
+                addOutput("Testing IPC connection...");
+                const { invoke } = window.__TAURI__.core;
+                const result = await invoke('get_system_info');
+                addOutput("System info: " + JSON.stringify(result, null, 2));
+            } catch (error) {
+                addOutput("Error: " + error);
+            }
+        }
+
+        window.getSystemInfo = async function() {
+            try {
+                const { invoke } = window.__TAURI__.core;
+                const info = await invoke('get_system_info');
+                addOutput("System Information:\n" + JSON.stringify(info, null, 2));
+            } catch (error) {
+                addOutput("Error getting system info: " + error);
+            }
+        }
+
+        window.testNixCommand = async function() {
+            try {
+                addOutput("Testing nix search (dry run)...");
+                const { invoke } = window.__TAURI__.core;
+                const result = await invoke('search_packages', { query: 'firefox' });
+                addOutput("Search results: " + JSON.stringify(result, null, 2));
+            } catch (error) {
+                addOutput("Error: " + error);
+            }
+        }
+
+        window.testNLP = async function() {
+            const input = document.getElementById('nlp-input').value;
+            if (!input) return;
+            
+            addOutput(`Processing: "${input}"`);
+            
+            // For demo, just show what would happen
+            // In real app, this would use TauriNixInterface
+            const intents = {
+                'install firefox': {
+                    command: 'nix-env',
+                    args: ['-iA', 'nixpkgs.firefox'],
+                    description: 'Installing Firefox browser'
+                },
+                'update system': {
+                    command: 'nixos-rebuild',
+                    args: ['switch'],
+                    description: 'Updating NixOS system'
+                },
+                'free space': {
+                    command: 'nix-collect-garbage',
+                    args: ['-d'],
+                    description: 'Cleaning up old packages'
+                }
+            };
+
+            const intent = intents[input.toLowerCase()];
+            if (intent) {
+                addOutput(`Intent recognized: ${intent.description}`);
+                addOutput(`Would execute: ${intent.command} ${intent.args.join(' ')}`);
+                
+                // Try actual execution
+                try {
+                    const { invoke } = window.__TAURI__.core;
+                    const result = await invoke('execute_nix_command', {
+                        command: {
+                            command: intent.command,
+                            args: intent.args,
+                            dry_run: true
+                        }
+                    });
+                    addOutput("Result: " + JSON.stringify(result, null, 2));
+                } catch (error) {
+                    addOutput("Execution error: " + error);
+                }
+            } else {
+                addOutput("Intent not recognized. Try 'install firefox', 'update system', or 'free space'");
+            }
+        }
+
+        function addOutput(text) {
+            const output = document.getElementById('output');
+            output.textContent += text + '\n\n';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Check if Tauri is available
+        if (window.__TAURI__) {
+            addOutput("✅ Tauri API is available!");
+        } else {
+            addOutput("❌ Tauri API not found - are you running in Tauri?");
+        }
+    </script>
+</body>
+</html>

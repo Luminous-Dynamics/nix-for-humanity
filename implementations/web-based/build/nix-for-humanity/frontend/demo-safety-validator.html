@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Validator Demo</title>
+    <link rel="stylesheet" href="css/install-dialog.css">
+    <link rel="stylesheet" href="css/safety-dialog.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .demo-section {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #fff;
+        }
+        
+        .safety-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .safety-card {
+            background: #333;
+            border: 2px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .safety-card:hover {
+            border-color: #4a90e2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .safety-card h3 {
+            margin: 0 0 10px 0;
+            color: #4a90e2;
+        }
+        
+        .safety-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .severity-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .severity-safe { background: #28a745; color: white; }
+        .severity-warning { background: #ffc107; color: #212529; }
+        .severity-blocked { background: #dc3545; color: white; }
+        
+        .feature-list {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        
+        .feature-list li {
+            margin: 10px 0;
+            color: #ccc;
+        }
+        
+        /* Dark theme variables */
+        :root {
+            --surface-elevated: #2a2a2a;
+            --surface-base: #1a1a1a;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --primary: #4a90e2;
+            --primary-hover: #357abd;
+            --primary-surface: rgba(74, 144, 226, 0.1);
+            --hover-overlay: rgba(255, 255, 255, 0.1);
+            --surface-overlay: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Safety Validator Demo</h1>
+    
+    <div class="demo-section">
+        <h2>What is the Safety Validator?</h2>
+        <p>The safety validator protects you from potentially dangerous operations by checking:</p>
+        
+        <div class="feature-list">
+            <h3>Safety Checks:</h3>
+            <ul>
+                <li>🚫 <strong>Critical Packages:</strong> Prevents removal of essential system packages</li>
+                <li>💾 <strong>Disk Space:</strong> Ensures sufficient space for installations</li>
+                <li>⚡ <strong>System Resources:</strong> Checks memory and CPU before heavy operations</li>
+                <li>🔌 <strong>Port Conflicts:</strong> Detects services using the same ports</li>
+                <li>⚠️ <strong>Security Risks:</strong> Warns about insecure configurations</li>
+                <li>🔄 <strong>Dependencies:</strong> Shows what else will be affected</li>
+                <li>💡 <strong>Alternatives:</strong> Suggests better packages when available</li>
+                <li>🔋 <strong>Battery Status:</strong> Prevents rebuilds on low battery</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Try These Safety Scenarios</h2>
+        <div class="safety-examples">
+            <div class="safety-card" onclick="testSafeOperation()">
+                <h3>✅ Safe Operation</h3>
+                <p>Install Firefox - completely safe</p>
+                <span class="severity-indicator severity-safe">SAFE</span>
+            </div>
+            
+            <div class="safety-card" onclick="testWarningOperation()">
+                <h3>⚠️ Operation with Warnings</h3>
+                <p>Enable SSH with root login</p>
+                <span class="severity-indicator severity-warning">WARNINGS</span>
+            </div>
+            
+            <div class="safety-card" onclick="testBlockedOperation()">
+                <h3>🚫 Blocked Operation</h3>
+                <p>Remove critical system package</p>
+                <span class="severity-indicator severity-blocked">BLOCKED</span>
+            </div>
+            
+            <div class="safety-card" onclick="testLowDiskSpace()">
+                <h3>💾 Low Disk Space</h3>
+                <p>Install large package with low space</p>
+                <span class="severity-indicator severity-blocked">BLOCKED</span>
+            </div>
+            
+            <div class="safety-card" onclick="testPortConflict()">
+                <h3>🔌 Port Conflict</h3>
+                <p>Service using occupied port</p>
+                <span class="severity-indicator severity-blocked">BLOCKED</span>
+            </div>
+            
+            <div class="safety-card" onclick="testAlternatives()">
+                <h3>💡 Package Alternatives</h3>
+                <p>Install VSCode with suggestions</p>
+                <span class="severity-indicator severity-warning">SUGGESTIONS</span>
+            </div>
+            
+            <div class="safety-card" onclick="testInsecureConfig()">
+                <h3>🔓 Insecure Configuration</h3>
+                <p>PostgreSQL with trust auth</p>
+                <span class="severity-indicator severity-warning">SECURITY</span>
+            </div>
+            
+            <div class="safety-card" onclick="testMultipleIssues()">
+                <h3>🔥 Multiple Issues</h3>
+                <p>Complex operation with many warnings</p>
+                <span class="severity-indicator severity-warning">COMPLEX</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>How It Works</h2>
+        <ol>
+            <li>Before any critical operation, safety checks run automatically</li>
+            <li>Blockers prevent dangerous actions completely</li>
+            <li>Warnings allow you to proceed with caution</li>
+            <li>Suggestions offer better alternatives</li>
+            <li>All checks happen in milliseconds</li>
+        </ol>
+    </div>
+
+    <!-- Include necessary scripts -->
+    <script src="js/ui-controller.js"></script>
+    <script src="js/safety-validator.js"></script>
+    
+    <script>
+        // Mock UI controller for demo
+        if (!window.nixos) {
+            window.nixos = {
+                ui: {
+                    showResponse: (msg, type) => {
+                        console.log(msg);
+                    }
+                }
+            };
+        }
+        
+        // Demo functions
+        async function testSafeOperation() {
+            const validation = {
+                safe: true,
+                warnings: [],
+                blockers: [],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                () => alert('Proceeding with safe operation!'),
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testWarningOperation() {
+            const validation = {
+                safe: true,
+                warnings: [
+                    {
+                        level: 'high',
+                        message: 'Root login enabled for SSH',
+                        detail: 'Allowing root login via SSH is a significant security risk',
+                        suggestion: 'Use key-based authentication and disable root login'
+                    },
+                    {
+                        level: 'medium',
+                        message: 'Password authentication enabled',
+                        detail: 'SSH keys are more secure than passwords',
+                        suggestion: 'Consider using SSH keys exclusively'
+                    }
+                ],
+                blockers: [],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                () => alert('Proceeding despite warnings!'),
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testBlockedOperation() {
+            const validation = {
+                safe: false,
+                warnings: [],
+                blockers: [
+                    {
+                        message: 'Cannot remove critical system package',
+                        detail: 'systemd is required for system operation and cannot be removed',
+                        solution: 'This package is essential and cannot be safely removed'
+                    }
+                ],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                null,
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testLowDiskSpace() {
+            const validation = {
+                safe: false,
+                warnings: [],
+                blockers: [
+                    {
+                        message: 'Insufficient disk space',
+                        detail: 'Need 850 MB, only 200 MB available on /nix/store',
+                        solution: 'Free up disk space by running: nix-collect-garbage -d'
+                    }
+                ],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                null,
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testPortConflict() {
+            const validation = {
+                safe: false,
+                warnings: [],
+                blockers: [
+                    {
+                        message: 'Port 80 is already in use',
+                        detail: 'Used by: nginx.service',
+                        solution: 'Choose a different port or stop the conflicting service'
+                    }
+                ],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                null,
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testAlternatives() {
+            const validation = {
+                safe: true,
+                warnings: [],
+                blockers: [],
+                suggestions: [
+                    {
+                        message: 'Consider VSCodium for telemetry-free experience',
+                        package: 'vscodium',
+                        reason: 'Same features as VSCode without Microsoft telemetry'
+                    }
+                ]
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                () => alert('Installing VSCode'),
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testInsecureConfig() {
+            const validation = {
+                safe: true,
+                warnings: [
+                    {
+                        level: 'high',
+                        message: 'Insecure database authentication',
+                        detail: 'Trust authentication allows any local user to connect without password',
+                        suggestion: 'Use password or certificate authentication instead'
+                    },
+                    {
+                        level: 'medium',
+                        message: 'Database exposed to network',
+                        detail: 'PostgreSQL will accept connections from any IP address',
+                        suggestion: 'Restrict to specific IP ranges or use firewall rules'
+                    }
+                ],
+                blockers: [],
+                suggestions: []
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                () => alert('Applying configuration'),
+                () => console.log('Cancelled')
+            );
+        }
+        
+        async function testMultipleIssues() {
+            const validation = {
+                safe: true,
+                warnings: [
+                    {
+                        level: 'medium',
+                        message: 'Low memory available',
+                        detail: 'Only 1.2 GB free, rebuild may be slow',
+                        suggestion: 'Close unnecessary applications'
+                    },
+                    {
+                        level: 'medium',
+                        message: 'Long rebuild time expected',
+                        detail: 'Estimated time: 45 minutes',
+                        suggestion: 'Consider doing this during off-hours'
+                    },
+                    {
+                        level: 'high',
+                        message: 'Major version change detected',
+                        detail: 'Upgrading from 23.11 to 24.05 may break configurations',
+                        suggestion: 'Review the release notes and backup your configuration'
+                    }
+                ],
+                blockers: [],
+                suggestions: [
+                    {
+                        message: 'Create a system backup first',
+                        command: 'sudo nixos-rebuild boot --upgrade',
+                        detail: 'Test with boot option before switching permanently'
+                    }
+                ]
+            };
+            
+            await window.safetyValidator.showValidationDialog(
+                validation,
+                () => alert('Proceeding with complex operation'),
+                () => console.log('Cancelled')
+            );
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "port": 3456,
+  "dryRun": false,
+  "learningDataPath": "/var/lib/nix-for-humanity/learning.json",
+  "features": {
+    "voice": true,
+    "learning": true,
+    "monitoring": true,
+    "autoRollback": true
+  },
+  "security": {
+    "allowedCommands": [
+      "nix-env", "nix-store", "nix-channel",
+      "nixos-rebuild", "nix", "nix-shell"
+    ],
+    "requireConfirmation": false
+  }
+}

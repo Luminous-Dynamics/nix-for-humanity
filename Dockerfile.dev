@@ -1,0 +1,100 @@
+# Development Dockerfile with all tools
+FROM debian:bookworm
+
+ARG RUST_VERSION=1.75
+ARG NODE_VERSION=20
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Basic tools
+    curl wget git vim neovim tmux htop \
+    build-essential pkg-config cmake \
+    # Rust/Tauri dependencies
+    libwebkit2gtk-4.0-dev \
+    libssl-dev \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
+    libxdo-dev \
+    libxcb-shape0-dev \
+    libxcb-xfixes0-dev \
+    # Additional tools
+    python3 python3-pip \
+    redis-tools postgresql-client \
+    jq ripgrep fd-find bat exa \
+    # Network tools
+    nmap netcat-openbsd tcpdump \
+    # Development tools
+    gdb valgrind strace \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --default-toolchain ${RUST_VERSION}
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Rust tools
+RUN cargo install \
+    tauri-cli \
+    cargo-watch \
+    cargo-edit \
+    cargo-audit \
+    cargo-outdated \
+    cargo-nextest \
+    bacon \
+    tokei \
+    hyperfine \
+    mdbook
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
+    && apt-get install -y nodejs
+
+# Install global npm packages
+RUN npm install -g \
+    pnpm \
+    yarn \
+    @tauri-apps/cli \
+    vite \
+    typescript \
+    eslint \
+    prettier
+
+# Install Python packages
+RUN pip3 install --no-cache-dir \
+    flask \
+    pytest \
+    black \
+    flake8 \
+    mypy \
+    httpie
+
+# Create development user
+RUN useradd -m -s /bin/bash developer \
+    && usermod -aG sudo developer \
+    && echo "developer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set up workspace
+WORKDIR /workspace
+RUN chown -R developer:developer /workspace
+
+# Switch to developer user
+USER developer
+
+# Configure shell
+RUN echo 'export PS1="\[\033[01;32m\]nixgui-dev\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]$ "' >> ~/.bashrc \
+    && echo 'alias ll="exa -la"' >> ~/.bashrc \
+    && echo 'alias cat="bat"' >> ~/.bashrc \
+    && echo 'alias find="fd"' >> ~/.bashrc \
+    && echo 'alias grep="rg"' >> ~/.bashrc
+
+# Rust configuration
+RUN rustup component add rustfmt clippy rust-analyzer
+
+# Set environment
+ENV RUST_BACKTRACE=1 \
+    RUST_LOG=debug \
+    NODE_ENV=development
+
+# Entry point
+CMD ["/bin/bash"]

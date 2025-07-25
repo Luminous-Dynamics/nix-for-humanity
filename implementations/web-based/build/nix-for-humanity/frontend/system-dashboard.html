@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NixOS System Dashboard</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/install-dialog.css">
+    <link rel="stylesheet" href="css/service-config.css">
+    <link rel="stylesheet" href="css/preview-system.css">
+    <link rel="stylesheet" href="css/safety-dialog.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1>🏔️ NixOS System Dashboard</h1>
+                <span class="system-version">NixOS 24.05</span>
+            </div>
+            <div class="header-right">
+                <button class="btn-icon" title="Refresh" onclick="dashboard.refresh()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                </button>
+                <button class="btn-icon" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 18.66l4.24-4.24m0 4.24l-4.24-4.24M18.66 6.34l-4.24 4.24"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Quick Stats -->
+        <section class="quick-stats">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-content">
+                    <h3>System Packages</h3>
+                    <div class="stat-value">247</div>
+                    <div class="stat-change positive">+3 this week</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👤</div>
+                <div class="stat-content">
+                    <h3>User Packages</h3>
+                    <div class="stat-value">42</div>
+                    <div class="stat-change">No changes</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-content">
+                    <h3>Active Services</h3>
+                    <div class="stat-value">18</div>
+                    <div class="stat-change positive">All healthy</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💾</div>
+                <div class="stat-content">
+                    <h3>Disk Usage</h3>
+                    <div class="stat-value">42.3 GB</div>
+                    <div class="stat-change warning">85% used</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="dashboard-grid">
+            <!-- System Health -->
+            <section class="dashboard-card system-health">
+                <h2>🏥 System Health</h2>
+                <div class="health-indicators">
+                    <div class="health-item good">
+                        <span class="health-icon">✅</span>
+                        <span class="health-label">Boot Configuration</span>
+                        <span class="health-status">Healthy</span>
+                    </div>
+                    <div class="health-item good">
+                        <span class="health-icon">✅</span>
+                        <span class="health-label">Nix Store</span>
+                        <span class="health-status">Optimized</span>
+                    </div>
+                    <div class="health-item warning">
+                        <span class="health-icon">⚠️</span>
+                        <span class="health-label">Disk Space</span>
+                        <span class="health-status">Low (15% free)</span>
+                    </div>
+                    <div class="health-item good">
+                        <span class="health-icon">✅</span>
+                        <span class="health-label">System Memory</span>
+                        <span class="health-status">4.2 GB free</span>
+                    </div>
+                </div>
+                <button class="btn-secondary" onclick="dashboard.runHealthCheck()">
+                    Run Full Health Check
+                </button>
+            </section>
+
+            <!-- Recent Activity -->
+            <section class="dashboard-card recent-activity">
+                <h2>📊 Recent Activity</h2>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <span class="activity-icon add">➕</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Installed firefox</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon modify">✏️</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Configured SSH service</div>
+                            <div class="activity-time">Yesterday</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon rebuild">🔄</span>
+                        <div class="activity-content">
+                            <div class="activity-title">System rebuild (5 packages)</div>
+                            <div class="activity-time">3 days ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon remove">➖</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Removed libreoffice</div>
+                            <div class="activity-time">5 days ago</div>
+                        </div>
+                    </div>
+                </div>
+                <a href="#" class="view-all-link">View all activity →</a>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="dashboard-card quick-actions">
+                <h2>⚡ Quick Actions</h2>
+                <div class="action-grid">
+                    <button class="action-tile" onclick="dashboard.searchPackages()">
+                        <span class="action-icon">🔍</span>
+                        <span class="action-label">Search Packages</span>
+                    </button>
+                    <button class="action-tile" onclick="dashboard.configureService()">
+                        <span class="action-icon">⚙️</span>
+                        <span class="action-label">Configure Service</span>
+                    </button>
+                    <button class="action-tile" onclick="dashboard.cleanupSystem()">
+                        <span class="action-icon">🧹</span>
+                        <span class="action-label">Cleanup System</span>
+                    </button>
+                    <button class="action-tile" onclick="dashboard.updateSystem()">
+                        <span class="action-icon">🔄</span>
+                        <span class="action-label">Update System</span>
+                    </button>
+                    <button class="action-tile" onclick="dashboard.viewConfig()">
+                        <span class="action-icon">📄</span>
+                        <span class="action-label">View Config</span>
+                    </button>
+                    <button class="action-tile" onclick="dashboard.createBackup()">
+                        <span class="action-icon">💾</span>
+                        <span class="action-label">Backup Config</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Services Overview -->
+            <section class="dashboard-card services-overview">
+                <h2>🔧 Services</h2>
+                <div class="services-list">
+                    <div class="service-item running">
+                        <div class="service-status"></div>
+                        <div class="service-info">
+                            <div class="service-name">nginx</div>
+                            <div class="service-details">Running on port 80, 443</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.manageService('nginx')">Manage</button>
+                    </div>
+                    <div class="service-item running">
+                        <div class="service-status"></div>
+                        <div class="service-info">
+                            <div class="service-name">postgresql</div>
+                            <div class="service-details">Running on port 5432</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.manageService('postgresql')">Manage</button>
+                    </div>
+                    <div class="service-item stopped">
+                        <div class="service-status"></div>
+                        <div class="service-info">
+                            <div class="service-name">docker</div>
+                            <div class="service-details">Stopped</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.manageService('docker')">Start</button>
+                    </div>
+                    <div class="service-item disabled">
+                        <div class="service-status"></div>
+                        <div class="service-info">
+                            <div class="service-name">openssh</div>
+                            <div class="service-details">Disabled</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.enableService('openssh')">Enable</button>
+                    </div>
+                </div>
+                <a href="#" class="view-all-link">Manage all services →</a>
+            </section>
+
+            <!-- Storage Overview -->
+            <section class="dashboard-card storage-overview">
+                <h2>💾 Storage</h2>
+                <div class="storage-visual">
+                    <div class="storage-bar">
+                        <div class="storage-used" style="width: 85%"></div>
+                    </div>
+                    <div class="storage-legend">
+                        <div class="legend-item">
+                            <span class="legend-color used"></span>
+                            <span>Used: 42.3 GB</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color free"></span>
+                            <span>Free: 7.7 GB</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="storage-breakdown">
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">/nix/store</span>
+                        <span class="breakdown-value">28.4 GB</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">/home</span>
+                        <span class="breakdown-value">10.2 GB</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">System</span>
+                        <span class="breakdown-value">3.7 GB</span>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="dashboard.runGarbageCollection()">
+                    Free Up Space
+                </button>
+            </section>
+
+            <!-- Configuration Files -->
+            <section class="dashboard-card config-files">
+                <h2>📁 Configuration Files</h2>
+                <div class="config-list">
+                    <div class="config-item">
+                        <div class="config-icon">📄</div>
+                        <div class="config-info">
+                            <div class="config-name">configuration.nix</div>
+                            <div class="config-path">/etc/nixos/configuration.nix</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.editConfig('configuration.nix')">Edit</button>
+                    </div>
+                    <div class="config-item">
+                        <div class="config-icon">🔧</div>
+                        <div class="config-info">
+                            <div class="config-name">hardware-configuration.nix</div>
+                            <div class="config-path">/etc/nixos/hardware-configuration.nix</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.viewConfig('hardware-configuration.nix')">View</button>
+                    </div>
+                    <div class="config-item">
+                        <div class="config-icon">📦</div>
+                        <div class="config-info">
+                            <div class="config-name">home.nix</div>
+                            <div class="config-path">~/.config/home-manager/home.nix</div>
+                        </div>
+                        <button class="btn-small" onclick="dashboard.editConfig('home.nix')">Edit</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <div class="footer-left">
+                <span>Last system rebuild: 3 days ago</span>
+            </div>
+            <div class="footer-right">
+                <button class="btn-text" onclick="dashboard.showHelp()">Help</button>
+                <button class="btn-text" onclick="dashboard.showDocs()">Documentation</button>
+                <button class="btn-text" onclick="dashboard.showAbout()">About</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Include scripts -->
+    <script src="js/ui-controller.js"></script>
+    <script src="js/safety-validator.js"></script>
+    <script src="js/preview-system.js"></script>
+    <script src="js/install-dialog.js"></script>
+    <script src="js/service-config.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

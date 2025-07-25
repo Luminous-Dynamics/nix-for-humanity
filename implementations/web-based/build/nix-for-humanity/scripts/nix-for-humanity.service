@@ -1,0 +1,25 @@
+[Unit]
+Description=Nix for Humanity - Natural Language Interface
+After=network.target
+
+[Service]
+Type=simple
+User=nix-humanity
+Group=nix-humanity
+WorkingDirectory=/opt/nix-for-humanity
+ExecStart=/usr/bin/node backend/realtime-server.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nix-for-humanity
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nix-for-humanity
+
+[Install]
+WantedBy=multi-user.target

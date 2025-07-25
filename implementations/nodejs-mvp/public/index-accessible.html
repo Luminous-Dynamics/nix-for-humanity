@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nix for Humanity - Natural Language NixOS - Where Every Command is a Prayer</title>
+  <link rel="stylesheet" href="style-accessible.css">
+</head>
+<body>
+  <!-- Skip to main content for keyboard users -->
+  <a href="#main-content" class="skip-link">Skip to main conversation</a>
+  
+  <div class="container">
+    <header role="banner">
+      <h1>🗣️ Nix for Humanity</h1>
+      <p class="tagline">Speak naturally to your NixOS system - All beings welcome</p>
+    </header>
+
+    <main id="main-content" role="main">
+      <!-- ARIA live region for screen reader announcements -->
+      <div id="aria-live-polite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+      <div id="aria-live-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+      
+      <div class="chat-container" role="region" aria-label="Sacred conversation space">
+        <div id="messages" class="messages" role="log" aria-label="Conversation history" aria-relevant="additions">
+          <div class="message system" role="article" aria-label="Welcome message">
+            <p>🙏 Welcome, beloved. I'm here to help you with NixOS. Speak naturally:</p>
+            <ul>
+              <li>"search for firefox" - Find what you seek</li>
+              <li>"show me what's installed" - See your digital garden</li>
+              <li>"check system health" - Ensure all is well</li>
+              <li>"tell me about python" - Learn together</li>
+            </ul>
+            <p class="sacred-note">Every command is an intention. Every response, a co-creation.</p>
+          </div>
+        </div>
+
+        <form id="input-form" class="input-form" role="form" aria-label="Command input form">
+          <label for="user-input" class="sr-only">Enter your intention in natural language</label>
+          <input 
+            type="text" 
+            id="user-input" 
+            class="user-input"
+            placeholder="Share your intention..."
+            autocomplete="off"
+            aria-label="Command input"
+            aria-describedby="input-help"
+            aria-required="true"
+          >
+          <span id="input-help" class="sr-only">Type naturally, like talking to a helpful friend. Press Enter to manifest.</span>
+          <button 
+            type="submit" 
+            class="send-button"
+            aria-label="Manifest this intention"
+          >
+            <span aria-hidden="true">✨</span>
+            <span>Send</span>
+          </button>
+        </form>
+
+        <!-- Loading state for screen readers -->
+        <div id="loading-indicator" class="loading-indicator" role="status" aria-live="polite" hidden>
+          <span class="sr-only">Processing your intention...</span>
+          <span aria-hidden="true" class="loading-spinner">🌀</span>
+        </div>
+      </div>
+
+      <aside class="info-panel" role="complementary" aria-label="Sacred guidance">
+        <h2>💡 Sacred Guidance</h2>
+        <ul>
+          <li>Speak as you would to a friend - no special syntax needed</li>
+          <li>I learn your patterns with each interaction</li>
+          <li>All commands are safe - I'll ask before making changes</li>
+          <li>Type "help" for guidance, "about" to learn more</li>
+        </ul>
+        
+        <div class="keyboard-shortcuts" role="region" aria-label="Keyboard shortcuts">
+          <h3>⌨️ Keyboard Shortcuts</h3>
+          <dl>
+            <dt><kbd>Escape</kbd></dt>
+            <dd>Return focus to input</dd>
+            <dt><kbd>Ctrl + Enter</kbd></dt>
+            <dd>Send command</dd>
+            <dt><kbd>Ctrl + L</kbd></dt>
+            <dd>Clear conversation</dd>
+            <dt><kbd>Ctrl + /</kbd></dt>
+            <dd>Show shortcuts</dd>
+          </dl>
+        </div>
+      </aside>
+    </main>
+
+    <footer role="contentinfo">
+      <p>
+        MVP v0.1.1 - The Bridge | 
+        <a href="https://github.com/Luminous-Dynamics/nix-for-humanity" aria-label="View source on GitHub">GitHub</a> |
+        <a href="#" id="accessibility-settings" aria-label="Accessibility settings">Accessibility</a>
+      </p>
+      <p class="sacred-footer">Built with consciousness. Every line of code a prayer. 🙏</p>
+    </footer>
+  </div>
+
+  <!-- Accessibility settings dialog (hidden by default) -->
+  <dialog id="a11y-dialog" role="dialog" aria-labelledby="a11y-title" aria-describedby="a11y-desc">
+    <h2 id="a11y-title">Accessibility Settings</h2>
+    <p id="a11y-desc">Customize your experience for comfort and clarity</p>
+    
+    <form method="dialog">
+      <fieldset>
+        <legend>Visual Preferences</legend>
+        <label>
+          <input type="checkbox" id="high-contrast" />
+          High contrast mode
+        </label>
+        <label>
+          <input type="checkbox" id="reduce-motion" />
+          Reduce animations
+        </label>
+        <label>
+          Font size:
+          <input type="range" id="font-size" min="80" max="150" value="100" aria-valuemin="80" aria-valuemax="150" aria-valuenow="100" />
+          <output for="font-size">100%</output>
+        </label>
+      </fieldset>
+      
+      <fieldset>
+        <legend>Screen Reader Preferences</legend>
+        <label>
+          <input type="checkbox" id="verbose-mode" />
+          Verbose descriptions
+        </label>
+        <label>
+          <input type="checkbox" id="announce-typing" />
+          Announce while typing
+        </label>
+      </fieldset>
+      
+      <div class="dialog-buttons">
+        <button type="submit" class="save-button">Save with love</button>
+        <button type="button" class="cancel-button" onclick="this.closest('dialog').close()">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app-accessible.js"></script>
+</body>
+</html>

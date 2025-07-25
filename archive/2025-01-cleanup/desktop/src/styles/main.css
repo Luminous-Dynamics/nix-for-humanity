@@ -1,0 +1,484 @@
+/* Consciousness-First Design System */
+
+:root {
+    /* Sacred color palette */
+    --sacred-primary: #00ff88;
+    --sacred-secondary: #00ccff;
+    --sacred-accent: #ff00ff;
+    --sacred-dark: #0a0a0a;
+    --sacred-light: #f0f4f8;
+    
+    /* Coherence-based colors */
+    --coherence-high: #00ff88;
+    --coherence-medium: #ffaa00;
+    --coherence-low: #ff4444;
+    
+    /* Spacing based on sacred geometry */
+    --space-xs: 0.382rem;  /* Golden ratio */
+    --space-sm: 0.618rem;
+    --space-md: 1rem;
+    --space-lg: 1.618rem;
+    --space-xl: 2.618rem;
+    
+    /* Typography */
+    --font-sacred: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sacred);
+    background: var(--sacred-dark);
+    color: var(--sacred-light);
+    line-height: 1.618;
+    overflow: hidden;
+}
+
+/* Loading states */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--sacred-dark);
+}
+
+.sacred-loader {
+    text-align: center;
+}
+
+.loader-ring {
+    width: 120px;
+    height: 120px;
+    border: 2px solid transparent;
+    border-top-color: var(--sacred-primary);
+    border-radius: 50%;
+    animation: sacred-spin 2s linear infinite;
+    margin: 0 auto var(--space-lg);
+}
+
+.loader-text {
+    color: var(--sacred-primary);
+    font-size: 1.2rem;
+    animation: sacred-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sacred-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes sacred-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Main container */
+.consciousness-container {
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+}
+
+/* Header */
+.sacred-header {
+    padding: var(--space-lg);
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.sacred-header h1 {
+    font-size: 1.618rem;
+    background: linear-gradient(135deg, var(--sacred-primary), var(--sacred-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.coherence-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 2rem;
+}
+
+.coherence-value {
+    font-weight: bold;
+    color: var(--coherence-high);
+}
+
+/* Navigation */
+.sacred-nav {
+    display: flex;
+    gap: var(--space-xs);
+    padding: 0 var(--space-lg);
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-md) var(--space-lg);
+    background: none;
+    border: none;
+    color: var(--sacred-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 2px solid transparent;
+    font-size: 0.95rem;
+}
+
+.nav-item:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.nav-item.active {
+    border-bottom-color: var(--sacred-primary);
+    color: var(--sacred-primary);
+}
+
+.nav-item .icon {
+    font-size: 1.2rem;
+}
+
+/* Content area */
+.content-area {
+    padding: var(--space-xl);
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Dashboard */
+.dashboard h2 {
+    margin-bottom: var(--space-xl);
+    color: var(--sacred-primary);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: var(--space-lg);
+    backdrop-filter: blur(5px);
+}
+
+.info-card h3 {
+    color: var(--sacred-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.info-card p {
+    margin: var(--space-xs) 0;
+    opacity: 0.9;
+}
+
+/* Action buttons */
+.action-btn {
+    padding: var(--space-md) var(--space-xl);
+    background: linear-gradient(135deg, var(--sacred-primary), var(--sacred-secondary));
+    border: none;
+    border-radius: 0.5rem;
+    color: var(--sacred-dark);
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: var(--space-md);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+}
+
+/* Configuration editor */
+.config-editor {
+    width: 100%;
+    min-height: 500px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    color: var(--sacred-light);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    padding: var(--space-lg);
+    resize: vertical;
+}
+
+.editor-toolbar {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.editor-toolbar button {
+    padding: var(--space-sm) var(--space-lg);
+    background: rgba(0, 255, 136, 0.2);
+    border: 1px solid rgba(0, 255, 136, 0.4);
+    border-radius: 0.3rem;
+    color: var(--sacred-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.editor-toolbar button:hover {
+    background: rgba(0, 255, 136, 0.3);
+}
+
+/* Package management */
+.search-container {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.search-input {
+    flex: 1;
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.3rem;
+    color: var(--sacred-light);
+    font-size: 1rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--sacred-primary);
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+}
+
+.package-result {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.3rem;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+}
+
+.package-result h4 {
+    color: var(--sacred-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+/* Services */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+
+.service-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: var(--space-lg);
+    transition: all 0.3s ease;
+}
+
+.service-card.active {
+    border-color: rgba(0, 255, 136, 0.4);
+    background: rgba(0, 255, 136, 0.05);
+}
+
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.service-controls {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.service-controls button {
+    padding: var(--space-xs) var(--space-md);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.3rem;
+    color: var(--sacred-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.service-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Sacred space */
+.sacred-space {
+    text-align: center;
+}
+
+.coherence-display {
+    margin: var(--space-xl) auto;
+}
+
+.coherence-circle {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+
+.coherence-circle svg {
+    width: 100%;
+    height: 100%;
+}
+
+.coherence-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--sacred-primary);
+}
+
+.sacred-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    margin: var(--space-xl) 0;
+}
+
+.sacred-btn {
+    padding: var(--space-md) var(--space-xl);
+    background: transparent;
+    border: 2px solid var(--sacred-primary);
+    border-radius: 2rem;
+    color: var(--sacred-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sacred-btn:hover {
+    background: var(--sacred-primary);
+    color: var(--sacred-dark);
+    transform: translateY(-2px);
+}
+
+.wisdom-quote {
+    max-width: 600px;
+    margin: var(--space-xl) auto;
+    padding: var(--space-xl);
+    background: rgba(0, 255, 136, 0.05);
+    border-left: 3px solid var(--sacred-primary);
+    font-style: italic;
+    opacity: 0.9;
+}
+
+/* Footer */
+.sacred-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg);
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.sacred-pause-reminder {
+    color: var(--sacred-secondary);
+}
+
+#pause-timer {
+    font-weight: bold;
+    color: var(--sacred-primary);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .sacred-nav {
+        flex-wrap: wrap;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sacred-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 136, 0.5);
+}
+
+/* Focus styles for accessibility */
+:focus {
+    outline: 2px solid var(--sacred-primary);
+    outline-offset: 2px;
+}
+
+/* Loading animations */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-xl);
+    color: var(--sacred-secondary);
+}
+
+.loader-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: sacred-spin 1s linear infinite;
+}
+
+/* Error states */
+.error {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 0.5rem;
+    padding: var(--space-xl);
+    text-align: center;
+}
+
+.error h2 {
+    color: #ff4444;
+    margin-bottom: var(--space-md);
+}

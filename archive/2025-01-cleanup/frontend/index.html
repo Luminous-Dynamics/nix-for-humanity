@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NixOS GUI - Consciousness-First Configuration</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/consciousness-first.css">
+</head>
+<body>
+    <div id="app" class="consciousness-container">
+        <!-- Sacred Header -->
+        <header class="sacred-header">
+            <h1>NixOS Configuration Interface</h1>
+            <div class="coherence-indicator" id="coherence-indicator">
+                <span class="coherence-label">System Coherence:</span>
+                <span class="coherence-value" id="coherence-value">0.88</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="sacred-nav">
+            <button class="nav-tab active" data-tab="packages">Packages</button>
+            <button class="nav-tab" data-tab="services">Services</button>
+            <button class="nav-tab" data-tab="configuration">Configuration</button>
+            <button class="nav-tab" data-tab="system">System Health</button>
+            <button class="nav-tab" data-tab="assistant">AI Assistant</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="sacred-main">
+            <!-- Packages Tab -->
+            <div id="packages-tab" class="tab-content active">
+                <div class="search-container">
+                    <input type="text" id="package-search" placeholder="Search for packages..." class="sacred-input">
+                    <button id="search-btn" class="sacred-btn">Search</button>
+                </div>
+                
+                <div id="suggestions-container" class="suggestions-container hidden">
+                    <!-- Smart suggestions will appear here -->
+                </div>
+
+                <div id="search-results" class="results-container">
+                    <!-- Search results will be populated here -->
+                </div>
+
+                <div id="installed-packages" class="installed-container">
+                    <h3>Installed Packages</h3>
+                    <div class="package-list" id="installed-list">
+                        <!-- Installed packages will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Tab -->
+            <div id="services-tab" class="tab-content hidden">
+                <div class="services-grid" id="services-grid">
+                    <!-- Services will be populated here -->
+                </div>
+            </div>
+
+            <!-- Configuration Tab -->
+            <div id="configuration-tab" class="tab-content hidden">
+                <div class="config-editor-container">
+                    <div class="config-toolbar">
+                        <button id="config-save" class="sacred-btn">Save</button>
+                        <button id="config-validate" class="sacred-btn secondary">Validate</button>
+                        <button id="config-rebuild" class="sacred-btn primary">Rebuild System</button>
+                    </div>
+                    <textarea id="config-editor" class="config-editor" placeholder="Loading configuration..."></textarea>
+                </div>
+            </div>
+
+            <!-- System Health Tab -->
+            <div id="system-tab" class="tab-content hidden">
+                <div id="health-dashboard" class="health-dashboard">
+                    <div class="metric-card">
+                        <h4>CPU Usage</h4>
+                        <canvas id="cpu-chart"></canvas>
+                        <div class="metric-value" id="cpu-value">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Memory Usage</h4>
+                        <canvas id="memory-chart"></canvas>
+                        <div class="metric-value" id="memory-value">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Disk Usage</h4>
+                        <canvas id="disk-chart"></canvas>
+                        <div class="metric-value" id="disk-value">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Network Activity</h4>
+                        <canvas id="network-chart"></canvas>
+                        <div class="metric-value" id="network-value">0 KB/s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Assistant Tab -->
+            <div id="assistant-tab" class="tab-content hidden">
+                <div class="assistant-container">
+                    <div class="assistant-chat">
+                        <div id="assistant-messages" class="assistant-messages">
+                            <div class="assistant-message">
+                                <strong>Assistant:</strong> Hello! I can help you configure NixOS using natural language. Try asking me to "enable docker" or "set up a development environment".
+                            </div>
+                        </div>
+                        <div class="assistant-input-container">
+                            <input type="text" id="assistant-input" class="assistant-input" placeholder="What would you like to configure?">
+                            <button id="assistant-send" class="sacred-btn">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sacred Status Bar -->
+        <footer class="sacred-footer">
+            <div class="status-item">
+                <span class="status-label">Connection:</span>
+                <span class="status-value" id="connection-status">Connecting...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Last Action:</span>
+                <span class="status-value" id="last-action">Ready</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Sacred Pause:</span>
+                <span class="status-value" id="sacred-pause">Active</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- WebSocket and Main Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/websocket-client.js"></script>
+    <script src="js/package-manager.js"></script>
+    <script src="js/service-manager.js"></script>
+    <script src="js/config-editor.js"></script>
+    <script src="js/health-dashboard.js"></script>
+    <script src="js/ai-assistant.js"></script>
+    <script src="js/smart-suggestions.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

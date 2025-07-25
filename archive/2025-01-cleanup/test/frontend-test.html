@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NixOS GUI Frontend Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0f1b;
+            color: #e0e6ed;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: #4a9eff;
+            margin-bottom: 2rem;
+        }
+        
+        .test-section {
+            background: #141c2e;
+            border: 1px solid #233554;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .test-result {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .pass {
+            background: rgba(107, 207, 127, 0.1);
+            border: 1px solid rgba(107, 207, 127, 0.3);
+            color: #6bcf7f;
+        }
+        
+        .fail {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+        
+        .info {
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            color: #4a9eff;
+        }
+        
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        
+        button:hover {
+            background: #357abd;
+        }
+        
+        #test-summary {
+            background: #1a2332;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4a9eff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 NixOS GUI Frontend Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <button onclick="testAuthentication()">Test Auth Only</button>
+        <button onclick="testComponents()">Test Components Only</button>
+    </div>
+    
+    <div id="test-results"></div>
+    <div id="test-summary"></div>
+
+    <script>
+        // Test configuration
+        const BASE_URL = 'https://localhost:8443';
+        let testResults = [];
+        let authToken = null;
+
+        // Test utilities
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const result = document.createElement('div');
+            result.className = `test-result ${type}`;
+            result.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            resultsDiv.appendChild(result);
+            
+            testResults.push({ message, type, time: new Date() });
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('test-summary').innerHTML = '';
+            testResults = [];
+        }
+
+        async function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Authentication tests
+        async function testAuthentication() {
+            log('🔐 Testing Authentication...', 'info');
+            
+            try {
+                // Test login
+                const loginResponse = await fetch(`${BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'testpass'
+                    })
+                });
+                
+                if (loginResponse.ok) {
+                    const data = await loginResponse.json();
+                    authToken = data.token;
+                    log('✅ Login successful', 'pass');
+                    
+                    // Test token verification
+                    const verifyResponse = await fetch(`${BASE_URL}/api/auth/verify`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (verifyResponse.ok) {
+                        log('✅ Token verification passed', 'pass');
+                    } else {
+                        log('❌ Token verification failed', 'fail');
+                    }
+                } else {
+                    log('❌ Login failed', 'fail');
+                }
+            } catch (error) {
+                log(`❌ Auth test error: ${error.message}`, 'fail');
+            }
+        }
+
+        // Component tests
+        async function testComponents() {
+            log('🧩 Testing Frontend Components...', 'info');
+            
+            // Test 1: Package Manager
+            if (typeof PackageManager !== 'undefined') {
+                try {
+                    const pm = new PackageManager(BASE_URL);
+                    log('✅ PackageManager loaded', 'pass');
+                } catch (error) {
+                    log('❌ PackageManager initialization failed', 'fail');
+                }
+            } else {
+                log('❌ PackageManager not found', 'fail');
+            }
+            
+            // Test 2: Health Dashboard
+            if (typeof HealthDashboard !== 'undefined') {
+                try {
+                    const hd = new HealthDashboard(null);
+                    log('✅ HealthDashboard loaded', 'pass');
+                } catch (error) {
+                    log('❌ HealthDashboard initialization failed', 'fail');
+                }
+            } else {
+                log('❌ HealthDashboard not found', 'fail');
+            }
+            
+            // Test 3: AI Assistant
+            if (typeof AIAssistant !== 'undefined') {
+                try {
+                    const ai = new AIAssistant(BASE_URL);
+                    log('✅ AIAssistant loaded', 'pass');
+                    
+                    // Test AI parsing
+                    const result = await ai.interpretRequest('enable docker');
+                    if (result.type === 'config') {
+                        log('✅ AI request parsing working', 'pass');
+                    } else {
+                        log('❌ AI request parsing failed', 'fail');
+                    }
+                } catch (error) {
+                    log('❌ AIAssistant error: ' + error.message, 'fail');
+                }
+            } else {
+                log('❌ AIAssistant not found', 'fail');
+            }
+            
+            // Test 4: Smart Suggestions
+            if (typeof SmartSuggestionsEngine !== 'undefined') {
+                try {
+                    const suggestions = new SmartSuggestionsEngine();
+                    log('✅ SmartSuggestionsEngine loaded', 'pass');
+                    
+                    // Test pattern tracking
+                    suggestions.trackAction('search', { query: 'vim' });
+                    const results = suggestions.generateSuggestions();
+                    log(`✅ Generated ${results.length} suggestions`, 'pass');
+                } catch (error) {
+                    log('❌ SmartSuggestions error: ' + error.message, 'fail');
+                }
+            } else {
+                log('❌ SmartSuggestionsEngine not found', 'fail');
+            }
+        }
+
+        // WebSocket tests
+        async function testWebSocket() {
+            log('🔌 Testing WebSocket Connection...', 'info');
+            
+            if (!authToken) {
+                log('⚠️  No auth token, skipping WebSocket test', 'info');
+                return;
+            }
+            
+            try {
+                const ws = new WebSocket(`wss://localhost:8443`);
+                
+                ws.onopen = () => {
+                    log('✅ WebSocket connected', 'pass');
+                    ws.send(JSON.stringify({
+                        type: 'auth',
+                        token: authToken
+                    }));
+                };
+                
+                ws.onmessage = (event) => {
+                    log('✅ WebSocket message received', 'pass');
+                    ws.close();
+                };
+                
+                ws.onerror = (error) => {
+                    log('❌ WebSocket error', 'fail');
+                };
+                
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.close();
+                        log('⚠️  WebSocket test timeout', 'info');
+                    }
+                }, 5000);
+            } catch (error) {
+                log(`❌ WebSocket test error: ${error.message}`, 'fail');
+            }
+        }
+
+        // API Integration tests
+        async function testAPIs() {
+            log('🔗 Testing API Integration...', 'info');
+            
+            if (!authToken) {
+                log('⚠️  No auth token, skipping API tests', 'info');
+                return;
+            }
+            
+            const headers = {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            };
+            
+            // Test package search
+            try {
+                const searchResponse = await fetch(`${BASE_URL}/api/packages/search`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ query: 'git' })
+                });
+                
+                if (searchResponse.ok) {
+                    const packages = await searchResponse.json();
+                    log(`✅ Package search returned ${packages.length} results`, 'pass');
+                } else {
+                    log('❌ Package search failed', 'fail');
+                }
+            } catch (error) {
+                log(`❌ Package search error: ${error.message}`, 'fail');
+            }
+            
+            // Test system stats
+            try {
+                const statsResponse = await fetch(`${BASE_URL}/api/system/stats`, {
+                    headers
+                });
+                
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    log(`✅ System stats: CPU ${Math.round(stats.cpu.usage)}%`, 'pass');
+                } else {
+                    log('❌ System stats failed', 'fail');
+                }
+            } catch (error) {
+                log(`❌ System stats error: ${error.message}`, 'fail');
+            }
+        }
+
+        // Performance tests
+        async function testPerformance() {
+            log('⚡ Testing Performance...', 'info');
+            
+            // Test page load time
+            const loadStart = performance.now();
+            try {
+                await fetch(`${BASE_URL}/`);
+                const loadTime = performance.now() - loadStart;
+                
+                if (loadTime < 1000) {
+                    log(`✅ Page load time: ${Math.round(loadTime)}ms`, 'pass');
+                } else {
+                    log(`⚠️  Slow page load: ${Math.round(loadTime)}ms`, 'info');
+                }
+            } catch (error) {
+                log('❌ Performance test error', 'fail');
+            }
+            
+            // Test API response time
+            if (authToken) {
+                const apiStart = performance.now();
+                try {
+                    await fetch(`${BASE_URL}/api/health`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const apiTime = performance.now() - apiStart;
+                    
+                    if (apiTime < 200) {
+                        log(`✅ API response time: ${Math.round(apiTime)}ms`, 'pass');
+                    } else {
+                        log(`⚠️  Slow API response: ${Math.round(apiTime)}ms`, 'info');
+                    }
+                } catch (error) {
+                    log('❌ API performance test error', 'fail');
+                }
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            clearResults();
+            log('🚀 Starting Frontend Test Suite...', 'info');
+            
+            // Load frontend scripts first
+            log('📦 Loading frontend components...', 'info');
+            
+            const scripts = [
+                '/js/auth.js',
+                '/js/websocket-client.js',
+                '/js/package-manager.js',
+                '/js/health-dashboard.js',
+                '/js/ai-assistant.js',
+                '/js/smart-suggestions.js'
+            ];
+            
+            for (const script of scripts) {
+                try {
+                    await loadScript(BASE_URL + script);
+                    log(`✅ Loaded ${script}`, 'pass');
+                } catch (error) {
+                    log(`❌ Failed to load ${script}`, 'fail');
+                }
+            }
+            
+            await delay(1000);
+            
+            // Run test suites
+            await testAuthentication();
+            await delay(500);
+            
+            await testComponents();
+            await delay(500);
+            
+            await testWebSocket();
+            await delay(500);
+            
+            await testAPIs();
+            await delay(500);
+            
+            await testPerformance();
+            
+            // Generate summary
+            generateSummary();
+        }
+
+        // Load script helper
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Generate test summary
+        function generateSummary() {
+            const passed = testResults.filter(r => r.type === 'pass').length;
+            const failed = testResults.filter(r => r.type === 'fail').length;
+            const total = passed + failed;
+            const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+            
+            const summary = document.getElementById('test-summary');
+            summary.innerHTML = `
+                <h2>Test Summary</h2>
+                <p>Total Tests: ${total}</p>
+                <p style="color: #6bcf7f;">Passed: ${passed}</p>
+                <p style="color: #ff6b6b;">Failed: ${failed}</p>
+                <p>Success Rate: ${successRate}%</p>
+                ${successRate === 100 ? 
+                    '<p style="color: #6bcf7f; font-size: 1.2em;">🎉 All tests passed!</p>' : 
+                    '<p style="color: #ff6b6b;">⚠️  Some tests failed. Check the results above.</p>'
+                }
+            `;
+        }
+    </script>
+</body>
+</html>

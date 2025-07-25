@@ -1,0 +1,38 @@
+{
+  "name": "nixos-gui-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive test suite for NixOS GUI",
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "jest --testPathPattern=e2e",
+    "test:error-recovery": "jest error-recovery.test.js",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --maxWorkers=2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000,
+    "coverageDirectory": "./coverage",
+    "collectCoverageFrom": [
+      "../backend/**/*.js",
+      "../js/**/*.js",
+      "!**/node_modules/**",
+      "!**/tests/**"
+    ],
+    "testMatch": [
+      "**/*.test.js",
+      "**/*.spec.js"
+    ],
+    "setupFilesAfterEnv": ["./jest.setup.js"]
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "puppeteer": "^21.7.0",
+    "axios": "^1.6.3",
+    "supertest": "^6.3.3",
+    "@jest/globals": "^29.7.0"
+  }
+}

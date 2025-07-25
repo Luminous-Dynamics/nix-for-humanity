@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NixOS System Manager - Secure Login">
+    <title>NixOS Login</title>
+    
+    <!-- Preconnect to speed up external resources -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Critical CSS inline for fastest render -->
+    <style>
+        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#000;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center}
+        .login-container{padding:20px;width:100%;max-width:400px}
+        .login-box{background:#1e1e1e;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+        .login-header{background:#121212;padding:40px 30px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)}
+        .login-logo{width:80px;height:80px;margin-bottom:20px}
+        .login-form{padding:30px}
+        .error-message{display:none}
+    </style>
+    
+    <!-- Async load non-critical CSS -->
+    <link rel="preload" href="/css/auth.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/css/auth.css"></noscript>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <img src="/assets/nixos-logo.svg" alt="NixOS" class="login-logo" width="80" height="80" loading="eager">
+                <h1>NixOS System Manager</h1>
+                <p>Sign in with your system account</p>
+            </div>
+            
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required 
+                           autocomplete="username"
+                           placeholder="Enter your username"
+                           autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           required 
+                           autocomplete="current-password"
+                           placeholder="Enter your password">
+                </div>
+                
+                <div id="login-error" class="error-message" role="alert"></div>
+                
+                <button type="submit" class="btn-primary btn-block" id="login-button">
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p class="security-note">
+                    <i class="icon-lock"></i>
+                    Authentication is performed locally via PAM
+                </p>
+                <p class="access-note">
+                    Users must be in the <code>wheel</code> or <code>nixos-gui</code> group
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Minimal inline script for immediate functionality -->
+    <script>
+        // Basic form handling before full JS loads
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-button');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+        });
+    </script>
+    
+    <!-- Load authentication JS -->
+    <script src="/js/config.js?v=2"></script>
+    <script src="/js/auth-manager-v2.js?v=2" defer></script>
+</body>
+</html>

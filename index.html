@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nix for Humanity - Natural Language Interface for NixOS</title>
+  <meta name="description" content="Control NixOS using natural language. Type or speak what you want - no commands to memorize.">
+  
+  <style>
+    /* CSS Variables for theming */
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #27ae60;
+      --error-color: #e74c3c;
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --border-color: #dddddd;
+      --focus-outline: 2px solid var(--primary-color);
+      --animation-duration: 300ms;
+    }
+
+    /* High contrast mode */
+    .high-contrast {
+      --primary-color: #0066cc;
+      --secondary-color: #008800;
+      --error-color: #cc0000;
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --border-color: #000000;
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --border-color: #444444;
+      }
+    }
+
+    /* Base styles */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      transition: background-color var(--animation-duration), color var(--animation-duration);
+    }
+
+    /* Reduced motion */
+    .reduced-motion * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    /* Screen reader only */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* Skip to main content link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--primary-color);
+      color: white;
+      padding: 8px;
+      text-decoration: none;
+      z-index: 100;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* Main container */
+    .nfh-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin: 0 0 0.5rem 0;
+      color: var(--primary-color);
+    }
+
+    .tagline {
+      font-size: 1.2rem;
+      color: var(--text-color);
+      opacity: 0.8;
+    }
+
+    main {
+      width: 100%;
+      max-width: 800px;
+      flex: 1;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-size: 1.5rem;
+      color: var(--primary-color);
+    }
+
+    /* Error state */
+    .error {
+      color: var(--error-color);
+      text-align: center;
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+  
+  <div id="app" class="loading">
+    <div role="status" aria-live="polite">
+      Loading Nix for Humanity...
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+  
+  <noscript>
+    <div class="error">
+      <h1>JavaScript Required</h1>
+      <p>Nix for Humanity requires JavaScript to provide natural language processing.</p>
+      <p>Please enable JavaScript in your browser settings.</p>
+    </div>
+  </noscript>
+</body>
+</html>

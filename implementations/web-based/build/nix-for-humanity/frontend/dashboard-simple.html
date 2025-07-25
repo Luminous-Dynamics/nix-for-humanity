@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NixOS GUI Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .header {
+            background: #2a2a2a;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .welcome {
+            font-size: 24px;
+            margin-bottom: 40px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #2a2a2a;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #444;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #4ade80;
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #4ade80;
+        }
+        .card p {
+            color: #999;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4ade80;
+            color: #000;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #22c55e;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .logout {
+            padding: 8px 16px;
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .logout:hover {
+            background: #b91c1c;
+        }
+        #searchResults {
+            margin-top: 20px;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .package-item {
+            padding: 12px;
+            background: #1a1a1a;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .package-info {
+            flex: 1;
+        }
+        .package-name {
+            font-weight: 600;
+            color: #4ade80;
+        }
+        .package-desc {
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="margin: 0;">NixOS GUI</h1>
+        <div class="user-info">
+            <span>Welcome, <strong id="username">User</strong></span>
+            <button class="logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="welcome">
+            Welcome to your NixOS system manager! What would you like to do today?
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>Package Search</h3>
+                <p>Search and install packages from nixpkgs</p>
+                <input type="text" class="search-box" id="searchBox" placeholder="Search packages..." onkeyup="searchPackages(event)">
+                <div id="searchResults"></div>
+            </div>
+            
+            <div class="card">
+                <h3>System Services</h3>
+                <p>Manage systemd services</p>
+                <a href="/system-dashboard.html" class="btn">Manage Services</a>
+            </div>
+            
+            <div class="card">
+                <h3>System Info</h3>
+                <p>View system information and status</p>
+                <button class="btn" onclick="getSystemInfo()">View Info</button>
+                <div id="systemInfo" style="margin-top: 20px;"></div>
+            </div>
+            
+            <div class="card">
+                <h3>Configuration</h3>
+                <p>Edit NixOS configuration</p>
+                <a href="#" class="btn" onclick="alert('Configuration editor coming soon!')">Edit Config</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:7891';
+        
+        // Load username
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('username').textContent = username;
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('username');
+            window.location.href = '/login-simple.html';
+        }
+        
+        // Search packages
+        let searchTimeout;
+        async function searchPackages(event) {
+            const query = event.target.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').style.display = 'none';
+                return;
+            }
+            
+            // Debounce
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/api/nix/search`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+                        },
+                        body: JSON.stringify({ query })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.packages) {
+                        displaySearchResults(data.packages);
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
+        }
+        
+        function displaySearchResults(packages) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (packages.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: #999;">No packages found</p>';
+            } else {
+                // Sort packages to show exact matches first
+                const query = document.getElementById('searchBox').value.toLowerCase();
+                packages.sort((a, b) => {
+                    const aExact = a.name.toLowerCase() === query;
+                    const bExact = b.name.toLowerCase() === query;
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+                    return 0;
+                });
+                
+                resultsDiv.innerHTML = packages.slice(0, 15).map(pkg => `
+                    <div class="package-item">
+                        <div class="package-info">
+                            <div class="package-name">${pkg.name}</div>
+                            <div class="package-desc">${pkg.description || 'No description'}</div>
+                        </div>
+                        <button class="btn" onclick="installPackage('${pkg.name}')">Install</button>
+                    </div>
+                `).join('');
+            }
+            
+            resultsDiv.style.display = 'block';
+        }
+        
+        async function installPackage(packageName) {
+            if (!confirm(`Install ${packageName}?`)) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/nix/install`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+                    },
+                    body: JSON.stringify({ package: packageName })
+                });
+                
+                const data = await response.json();
+                alert(data.message || 'Installation started!');
+            } catch (error) {
+                alert('Installation error: ' + error.message);
+            }
+        }
+        
+        async function getSystemInfo() {
+            const infoDiv = document.getElementById('systemInfo');
+            infoDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/system/info`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const sys = data.system;
+                    const uptimeDays = Math.floor(sys.uptime / 86400);
+                    const uptimeHours = Math.floor((sys.uptime % 86400) / 3600);
+                    
+                    infoDiv.innerHTML = `
+                        <strong>Hostname:</strong> ${sys.hostname}<br>
+                        <strong>NixOS Version:</strong> ${sys.nixosVersion}<br>
+                        <strong>Architecture:</strong> ${sys.arch}<br>
+                        <strong>CPUs:</strong> ${sys.cpus} cores<br>
+                        <strong>Memory:</strong> ${Math.round(sys.memory.used / 1024 / 1024 / 1024)}GB / ${Math.round(sys.memory.total / 1024 / 1024 / 1024)}GB (${sys.memory.percentage}%)<br>
+                        <strong>Uptime:</strong> ${uptimeDays}d ${uptimeHours}h<br>
+                        <strong>Load Average:</strong> ${sys.loadAverage.map(l => l.toFixed(2)).join(', ')}
+                    `;
+                } else {
+                    infoDiv.innerHTML = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                infoDiv.innerHTML = 'Error loading system info: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

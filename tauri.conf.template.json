@@ -1,0 +1,130 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:3000",
+    "distDir": "../dist",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "NixOS GUI",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true,
+        "execute": true,
+        "sidecar": true,
+        "scope": [
+          {
+            "name": "nix",
+            "cmd": "nix",
+            "args": true
+          },
+          {
+            "name": "nixos-rebuild",
+            "cmd": "nixos-rebuild",
+            "args": true
+          },
+          {
+            "name": "systemctl",
+            "cmd": "systemctl",
+            "args": true
+          }
+        ]
+      },
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "writeFile": true,
+        "readDir": true,
+        "scope": [
+          "$CONFIG/nixos/**",
+          "/etc/nixos/**"
+        ]
+      },
+      "http": {
+        "all": false,
+        "request": true,
+        "scope": ["http://localhost:*", "https://localhost:*"]
+      },
+      "notification": {
+        "all": true
+      },
+      "dialog": {
+        "all": true
+      },
+      "process": {
+        "all": false,
+        "exit": true,
+        "relaunch": true,
+        "relaunchDangerousAllowSymlinkMacos": false
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": ["**"]
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "org.nixos.gui",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "category": "SystemConfiguration",
+      "shortDescription": "Modern GUI for NixOS system management",
+      "longDescription": "A consciousness-first, secure interface for managing NixOS configurations with sacred pauses and attention protection.",
+      "linux": {
+        "deb": {
+          "depends": ["webkit2gtk-4.0", "libgtk-3-0"]
+        },
+        "appimage": {
+          "bundleMediaFramework": true
+        }
+      }
+    },
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:*",
+      "dangerousDisableAssetCspModification": false,
+      "freezePrototype": true
+    },
+    "windows": [
+      {
+        "title": "NixOS Configuration Manager",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "skipTaskbar": false,
+        "fileDropEnabled": true,
+        "center": true,
+        "theme": "Dark"
+      }
+    ],
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/nixos/nixos-gui/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": ""
+    }
+  }
+}

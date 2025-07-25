@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Search Command</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 100px;
+            border: 1px solid #333;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Search Command</h1>
+    
+    <div class="test-section">
+        <h2>Direct API Test</h2>
+        <button onclick="testSearchCommand()">Test "search firefox"</button>
+        <div id="output">Ready to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Full Interface Test</h2>
+        <button onclick="testFullInterface()">Test with NixInterface</button>
+        <div id="full-output">Ready to test full interface...</div>
+    </div>
+
+    <script type="module">
+        // Import the NLP modules
+        import { recognizeIntent } from './js/nlp/layers/intent-recognition.js';
+        import { buildCommand } from './js/nlp/layers/command-builder.js';
+        import { executeCommand } from './js/nlp/layers/command-executor.js';
+        import { nixInterface } from './js/nlp/nix-interface.js';
+
+        // Make functions available globally
+        window.recognizeIntent = recognizeIntent;
+        window.buildCommand = buildCommand;
+        window.executeCommand = executeCommand;
+        window.nixInterface = nixInterface;
+
+        window.testSearchCommand = async function() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing search command...\n\n';
+            
+            try {
+                // Step 1: Intent Recognition
+                const intent = recognizeIntent('search firefox');
+                output.textContent += '1️⃣ Intent Recognition:\n';
+                output.textContent += JSON.stringify(intent, null, 2) + '\n\n';
+                
+                // Step 2: Command Building
+                const buildResult = buildCommand(intent);
+                output.textContent += '2️⃣ Command Building:\n';
+                output.textContent += JSON.stringify(buildResult, null, 2) + '\n\n';
+                
+                // Step 3: Command Execution (Mock)
+                if (buildResult.success && buildResult.command) {
+                    output.textContent += '3️⃣ Command Execution:\n';
+                    const execResult = await executeCommand(buildResult.command, { dryRun: false });
+                    output.textContent += JSON.stringify(execResult, null, 2) + '\n\n';
+                    
+                    if (execResult.success) {
+                        output.innerHTML += '<span class="success">✅ Test Passed!</span>';
+                    } else {
+                        output.innerHTML += '<span class="error">❌ Execution failed: ' + execResult.error + '</span>';
+                    }
+                } else {
+                    output.innerHTML += '<span class="error">❌ Failed to build command</span>';
+                }
+            } catch (error) {
+                output.innerHTML += '<span class="error">❌ Error: ' + error.message + '</span>';
+                console.error(error);
+            }
+        };
+
+        window.testFullInterface = async function() {
+            const output = document.getElementById('full-output');
+            output.textContent = 'Testing full interface...\n\n';
+            
+            try {
+                const result = await nixInterface.processInput('search firefox');
+                output.textContent += 'Result:\n';
+                output.textContent += JSON.stringify(result, null, 2) + '\n\n';
+                
+                if (result.success) {
+                    output.innerHTML += '<span class="success">✅ Full interface test passed!</span>';
+                } else {
+                    output.innerHTML += '<span class="error">❌ Interface test failed</span>';
+                }
+            } catch (error) {
+                output.innerHTML += '<span class="error">❌ Error: ' + error.message + '</span>';
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>

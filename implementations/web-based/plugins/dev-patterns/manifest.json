@@ -1,0 +1,15 @@
+{
+    "id": "dev-patterns",
+    "name": "Developer Patterns",
+    "version": "1.0.0",
+    "description": "Enhanced patterns for developers - understand dev speak!",
+    "author": "Luminous Dynamics",
+    "main": "plugin.js",
+    "minVersion": "1.0.0",
+    "permissions": [
+        "patterns.add",
+        "bridge.search"
+    ],
+    "tags": ["developer", "productivity", "patterns"],
+    "icon": "🛠️"
+}

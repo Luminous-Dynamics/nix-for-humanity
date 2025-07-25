@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Installation Mode Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .demo-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .feature {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #357abd;
+        }
+        
+        .code-example {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            margin: 15px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Dual Installation Mode Demo</h1>
+    
+    <div class="demo-section">
+        <h2>What's New?</h2>
+        <div class="feature">
+            <h3>✨ User vs System Installation</h3>
+            <p>Now when you install a package, you can choose:</p>
+            <ul>
+                <li><strong>Just for me</strong> - Installs immediately to your user profile</li>
+                <li><strong>For everyone</strong> - Generates configuration for system-wide installation</li>
+            </ul>
+        </div>
+        
+        <div class="feature">
+            <h3>🎯 Smart Package Detection</h3>
+            <p>Special packages like Docker, Steam, and PostgreSQL get complete configuration snippets with all required settings.</p>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Try It Out!</h2>
+        
+        <button onclick="testUserInstall()">Test User Install (Firefox)</button>
+        <button onclick="testSystemInstall()">Test System Install (Docker)</button>
+        <button onclick="testSearchAndInstall()">Search & Install (VS Code)</button>
+        
+        <div id="result"></div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Examples</h2>
+        
+        <h3>Regular Package (System-wide)</h3>
+        <div class="code-example">environment.systemPackages = with pkgs; [
+  # ... your other packages ...
+  firefox
+];</div>
+        
+        <h3>Docker (System-wide with Configuration)</h3>
+        <div class="code-example"># Docker configuration
+virtualisation.docker.enable = true;
+virtualisation.docker.enableOnBoot = true;
+
+# Add your user to docker group
+users.users.YOUR_USERNAME.extraGroups = [ "docker" ];
+
+environment.systemPackages = with pkgs; [
+  docker
+  docker-compose
+];</div>
+    </div>
+
+    <script>
+        async function testUserInstall() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div class="status info">Installing Firefox for current user...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:7891/api/nix/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        package: 'firefox',
+                        scope: 'user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.jobId) {
+                    result.innerHTML = `<div class="status success">✅ Installation started! Job ID: ${data.jobId}<br>Check the main UI for progress.</div>`;
+                } else {
+                    result.innerHTML = `<div class="status info">Response: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testSystemInstall() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div class="status info">Generating Docker system configuration...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:7891/api/nix/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        package: 'docker',
+                        scope: 'system'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.snippet) {
+                    result.innerHTML = `
+                        <div class="status success">✅ Configuration generated!</div>
+                        <div class="code-example">${data.snippet}</div>
+                        <div class="status info">${data.instructions}</div>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testSearchAndInstall() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div class="status info">Searching for VS Code...</div>';
+            
+            try {
+                // First search
+                const searchResponse = await fetch('http://localhost:7891/api/nix/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: 'vscode' })
+                });
+                
+                const searchData = await searchResponse.json();
+                
+                if (searchData.packages && searchData.packages.length > 0) {
+                    const vscodePkg = searchData.packages.find(p => p.name === 'vscode') || searchData.packages[0];
+                    
+                    result.innerHTML = `
+                        <div class="status success">✅ Found: ${vscodePkg.name} v${vscodePkg.version}</div>
+                        <p>${vscodePkg.description}</p>
+                        <button onclick="installVSCode('user')">Install for Me</button>
+                        <button onclick="installVSCode('system')">Install System-wide</button>
+                    `;
+                    
+                    window.vscodePkg = vscodePkg;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        window.installVSCode = async function(scope) {
+            const result = document.getElementById('result');
+            const pkg = window.vscodePkg;
+            
+            try {
+                const response = await fetch('http://localhost:7891/api/nix/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        package: pkg.name,
+                        scope: scope
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (scope === 'system' && data.snippet) {
+                    result.innerHTML = `
+                        <div class="status success">✅ Configuration generated!</div>
+                        <div class="code-example">${data.snippet}</div>
+                        <div class="status info">${data.instructions}</div>
+                    `;
+                } else if (data.jobId) {
+                    result.innerHTML = `<div class="status success">✅ Installation started! Job ID: ${data.jobId}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

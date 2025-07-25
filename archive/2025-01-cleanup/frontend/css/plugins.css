@@ -1,0 +1,401 @@
+/**
+ * Plugin system styles
+ */
+
+/* Plugin Manager */
+.plugins-manager {
+  padding: 2rem;
+}
+
+.plugins-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.plugins-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+/* Plugin List */
+.plugins-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.plugin-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.plugin-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.plugin-item.disabled {
+  opacity: 0.6;
+}
+
+.plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.plugin-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.plugin-version {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.plugin-description {
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.plugin-meta {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.plugin-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-active {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
+.status-loading {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+}
+
+.status-error {
+  background: var(--error-bg);
+  color: var(--error-color);
+}
+
+.plugin-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Plugin Widgets */
+.plugin-widget {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.widget-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.widget-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.widget-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.widget-content {
+  padding: 1rem;
+}
+
+/* Widget Sizes */
+.widget-small {
+  grid-column: span 1;
+}
+
+.widget-medium {
+  grid-column: span 2;
+}
+
+.widget-large {
+  grid-column: span 3;
+}
+
+/* Plugin Menu Items */
+.plugin-menu-item {
+  position: relative;
+}
+
+.plugin-menu-item::after {
+  content: '🧩';
+  position: absolute;
+  right: 1rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+/* Install Dialog */
+.install-plugin-form {
+  min-width: 400px;
+}
+
+.install-plugin-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.install-plugin-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.install-plugin-form input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Plugin Settings */
+.plugin-settings {
+  min-width: 500px;
+}
+
+.settings-group {
+  margin-bottom: 1.5rem;
+}
+
+.settings-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.settings-group input,
+.settings-group select,
+.settings-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.settings-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+}
+
+.settings-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  min-width: 300px;
+  max-width: 500px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.notification-info {
+  border-left: 4px solid var(--info-color);
+}
+
+.notification-success {
+  border-left: 4px solid var(--success-color);
+}
+
+.notification-warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.notification-error {
+  border-left: 4px solid var(--error-color);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notification-content p {
+  margin: 0;
+  flex: 1;
+}
+
+.notification-action {
+  padding: 0.25rem 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.notification-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+/* Dialog Overlay */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.dialog {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  max-width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-header h3 {
+  margin: 0;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+}
+
+.dialog-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .plugins-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .plugin-actions {
+    flex-wrap: wrap;
+  }
+
+  .widget-small,
+  .widget-medium,
+  .widget-large {
+    grid-column: span 1;
+  }
+
+  .notification {
+    right: 1rem;
+    left: 1rem;
+    max-width: none;
+  }
+}

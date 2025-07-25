@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Enhanced Patterns</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .test-group {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        
+        .test-case {
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: #222;
+            border-radius: 4px;
+        }
+        
+        .input {
+            color: #3b82f6;
+        }
+        
+        .output {
+            color: #10b981;
+            margin-top: 0.5rem;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Pattern Testing</h1>
+    
+    <div class="test-group">
+        <h2>Common Phrases</h2>
+        <div id="phrases"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>Synonym Expansion</h2>
+        <div id="synonyms"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>Alternative Suggestions</h2>
+        <div id="alternatives"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>Interactive Test</h2>
+        <input type="text" id="testInput" placeholder="Type a command..." style="width: 100%; padding: 0.5rem; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+        <button onclick="testInput()">Test</button>
+        <div id="result" style="margin-top: 1rem;"></div>
+    </div>
+    
+    <script src="js/patterns-enhanced.js"></script>
+    <script>
+        const patterns = new PatternEnhancer();
+        
+        // Test common phrases
+        const phrasesDiv = document.getElementById('phrases');
+        const testPhrases = [
+            'write documents',
+            'edit photos',
+            'browse the web',
+            'play music',
+            'work from home'
+        ];
+        
+        testPhrases.forEach(phrase => {
+            const result = patterns.enhanceIntent(phrase);
+            const div = document.createElement('div');
+            div.className = 'test-case';
+            div.innerHTML = `
+                <div class="input">Input: "${phrase}"</div>
+                <div class="output">Result: ${JSON.stringify(result, null, 2)}</div>
+            `;
+            phrasesDiv.appendChild(div);
+        });
+        
+        // Test alternatives
+        const altDiv = document.getElementById('alternatives');
+        const testAlts = ['firefox', 'photoshop', 'word', 'spotify'];
+        
+        testAlts.forEach(pkg => {
+            const alts = patterns.suggestAlternatives(pkg);
+            const div = document.createElement('div');
+            div.className = 'test-case';
+            div.innerHTML = `
+                <div class="input">Package: "${pkg}"</div>
+                <div class="output">Alternatives: ${alts.join(', ') || 'None'}</div>
+            `;
+            altDiv.appendChild(div);
+        });
+        
+        // Test friendly errors
+        const errorTests = [
+            { error: 'Package not found', context: { target: 'firefox' } },
+            { error: 'Permission denied', context: { target: 'system update' } },
+            { error: 'No network connection', context: { target: 'download' } }
+        ];
+        
+        // Interactive test
+        function testInput() {
+            const input = document.getElementById('testInput').value;
+            const result = patterns.enhanceIntent(input);
+            const resultDiv = document.getElementById('result');
+            
+            if (result) {
+                resultDiv.innerHTML = `
+                    <div class="test-case">
+                        <div class="input">Input: "${input}"</div>
+                        <div class="output">
+                            Action: ${result.action}<br>
+                            Category: ${result.category}<br>
+                            Suggestions: ${result.suggestions ? result.suggestions.join(', ') : 'None'}<br>
+                            Confidence: ${result.confidence}
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="test-case">
+                        <div class="input">Input: "${input}"</div>
+                        <div class="output">No pattern match found</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test contextual suggestions
+        const ctx = patterns.getContextualSuggestions();
+        console.log('Contextual suggestions:', ctx);
+    </script>
+</body>
+</html>

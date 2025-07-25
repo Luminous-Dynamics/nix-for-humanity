@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 20px; background: #2a2a2a; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>NixOS GUI Auth Test</h1>
+    
+    <button onclick="testBackend()">Test Backend Health</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testBadLogin()">Test Bad Login</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        const API_URL = 'http://localhost:7891';
+        const result = document.getElementById('result');
+        
+        async function testBackend() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                result.innerHTML = `<div class="success">✅ Backend Health Check:<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Backend Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin' })
+                });
+                const data = await response.json();
+                result.innerHTML = `<div class="success">✅ Login Success:<pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Login Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testBadLogin() {
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'bad', password: 'wrong' })
+                });
+                const data = await response.json();
+                result.innerHTML = `<div class="${response.ok ? 'error' : 'success'}">
+                    ${response.ok ? '❌' : '✅'} Bad Login Test (should fail):
+                    <pre>Status: ${response.status}\n${JSON.stringify(data, null, 2)}</pre>
+                </div>`;
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Request Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

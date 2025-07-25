@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nix for Humanity - Natural Language NixOS</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .loading {
+      text-align: center;
+      color: #666;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111;
+      }
+    }
+  </style>
+</head>
+<body>
+  <minimal-nix-interface id="nixInterface"></minimal-nix-interface>
+  
+  <div class="loading" id="loading">
+    Loading Nix for Humanity...
+  </div>
+
+  <!-- Load the compiled JavaScript -->
+  <script type="module">
+    // Import our modules
+    import './js/ui/minimal-interface.js';
+    import { nixInterface } from './js/nlp/nix-interface.js';
+    import { VoiceInputManager } from './js/nlp/voice-input.js';
+    import { commandHistory } from './js/nlp/command-history.js';
+    
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', async () => {
+      const loading = document.getElementById('loading');
+      const ui = document.getElementById('nixInterface');
+      
+      try {
+        // Hide loading
+        loading.style.display = 'none';
+        
+        // Set up voice input if available
+        let voiceManager = null;
+        if (VoiceInputManager.isSupported()) {
+          voiceManager = new VoiceInputManager();
+        }
+        
+        // Handle command processing
+        ui.addEventListener('command', async (event) => {
+          const { input } = event.detail;
+          
+          // Show progress
+          ui.addMessage('Processing...', 'progress');
+          
+          try {
+            // Process through our refactored interface
+            const result = await nixInterface.processInput(input);
+            
+            // Clear progress message
+            const messages = ui.shadowRoot.querySelectorAll('.progress-message');
+            messages[messages.length - 1]?.remove();
+            
+            // Show result
+            if (result.success) {
+              ui.addMessage(result.response, 'system');
+              
+              // Show output if available
+              if (result.output) {
+                const outputLines = result.output.trim().split('\n').slice(0, 10);
+                if (outputLines.length > 0 && outputLines[0]) {
+                  ui.addMessage('Output:\n' + outputLines.join('\n'), 'system');
+                }
+              }
+            } else {
+              ui.addMessage(result.response, 'error');
+              
+              // Show suggestions if available
+              if (result.suggestions && result.suggestions.length > 0) {
+                ui.addMessage('💡 ' + result.suggestions[0], 'system');
+              }
+            }
+          } catch (error) {
+            // Clear progress
+            const messages = ui.shadowRoot.querySelectorAll('.progress-message');
+            messages[messages.length - 1]?.remove();
+            
+            ui.addMessage('Error: ' + error.message, 'error');
+          }
+        });
+        
+        // Handle history navigation
+        ui.addEventListener('history-navigate', (event) => {
+          const { direction, currentIndex } = event.detail;
+          const history = commandHistory.getRecent(50);
+          
+          let newIndex = currentIndex;
+          if (direction === 'up' && newIndex < history.length - 1) {
+            newIndex++;
+          } else if (direction === 'down' && newIndex > -1) {
+            newIndex--;
+          }
+          
+          if (newIndex >= 0 && newIndex < history.length) {
+            ui.setInput(history[newIndex].naturalInput);
+          } else if (newIndex === -1) {
+            ui.setInput('');
+          }
+          
+          // Update the UI's internal history index
+          ui.historyIndex = newIndex;
+        });
+        
+        // Handle autocomplete
+        ui.addEventListener('autocomplete', (event) => {
+          const { partial } = event.detail;
+          const suggestions = nixInterface.getSuggestions(partial);
+          
+          if (suggestions.length > 0) {
+            ui.showSuggestions(suggestions);
+          }
+        });
+        
+        // Handle voice toggle
+        ui.addEventListener('voice-toggle', async (event) => {
+          const { listening } = event.detail;
+          
+          if (!voiceManager) {
+            ui.addMessage('Voice input is not supported in your browser', 'error');
+            ui.setVoiceState(false);
+            return;
+          }
+          
+          if (listening) {
+            try {
+              const result = await voiceManager.startListening();
+              ui.setInput(result.transcript);
+              ui.setVoiceState(false);
+              
+              // Optionally auto-submit
+              if (result.confidence > 0.9) {
+                ui.processCommand();
+              }
+            } catch (error) {
+              ui.addMessage('Voice input error: ' + error.message, 'error');
+              ui.setVoiceState(false);
+            }
+          } else {
+            voiceManager.stopListening();
+            ui.setVoiceState(false);
+          }
+        });
+        
+        // Handle special key commands
+        document.addEventListener('keydown', (event) => {
+          // Ctrl/Cmd + L to clear
+          if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+            event.preventDefault();
+            ui.clear();
+          }
+          
+          // Escape to cancel voice
+          if (event.key === 'Escape' && voiceManager?.isListening) {
+            voiceManager.stopListening();
+            ui.setVoiceState(false);
+          }
+        });
+        
+        // Show welcome message
+        ui.addMessage('Welcome to Nix for Humanity! 👋', 'system');
+        ui.addMessage('Type naturally like "install firefox" or "update system"', 'system');
+        ui.addMessage('Type "help" to see all commands', 'system');
+        
+      } catch (error) {
+        loading.textContent = 'Error: ' + error.message;
+        loading.style.color = '#dc2626';
+      }
+    });
+  </script>
+</body>
+</html>

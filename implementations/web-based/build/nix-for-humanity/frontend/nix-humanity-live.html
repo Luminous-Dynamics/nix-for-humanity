@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nix for Humanity - Live System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .status-connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-connected .status-dot {
+            background: #4caf50;
+        }
+
+        .status-disconnected .status-dot {
+            background: #f44336;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .chat-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .system-info {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .chat-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .progress-message {
+            background: #e3f2fd;
+            color: #1976d2;
+            max-width: 90%;
+            border: 1px solid #90caf9;
+        }
+
+        .progress-bar-container {
+            margin-top: 10px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #5277C3 0%, #7B9FE0 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .progress-message .status {
+            margin-top: 8px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .execution-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .cancel-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background: #d32f2f;
+        }
+
+        .rollback-btn {
+            background: #ff9800;
+            color: white;
+        }
+
+        .rollback-btn:hover {
+            background: #f57c00;
+        }
+
+        .search-results {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .package-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .package-item:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+
+        .package-info {
+            flex: 1;
+        }
+
+        .package-name {
+            font-weight: bold;
+            color: #5277C3;
+        }
+
+        .package-version {
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .package-description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .install-icon {
+            color: #4caf50;
+            font-size: 20px;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-command {
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .history-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-failed {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-running {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .mode-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .mode-live {
+            background: #4caf50;
+        }
+
+        .mode-demo {
+            background: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="mode-indicator mode-demo" id="modeIndicator">DEMO MODE</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5277C3" stroke-width="2">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                    <path d="M2 17L12 22L22 17"></path>
+                    <path d="M2 12L12 17L22 12"></path>
+                </svg>
+                Nix for Humanity - Live System
+            </h1>
+            <div class="connection-status status-disconnected" id="connectionStatus">
+                <div class="status-dot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chat-section">
+                <div class="chat-container" id="chat">
+                    <div class="message nix-message">
+                        👋 Welcome to Nix for Humanity Live! I can now:
+                        <br>• Actually install packages
+                        <br>• Show real-time progress
+                        <br>• Search the Nix repository
+                        <br>• Rollback if something goes wrong
+                        <br><br>What would you like to do?
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <input type="text" id="userInput" placeholder="Try 'install firefox' or 'search for music player'..." />
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="system-info" id="systemInfo">
+                    <h3>📊 System Information</h3>
+                    <div class="info-item">
+                        <span>NixOS Version</span>
+                        <span id="nixVersion">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Disk Usage</span>
+                        <span id="diskUsage">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Generations</span>
+                        <span id="generations">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <h3>📜 Recent Commands</h3>
+                    <div id="commandHistory">
+                        <div style="color: #666; text-align: center; padding: 20px;">
+                            No commands yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let connected = false;
+        let currentExecution = null;
+
+        // Initialize WebSocket connection
+        function initConnection() {
+            try {
+                socket = io('http://localhost:3456');
+                
+                socket.on('connect', () => {
+                    connected = true;
+                    updateConnectionStatus(true);
+                    console.log('Connected to Nix server');
+                });
+
+                socket.on('disconnect', () => {
+                    connected = false;
+                    updateConnectionStatus(false);
+                    console.log('Disconnected from Nix server');
+                });
+
+                socket.on('system-info', updateSystemInfo);
+                socket.on('execution-progress', handleProgress);
+                socket.on('execution-complete', handleComplete);
+                socket.on('execution-error', handleError);
+                socket.on('search-results', handleSearchResults);
+
+            } catch (error) {
+                console.log('Running in demo mode:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus(isConnected) {
+            const status = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            const modeIndicator = document.getElementById('modeIndicator');
+            
+            if (isConnected) {
+                status.className = 'connection-status status-connected';
+                statusText.textContent = 'Connected';
+                modeIndicator.className = 'mode-indicator mode-live';
+                modeIndicator.textContent = 'LIVE MODE';
+            } else {
+                status.className = 'connection-status status-disconnected';
+                statusText.textContent = 'Disconnected';
+                modeIndicator.className = 'mode-indicator mode-demo';
+                modeIndicator.textContent = 'DEMO MODE';
+            }
+        }
+
+        // Update system information
+        function updateSystemInfo(info) {
+            if (info.nixosVersion) {
+                document.getElementById('nixVersion').textContent = info.nixosVersion;
+            }
+            if (info.diskUsage) {
+                document.getElementById('diskUsage').textContent = 
+                    `${info.diskUsage.used} / ${info.diskUsage.available}`;
+            }
+            if (info.generations !== undefined) {
+                document.getElementById('generations').textContent = info.generations;
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) return;
+
+            addMessage(input, 'user');
+            document.getElementById('userInput').value = '';
+
+            // Process intent
+            const intent = processIntent(input);
+            
+            if (intent.type === 'install') {
+                executeInstall(intent);
+            } else if (intent.type === 'search') {
+                executeSearch(intent);
+            } else if (intent.type === 'update') {
+                executeUpdate();
+            } else {
+                addMessage("I understood: " + intent.type + ". " + 
+                          (intent.response || "This feature is coming soon!"), 'nix');
+            }
+        }
+
+        // Execute install command
+        function executeInstall(intent) {
+            const packageName = intent.package || 'unknown';
+            
+            if (connected && socket) {
+                // Real execution
+                const sessionId = generateSessionId();
+                currentExecution = sessionId;
+                
+                const command = {
+                    command: 'nix-env',
+                    args: ['-iA', `nixpkgs.${packageName}`],
+                    requiresSudo: false,
+                    description: `Install ${packageName}`
+                };
+
+                addProgressMessage(`Installing ${packageName}...`, sessionId);
+                
+                socket.emit('execute-command', {
+                    command,
+                    sessionId
+                });
+                
+                addToHistory(command, 'running');
+            } else {
+                // Demo mode
+                simulateInstall(packageName);
+            }
+        }
+
+        // Execute search
+        function executeSearch(intent) {
+            const query = intent.query || '';
+            
+            if (connected && socket) {
+                const sessionId = generateSessionId();
+                socket.emit('search-packages', { query, sessionId });
+                addMessage(`Searching for "${query}"...`, 'nix');
+            } else {
+                // Demo search
+                const results = demoSearch(query);
+                displaySearchResults(results);
+            }
+        }
+
+        // Simulate install in demo mode
+        function simulateInstall(packageName) {
+            const sessionId = generateSessionId();
+            addProgressMessage(`Installing ${packageName}...`, sessionId);
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                updateProgress(sessionId, progress, getProgressMessage(progress));
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    completeProgress(sessionId, `Successfully installed ${packageName}!`);
+                }
+            }, 800);
+        }
+
+        // Handle progress updates
+        function handleProgress(data) {
+            if (data.sessionId === currentExecution) {
+                updateProgress(data.sessionId, data.progress, data.message);
+            }
+        }
+
+        // Handle completion
+        function handleComplete(data) {
+            if (data.sessionId === currentExecution) {
+                completeProgress(data.sessionId, 'Installation complete!');
+                updateSystemInfo({}); // Refresh system info
+            }
+        }
+
+        // Handle errors
+        function handleError(data) {
+            if (data.sessionId === currentExecution) {
+                errorProgress(data.sessionId, data.error, data.recovery);
+            }
+        }
+
+        // Handle search results
+        function handleSearchResults(data) {
+            displaySearchResults(data.results);
+        }
+
+        // Display search results
+        function displaySearchResults(results) {
+            if (!results || results.length === 0) {
+                addMessage("No packages found. Try a different search term.", 'nix');
+                return;
+            }
+
+            let html = `Found ${results.length} packages:<div class="search-results">`;
+            
+            results.forEach(pkg => {
+                html += `
+                    <div class="package-item" onclick="installPackage('${pkg.name}')">
+                        <div class="package-info">
+                            <span class="package-name">${pkg.name}</span>
+                            <span class="package-version">v${pkg.version}</span>
+                            <div class="package-description">${pkg.description}</div>
+                        </div>
+                        <span class="install-icon">⬇</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            const message = document.createElement('div');
+            message.className = 'message nix-message';
+            message.innerHTML = html;
+            document.getElementById('chat').appendChild(message);
+            scrollChat();
+        }
+
+        // Install selected package
+        function installPackage(packageName) {
+            document.getElementById('userInput').value = `install ${packageName}`;
+            sendMessage();
+        }
+
+        // Add progress message
+        function addProgressMessage(text, sessionId) {
+            const message = document.createElement('div');
+            message.className = 'message progress-message';
+            message.id = `progress-${sessionId}`;
+            message.innerHTML = `
+                ${text}
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div class="status">Starting...</div>
+                <div class="execution-controls">
+                    <button class="control-btn cancel-btn" onclick="cancelExecution('${sessionId}')">Cancel</button>
+                </div>
+            `;
+            document.getElementById('chat').appendChild(message);
+            scrollChat();
+        }
+
+        // Update progress
+        function updateProgress(sessionId, progress, status) {
+            const message = document.getElementById(`progress-${sessionId}`);
+            if (message) {
+                const bar = message.querySelector('.progress-bar');
+                const statusDiv = message.querySelector('.status');
+                
+                bar.style.width = progress + '%';
+                bar.textContent = progress + '%';
+                statusDiv.textContent = status;
+            }
+        }
+
+        // Complete progress
+        function completeProgress(sessionId, message) {
+            const progressMsg = document.getElementById(`progress-${sessionId}`);
+            if (progressMsg) {
+                progressMsg.querySelector('.execution-controls').innerHTML = `
+                    <span style="color: #4caf50;">✓ ${message}</span>
+                `;
+            }
+            addToHistory({ description: message }, 'success');
+        }
+
+        // Error progress
+        function errorProgress(sessionId, error, recovery) {
+            const progressMsg = document.getElementById(`progress-${sessionId}`);
+            if (progressMsg) {
+                progressMsg.style.background = '#ffebee';
+                progressMsg.style.borderColor = '#ffcdd2';
+                progressMsg.querySelector('.status').textContent = `Error: ${error}`;
+                
+                let controls = '<div style="margin-top: 10px;">Recovery options:';
+                recovery.forEach(option => {
+                    controls += `<button class="control-btn rollback-btn" 
+                                 onclick="tryRecovery('${option.action}')">${option.description}</button>`;
+                });
+                controls += '</div>';
+                
+                progressMsg.querySelector('.execution-controls').innerHTML = controls;
+            }
+            addToHistory({ description: error }, 'failed');
+        }
+
+        // Process intent (simplified)
+        function processIntent(input) {
+            const normalized = input.toLowerCase();
+            
+            if (normalized.match(/^(install|get|add)\s+(.+)$/)) {
+                const match = normalized.match(/^(?:install|get|add)\s+(.+)$/);
+                return {
+                    type: 'install',
+                    package: match[1]
+                };
+            }
+            
+            if (normalized.match(/^(search|find|look for)\s+(.+)$/)) {
+                const match = normalized.match(/^(?:search|find|look for)\s+(.+)$/);
+                return {
+                    type: 'search',
+                    query: match[1]
+                };
+            }
+            
+            if (normalized.includes('update')) {
+                return { type: 'update' };
+            }
+            
+            return { type: 'unknown', response: input };
+        }
+
+        // Demo search
+        function demoSearch(query) {
+            const allPackages = [
+                { name: 'firefox', version: '120.0', description: 'Mozilla Firefox web browser' },
+                { name: 'chromium', version: '119.0', description: 'Open source web browser' },
+                { name: 'spotify', version: '1.2.25', description: 'Music streaming service' },
+                { name: 'vlc', version: '3.0.20', description: 'Media player' },
+                { name: 'rhythmbox', version: '3.4.7', description: 'Music player and organizer' }
+            ];
+            
+            return allPackages.filter(pkg => 
+                pkg.name.includes(query) || 
+                pkg.description.toLowerCase().includes(query)
+            );
+        }
+
+        // Helper functions
+        function addMessage(text, sender) {
+            const chat = document.getElementById('chat');
+            const message = document.createElement('div');
+            message.className = `message ${sender}-message`;
+            message.textContent = text;
+            chat.appendChild(message);
+            scrollChat();
+        }
+
+        function scrollChat() {
+            const chat = document.getElementById('chat');
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function generateSessionId() {
+            return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function getProgressMessage(progress) {
+            if (progress < 30) return 'Checking package availability...';
+            if (progress < 60) return 'Downloading...';
+            if (progress < 90) return 'Installing...';
+            return 'Finalizing...';
+        }
+
+        function addToHistory(command, status) {
+            const history = document.getElementById('commandHistory');
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <span class="history-command">${command.description || command.command}</span>
+                <span class="history-status status-${status}">${status}</span>
+            `;
+            
+            if (history.children.length === 1 && history.children[0].textContent.includes('No commands')) {
+                history.innerHTML = '';
+            }
+            
+            history.insertBefore(item, history.firstChild);
+            
+            // Keep only last 5 items
+            while (history.children.length > 5) {
+                history.removeChild(history.lastChild);
+            }
+        }
+
+        // Input handling
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize on load
+        window.onload = function() {
+            initConnection();
+            
+            // Demo system info if not connected
+            setTimeout(() => {
+                if (!connected) {
+                    updateSystemInfo({
+                        nixosVersion: '23.11 (Demo)',
+                        diskUsage: { used: '12GB', available: '88GB' },
+                        generations: 42
+                    });
+                }
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

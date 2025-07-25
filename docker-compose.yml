@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # Main NixOS GUI application
+  nixos-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.tauri
+    image: nixos-gui:latest
+    container_name: nixos-gui-app
+    ports:
+      - "8080:8080"   # HTTP
+      - "8443:8443"   # HTTPS
+      - "1420:1420"   # Tauri dev server
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgres://nixgui:nixgui@postgres:5432/nixos_gui
+    volumes:
+      - ./data:/var/lib/nixos-gui
+      - ./logs:/var/log/nixos-gui
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # For container management
+      - /etc/nixos:/etc/nixos:ro  # Read-only access to NixOS config
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - nixos-gui-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: nixos-gui-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-change-me}
+    volumes:
+      - redis-data:/data
+    networks:
+      - nixos-gui-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL for persistent data
+  postgres:
+    image: postgres:15-alpine
+    container_name: nixos-gui-postgres
+    environment:
+      - POSTGRES_USER=nixgui
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-me}
+      - POSTGRES_DB=nixos_gui
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - nixos-gui-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nixgui"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Grafana for monitoring (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nixos-gui-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - nixos-gui-net
+    profiles:
+      - monitoring
+    restart: unless-stopped
+
+  # Prometheus for metrics (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nixos-gui-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - nixos-gui-net
+    profiles:
+      - monitoring
+    restart: unless-stopped
+
+  # Development container with all tools
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        - RUST_VERSION=1.75
+        - NODE_VERSION=20
+    image: nixos-gui:dev
+    container_name: nixos-gui-dev
+    command: sleep infinity  # Keep container running
+    volumes:
+      - .:/workspace
+      - cargo-cache:/usr/local/cargo/registry
+      - cargo-target:/workspace/target
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=debug
+    networks:
+      - nixos-gui-net
+    profiles:
+      - development
+
+volumes:
+  redis-data:
+  postgres-data:
+  grafana-data:
+  prometheus-data:
+  cargo-cache:
+  cargo-target:
+
+networks:
+  nixos-gui-net:
+    driver: bridge

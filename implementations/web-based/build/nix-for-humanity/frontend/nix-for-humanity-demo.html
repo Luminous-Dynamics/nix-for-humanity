@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nix for Humanity - Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #5277C3;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .chat-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .user-message {
+            background: #5277C3;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .nix-message {
+            background: #e8f4f8;
+            color: #333;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #5277C3;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .send-btn {
+            background: #5277C3;
+            color: white;
+        }
+
+        .send-btn:hover {
+            background: #3d5a96;
+        }
+
+        .voice-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .voice-btn:hover {
+            background: #45a049;
+        }
+
+        .voice-btn.listening {
+            background: #f44336;
+            animation: pulse 1.5s infinite;
+        }
+
+        .examples {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .example-card {
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .example-card:hover {
+            border-color: #5277C3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(82, 119, 195, 0.15);
+        }
+
+        .example-card h4 {
+            color: #5277C3;
+            margin-bottom: 5px;
+        }
+
+        .example-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5277C3" stroke-width="2">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                <path d="M2 17L12 22L22 17"></path>
+                <path d="M2 12L12 17L22 12"></path>
+            </svg>
+            Nix for Humanity
+        </h1>
+        <p class="subtitle">Natural language interface for NixOS - Just tell me what you need!</p>
+
+        <div id="status" class="status"></div>
+
+        <div class="chat-container" id="chat">
+            <div class="message nix-message">
+                👋 Hello! I'm here to help you with NixOS. You can ask me to:
+                <br>• Install programs ("I need a web browser")
+                <br>• Update your system ("Check for updates")
+                <br>• Fix problems ("My internet isn't working")
+                <br>• Change settings ("Make the text bigger")
+                <br><br>Just type or speak naturally!
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type your request or click the microphone..." />
+            <button class="send-btn" onclick="sendMessage()">
+                Send
+            </button>
+            <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+                🎤 Speak
+            </button>
+        </div>
+
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <div class="example-grid">
+                <div class="example-card" onclick="tryExample('I need a web browser')">
+                    <h4>🌐 Install Software</h4>
+                    <p>"I need a web browser"</p>
+                </div>
+                <div class="example-card" onclick="tryExample('My internet isn\'t working')">
+                    <h4>🔧 Fix Problems</h4>
+                    <p>"My internet isn't working"</p>
+                </div>
+                <div class="example-card" onclick="tryExample('Make the text bigger')">
+                    <h4>⚙️ Change Settings</h4>
+                    <p>"Make the text bigger"</p>
+                </div>
+                <div class="example-card" onclick="tryExample('What programs are installed?')">
+                    <h4>📋 Get Information</h4>
+                    <p>"What programs are installed?"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load our NLP components -->
+    <script src="./js/nlp/intent-engine.js"></script>
+    <script src="./js/nlp/nix-wrapper.js"></script>
+    
+    <script>
+        // Our modules will be available as window.intentEngine and window.nixWrapper
+        
+        let recognition = null;
+        let isListening = false;
+
+        // Initialize speech recognition
+        window.onload = function() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('userInput').value = transcript;
+                    sendMessage();
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    stopListening();
+                    showStatus('Voice recognition error. Please try typing instead.', 'error');
+                };
+
+                recognition.onend = function() {
+                    stopListening();
+                };
+            } else {
+                document.getElementById('voiceBtn').style.display = 'none';
+                showStatus('Voice input not supported in this browser', 'error');
+            }
+        };
+
+        window.sendMessage = async function() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) return;
+
+            // Add user message to chat
+            addMessage(input, 'user');
+            document.getElementById('userInput').value = '';
+
+            // Process with intent engine
+            const intent = intentEngine.recognize(input);
+            console.log('Recognized intent:', intent);
+
+            // Convert to command
+            const command = nixWrapper.intentToCommand(intent);
+            
+            if (command) {
+                // Execute command
+                const result = await nixWrapper.execute(command);
+                addMessage(result.naturalLanguageResponse, 'nix');
+                
+                if (result.success) {
+                    showStatus('Command executed successfully!', 'success');
+                }
+            } else {
+                // Handle unknown intent
+                let response = "I'm not sure how to help with that. ";
+                if (intent.confidence < 0.5) {
+                    response += "Could you try rephrasing? For example:\n";
+                    response += "• 'Install firefox' to add software\n";
+                    response += "• 'Update my system' to get updates\n";
+                    response += "• 'My audio isn't working' to troubleshoot";
+                }
+                addMessage(response, 'nix');
+            }
+        };
+
+        window.toggleVoice = function() {
+            if (!recognition) return;
+
+            if (isListening) {
+                recognition.stop();
+                stopListening();
+            } else {
+                recognition.start();
+                startListening();
+            }
+        };
+
+        window.tryExample = function(example) {
+            document.getElementById('userInput').value = example;
+            sendMessage();
+        };
+
+        function addMessage(text, sender) {
+            const chat = document.getElementById('chat');
+            const message = document.createElement('div');
+            message.className = `message ${sender}-message`;
+            message.textContent = text;
+            chat.appendChild(message);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function startListening() {
+            isListening = true;
+            const btn = document.getElementById('voiceBtn');
+            btn.classList.add('listening');
+            btn.innerHTML = '🔴 Listening...';
+        }
+
+        function stopListening() {
+            isListening = false;
+            const btn = document.getElementById('voiceBtn');
+            btn.classList.remove('listening');
+            btn.innerHTML = '🎤 Speak';
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            setTimeout(() => {
+                status.className = 'status';
+            }, 5000);
+        }
+
+        // Handle enter key
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

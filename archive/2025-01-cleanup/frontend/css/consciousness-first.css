@@ -1,0 +1,398 @@
+/* Consciousness-First Design System */
+
+:root {
+    /* Sacred Colors - Calm and Grounding */
+    --sacred-bg: #0a0f1b;
+    --sacred-bg-light: #141c2e;
+    --sacred-primary: #4a9eff;
+    --sacred-secondary: #7c4dff;
+    --sacred-accent: #00bfa5;
+    --sacred-text: #e0e6ed;
+    --sacred-text-dim: #8892b0;
+    --sacred-border: #233554;
+    
+    /* Sacred Spacing - Breathing Room */
+    --sacred-space-xs: 0.5rem;
+    --sacred-space-sm: 1rem;
+    --sacred-space-md: 1.5rem;
+    --sacred-space-lg: 2rem;
+    --sacred-space-xl: 3rem;
+    
+    /* Sacred Timing - Natural Pace */
+    --sacred-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --sacred-pause: 0.8s;
+    
+    /* Sacred Shadows - Subtle Depth */
+    --sacred-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --sacred-glow: 0 0 20px rgba(74, 158, 255, 0.3);
+}
+
+/* Base Reset - Clean Slate */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Sacred Container - The Temple */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--sacred-bg);
+    color: var(--sacred-text);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.consciousness-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Sacred Header - The Crown */
+.sacred-header {
+    background: var(--sacred-bg-light);
+    padding: var(--sacred-space-md) var(--sacred-space-lg);
+    border-bottom: 1px solid var(--sacred-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--sacred-shadow);
+}
+
+.sacred-header h1 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--sacred-primary), var(--sacred-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Coherence Indicator - The Pulse */
+.coherence-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--sacred-space-sm);
+}
+
+.coherence-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--sacred-accent);
+    text-shadow: 0 0 10px rgba(0, 191, 165, 0.5);
+}
+
+/* Navigation - The Path */
+.sacred-nav {
+    background: var(--sacred-bg-light);
+    padding: 0 var(--sacred-space-lg);
+    display: flex;
+    gap: var(--sacred-space-sm);
+    border-bottom: 1px solid var(--sacred-border);
+}
+
+.nav-tab {
+    background: none;
+    border: none;
+    color: var(--sacred-text-dim);
+    padding: var(--sacred-space-sm) var(--sacred-space-md);
+    cursor: pointer;
+    transition: var(--sacred-transition);
+    position: relative;
+    font-size: 0.95rem;
+}
+
+.nav-tab:hover {
+    color: var(--sacred-text);
+}
+
+.nav-tab.active {
+    color: var(--sacred-primary);
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--sacred-primary);
+    box-shadow: 0 -2px 10px rgba(74, 158, 255, 0.5);
+}
+
+/* Main Content - The Sacred Space */
+.sacred-main {
+    flex: 1;
+    padding: var(--sacred-space-lg);
+    background: linear-gradient(180deg, var(--sacred-bg) 0%, #0d1420 100%);
+}
+
+.tab-content {
+    animation: fadeIn var(--sacred-transition);
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sacred Inputs - Mindful Interaction */
+.sacred-input {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+    color: var(--sacred-text);
+    padding: var(--sacred-space-sm) var(--sacred-space-md);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: var(--sacred-transition);
+    width: 100%;
+}
+
+.sacred-input:focus {
+    outline: none;
+    border-color: var(--sacred-primary);
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+/* Sacred Buttons - Intentional Actions */
+.sacred-btn {
+    background: var(--sacred-primary);
+    color: white;
+    border: none;
+    padding: var(--sacred-space-sm) var(--sacred-space-lg);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--sacred-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.sacred-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.sacred-btn:active {
+    transform: translateY(0);
+}
+
+.sacred-btn.secondary {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+}
+
+.sacred-btn.primary {
+    background: linear-gradient(135deg, var(--sacred-primary), var(--sacred-secondary));
+}
+
+/* Search Container - The Quest */
+.search-container {
+    display: flex;
+    gap: var(--sacred-space-sm);
+    margin-bottom: var(--sacred-space-lg);
+}
+
+/* Results Container - The Revelations */
+.results-container,
+.installed-container {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+    border-radius: 12px;
+    padding: var(--sacred-space-lg);
+    margin-bottom: var(--sacred-space-lg);
+}
+
+/* Health Dashboard - The Vital Signs */
+.health-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--sacred-space-lg);
+}
+
+.metric-card {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+    border-radius: 12px;
+    padding: var(--sacred-space-lg);
+    text-align: center;
+    transition: var(--sacred-transition);
+}
+
+.metric-card:hover {
+    border-color: var(--sacred-primary);
+    box-shadow: var(--sacred-glow);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--sacred-accent);
+    margin-top: var(--sacred-space-sm);
+}
+
+/* Configuration Editor - The Sacred Text */
+.config-editor {
+    width: 100%;
+    min-height: 500px;
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+    color: var(--sacred-text);
+    padding: var(--sacred-space-md);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.config-toolbar {
+    display: flex;
+    gap: var(--sacred-space-sm);
+    margin-bottom: var(--sacred-space-md);
+}
+
+/* Assistant Interface - The Guide */
+.assistant-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.assistant-messages {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-border);
+    border-radius: 12px;
+    padding: var(--sacred-space-lg);
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+    margin-bottom: var(--sacred-space-md);
+}
+
+.assistant-message {
+    margin-bottom: var(--sacred-space-md);
+    animation: fadeIn var(--sacred-transition);
+}
+
+.assistant-input-container {
+    display: flex;
+    gap: var(--sacred-space-sm);
+}
+
+.assistant-input {
+    flex: 1;
+}
+
+/* Sacred Footer - The Foundation */
+.sacred-footer {
+    background: var(--sacred-bg-light);
+    border-top: 1px solid var(--sacred-border);
+    padding: var(--sacred-space-sm) var(--sacred-space-lg);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.status-item {
+    display: flex;
+    gap: var(--sacred-space-xs);
+}
+
+.status-label {
+    color: var(--sacred-text-dim);
+}
+
+.status-value {
+    color: var(--sacred-accent);
+}
+
+/* Suggestions Container - The Wisdom */
+.suggestions-container {
+    background: var(--sacred-bg-light);
+    border: 1px solid var(--sacred-accent);
+    border-radius: 8px;
+    padding: var(--sacred-space-md);
+    margin-bottom: var(--sacred-space-md);
+    animation: slideDown var(--sacred-transition);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sacred Pause Indicator */
+.sacred-pause-active {
+    animation: breathe 4s infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Scrollbar Styling - Even the Scroll is Sacred */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--sacred-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--sacred-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--sacred-primary);
+}
+
+/* User Display */
+.user-display {
+    display: flex;
+    align-items: center;
+    gap: var(--sacred-space-sm);
+    margin-left: auto;
+    font-size: 0.9rem;
+}
+
+.user-display span {
+    color: var(--sacred-text-dim);
+}
+
+.logout-btn {
+    background: none;
+    border: 1px solid var(--sacred-border);
+    color: var(--sacred-text-dim);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: var(--sacred-transition);
+}
+
+.logout-btn:hover {
+    border-color: var(--sacred-primary);
+    color: var(--sacred-primary);
+}

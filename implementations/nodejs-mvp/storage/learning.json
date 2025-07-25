@@ -1,0 +1,95 @@
+{
+  "userPatterns": {
+    "show": {
+      "list": 1
+    }
+  },
+  "commandHistory": [
+    {
+      "timestamp": "2025-07-25T15:31:39.448Z",
+      "input": "search firefox",
+      "intent": "search",
+      "success": true,
+      "command": "nix search nixpkgs firefox --json"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.454Z",
+      "input": "show me what's installed",
+      "intent": "list",
+      "success": true,
+      "command": "nix-env -q --installed --json"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.456Z",
+      "input": "system info",
+      "intent": "info",
+      "success": true,
+      "command": "nix-info -m"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.459Z",
+      "input": "check system health",
+      "intent": "check",
+      "success": true,
+      "command": "nix doctor"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.461Z",
+      "input": "tell me about nodejs",
+      "intent": "info",
+      "success": true,
+      "command": "nix path-info nodejs --json"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.464Z",
+      "input": "install vim",
+      "intent": "install",
+      "success": true,
+      "command": "nix-env -iA nixpkgs vim --dry-run"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.466Z",
+      "input": "remove firefox",
+      "intent": "remove",
+      "success": true,
+      "command": "nix-env -e firefox --dry-run"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.469Z",
+      "input": "update everything",
+      "intent": "update",
+      "success": true,
+      "command": "nix-channel --update"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.472Z",
+      "input": "show me updates",
+      "intent": "list-updates",
+      "success": true,
+      "command": "nix-env -u --dry-run"
+    },
+    {
+      "timestamp": "2025-07-25T15:31:39.474Z",
+      "input": "clean up my system",
+      "intent": "garbage-collect",
+      "success": true,
+      "command": "nix-collect-garbage --dry-run"
+    }
+  ],
+  "preferences": {},
+  "statistics": {
+    "totalCommands": 10,
+    "successfulCommands": 10,
+    "commonIntents": {
+      "search": 1,
+      "list": 1,
+      "info": 2,
+      "check": 1,
+      "install": 1,
+      "remove": 1,
+      "update": 1,
+      "list-updates": 1,
+      "garbage-collect": 1
+    }
+  }
+}

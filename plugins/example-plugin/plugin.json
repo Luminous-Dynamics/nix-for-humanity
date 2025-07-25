@@ -1,0 +1,50 @@
+{
+  "id": "example-plugin",
+  "name": "Example Plugin",
+  "version": "1.0.0",
+  "description": "A demonstration plugin showing NixOS GUI plugin capabilities",
+  "author": {
+    "name": "NixOS GUI Team",
+    "email": "plugins@nixos-gui.org"
+  },
+  "homepage": "https://github.com/nixos/nixos-gui-plugins",
+  "license": "MIT",
+  "main": "index.js",
+  "guiVersion": "^1.0.0",
+  "categories": ["customization", "development"],
+  "permissions": [
+    "ui.menu",
+    "ui.widget",
+    "ui.notify",
+    "ui.settings",
+    "system.packages.read",
+    "storage.read",
+    "storage.write",
+    "events.subscribe",
+    "events.emit"
+  ],
+  "dependencies": {
+    "gui": "^1.0.0"
+  },
+  "allowedCommands": [
+    "echo",
+    "date"
+  ],
+  "allowedHosts": [
+    "api.example.com"
+  ],
+  "settings": {
+    "refreshInterval": {
+      "type": "number",
+      "default": 60000,
+      "min": 10000,
+      "max": 3600000,
+      "description": "Widget refresh interval in milliseconds"
+    },
+    "showNotifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show notifications for plugin events"
+    }
+  }
+}

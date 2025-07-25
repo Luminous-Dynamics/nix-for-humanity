@@ -1,0 +1,128 @@
+# Multi-stage Dockerfile for NixOS GUI with Tauri support
+# Supports Rust/Tauri, Node.js, and Python fallback
+
+# Stage 1: Rust/Tauri Builder
+FROM rust:1.75-bookworm AS rust-builder
+
+# Install Tauri dependencies
+RUN apt-get update && apt-get install -y \
+    libwebkit2gtk-4.0-dev \
+    build-essential \
+    curl \
+    wget \
+    libssl-dev \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
+    pkg-config \
+    file \
+    libxdo-dev \
+    libxcb-shape0-dev \
+    libxcb-xfixes0-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for frontend build
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Tauri CLI
+RUN cargo install tauri-cli
+
+WORKDIR /app
+
+# Copy and build frontend first
+COPY package*.json ./
+COPY frontend ./frontend
+RUN npm install && npm run build
+
+# Copy Rust/Tauri source
+COPY Cargo.toml Cargo.lock ./
+COPY src-tauri ./src-tauri
+COPY tauri.conf.json ./
+
+# Build Tauri application
+RUN cargo tauri build
+
+# Stage 2: Python Builder (fallback server)
+FROM python:3.11-slim AS python-builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Final Runtime Image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libwebkit2gtk-4.0-37 \
+    libgtk-3-0 \
+    libayatana-appindicator3-1 \
+    librsvg2-2 \
+    libssl3 \
+    python3 \
+    python3-pip \
+    nginx \
+    supervisor \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -u 1000 -s /bin/bash nixgui \
+    && usermod -aG sudo nixgui
+
+WORKDIR /app
+
+# Copy Tauri binary
+COPY --from=rust-builder /app/src-tauri/target/release/nixos-gui /usr/local/bin/
+COPY --from=rust-builder /app/src-tauri/target/release/bundle /app/bundle
+
+# Copy Python environment
+COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+# Copy web assets
+COPY --from=rust-builder /app/dist ./dist
+
+# Copy configuration and scripts
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY test/python-test-server.py ./fallback-server.py
+COPY scripts/docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Create necessary directories
+RUN mkdir -p /var/log/nixos-gui /var/lib/nixos-gui /app/ssl \
+    && chown -R nixgui:nixgui /app /var/log/nixos-gui /var/lib/nixos-gui
+
+# Generate self-signed SSL certificate
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /app/ssl/key.pem -out /app/ssl/cert.pem \
+    -subj "/C=US/ST=State/L=City/O=NixOS-GUI/CN=localhost"
+
+# Set permissions
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/nixos-gui || true
+
+# Expose ports
+EXPOSE 8080 8443 1420
+
+# Environment variables
+ENV TAURI_ENV=production \
+    RUST_LOG=info \
+    NODE_ENV=production \
+    SSL_CERT=/app/ssl/cert.pem \
+    SSL_KEY=/app/ssl/key.pem
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -k -f https://localhost:8443/api/health || \
+        curl -f http://localhost:8080/api/health || \
+        exit 1
+
+# Switch to non-root user
+USER nixgui
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["tauri"]

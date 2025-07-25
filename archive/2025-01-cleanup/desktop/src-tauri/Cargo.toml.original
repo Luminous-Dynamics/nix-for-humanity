@@ -1,0 +1,81 @@
+[package]
+name = "nixos-gui"
+version = "0.1.0"
+description = "A consciousness-first GUI for NixOS system management"
+authors = ["Luminous Dynamics Contributors"]
+license = "MIT"
+repository = "https://github.com/Luminous-Dynamics/nixos-gui"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+# Tauri framework
+tauri = { version = "1.5", features = [
+    "api-all",
+    "devtools",
+    "system-tray",
+    "updater"
+] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# System interaction
+sysinfo = "0.30"
+nix = "0.27"
+libc = "0.2"
+
+# File watching
+notify = "6.1"
+
+# Command execution
+subprocess = "0.2"
+
+# Configuration parsing
+toml = "0.8"
+
+# Authentication & Security
+jsonwebtoken = "9.2"
+argon2 = "0.5"
+rand = "0.8"
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json"] }
+
+# Sacred additions for consciousness-first computing
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+[features]
+# By default Tauri runs in production mode
+default = ["custom-protocol"]
+# This feature is used for production builds where `devPath` is a filesystem path
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# Optimize for size in release builds
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

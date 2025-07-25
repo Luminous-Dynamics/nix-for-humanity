@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Pattern Testing - Nix for Humanity</title>
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .test-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .test-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .test-button {
+            width: 100%;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .test-button:hover {
+            background: rgba(59, 130, 246, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .test-button.speaking {
+            animation: pulse 2s infinite;
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            min-height: 100px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .result.success {
+            border-left: 3px solid #10b981;
+        }
+        
+        .result.info {
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .result.error {
+            border-left: 3px solid #ef4444;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            opacity: 0.7;
+            margin-bottom: 2rem;
+        }
+        
+        .voice-indicator {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-indicator.active {
+            animation: breathe 2s ease-in-out infinite;
+            background: rgba(59, 130, 246, 0.3);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Pattern Testing Lab</h1>
+    <p class="subtitle">Test natural language understanding with real voice commands</p>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="totalTests">0</div>
+            <div class="stat-label">Total Tests</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgConfidence">0%</div>
+            <div class="stat-label">Avg Confidence</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="uniquePatterns">0</div>
+            <div class="stat-label">Patterns Found</div>
+        </div>
+    </div>
+    
+    <div class="test-grid">
+        <!-- Basic Commands -->
+        <div class="test-card">
+            <h3>Basic Commands</h3>
+            <div class="voice-indicator" id="basic-indicator">🎤</div>
+            <button class="test-button" onclick="testVoice('basic', 'Install Firefox')">
+                "Install Firefox"
+            </button>
+            <button class="test-button" onclick="testVoice('basic', 'Remove VLC')">
+                "Remove VLC"
+            </button>
+            <button class="test-button" onclick="testVoice('basic', 'Update my system')">
+                "Update my system"
+            </button>
+            <button class="test-button" onclick="testVoice('basic', 'Search for games')">
+                "Search for games"
+            </button>
+            <div class="result" id="basic-result"></div>
+        </div>
+        
+        <!-- Natural Phrases -->
+        <div class="test-card">
+            <h3>Natural Language</h3>
+            <div class="voice-indicator" id="natural-indicator">🗣️</div>
+            <button class="test-button" onclick="testVoice('natural', 'I need to write documents')">
+                "I need to write documents"
+            </button>
+            <button class="test-button" onclick="testVoice('natural', 'Help me edit some photos')">
+                "Help me edit some photos"
+            </button>
+            <button class="test-button" onclick="testVoice('natural', 'I want to listen to music')">
+                "I want to listen to music"
+            </button>
+            <button class="test-button" onclick="testVoice('natural', 'Can you install something for coding?')">
+                "Can you install something for coding?"
+            </button>
+            <div class="result" id="natural-result"></div>
+        </div>
+        
+        <!-- Problem Solving -->
+        <div class="test-card">
+            <h3>Problem Solving</h3>
+            <div class="voice-indicator" id="problem-indicator">🔧</div>
+            <button class="test-button" onclick="testVoice('problem', 'My internet is not working')">
+                "My internet is not working"
+            </button>
+            <button class="test-button" onclick="testVoice('problem', 'Firefox won\\'t start')">
+                "Firefox won't start"
+            </button>
+            <button class="test-button" onclick="testVoice('problem', 'No sound from speakers')">
+                "No sound from speakers"
+            </button>
+            <button class="test-button" onclick="testVoice('problem', 'Screen is too dark')">
+                "Screen is too dark"
+            </button>
+            <div class="result" id="problem-result"></div>
+        </div>
+        
+        <!-- Complex Requests -->
+        <div class="test-card">
+            <h3>Complex Requests</h3>
+            <div class="voice-indicator" id="complex-indicator">🧩</div>
+            <button class="test-button" onclick="testVoice('complex', 'Set up everything I need for web development')">
+                "Set up everything for web dev"
+            </button>
+            <button class="test-button" onclick="testVoice('complex', 'I\\'m working from home and need video calls')">
+                "Working from home setup"
+            </button>
+            <button class="test-button" onclick="testVoice('complex', 'Install all the creative tools')">
+                "Install all creative tools"
+            </button>
+            <button class="test-button" onclick="testVoice('complex', 'Make my computer good for gaming')">
+                "Gaming setup"
+            </button>
+            <div class="result" id="complex-result"></div>
+        </div>
+        
+        <!-- Alternative Suggestions -->
+        <div class="test-card">
+            <h3>Smart Alternatives</h3>
+            <div class="voice-indicator" id="alt-indicator">💡</div>
+            <button class="test-button" onclick="testVoice('alt', 'Install Photoshop')">
+                "Install Photoshop"
+            </button>
+            <button class="test-button" onclick="testVoice('alt', 'I need Microsoft Word')">
+                "I need Microsoft Word"
+            </button>
+            <button class="test-button" onclick="testVoice('alt', 'Get me Chrome browser')">
+                "Get me Chrome browser"
+            </button>
+            <button class="test-button" onclick="testVoice('alt', 'Install Spotify')">
+                "Install Spotify"
+            </button>
+            <div class="result" id="alt-result"></div>
+        </div>
+        
+        <!-- Real Voice Input -->
+        <div class="test-card">
+            <h3>Live Voice Test</h3>
+            <div class="voice-indicator" id="live-indicator">🎙️</div>
+            <button class="test-button" id="liveVoiceBtn" onclick="startLiveVoice()">
+                Start Speaking
+            </button>
+            <p style="text-align: center; opacity: 0.7; font-size: 0.875rem;">
+                Click and speak naturally
+            </p>
+            <div class="result" id="live-result"></div>
+        </div>
+    </div>
+    
+    <!-- Load all the necessary scripts -->
+    <script src="js/patterns-enhanced.js"></script>
+    <script src="js/voice-interface.js"></script>
+    <script>
+        // Statistics tracking
+        let stats = {
+            total: 0,
+            successful: 0,
+            totalConfidence: 0,
+            patterns: new Set()
+        };
+        
+        // Initialize pattern enhancer
+        const patterns = new PatternEnhancer();
+        const voice = new VoiceInterface();
+        
+        // Test voice command
+        async function testVoice(category, text) {
+            const indicator = document.getElementById(`${category}-indicator`);
+            const result = document.getElementById(`${category}-result`);
+            const button = event.target;
+            
+            // Visual feedback
+            indicator.classList.add('active');
+            button.classList.add('speaking');
+            result.className = 'result info';
+            result.innerHTML = `<strong>Processing:</strong> "${text}"<br>`;
+            
+            // Simulate speaking
+            await simulateSpeaking(text, 1500);
+            
+            // Process with pattern enhancer
+            const enhanced = patterns.enhanceIntent(text);
+            
+            if (enhanced) {
+                stats.total++;
+                stats.successful++;
+                stats.totalConfidence += enhanced.confidence;
+                stats.patterns.add(enhanced.action);
+                
+                result.innerHTML += `
+                    <strong>✅ Understood!</strong><br>
+                    Action: ${enhanced.action}<br>
+                    ${enhanced.category ? `Category: ${enhanced.category}<br>` : ''}
+                    ${enhanced.suggestions ? `Suggestions: ${enhanced.suggestions.join(', ')}<br>` : ''}
+                    Confidence: ${(enhanced.confidence * 100).toFixed(0)}%
+                `;
+                result.className = 'result success';
+            } else {
+                stats.total++;
+                
+                // Try alternatives for known requests
+                const alternatives = patterns.suggestAlternatives(text.split(' ').pop());
+                
+                if (alternatives.length > 0) {
+                    result.innerHTML += `
+                        <strong>💡 Alternatives found!</strong><br>
+                        I couldn't find "${text.split(' ').pop()}", but you can try:<br>
+                        ${alternatives.join(', ')}
+                    `;
+                    result.className = 'result info';
+                } else {
+                    result.innerHTML += `
+                        <strong>❓ Not understood</strong><br>
+                        I couldn't understand that request. Try rephrasing?
+                    `;
+                    result.className = 'result error';
+                }
+            }
+            
+            // Update statistics
+            updateStats();
+            
+            // Reset visual feedback
+            setTimeout(() => {
+                indicator.classList.remove('active');
+                button.classList.remove('speaking');
+            }, 500);
+        }
+        
+        // Simulate speaking animation
+        async function simulateSpeaking(text, duration) {
+            return new Promise(resolve => setTimeout(resolve, duration));
+        }
+        
+        // Live voice recognition
+        async function startLiveVoice() {
+            const button = document.getElementById('liveVoiceBtn');
+            const indicator = document.getElementById('live-indicator');
+            const result = document.getElementById('live-result');
+            
+            if (voice.isListening) {
+                voice.stop();
+                button.textContent = 'Start Speaking';
+                indicator.classList.remove('active');
+                return;
+            }
+            
+            // Initialize if needed
+            if (!voice.initialized) {
+                await voice.initialize();
+            }
+            
+            // Set up listeners
+            voice.on('result', (text) => {
+                result.innerHTML = `<strong>You said:</strong> "${text}"<br>`;
+                testVoice('live', text);
+            });
+            
+            voice.on('start', () => {
+                button.textContent = 'Stop Listening';
+                indicator.classList.add('active');
+                result.className = 'result info';
+                result.innerHTML = 'Listening...';
+            });
+            
+            voice.on('end', () => {
+                button.textContent = 'Start Speaking';
+                indicator.classList.remove('active');
+            });
+            
+            voice.on('error', (error) => {
+                result.className = 'result error';
+                result.innerHTML = `Error: ${error.message}`;
+            });
+            
+            // Start listening
+            voice.start();
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('totalTests').textContent = stats.total;
+            document.getElementById('successRate').textContent = 
+                stats.total > 0 ? Math.round((stats.successful / stats.total) * 100) + '%' : '0%';
+            document.getElementById('avgConfidence').textContent = 
+                stats.successful > 0 ? Math.round((stats.totalConfidence / stats.successful) * 100) + '%' : '0%';
+            document.getElementById('uniquePatterns').textContent = stats.patterns.size;
+        }
+        
+        // Add some contextual info
+        window.addEventListener('load', () => {
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Good morning!' : hour < 17 ? 'Good afternoon!' : 'Good evening!';
+            console.log(`${greeting} Ready to test voice patterns.`);
+        });
+    </script>
+</body>
+</html>

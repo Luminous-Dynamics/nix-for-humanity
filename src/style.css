@@ -1,0 +1,189 @@
+/* CSS Variables for Sacred Theme */
+:root {
+  --primary-color: #4a90e2;
+  --secondary-color: #27ae60;
+  --error-color: #e74c3c;
+  --border-color: #ddd;
+  --text-color: #333;
+  --animation-duration: 0.3s;
+}
+
+/* Main styles for Tauri app */
+.natural-input {
+  width: calc(100% - 60px);
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color var(--animation-duration);
+}
+
+.natural-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.input-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.voice-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-color);
+  background: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all var(--animation-duration);
+}
+
+.voice-button:hover {
+  background: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.voice-button:active {
+  transform: scale(0.95);
+}
+
+.voice-button.recording {
+  background: var(--error-color);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+
+.output {
+  min-height: 300px;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.output-entry {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.output-user {
+  background: rgba(74, 144, 226, 0.1);
+  border-left: 3px solid var(--primary-color);
+}
+
+.output-system {
+  background: rgba(39, 174, 96, 0.1);
+  border-left: 3px solid var(--secondary-color);
+}
+
+.output-result {
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.output-error {
+  background: rgba(231, 76, 60, 0.1);
+  border-left: 3px solid var(--error-color);
+  color: var(--error-color);
+}
+
+.output-info {
+  background: rgba(52, 152, 219, 0.1);
+  font-style: italic;
+}
+
+.output-preview {
+  background: rgba(241, 196, 15, 0.1);
+  border-left: 3px solid #f1c40f;
+}
+
+.status {
+  background: var(--secondary-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+/* Sacred styles */
+.output-warning {
+  background: rgba(241, 196, 15, 0.2);
+  border-left: 3px solid #f39c12;
+  color: #d68910;
+  font-weight: 500;
+}
+
+.output-mantra {
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(74, 144, 226, 0.1));
+  border-left: 3px solid #9b59b6;
+  color: #8e44ad;
+  font-style: italic;
+  text-align: center;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.confirmation-prompt {
+  background: white;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.confirmation-prompt p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.btn-confirm,
+.btn-cancel {
+  padding: 0.75rem 1.5rem;
+  margin: 0 0.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--animation-duration);
+}
+
+.btn-confirm {
+  background: var(--secondary-color);
+  color: white;
+}
+
+.btn-confirm:hover {
+  background: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+}
+
+.btn-cancel {
+  background: #ecf0f1;
+  color: var(--text-color);
+}
+
+.btn-cancel:hover {
+  background: #bdc3c7;
+  transform: translateY(-2px);
+}

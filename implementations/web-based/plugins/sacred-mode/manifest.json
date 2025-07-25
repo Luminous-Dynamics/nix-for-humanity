@@ -1,0 +1,35 @@
+{
+    "id": "sacred-mode",
+    "name": "Sacred Mode",
+    "version": "1.0.0",
+    "description": "Consciousness-first interactions with sacred timing",
+    "author": "Luminous Dynamics",
+    "main": "plugin.js",
+    "minVersion": "1.0.0",
+    "permissions": [
+        "ui.theme",
+        "patterns.add",
+        "storage"
+    ],
+    "tags": ["consciousness", "sacred", "wellness"],
+    "icon": "🕉️",
+    "settings": {
+        "sacredPauses": {
+            "type": "boolean",
+            "default": true,
+            "label": "Enable Sacred Pauses"
+        },
+        "coherenceTarget": {
+            "type": "number",
+            "default": 0.786,
+            "min": 0,
+            "max": 1,
+            "label": "Coherence Target"
+        },
+        "breathingReminders": {
+            "type": "boolean", 
+            "default": true,
+            "label": "Breathing Reminders"
+        }
+    }
+}

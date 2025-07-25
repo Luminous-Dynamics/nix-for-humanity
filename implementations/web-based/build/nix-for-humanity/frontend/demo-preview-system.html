@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview System Demo</title>
+    <link rel="stylesheet" href="css/install-dialog.css">
+    <link rel="stylesheet" href="css/preview-system.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .demo-section {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #fff;
+        }
+        
+        .preview-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .preview-card {
+            background: #333;
+            border: 2px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .preview-card:hover {
+            border-color: #4a90e2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .preview-card h3 {
+            margin: 0 0 10px 0;
+            color: #4a90e2;
+        }
+        
+        .preview-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .feature-list {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        
+        .feature-list li {
+            margin: 10px 0;
+            color: #ccc;
+        }
+        
+        /* Dark theme variables */
+        :root {
+            --surface-elevated: #2a2a2a;
+            --surface-base: #1a1a1a;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --primary: #4a90e2;
+            --primary-hover: #357abd;
+            --primary-surface: rgba(74, 144, 226, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Preview System Demo</h1>
+    
+    <div class="demo-section">
+        <h2>What is the Preview System?</h2>
+        <p>The preview system shows you exactly what changes will happen before you apply them. It provides:</p>
+        
+        <div class="feature-list">
+            <h3>Features:</h3>
+            <ul>
+                <li>✅ Complete list of changes that will be made</li>
+                <li>📦 Package dependencies and sizes</li>
+                <li>⚠️ Warnings about potential issues</li>
+                <li>⏱️ Time estimates for operations</li>
+                <li>📝 Exact configuration snippets</li>
+                <li>🚀 Commands that will be executed</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>Try These Examples</h2>
+        <div class="preview-examples">
+            <div class="preview-card" onclick="previewUserInstall()">
+                <h3>User Package Install</h3>
+                <p>Preview installing Firefox for current user</p>
+            </div>
+            
+            <div class="preview-card" onclick="previewSystemInstall()">
+                <h3>System Package Install</h3>
+                <p>Preview installing Docker system-wide</p>
+            </div>
+            
+            <div class="preview-card" onclick="previewSSHService()">
+                <h3>SSH Service Config</h3>
+                <p>Preview enabling SSH with custom settings</p>
+            </div>
+            
+            <div class="preview-card" onclick="previewDockerService()">
+                <h3>Docker Service Config</h3>
+                <p>Preview Docker setup with user permissions</p>
+            </div>
+            
+            <div class="preview-card" onclick="previewPostgreSQLService()">
+                <h3>PostgreSQL Service</h3>
+                <p>Preview database server configuration</p>
+            </div>
+            
+            <div class="preview-card" onclick="previewComplexChange()">
+                <h3>Complex Change</h3>
+                <p>Preview multiple changes at once</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2>How It Works</h2>
+        <ol>
+            <li>When you click "Preview Changes" in any dialog</li>
+            <li>The system analyzes what would happen</li>
+            <li>Shows you a detailed breakdown of changes</li>
+            <li>You can then decide to proceed or cancel</li>
+        </ol>
+    </div>
+
+    <!-- Include necessary scripts -->
+    <script src="js/ui-controller.js"></script>
+    <script src="js/preview-system.js"></script>
+    
+    <script>
+        // Mock UI controller for demo
+        if (!window.nixos) {
+            window.nixos = {
+                ui: {
+                    showResponse: (msg, type) => {
+                        console.log(msg);
+                    }
+                }
+            };
+        }
+        
+        // Mock preview data for demos
+        function previewUserInstall() {
+            const mockPreview = {
+                title: 'Install firefox for current user',
+                type: 'package-install-user',
+                immediate: true,
+                changes: [
+                    {
+                        type: 'add',
+                        category: 'User Packages',
+                        item: 'firefox (128.0)',
+                        location: '~/.nix-profile'
+                    }
+                ],
+                downloadSize: '75.2 MB',
+                installedSize: '210.5 MB',
+                dependencies: ['gtk3', 'pango', 'cairo'],
+                buildTime: 'Immediate (from cache)',
+                commands: [
+                    'nix profile install nixpkgs#firefox'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+        
+        function previewSystemInstall() {
+            const mockPreview = {
+                title: 'Install docker system-wide',
+                type: 'package-install-system',
+                immediate: false,
+                requiresRebuild: true,
+                changes: [
+                    {
+                        type: 'modify',
+                        category: 'Configuration File',
+                        item: '/etc/nixos/configuration.nix',
+                        details: 'Add virtualisation.docker configuration'
+                    },
+                    {
+                        type: 'add',
+                        category: 'System Services',
+                        item: 'docker.service',
+                        details: 'Will start on boot'
+                    },
+                    {
+                        type: 'add',
+                        category: 'System Packages',
+                        item: 'docker, docker-compose',
+                        location: '/run/current-system/sw'
+                    }
+                ],
+                warnings: [
+                    {
+                        level: 'info',
+                        message: 'Users added to docker group can run containers as root'
+                    }
+                ],
+                configSnippet: `# Docker configuration
+virtualisation.docker = {
+  enable = true;
+  enableOnBoot = true;
+};
+
+# Add your user to docker group
+users.users.YOUR_USERNAME.extraGroups = [ "docker" ];`,
+                estimatedTime: '3-5 minutes',
+                commands: [
+                    'sudo nixos-rebuild switch'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+        
+        function previewSSHService() {
+            const mockPreview = {
+                title: 'Configure SSH Server',
+                type: 'service-config',
+                immediate: false,
+                requiresRebuild: true,
+                changes: [
+                    {
+                        type: 'add',
+                        category: 'System Services',
+                        item: 'sshd.service',
+                        details: 'SSH server will be enabled'
+                    },
+                    {
+                        type: 'modify',
+                        category: 'Firewall Rules',
+                        item: 'Open TCP port 22',
+                        details: 'networking.firewall.allowedTCPPorts'
+                    }
+                ],
+                warnings: [
+                    {
+                        level: 'info',
+                        message: 'SSH keys are more secure than password authentication'
+                    }
+                ],
+                configSnippet: `# SSH Server Configuration
+services.openssh = {
+  enable = true;
+  ports = [ 22 ];
+  settings = {
+    PermitRootLogin = "no";
+    PasswordAuthentication = false;
+  };
+};
+
+# Open firewall for SSH
+networking.firewall.allowedTCPPorts = [ 22 ];`,
+                estimatedTime: '2-3 minutes',
+                commands: [
+                    'sudo nixos-rebuild switch'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+        
+        function previewDockerService() {
+            const mockPreview = {
+                title: 'Configure Docker',
+                type: 'service-config',
+                immediate: false,
+                requiresRebuild: true,
+                changes: [
+                    {
+                        type: 'add',
+                        category: 'System Services',
+                        item: 'docker.service',
+                        details: 'Docker daemon will be enabled'
+                    },
+                    {
+                        type: 'modify',
+                        category: 'User Permissions',
+                        item: 'Add users to docker group',
+                        details: 'alice, bob'
+                    },
+                    {
+                        type: 'add',
+                        category: 'Required Packages',
+                        item: 'docker, docker-compose',
+                        details: 'Automatically installed with service'
+                    }
+                ],
+                warnings: [
+                    {
+                        level: 'warning',
+                        message: 'Users in docker group can escalate to root privileges'
+                    }
+                ],
+                configSnippet: `# Docker Configuration
+virtualisation.docker = {
+  enable = true;
+  enableOnBoot = true;
+  storageDriver = "overlay2";
+  autoPrune = {
+    enable = true;
+    dates = "weekly";
+  };
+};
+
+# Add users to docker group
+users.users.alice.extraGroups = [ "docker" ];
+users.users.bob.extraGroups = [ "docker" ];`,
+                estimatedTime: '5-10 minutes',
+                commands: [
+                    'sudo nixos-rebuild switch'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+        
+        function previewPostgreSQLService() {
+            const mockPreview = {
+                title: 'Configure PostgreSQL',
+                type: 'service-config',
+                immediate: false,
+                requiresRebuild: true,
+                changes: [
+                    {
+                        type: 'add',
+                        category: 'System Services',
+                        item: 'postgresql.service',
+                        details: 'PostgreSQL 15 database server'
+                    },
+                    {
+                        type: 'modify',
+                        category: 'Firewall Rules',
+                        item: 'Open TCP port 5432',
+                        details: 'For database connections'
+                    },
+                    {
+                        type: 'add',
+                        category: 'Databases',
+                        item: 'myapp, testdb',
+                        details: 'Will be created on startup'
+                    },
+                    {
+                        type: 'add',
+                        category: 'Database Users',
+                        item: 'appuser',
+                        details: 'Will be created with database access'
+                    }
+                ],
+                configSnippet: `# PostgreSQL Configuration
+services.postgresql = {
+  enable = true;
+  package = pkgs.postgresql_15;
+  enableTCPIP = true;
+  port = 5432;
+  ensureDatabases = [ "myapp" "testdb" ];
+  ensureUsers = [
+    { name = "appuser"; }
+  ];
+  authentication = pkgs.lib.mkOverride 10 ''
+    # TYPE  DATABASE  USER  ADDRESS     METHOD
+    local   all       all               trust
+    host    all       all   127.0.0.1/32 trust
+  '';
+};
+
+# Open firewall for PostgreSQL
+networking.firewall.allowedTCPPorts = [ 5432 ];`,
+                estimatedTime: '3-5 minutes',
+                commands: [
+                    'sudo nixos-rebuild switch'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+        
+        function previewComplexChange() {
+            const mockPreview = {
+                title: 'Multiple System Changes',
+                type: 'complex-change',
+                immediate: false,
+                requiresRebuild: true,
+                changes: [
+                    {
+                        type: 'add',
+                        category: 'System Packages',
+                        item: 'docker, nginx, postgresql',
+                        location: '/run/current-system/sw'
+                    },
+                    {
+                        type: 'add',
+                        category: 'System Services',
+                        item: 'docker.service, nginx.service, postgresql.service',
+                        details: 'All will be enabled on boot'
+                    },
+                    {
+                        type: 'modify',
+                        category: 'Firewall Rules',
+                        item: 'Open ports: 80, 443, 5432',
+                        details: 'For web and database traffic'
+                    },
+                    {
+                        type: 'modify',
+                        category: 'User Permissions',
+                        item: 'Add current user to docker group',
+                        details: 'For container management'
+                    }
+                ],
+                warnings: [
+                    {
+                        level: 'warning',
+                        message: 'This will make significant changes to your system configuration'
+                    },
+                    {
+                        level: 'info',
+                        message: 'Estimated download size: 450 MB'
+                    }
+                ],
+                estimatedTime: '10-15 minutes',
+                commands: [
+                    'sudo nixos-rebuild switch'
+                ]
+            };
+            
+            window.previewSystem.showPreviewDialog(mockPreview);
+        }
+    </script>
+</body>
+</html>

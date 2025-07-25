@@ -1,0 +1,258 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.3)'
+        required: true
+      prerelease:
+        description: 'Is this a pre-release?'
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Validate version format
+        run: |
+          if ! [[ "${{ steps.version.outputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "Invalid version format: ${{ steps.version.outputs.version }}"
+            exit 1
+          fi
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      matrix:
+        node: [18, 20]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          
+      - name: Run tests
+        run: |
+          npm run test:ci
+          npm run test:coverage
+          
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: cachix/install-nix-action@v22
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build Nix package
+        run: |
+          nix-build -A nixos-gui
+          
+      - name: Build npm packages
+        run: |
+          npm ci
+          npm run build:production
+          
+      - name: Create tarball
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          tar -czf nixos-gui-${VERSION}.tar.gz \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='*.log' \
+            --exclude='coverage' \
+            --exclude='result' \
+            .
+            
+      - name: Calculate checksums
+        run: |
+          sha256sum nixos-gui-*.tar.gz > checksums.txt
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts
+          path: |
+            nixos-gui-*.tar.gz
+            checksums.txt
+            result
+
+  changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v2
+        with:
+          config: .github/cliff.toml
+          args: --tag v${{ needs.validate.outputs.version }}
+          
+      - name: Upload changelog
+        uses: actions/upload-artifact@v3
+        with:
+          name: changelog
+          path: CHANGELOG.md
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [validate, build]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: docker/setup-qemu-action@v2
+      
+      - uses: docker/setup-buildx-action@v2
+      
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [validate, build, changelog, docker]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts
+          
+      - name: Download changelog
+        uses: actions/download-artifact@v3
+        with:
+          name: changelog
+          
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: NixOS GUI v${{ needs.validate.outputs.version }}
+          body_path: CHANGELOG.md
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          files: |
+            nixos-gui-*.tar.gz
+            checksums.txt
+          
+  update-nix:
+    name: Update Nix Package
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+          
+      - uses: cachix/install-nix-action@v22
+        
+      - name: Update package version
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          
+          # Update default.nix
+          sed -i "s/version = \".*\"/version = \"${VERSION}\"/" default.nix
+          
+          # Update hash
+          URL="https://github.com/${{ github.repository }}/archive/v${VERSION}.tar.gz"
+          HASH=$(nix-prefetch-url --unpack "$URL")
+          sed -i "s/sha256 = \".*\"/sha256 = \"${HASH}\"/" default.nix
+          
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: update to version ${{ needs.validate.outputs.version }}"
+          title: "Update NixOS GUI to v${{ needs.validate.outputs.version }}"
+          body: |
+            Automated update to version ${{ needs.validate.outputs.version }}
+            
+            - Updated package version
+            - Updated source hash
+            - Changelog: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}
+          branch: update-v${{ needs.validate.outputs.version }}
+
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    if: always()
+    steps:
+      - name: Send Discord notification
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          STATUS="${{ needs.release.result }}"
+          COLOR=$([[ "$STATUS" == "success" ]] && echo "3066993" || echo "15158332")
+          
+          curl -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"NixOS GUI Release v${{ needs.validate.outputs.version }}\",
+                \"color\": $COLOR,
+                \"description\": \"Release $STATUS\",
+                \"url\": \"https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}\"
+              }]
+            }"

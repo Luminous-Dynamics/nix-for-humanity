@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Signal Installation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #357abd;
+        }
+        
+        .result {
+            background: #333;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .success {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .error {
+            border-left: 4px solid #f44336;
+        }
+        
+        .info {
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Signal Installation Test</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Test Search API</h2>
+        <button onclick="testSearch()">Search for Signal</button>
+        <div id="searchResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 2: Test Natural Language</h2>
+        <button onclick="testNaturalLanguage('install signal')">Test "install signal"</button>
+        <button onclick="testNaturalLanguage('i need signal')">Test "i need signal"</button>
+        <button onclick="testNaturalLanguage('secure messaging')">Test "secure messaging"</button>
+        <div id="nlResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 3: Full UI Test</h2>
+        <p>Open the main UI and type one of these:</p>
+        <ul>
+            <li>"install signal"</li>
+            <li>"i need signal desktop"</li>
+            <li>"secure messaging app"</li>
+        </ul>
+        <button onclick="window.open('http://localhost:7890', '_blank')">Open Nix for Humanity UI</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 4: Direct Installation Test (CAUTION)</h2>
+        <p>⚠️ This will actually install Signal Desktop!</p>
+        <button onclick="testInstall()" style="background: #ff5722;">Install Signal Desktop</button>
+        <div id="installResult" class="result"></div>
+    </div>
+
+    <script>
+        async function testSearch() {
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.textContent = 'Searching for Signal packages...';
+            resultDiv.className = 'result info';
+            
+            try {
+                const response = await fetch('http://localhost:7891/api/nix/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: 'signal' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const signalPackages = data.packages.filter(p => 
+                        p.name.toLowerCase().includes('signal-desktop')
+                    );
+                    
+                    resultDiv.textContent = `Found ${data.packages.length} packages.\n\nSignal Desktop packages:\n${JSON.stringify(signalPackages, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testNaturalLanguage(input) {
+            const resultDiv = document.getElementById('nlResult');
+            resultDiv.textContent = `Testing: "${input}"...`;
+            resultDiv.className = 'result info';
+            
+            // Load the pattern scripts
+            await loadScript('/js/patterns-enhanced.js');
+            await loadScript('/js/core-enhanced.js');
+            
+            // Create pattern enhancer
+            const patterns = new PatternEnhancer();
+            const enhanced = patterns.enhanceIntent(input);
+            
+            if (enhanced) {
+                resultDiv.textContent = `Pattern Match!\n${JSON.stringify(enhanced, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                // Try basic pattern matching
+                const basicPatterns = {
+                    install: /^(install|add|get|i need|i want)\\s+(.+)/i,
+                    search: /^(search|find|look for)\\s+(.+)/i
+                };
+                
+                let matched = false;
+                for (const [action, regex] of Object.entries(basicPatterns)) {
+                    const match = input.match(regex);
+                    if (match) {
+                        resultDiv.textContent = `Basic Match!\nAction: ${action}\nTarget: ${match[2]}`;
+                        resultDiv.className = 'result success';
+                        matched = true;
+                        break;
+                    }
+                }
+                
+                if (!matched) {
+                    resultDiv.textContent = 'No pattern match';
+                    resultDiv.className = 'result error';
+                }
+            }
+        }
+        
+        async function testInstall() {
+            const resultDiv = document.getElementById('installResult');
+            
+            if (!confirm('This will actually install Signal Desktop. Continue?')) {
+                return;
+            }
+            
+            resultDiv.textContent = 'Starting Signal Desktop installation...';
+            resultDiv.className = 'result info';
+            
+            try {
+                const response = await fetch('http://localhost:7891/api/nix/install', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ package: 'signal-desktop' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.jobId) {
+                    resultDiv.textContent = `Installation started!\nJob ID: ${data.jobId}\n\nMonitoring progress...`;
+                    
+                    // Connect WebSocket for real-time updates
+                    const ws = new WebSocket('ws://localhost:7892');
+                    
+                    ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        if (message.job && message.job.id === data.jobId) {
+                            resultDiv.textContent += `\n${message.job.logs[message.job.logs.length - 1]}`;
+                            
+                            if (message.type === 'job.complete') {
+                                if (message.job.status === 'completed') {
+                                    resultDiv.className = 'result success';
+                                    resultDiv.textContent += '\n\n✅ Installation complete!';
+                                } else {
+                                    resultDiv.className = 'result error';
+                                    resultDiv.textContent += `\n\n❌ Installation failed: ${message.job.error}`;
+                                }
+                                ws.close();
+                            }
+                        }
+                    };
+                    
+                    ws.onerror = () => {
+                        // Fallback to polling
+                        pollJobStatus(data.jobId);
+                    };
+                } else {
+                    resultDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function pollJobStatus(jobId) {
+            const resultDiv = document.getElementById('installResult');
+            
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`http://localhost:7891/api/job/${jobId}`);
+                    const job = await response.json();
+                    
+                    if (job) {
+                        resultDiv.textContent = `Job Status: ${job.status}\nProgress: ${job.progress}%\n\nLogs:\n${job.logs.join('\n')}`;
+                        
+                        if (job.status === 'completed' || job.status === 'failed') {
+                            clearInterval(interval);
+                            resultDiv.className = job.status === 'completed' ? 'result success' : 'result error';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 2000);
+        }
+        
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+    </script>
+</body>
+</html>

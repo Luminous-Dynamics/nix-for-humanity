@@ -1,0 +1,29 @@
+{
+  "name": "nix-for-humanity",
+  "displayName": "Nix for Humanity",
+  "description": "Natural language interface for NixOS",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "author": "Luminous Dynamics",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "vite": "^6.0.3",
+    "typescript": "~5.6.2"
+  }
+}

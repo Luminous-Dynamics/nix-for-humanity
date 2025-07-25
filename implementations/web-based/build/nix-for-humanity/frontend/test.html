@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nix for Humanity - Test Suite</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background: #f5f5f5;
+        }
+        .test {
+            background: white;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test h3 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        .test-input {
+            display: flex;
+            gap: 1rem;
+            margin: 0.5rem 0;
+        }
+        .test-input input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-input button {
+            padding: 0.5rem 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Nix for Humanity - Test Suite</h1>
+    
+    <div class="test">
+        <h3>1. Intent Parsing Tests</h3>
+        <div class="test-input">
+            <input type="text" id="parseTest" placeholder="Enter a command to test parsing">
+            <button onclick="testParsing()">Test Parse</button>
+        </div>
+        <div id="parseResult" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>2. Common Commands</h3>
+        <button onclick="testCommand('install firefox')">Install Firefox</button>
+        <button onclick="testCommand('i need an editor')">I need an editor</button>
+        <button onclick="testCommand('fix my wifi')">Fix my wifi</button>
+        <button onclick="testCommand('internet is broken')">Internet is broken</button>
+        <button onclick="testCommand('help')">Help</button>
+        <div id="commandResult" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>3. Voice Recognition Test</h3>
+        <button onclick="testVoice()">Test Microphone Access</button>
+        <div id="voiceResult" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>4. Learning Engine Test</h3>
+        <button onclick="testLearning()">Test Pattern Learning</button>
+        <div id="learningResult" class="result"></div>
+    </div>
+
+    <h2>Live Interface</h2>
+    <iframe src="index.html" title="Nix for Humanity Interface"></iframe>
+
+    <script src="js/nix-bridge.js"></script>
+    <script src="js/voice-interface.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/learning-engine.js"></script>
+    <script src="js/core-enhanced.js"></script>
+
+    <script>
+        // Initialize test environment
+        let testNix;
+        document.addEventListener('DOMContentLoaded', () => {
+            testNix = new NixForHumanity();
+        });
+
+        function testParsing() {
+            const input = document.getElementById('parseTest').value;
+            const result = document.getElementById('parseResult');
+            
+            if (!input) {
+                result.textContent = 'Please enter a command';
+                result.className = 'result error';
+                return;
+            }
+
+            const intent = testNix.parseIntent(input);
+            
+            if (intent) {
+                result.innerHTML = `
+                    <strong>✅ Parsed Successfully</strong><br>
+                    Action: ${intent.action}<br>
+                    Target: ${intent.target || 'none'}<br>
+                    Confidence: ${(intent.confidence * 100).toFixed(0)}%<br>
+                    Original: "${intent.original}"
+                `;
+                result.className = 'result success';
+            } else {
+                result.innerHTML = `
+                    <strong>❌ Could not parse</strong><br>
+                    Input: "${input}"<br>
+                    Try rephrasing or use "help" to see examples
+                `;
+                result.className = 'result error';
+            }
+        }
+
+        function testCommand(command) {
+            document.getElementById('parseTest').value = command;
+            testParsing();
+            
+            // Also show what would happen
+            const result = document.getElementById('commandResult');
+            result.innerHTML = `
+                <strong>Testing: "${command}"</strong><br>
+                Check the parsing result above.<br>
+                In the live interface, this would execute the action.
+            `;
+        }
+
+        async function testVoice() {
+            const result = document.getElementById('voiceResult');
+            
+            try {
+                const voice = new VoiceInterface();
+                const hasPermission = await voice.initialize();
+                
+                if (hasPermission) {
+                    result.innerHTML = `
+                        <strong>✅ Microphone Access Granted</strong><br>
+                        Voice recognition is ready to use.<br>
+                        Click the microphone button in the interface to start.
+                    `;
+                    result.className = 'result success';
+                } else {
+                    result.innerHTML = `
+                        <strong>❌ Microphone Access Denied</strong><br>
+                        Please allow microphone access in your browser settings.
+                    `;
+                    result.className = 'result error';
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <strong>❌ Voice Recognition Not Supported</strong><br>
+                    Your browser doesn't support voice recognition.<br>
+                    Text input will still work perfectly!
+                `;
+                result.className = 'result error';
+            }
+        }
+
+        function testLearning() {
+            const result = document.getElementById('learningResult');
+            const learning = new LearningEngine();
+            
+            // Simulate some learning
+            learning.recordSuccess('text editor', { action: 'install', target: 'vscode' }, 1000);
+            learning.recordSuccess('write code', { action: 'install', target: 'vscode' }, 800);
+            
+            const insights = learning.getAnonymousInsights();
+            
+            result.innerHTML = `
+                <strong>📊 Learning Engine Status</strong><br>
+                Known patterns: ${insights.totalPatterns}<br>
+                Known targets: ${insights.knownTargets}<br>
+                Success rate: ${(insights.averageSuccessRate * 100).toFixed(0)}%<br>
+                <br>
+                The system learns from your usage to provide better suggestions!
+            `;
+            result.className = 'result success';
+        }
+    </script>
+</body>
+</html>

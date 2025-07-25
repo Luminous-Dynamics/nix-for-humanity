@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Nix for Humanity
+Comment=Natural language interface for NixOS
+Exec=xdg-open http://localhost:3456
+Icon=nix
+Terminal=false
+Type=Application
+Categories=System;Settings;
+Keywords=nix;package;install;natural;language;

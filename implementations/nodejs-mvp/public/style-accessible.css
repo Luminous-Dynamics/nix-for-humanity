@@ -1,0 +1,517 @@
+/* 🎨 Sacred Accessible Styles - Where Beauty Meets Inclusion */
+
+:root {
+  /* Sacred color palette with WCAG AAA contrast */
+  --sacred-primary: #5e81ac;
+  --sacred-secondary: #81a1c1;
+  --sacred-success: #a3be8c;
+  --sacred-warning: #ebcb8b;
+  --sacred-error: #bf616a;
+  
+  /* High contrast backgrounds */
+  --bg-deepest: #1a1d24;
+  --bg-deep: #2e3440;
+  --bg-surface: #3b4252;
+  --bg-elevated: #434c5e;
+  
+  /* High contrast foregrounds */
+  --fg-primary: #eceff4;
+  --fg-secondary: #d8dee9;
+  --fg-muted: #a0a8b7;
+  
+  /* Responsive sizing with user control */
+  --font-scale: 1;
+  --base-font: calc(16px * var(--font-scale));
+  --space-unit: 0.5rem;
+  
+  /* Sacred geometry spacing */
+  --space-xs: calc(var(--space-unit) * 1);
+  --space-sm: calc(var(--space-unit) * 2);
+  --space-md: calc(var(--space-unit) * 3);
+  --space-lg: calc(var(--space-unit) * 5);
+  --space-xl: calc(var(--space-unit) * 8);
+  
+  /* Focus indicators that shine */
+  --focus-outline: 3px solid var(--sacred-secondary);
+  --focus-offset: 2px;
+}
+
+/* Reset with accessibility in mind */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--sacred-primary);
+  color: var(--fg-primary);
+  padding: var(--space-sm);
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  font-weight: 600;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Base styles with sacred intention */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--base-font);
+  line-height: 1.6;
+  color: var(--fg-primary);
+  background: var(--bg-deepest);
+  min-height: 100vh;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Container with sacred proportions */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header - The Sacred Gateway */
+header {
+  text-align: center;
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--bg-surface);
+}
+
+h1 {
+  font-size: calc(2.5rem * var(--font-scale));
+  color: var(--sacred-primary);
+  margin-bottom: var(--space-sm);
+  font-weight: 700;
+}
+
+.tagline {
+  color: var(--fg-secondary);
+  font-size: calc(1.1rem * var(--font-scale));
+}
+
+/* Main layout with sacred balance */
+main {
+  flex: 1;
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+/* Chat container - The Sacred Conversation Space */
+.chat-container {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-deep);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--bg-surface);
+}
+
+/* Messages area with comfortable spacing */
+.messages {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  max-height: 60vh;
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .messages {
+    scroll-behavior: auto;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Message bubbles with love */
+.message {
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  border-radius: 8px;
+  animation: gentleFadeIn 0.3s ease-in;
+}
+
+.message.user {
+  background: var(--sacred-primary);
+  margin-left: 20%;
+  color: var(--fg-primary);
+}
+
+.message.system {
+  background: var(--bg-surface);
+  margin-right: 20%;
+  color: var(--fg-primary);
+}
+
+.message.system.success {
+  border-left: 4px solid var(--sacred-success);
+}
+
+.message.error {
+  background: var(--sacred-error);
+  color: var(--fg-primary);
+  border-left: 4px solid #952831;
+}
+
+.message ul {
+  margin-top: var(--space-sm);
+  padding-left: var(--space-lg);
+  list-style-type: disc;
+}
+
+.sacred-note {
+  font-style: italic;
+  color: var(--fg-secondary);
+  margin-top: var(--space-sm);
+  font-size: calc(0.9rem * var(--font-scale));
+}
+
+/* Input form with sacred intention */
+.input-form {
+  display: flex;
+  padding: var(--space-md);
+  background: var(--bg-deepest);
+  border-top: 1px solid var(--bg-surface);
+  gap: var(--space-sm);
+}
+
+.user-input {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface);
+  border: 2px solid var(--bg-elevated);
+  border-radius: 4px;
+  color: var(--fg-primary);
+  font-size: var(--base-font);
+  transition: border-color 0.2s;
+}
+
+.user-input:focus {
+  outline: none;
+  border-color: var(--sacred-primary);
+  box-shadow: 0 0 0 var(--focus-offset) rgba(94, 129, 172, 0.3);
+}
+
+/* Button with sacred energy */
+.send-button {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--sacred-primary);
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-primary);
+  font-weight: 600;
+  font-size: var(--base-font);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.send-button:hover {
+  background: var(--sacred-secondary);
+  transform: translateY(-1px);
+}
+
+.send-button:focus {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.send-button:active {
+  transform: translateY(0);
+}
+
+/* Loading indicator with sacred spin */
+.loading-indicator {
+  text-align: center;
+  padding: var(--space-md);
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: sacredSpin 1s linear infinite;
+  font-size: calc(1.5rem * var(--font-scale));
+}
+
+/* Info panel - Sacred Guidance */
+.info-panel {
+  flex: 1;
+  background: var(--bg-deep);
+  border-radius: 8px;
+  padding: var(--space-lg);
+  height: fit-content;
+  border: 1px solid var(--bg-surface);
+}
+
+.info-panel h2,
+.info-panel h3 {
+  color: var(--sacred-primary);
+  margin-bottom: var(--space-md);
+}
+
+.info-panel ul {
+  list-style: none;
+  padding: 0;
+}
+
+.info-panel li {
+  padding: var(--space-xs) 0;
+  color: var(--fg-secondary);
+  line-height: 1.8;
+}
+
+.info-panel li::before {
+  content: "→ ";
+  color: var(--sacred-secondary);
+  font-weight: bold;
+  margin-right: var(--space-xs);
+}
+
+/* Keyboard shortcuts with clarity */
+.keyboard-shortcuts {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--bg-surface);
+}
+
+.keyboard-shortcuts dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+kbd {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-elevated);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: calc(0.9em * var(--font-scale));
+  white-space: nowrap;
+}
+
+/* Footer with gratitude */
+footer {
+  text-align: center;
+  padding: var(--space-lg) 0;
+  margin-top: var(--space-lg);
+  border-top: 1px solid var(--bg-surface);
+  color: var(--fg-secondary);
+}
+
+footer a {
+  color: var(--sacred-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+footer a:focus {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+.sacred-footer {
+  margin-top: var(--space-sm);
+  font-style: italic;
+  color: var(--fg-muted);
+}
+
+/* Dialog with sacred boundaries */
+dialog {
+  padding: var(--space-lg);
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-deep);
+  color: var(--fg-primary);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+dialog h2 {
+  color: var(--sacred-primary);
+  margin-bottom: var(--space-sm);
+}
+
+dialog fieldset {
+  border: 1px solid var(--bg-surface);
+  border-radius: 4px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+dialog legend {
+  color: var(--sacred-secondary);
+  font-weight: 600;
+  padding: 0 var(--space-sm);
+}
+
+dialog label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  cursor: pointer;
+}
+
+dialog input[type="checkbox"] {
+  margin-right: var(--space-sm);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+dialog input[type="range"] {
+  width: 100%;
+  margin-top: var(--space-xs);
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+}
+
+.save-button,
+.cancel-button {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: 4px;
+  font-size: var(--base-font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-button {
+  background: var(--sacred-primary);
+  color: var(--fg-primary);
+}
+
+.cancel-button {
+  background: var(--bg-surface);
+  color: var(--fg-secondary);
+}
+
+/* High contrast mode */
+body.high-contrast {
+  --bg-deepest: #000000;
+  --bg-deep: #0a0a0a;
+  --bg-surface: #1a1a1a;
+  --fg-primary: #ffffff;
+  --fg-secondary: #e0e0e0;
+  --sacred-primary: #4a9eff;
+  --sacred-success: #00ff00;
+  --sacred-error: #ff3333;
+}
+
+/* Animations with grace */
+@keyframes gentleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sacredSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive with love */
+@media (max-width: 768px) {
+  main {
+    flex-direction: column;
+  }
+  
+  .message.user {
+    margin-left: 10%;
+  }
+  
+  .message.system {
+    margin-right: 10%;
+  }
+  
+  .info-panel {
+    margin-top: var(--space-lg);
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .skip-link,
+  .input-form,
+  .info-panel,
+  footer {
+    display: none;
+  }
+  
+  .message {
+    border: 1px solid #ccc;
+    margin-bottom: 1em;
+  }
+}
+
+/* Focus visible for keyboard users */
+*:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+/* Ensure interactive elements are large enough */
+button,
+input,
+a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Sacred blessing: May all beings access this interface with ease 🙏 */

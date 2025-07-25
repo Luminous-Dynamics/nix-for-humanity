@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nix for Humanity - System Monitoring</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .monitoring-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .metric-card {
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #5277C3;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-change {
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .change-positive {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .change-negative {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .health-indicator {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .health-good { background: #4caf50; }
+        .health-warning { background: #ff9800; }
+        .health-critical { background: #f44336; }
+
+        .chart-container {
+            height: 200px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .mini-chart {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 10px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: #5277C3;
+            margin: 0 2px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+            position: relative;
+        }
+
+        .chart-bar:hover::after {
+            content: attr(data-value);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-bottom: 4px;
+        }
+
+        .package-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .package-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .package-item:hover {
+            background: #f5f5f5;
+        }
+
+        .package-new {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes highlight {
+            0% { background: #e3f2fd; }
+            100% { background: transparent; }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-active { background: #4caf50; }
+        .status-warning { background: #ff9800; }
+        .status-error { background: #f44336; }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 16px 20px;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .notification-success { border-left: 4px solid #4caf50; }
+        .notification-warning { border-left: 4px solid #ff9800; }
+        .notification-error { border-left: 4px solid #f44336; }
+
+        .activity-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .activity-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        .activity-icon {
+            font-size: 16px;
+        }
+
+        .disk-usage-visual {
+            display: flex;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #e0e0e0;
+            margin-top: 10px;
+        }
+
+        .disk-used {
+            background: linear-gradient(90deg, #5277C3 0%, #7B9FE0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            transition: width 0.5s ease;
+        }
+
+        .generation-timeline {
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+            overflow-x: auto;
+        }
+
+        .generation-node {
+            min-width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .generation-node.current {
+            background: #5277C3;
+            color: white;
+            transform: scale(1.2);
+        }
+
+        .generation-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .generation-connector {
+            height: 2px;
+            background: #e0e0e0;
+            flex: 1;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5277C3" stroke-width="2">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                    <path d="M2 17L12 22L22 17"></path>
+                    <path d="M2 12L12 17L22 12"></path>
+                </svg>
+                Nix for Humanity - Live System Monitor
+            </h1>
+            <div class="status">
+                <span class="status-indicator status-active"></span>
+                <span id="monitorStatus">Monitoring Active</span>
+            </div>
+        </div>
+
+        <div class="monitoring-grid">
+            <!-- Package Count -->
+            <div class="card metric-card">
+                <div class="metric-label">Installed Packages</div>
+                <div class="metric-value" id="packageCount">0</div>
+                <div class="metric-change change-positive" id="packageChange" style="display: none;">
+                    +0 new
+                </div>
+                <div class="chart-container">
+                    <div class="mini-chart" id="packageChart"></div>
+                </div>
+            </div>
+
+            <!-- Current Generation -->
+            <div class="card metric-card">
+                <div class="metric-label">Current Generation</div>
+                <div class="metric-value" id="generationNumber">0</div>
+                <div class="metric-change" id="generationChange" style="display: none;">
+                    Switched from Gen 0
+                </div>
+                <div class="generation-timeline" id="generationTimeline"></div>
+            </div>
+
+            <!-- Disk Usage -->
+            <div class="card metric-card">
+                <div class="metric-label">Nix Store Usage</div>
+                <div class="metric-value" id="diskPercentage">0%</div>
+                <div class="disk-usage-visual">
+                    <div class="disk-used" id="diskBar" style="width: 0%"></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                    <span id="diskDetails">0GB / 0GB</span>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="card metric-card">
+                <div class="metric-label">System Health</div>
+                <div class="metric-value" id="healthStatus">Good</div>
+                <div class="health-indicator">
+                    <div class="health-bar health-good" id="healthBar"></div>
+                </div>
+                <div id="healthIssues" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Recent Packages -->
+            <div class="card">
+                <h3>📦 Recent Package Activity</h3>
+                <div class="package-list" id="recentPackages">
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        No package changes yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card">
+                <h3>📊 System Activity</h3>
+                <div class="activity-log" id="activityLog">
+                    <div class="activity-item">
+                        <span class="activity-time">Now</span>
+                        <span class="activity-icon">🚀</span>
+                        <span>Monitoring started</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Channels -->
+        <div class="card">
+            <h3>📡 Active Channels</h3>
+            <div id="channelList" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <div style="padding: 8px 16px; background: #e3f2fd; border-radius: 20px; font-size: 14px;">
+                    Loading channels...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification">
+        <div class="notification-header" id="notificationHeader">
+            <span class="status-indicator"></span>
+            <span id="notificationTitle">System Update</span>
+        </div>
+        <div id="notificationMessage">Message here</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        // State management
+        let systemState = {
+            packages: [],
+            generations: [],
+            channels: [],
+            diskUsage: {},
+            health: 'good'
+        };
+
+        let packageHistory = [];
+        let activityLog = [];
+        let socket = null;
+
+        // Initialize connection
+        function initMonitoring() {
+            try {
+                socket = io('http://localhost:3456');
+                
+                socket.on('connect', () => {
+                    console.log('Connected to monitoring server');
+                    updateStatus('active');
+                    addActivity('Connected to server', '🔌');
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    updateStatus('error');
+                    addActivity('Connection lost', '⚠️');
+                });
+
+                // System state updates
+                socket.on('system-state', handleSystemState);
+                socket.on('packages-changed', handlePackageChange);
+                socket.on('generation-changed', handleGenerationChange);
+                socket.on('disk-warning', handleDiskWarning);
+                socket.on('health-warning', handleHealthWarning);
+
+                // Request initial state
+                socket.emit('request-state');
+
+            } catch (error) {
+                console.log('Running in demo mode');
+                updateStatus('warning');
+                simulateMonitoring();
+            }
+        }
+
+        // Handle full system state update
+        function handleSystemState(state) {
+            systemState = state;
+            updateAllMetrics();
+        }
+
+        // Update all UI metrics
+        function updateAllMetrics() {
+            // Package count
+            const packageCount = systemState.packages?.length || 0;
+            document.getElementById('packageCount').textContent = packageCount;
+            
+            // Current generation
+            const currentGen = systemState.generations?.find(g => g.current);
+            if (currentGen) {
+                document.getElementById('generationNumber').textContent = currentGen.number;
+            }
+            
+            // Disk usage
+            if (systemState.diskUsage) {
+                const percentage = systemState.diskUsage.percentage || 0;
+                document.getElementById('diskPercentage').textContent = percentage + '%';
+                document.getElementById('diskBar').style.width = percentage + '%';
+                document.getElementById('diskDetails').textContent = 
+                    `${systemState.diskUsage.used} / ${systemState.diskUsage.total}`;
+                
+                // Color based on usage
+                const diskBar = document.getElementById('diskBar');
+                if (percentage > 90) {
+                    diskBar.style.background = '#f44336';
+                } else if (percentage > 70) {
+                    diskBar.style.background = '#ff9800';
+                } else {
+                    diskBar.style.background = 'linear-gradient(90deg, #5277C3 0%, #7B9FE0 100%)';
+                }
+            }
+            
+            // Health status
+            updateHealthStatus(systemState.systemHealth || systemState.health);
+            
+            // Channels
+            updateChannels(systemState.channels);
+            
+            // Generation timeline
+            updateGenerationTimeline(systemState.generations);
+            
+            // Recent packages
+            updateRecentPackages(systemState.packages);
+            
+            // Update package history chart
+            updatePackageChart(packageCount);
+        }
+
+        // Handle package changes
+        function handlePackageChange(data) {
+            const changeEl = document.getElementById('packageChange');
+            if (data.installed > 0) {
+                changeEl.textContent = `+${data.installed} new`;
+                changeEl.className = 'metric-change change-positive';
+                changeEl.style.display = 'inline-block';
+                showNotification('success', 'Package Installed', `${data.installed} new package(s) added`);
+            } else if (data.installed < 0) {
+                changeEl.textContent = `${data.installed} removed`;
+                changeEl.className = 'metric-change change-negative';
+                changeEl.style.display = 'inline-block';
+                showNotification('warning', 'Package Removed', `${Math.abs(data.installed)} package(s) removed`);
+            }
+            
+            addActivity(`Packages changed: ${data.installed > 0 ? '+' : ''}${data.installed}`, '📦');
+            
+            setTimeout(() => {
+                changeEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle generation changes
+        function handleGenerationChange(data) {
+            const changeEl = document.getElementById('generationChange');
+            changeEl.textContent = `Switched from Gen ${data.from}`;
+            changeEl.style.display = 'inline-block';
+            
+            showNotification('success', 'Generation Changed', 
+                `Switched from generation ${data.from} to ${data.to}`);
+            
+            addActivity(`Generation switch: ${data.from} → ${data.to}`, '🔄');
+            
+            setTimeout(() => {
+                changeEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle disk warnings
+        function handleDiskWarning(data) {
+            showNotification('warning', 'Low Disk Space', 
+                `Nix store is ${data.percentage}% full. Consider garbage collection.`);
+            addActivity(`Disk space warning: ${data.percentage}%`, '💾');
+        }
+
+        // Handle health warnings
+        function handleHealthWarning(data) {
+            showNotification('error', 'System Health Issues', 
+                data.issues.join(', '));
+            addActivity('Health issues detected', '⚠️');
+        }
+
+        // Update health status
+        function updateHealthStatus(health) {
+            const statusEl = document.getElementById('healthStatus');
+            const barEl = document.getElementById('healthBar');
+            const issuesEl = document.getElementById('healthIssues');
+            
+            statusEl.textContent = health.charAt(0).toUpperCase() + health.slice(1);
+            
+            barEl.className = 'health-bar';
+            if (health === 'good') {
+                barEl.classList.add('health-good');
+                barEl.style.width = '100%';
+                issuesEl.textContent = '';
+            } else if (health === 'warning') {
+                barEl.classList.add('health-warning');
+                barEl.style.width = '66%';
+            } else {
+                barEl.classList.add('health-critical');
+                barEl.style.width = '33%';
+            }
+        }
+
+        // Update channels
+        function updateChannels(channels) {
+            const container = document.getElementById('channelList');
+            if (!channels || channels.length === 0) return;
+            
+            container.innerHTML = channels.map(channel => `
+                <div style="padding: 8px 16px; background: #e3f2fd; border-radius: 20px; font-size: 14px;">
+                    <strong>${channel.name}</strong>
+                </div>
+            `).join('');
+        }
+
+        // Update generation timeline
+        function updateGenerationTimeline(generations) {
+            if (!generations || generations.length === 0) return;
+            
+            const timeline = document.getElementById('generationTimeline');
+            const recent = generations.slice(-5); // Show last 5
+            
+            timeline.innerHTML = recent.map((gen, i) => {
+                const node = `<div class="generation-node ${gen.current ? 'current' : ''}" 
+                              title="${gen.date || ''}">${gen.number}</div>`;
+                if (i < recent.length - 1) {
+                    return node + '<div class="generation-connector"></div>';
+                }
+                return node;
+            }).join('');
+        }
+
+        // Update recent packages
+        function updateRecentPackages(packages) {
+            if (!packages || packages.length === 0) return;
+            
+            const container = document.getElementById('recentPackages');
+            const recent = packages.slice(-10).reverse(); // Show last 10
+            
+            container.innerHTML = recent.map(pkg => `
+                <div class="package-item">
+                    <div>
+                        <strong>${pkg.name}</strong>
+                        <span style="color: #666; margin-left: 8px;">${pkg.version}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update package chart
+        function updatePackageChart(count) {
+            packageHistory.push(count);
+            if (packageHistory.length > 10) {
+                packageHistory.shift();
+            }
+            
+            const chart = document.getElementById('packageChart');
+            const max = Math.max(...packageHistory, 1);
+            
+            chart.innerHTML = packageHistory.map(val => {
+                const height = (val / max) * 100;
+                return `<div class="chart-bar" style="height: ${height}%" data-value="${val}"></div>`;
+            }).join('');
+        }
+
+        // Add activity to log
+        function addActivity(message, icon = '📌') {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            activityLog.unshift({ time, message, icon });
+            if (activityLog.length > 20) {
+                activityLog.pop();
+            }
+            
+            const container = document.getElementById('activityLog');
+            container.innerHTML = activityLog.map(item => `
+                <div class="activity-item">
+                    <span class="activity-time">${item.time}</span>
+                    <span class="activity-icon">${item.icon}</span>
+                    <span>${item.message}</span>
+                </div>
+            `).join('');
+        }
+
+        // Show notification
+        function showNotification(type, title, message) {
+            const notification = document.getElementById('notification');
+            const headerEl = document.getElementById('notificationHeader');
+            const titleEl = document.getElementById('notificationTitle');
+            const messageEl = document.getElementById('notificationMessage');
+            
+            notification.className = `notification notification-${type} show`;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            const indicator = headerEl.querySelector('.status-indicator');
+            indicator.className = `status-indicator status-${
+                type === 'success' ? 'active' : type === 'warning' ? 'warning' : 'error'
+            }`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Update connection status
+        function updateStatus(status) {
+            const statusEl = document.getElementById('monitorStatus');
+            const indicator = document.querySelector('.header .status-indicator');
+            
+            if (status === 'active') {
+                statusEl.textContent = 'Monitoring Active';
+                indicator.className = 'status-indicator status-active';
+            } else if (status === 'warning') {
+                statusEl.textContent = 'Demo Mode';
+                indicator.className = 'status-indicator status-warning';
+            } else {
+                statusEl.textContent = 'Connection Lost';
+                indicator.className = 'status-indicator status-error';
+            }
+        }
+
+        // Demo mode simulation
+        function simulateMonitoring() {
+            // Initial state
+            systemState = {
+                packages: [
+                    { name: 'firefox', version: '120.0' },
+                    { name: 'git', version: '2.42' },
+                    { name: 'nodejs', version: '20.9' },
+                    { name: 'vscode', version: '1.84' }
+                ],
+                generations: [
+                    { number: 40, date: '2024-01-01' },
+                    { number: 41, date: '2024-01-10' },
+                    { number: 42, date: '2024-01-15', current: true }
+                ],
+                channels: [
+                    { name: 'nixpkgs', url: 'https://nixos.org/channels/nixpkgs-unstable' }
+                ],
+                diskUsage: {
+                    total: '100GB',
+                    used: '45GB',
+                    percentage: 45
+                },
+                health: 'good'
+            };
+            
+            updateAllMetrics();
+            
+            // Simulate random events
+            setInterval(() => {
+                const events = [
+                    () => {
+                        // Package install
+                        const packages = ['python3', 'rust', 'docker', 'emacs', 'tmux'];
+                        const pkg = packages[Math.floor(Math.random() * packages.length)];
+                        systemState.packages.push({ 
+                            name: pkg, 
+                            version: '1.0.' + Math.floor(Math.random() * 100) 
+                        });
+                        handlePackageChange({ installed: 1, total: systemState.packages.length });
+                        updateAllMetrics();
+                    },
+                    () => {
+                        // Disk usage change
+                        systemState.diskUsage.percentage = Math.min(95, 
+                            systemState.diskUsage.percentage + Math.floor(Math.random() * 5));
+                        updateAllMetrics();
+                        if (systemState.diskUsage.percentage > 90) {
+                            handleDiskWarning(systemState.diskUsage);
+                        }
+                    },
+                    () => {
+                        // Generation change
+                        const newGen = systemState.generations[systemState.generations.length - 1].number + 1;
+                        const current = systemState.generations.find(g => g.current);
+                        if (current) {
+                            current.current = false;
+                            systemState.generations.push({
+                                number: newGen,
+                                date: new Date().toLocaleDateString(),
+                                current: true
+                            });
+                            handleGenerationChange({ from: current.number, to: newGen });
+                            updateAllMetrics();
+                        }
+                    }
+                ];
+                
+                // Random event every 10-20 seconds
+                if (Math.random() > 0.7) {
+                    const event = events[Math.floor(Math.random() * events.length)];
+                    event();
+                }
+            }, 15000);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initMonitoring();
+        };
+    </script>
+</body>
+</html>

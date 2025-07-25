@@ -1,0 +1,194 @@
+{
+  "items": [
+    {
+      "id": "dashboard-overview",
+      "category": "Dashboard",
+      "title": "Dashboard Overview",
+      "content": "The dashboard provides a quick overview of your NixOS system status.\n\n**Key Information:**\n- System uptime and load\n- Memory and disk usage\n- Active services count\n- Recent system events\n\n**Tips:**\n- Click on any metric for detailed view\n- Drag widgets to rearrange\n- Use the refresh button to update data",
+      "tags": ["dashboard", "overview", "home"]
+    },
+    {
+      "id": "package-search",
+      "category": "Packages",
+      "title": "Searching for Packages",
+      "content": "Find and install NixOS packages easily.\n\n**How to search:**\n1. Type package name in search box\n2. Press Enter or click Search\n3. Results show available packages\n\n**Search tips:**\n- Use partial names (e.g., 'fire' for Firefox)\n- Add channel prefix for specific channels\n- Use `*` for wildcards\n\n**Keyboard shortcut:** `Ctrl+/`",
+      "example": "firefox\npython3\nnodejs-*",
+      "related": ["package-install", "package-details"],
+      "tags": ["packages", "search", "find"]
+    },
+    {
+      "id": "package-install",
+      "category": "Packages",
+      "title": "Installing Packages",
+      "content": "Install packages to your NixOS system.\n\n**Installation process:**\n1. Search for the package\n2. Click 'Install' button\n3. Confirm in dialog\n4. Wait for installation to complete\n\n**Important notes:**\n- Installation modifies your configuration.nix\n- Changes are atomic and reversible\n- Some packages require system rebuild",
+      "tooltip": "Click to install this package",
+      "related": ["package-search", "package-remove"],
+      "tags": ["packages", "install", "add"]
+    },
+    {
+      "id": "config-editor",
+      "category": "Configuration",
+      "title": "Configuration Editor",
+      "content": "Edit your NixOS configuration safely.\n\n**Editor features:**\n- Syntax highlighting for Nix\n- Real-time validation\n- Auto-save drafts\n- Diff view for changes\n\n**Best practices:**\n1. Always validate before applying\n2. Make small, incremental changes\n3. Use comments to document changes\n4. Keep backups of working configs\n\n**Keyboard shortcuts:**\n- `Ctrl+S`: Save draft\n- `Ctrl+Enter`: Validate\n- `Ctrl+Shift+Enter`: Apply changes",
+      "related": ["config-validate", "config-apply"],
+      "tags": ["configuration", "edit", "nix"]
+    },
+    {
+      "id": "service-control",
+      "category": "Services",
+      "title": "Controlling Services",
+      "content": "Manage systemd services on your NixOS system.\n\n**Service actions:**\n- **Start**: Begin running the service\n- **Stop**: Stop the running service\n- **Restart**: Stop and start again\n- **Reload**: Reload configuration without stopping\n\n**Service states:**\n- 🟢 Active (running)\n- 🔴 Inactive (stopped)\n- 🟡 Activating/Deactivating\n- ⚠️ Failed",
+      "related": ["service-logs", "service-enable"],
+      "tags": ["services", "systemd", "control"]
+    },
+    {
+      "id": "generation-overview",
+      "category": "Generations",
+      "title": "Understanding Generations",
+      "content": "NixOS generations are snapshots of your system configuration.\n\n**What are generations?**\n- Each configuration change creates a new generation\n- Previous generations are preserved\n- Can boot into any previous generation\n- Atomic upgrades and rollbacks\n\n**Generation info shows:**\n- Generation number\n- Date created\n- Configuration changes\n- Kernel version\n- Package differences",
+      "related": ["generation-switch", "generation-rollback"],
+      "tags": ["generations", "history", "snapshots"]
+    },
+    {
+      "id": "troubleshoot-build-error",
+      "category": "Troubleshooting",
+      "title": "Build Errors",
+      "content": "How to resolve NixOS build errors.\n\n**Common causes:**\n1. **Syntax errors**: Check configuration.nix\n2. **Network issues**: Package downloads failing\n3. **Disk space**: Not enough space in /nix/store\n4. **Conflicts**: Package version conflicts\n\n**Debugging steps:**\n1. Read the full error message\n2. Check recent configuration changes\n3. Try building with `--show-trace`\n4. Search NixOS discourse for similar errors",
+      "related": ["generation-rollback", "config-validate"],
+      "tags": ["troubleshooting", "errors", "build"]
+    }
+  ],
+  "tours": [
+    {
+      "id": "first-time",
+      "name": "First Time Setup",
+      "description": "Get started with NixOS GUI",
+      "steps": [
+        {
+          "selector": ".dashboard",
+          "title": "Welcome to NixOS GUI!",
+          "content": "This is your dashboard. It shows system status at a glance."
+        },
+        {
+          "selector": "[data-tab=\"packages\"]",
+          "title": "Package Management",
+          "content": "Click here to search and install NixOS packages."
+        },
+        {
+          "selector": "[data-tab=\"configuration\"]",
+          "title": "Configuration Editor",
+          "content": "Edit your NixOS configuration with syntax highlighting and validation."
+        },
+        {
+          "selector": "[data-tab=\"services\"]",
+          "title": "Service Management",
+          "content": "Control system services, view status and logs."
+        },
+        {
+          "selector": "[data-tab=\"generations\"]",
+          "title": "Generation History",
+          "content": "View and switch between system generations for easy rollback."
+        },
+        {
+          "selector": ".help-button",
+          "title": "Getting Help",
+          "content": "Click the help button anytime for assistance. Press F1 for quick help!"
+        }
+      ]
+    },
+    {
+      "id": "package-workflow",
+      "name": "Installing Your First Package",
+      "description": "Learn how to find and install packages",
+      "steps": [
+        {
+          "selector": "[data-tab=\"packages\"]",
+          "title": "Open Package Manager",
+          "content": "Click on the Packages tab to start."
+        },
+        {
+          "selector": ".package-search input",
+          "title": "Search for a Package",
+          "content": "Type 'firefox' in the search box to find the Firefox browser."
+        },
+        {
+          "selector": ".package-search button",
+          "title": "Perform Search",
+          "content": "Click Search or press Enter to find packages."
+        },
+        {
+          "selector": ".package-item:first-child",
+          "title": "Package Results",
+          "content": "Each result shows the package name, version, and description."
+        },
+        {
+          "selector": ".package-item:first-child .install-btn",
+          "title": "Install Package",
+          "content": "Click Install to add this package to your system."
+        }
+      ]
+    }
+  ],
+  "shortcuts": [
+    {
+      "key": "f1",
+      "description": "Open help panel",
+      "action": "help"
+    },
+    {
+      "key": "ctrl+/",
+      "description": "Focus package search",
+      "action": "search"
+    },
+    {
+      "key": "ctrl+s",
+      "description": "Save configuration",
+      "action": "save"
+    },
+    {
+      "key": "ctrl+enter",
+      "description": "Validate configuration",
+      "action": "validate"
+    },
+    {
+      "key": "alt+1",
+      "description": "Go to Dashboard",
+      "action": "navigate",
+      "target": "#dashboard"
+    },
+    {
+      "key": "alt+2",
+      "description": "Go to Packages",
+      "action": "navigate",
+      "target": "#packages"
+    },
+    {
+      "key": "alt+3",
+      "description": "Go to Configuration",
+      "action": "navigate",
+      "target": "#configuration"
+    },
+    {
+      "key": "alt+4",
+      "description": "Go to Services",
+      "action": "navigate",
+      "target": "#services"
+    },
+    {
+      "key": "alt+5",
+      "description": "Go to Generations",
+      "action": "navigate",
+      "target": "#generations"
+    },
+    {
+      "key": "alt+shift+h",
+      "description": "Toggle help mode",
+      "action": "help-mode"
+    },
+    {
+      "key": "esc",
+      "description": "Close dialogs/panels",
+      "action": "close"
+    }
+  ]
+}
