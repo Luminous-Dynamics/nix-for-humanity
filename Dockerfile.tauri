@@ -2,7 +2,7 @@
 # Supports Rust/Tauri, Node.js, and Python fallback
 
 # Stage 1: Rust/Tauri Builder
-FROM rust:1.75-bookworm AS rust-builder
+FROM rust:1.88-bookworm AS rust-builder
 
 # Install Tauri dependencies
 RUN apt-get update && apt-get install -y \
