@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for NixOS GUI
 
 # Stage 1: Build frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy frontend dependencies
@@ -15,7 +15,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM node:18-alpine AS backend-builder
+FROM node:24-alpine AS backend-builder
 WORKDIR /app
 
 # Install build dependencies
@@ -31,7 +31,7 @@ RUN cd backend && npm ci --only=production
 COPY backend/ ./backend/
 
 # Stage 3: Runtime
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 # Install runtime dependencies
