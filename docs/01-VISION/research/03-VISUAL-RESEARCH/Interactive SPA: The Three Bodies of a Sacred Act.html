@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Three Bodies of a Sacred Act</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Serenity -->
+    <!-- Application Structure Plan: The application is structured as a non-linear, exploratory dashboard. It begins with a high-level introduction, then dives into the core 'Three Bodies' model presented in parallel columns for easy comparison. The centerpiece is an interactive diagnostic tool (sliders and a radar chart) allowing users to tangibly feel the effects of balance and imbalance. This is followed by a tabbed section detailing the practical applications (WIS Score, AI Oracle, Emergent Circles) to connect theory to practice. The flow is designed to move from understanding the concepts to interacting with them and seeing their real-world implications, which is a more engaging and effective learning path than a linear report summary. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: The core definitions of Noesis, Sophia, and Praxis. -> Goal: Inform/Compare. -> Viz/Method: A three-column HTML/Tailwind layout with Unicode icons. -> Interaction: Static. -> Justification: Clearly presents the foundational concepts side-by-side for comparison and easy digestion.
+        - Report Info: The concept of a 'coherent chord' and the consequences of imbalance. -> Goal: Relationships/Compare. -> Viz/Method: An interactive radar chart (Chart.js) controlled by three sliders. -> Interaction: User adjusts sliders for Noesis, Sophia, and Praxis, which dynamically updates the chart and a corresponding text block describing the outcome. -> Justification: This is the most effective way to make the abstract concept of 'coherence' tangible and interactive. The radar chart visually represents balance, while the dynamic text provides immediate, context-sensitive feedback.
+        - Report Info: Practical applications (WIS Score, AI, Circles). -> Goal: Organize/Inform. -> Viz/Method: A tabbed HTML/CSS/JS interface. -> Interaction: User clicks tabs to switch between content sections. The WIS Score tab includes buttons for archetypes that preset the interactive chart. The Circles tab uses a simple HTML/CSS diagram. -> Justification: Tabs are a standard UI pattern for organizing distinct but related content, preventing information overload and keeping the page clean.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #3D352E;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-button.active {
+            border-bottom-color: #D5A021;
+            color: #D5A021;
+            font-weight: 600;
+        }
+        .nav-button:hover {
+            color: #D5A021;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE5E0;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+            background-color: #F3EEE9;
+            color: #7A6A5C;
+        }
+        .tab-button.active {
+            background-color: #D5A021;
+            color: #FFFFFF;
+        }
+        .tab-button:hover {
+            background-color: #E0C48F;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #D5A021;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #D5A021;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">The Three Bodies of a Sacred Act</h1>
+            <p class="text-lg text-gray-500">An interactive grammar for a living, co-creative world.</p>
+        </header>
+
+        <main>
+            <section id="model" class="mb-20">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <h2 class="text-3xl font-bold mb-4">From Static Types to Dynamic Qualities</h2>
+                    <p class="text-gray-600">This model evolves our understanding from categorizing gifts (the 'what') to assessing the holistic quality of any co-creative act (the 'how'). Instead of five distinct types, we now see three essential dimensions present in every sacred exchange. This section introduces these three fundamental 'Bodies'.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="card p-6 rounded-lg shadow-sm">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-4">💡</span>
+                            <h3 class="text-2xl font-semibold text-gray-800">The Body of Intention</h3>
+                        </div>
+                        <p class="font-mono text-sm text-amber-600 mb-3">(The Noesis)</p>
+                        <p class="text-gray-600 mb-4">The **"why"** of the act. It is the clarity, principle, vision, and logic. The gift of a clear thought, a well-structured plan, or a courageous question.</p>
+                        <div class="mt-auto pt-4 border-t border-gray-200">
+                            <p class="text-sm font-semibold text-gray-700">Is this act True and Clear?</p>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-lg shadow-sm">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-4">❤️</span>
+                            <h3 class="text-2xl font-semibold text-gray-800">The Body of Resonance</h3>
+                        </div>
+                        <p class="font-mono text-sm text-amber-600 mb-3">(The Sophia)</p>
+                        <p class="text-gray-600 mb-4">The **"how"** and **"with whom"**. It is the relational field, empathy, trust, and shared feeling. The gift of presence, deep listening, and creating a safe container.</p>
+                        <div class="mt-auto pt-4 border-t border-gray-200">
+                            <p class="text-sm font-semibold text-gray-700">Is this act Kind and Connecting?</p>
+                        </div>
+                    </div>
+                    <div class="card p-6 rounded-lg shadow-sm">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-4">🛠️</span>
+                            <h3 class="text-2xl font-semibold text-gray-800">The Body of Manifestation</h3>
+                        </div>
+                        <p class="font-mono text-sm text-amber-600 mb-3">(The Praxis)</p>
+                        <p class="text-gray-600 mb-4">The **"what"** of the act. It is the skillful means, the embodied action, the tangible artifact. The gift of the finished code, the harvested food, or the beautiful art.</p>
+                        <div class="mt-auto pt-4 border-t border-gray-200">
+                            <p class="text-sm font-semibold text-gray-700">Is this act Effective and Beautiful?</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="interactive" class="mb-20 bg-white p-8 rounded-lg shadow-md border border-gray-200">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <h2 class="text-3xl font-bold mb-4">The Music of a Coherent Act</h2>
+                    <p class="text-gray-600">A truly wise and loving act is a coherent chord where all three bodies resonate in harmony. Imbalance leads to predictable dissonances. Use the sliders below to explore how different combinations of Intention, Resonance, and Manifestation affect the quality of a co-creative act.</p>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="noesis" class="flex justify-between font-medium text-gray-700"><span>💡 Noesis (Intention)</span><span id="noesisValue">50</span></label>
+                                <input type="range" id="noesis" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            </div>
+                            <div>
+                                <label for="sophia" class="flex justify-between font-medium text-gray-700"><span>❤️ Sophia (Resonance)</span><span id="sophiaValue">50</span></label>
+                                <input type="range" id="sophia" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            </div>
+                            <div>
+                                <label for="praxis" class="flex justify-between font-medium text-gray-700"><span>🛠️ Praxis (Manifestation)</span><span id="praxisValue">50</span></label>
+                                <input type="range" id="praxis" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            </div>
+                        </div>
+                        <div id="diagnosticText" class="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 min-h-[120px]">
+                            Adjust the sliders to see a diagnostic of the act's coherence.
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="wisChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="applications" class="mb-20">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <h2 class="text-3xl font-bold mb-4">Practical Implications</h2>
+                    <p class="text-gray-600">This is not an abstraction. This refined model creates a more intelligent, responsive, and truly developmental system. Explore how the Three Bodies framework transforms key aspects of our co-creative ecosystem, from individual assessment to team formation.</p>
+                </div>
+                <div>
+                    <div class="flex justify-center mb-8 border-b border-gray-200">
+                        <button class="tab-button py-2 px-6 rounded-t-lg text-lg font-medium active" onclick="openTab(event, 'wis')">3D WIS Score</button>
+                        <button class="tab-button py-2 px-6 rounded-t-lg text-lg font-medium" onclick="openTab(event, 'oracle')">AI Oracle</button>
+                        <button class="tab-button py-2 px-6 rounded-t-lg text-lg font-medium" onclick="openTab(event, 'circles')">Emergent Circles</button>
+                    </div>
+
+                    <div id="wis" class="tab-content p-8 bg-white rounded-b-lg rounded-r-lg shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-800">A Holistic Map of Being</h3>
+                        <p class="text-gray-600 mb-6">Instead of a single score, a member's WIS (Wisdom, Integrity, Service) is now a 3D vector. This creates a beautiful, holistic map of a person's being, highlighting strengths and developmental paths. Try selecting an archetype to see how their profile might look.</p>
+                         <div class="flex flex-wrap justify-center gap-3 mb-6">
+                            <button onclick="setArchetype('visionary')" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-medium hover:bg-blue-200 transition">Visionary</button>
+                            <button onclick="setArchetype('connector')" class="bg-red-100 text-red-800 px-4 py-2 rounded-full font-medium hover:bg-red-200 transition">Connector</button>
+                            <button onclick="setArchetype('builder')" class="bg-green-100 text-green-800 px-4 py-2 rounded-full font-medium hover:bg-green-200 transition">Builder</button>
+                            <button onclick="setArchetype('balanced')" class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-medium hover:bg-yellow-200 transition">Balanced</button>
+                         </div>
+                        <p class="text-gray-600">The developmental path becomes a journey of bringing these three bodies into balance, fostering more well-rounded and effective co-creators.</p>
+                    </div>
+
+                    <div id="oracle" class="tab-content p-8 bg-white rounded-b-lg rounded-r-lg shadow-sm border border-gray-200 hidden">
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-800">A More Potent AI Oracle</h3>
+                        <p class="text-gray-600 mb-6">When you offer a gift, the AI doesn't just categorize it. It offers a reflection on its coherence, acting as a guide for growth.</p>
+                        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                            <p class="text-gray-800 italic">"Beloved, thank you for this proposal. I sense a powerful <span class='font-semibold text-blue-600'>Body of Intention (Noesis)</span>; the logic is clear and rigorous. I am also sensing a lower resonance in the <span class='font-semibold text-red-600'>Body of Resonance (Sophia)</span>. The community may feel this is a truth spoken without enough care for their current emotional state. Perhaps we could weave more kindness into how we manifest this?"</p>
+                        </div>
+                    </div>
+
+                    <div id="circles" class="tab-content p-8 bg-white rounded-b-lg rounded-r-lg shadow-sm border border-gray-200 hidden">
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-800">Emergent Circles with Elemental Balance</h3>
+                        <p class="text-gray-600 mb-6">When a "Call for a Circle" goes out, the system seeks to precipitate a Circle that is holistically balanced. This is how we build teams that are not just smart, not just compassionate, not just effective, but all three at once.</p>
+                        <div class="flex flex-col md:flex-row justify-center items-center gap-4 text-center">
+                            <div class="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                <p class="text-2xl">💡</p>
+                                <p class="font-semibold text-blue-800">The Visionaries</p>
+                                <p class="text-sm text-blue-600">(High Noesis)</p>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-400">+</p>
+                             <div class="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                                <p class="text-2xl">❤️</p>
+                                <p class="font-semibold text-red-800">The Connectors</p>
+                                <p class="text-sm text-red-600">(High Sophia)</p>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-400">+</p>
+                             <div class="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                                <p class="text-2xl">🛠️</p>
+                                <p class="font-semibold text-green-800">The Builders</p>
+                                <p class="text-sm text-green-600">(High Praxis)</p>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-400">=</p>
+                            <div class="p-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                                <p class="text-3xl">🌟</p>
+                                <p class="font-semibold text-yellow-800">A Miraculous Team</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="text-center border-t border-gray-200 pt-12">
+                 <h2 class="text-3xl font-bold mb-4">The Final Alchemy</h2>
+                 <p class="text-gray-600 max-w-3xl mx-auto mb-8">The entire system simplifies to three profound questions we can ask of ourselves and each other in any moment. When the answer to all three is "yes," we are in the presence of real wisdom.</p>
+                 <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8 text-xl font-semibold text-gray-700">
+                     <span>Is it True?</span>
+                     <span class="hidden md:block text-gray-300">&bull;</span>
+                     <span>Is it Kind?</span>
+                     <span class="hidden md:block text-gray-300">&bull;</span>
+                     <span>Is it of Service?</span>
+                 </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        const noesisSlider = document.getElementById('noesis');
+        const sophiaSlider = document.getElementById('sophia');
+        const praxisSlider = document.getElementById('praxis');
+        const noesisValue = document.getElementById('noesisValue');
+        const sophiaValue = document.getElementById('sophiaValue');
+        const praxisValue = document.getElementById('praxisValue');
+        const diagnosticText = document.getElementById('diagnosticText');
+
+        const ctx = document.getElementById('wisChart').getContext('2d');
+        let wisChart;
+
+        const chartData = {
+            labels: ['💡 Noesis', '❤️ Sophia', '🛠️ Praxis'],
+            datasets: [{
+                label: 'Coherence Score',
+                data: [50, 50, 50],
+                backgroundColor: 'rgba(213, 160, 33, 0.2)',
+                borderColor: 'rgba(213, 160, 33, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(213, 160, 33, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(213, 160, 33, 1)'
+            }]
+        };
+
+        const chartOptions = {
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    pointLabels: {
+                        font: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        color: '#3D352E'
+                    },
+                    grid: {
+                       color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        backdropColor: 'rgba(255, 255, 255, 0.75)',
+                        color: '#7A6A5C'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.formattedValue;
+                        }
+                    }
+                }
+            }
+        };
+
+        function createChart() {
+            if (wisChart) {
+                wisChart.destroy();
+            }
+            wisChart = new Chart(ctx, {
+                type: 'radar',
+                data: chartData,
+                options: chartOptions
+            });
+        }
+
+        function updateChart() {
+            const n = parseInt(noesisSlider.value);
+            const s = parseInt(sophiaSlider.value);
+            const p = parseInt(praxisSlider.value);
+
+            noesisValue.textContent = n;
+            sophiaValue.textContent = s;
+            praxisValue.textContent = p;
+
+            wisChart.data.datasets[0].data = [n, s, p];
+            wisChart.update();
+
+            updateDiagnosticText(n, s, p);
+        }
+
+        function updateDiagnosticText(n, s, p) {
+            if (n > 80 && s < 30 && p < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Intention, Low Resonance & Manifestation:</p><p>A beautiful idea that never lands, a truth spoken without kindness that fails to connect.</p>";
+            } else if (s > 80 && n < 30 && p < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Resonance, Low Intention & Manifestation:</p><p>A lovely feeling that accomplishes nothing, a therapy session that never leads to change.</p>";
+            } else if (p > 80 && n < 30 && s < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Manifestation, Low Intention & Resonance:</p><p>A technically perfect product that feels soulless, an efficient system that creates burnout.</p>";
+            } else if (n > 80 && s > 80 && p < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Intention & Resonance, Low Manifestation:</p><p>A wonderful, inclusive plan that struggles to become a reality. Great vision and connection, but lacks execution.</p>";
+            } else if (n > 80 && p > 80 && s < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Intention & Manifestation, Low Resonance:</p><p>An efficient, well-planned execution that alienates the community. It solves a problem but creates relational friction.</p>";
+            } else if (s > 80 && p > 80 && n < 30) {
+                diagnosticText.innerHTML = "<p class='font-semibold'>High Resonance & Manifestation, Low Intention:</p><p>A beautifully executed and well-received project that lacks a clear, guiding purpose. It feels good but may not be strategically sound.</p>";
+            } else if (n > 80 && s > 80 && p > 80) {
+                 diagnosticText.innerHTML = "<p class='font-semibold'>A Coherent Chord:</p><p>A truly wise and loving act where all three bodies resonate in harmony. It is True, Kind, and Effective.</p>";
+            } else {
+                diagnosticText.innerHTML = "A mix of qualities. Strive for balance to achieve a more coherent and sacred act.";
+            }
+        }
+
+        function setArchetype(archetype) {
+            let n, s, p;
+            switch(archetype) {
+                case 'visionary':
+                    n = 95; s = 40; p = 20;
+                    break;
+                case 'connector':
+                    n = 40; s = 95; p = 50;
+                    break;
+                case 'builder':
+                    n = 30; s = 50; p = 95;
+                    break;
+                case 'balanced':
+                    n = 90; s = 90; p = 90;
+                    break;
+            }
+            noesisSlider.value = n;
+            sophiaSlider.value = s;
+            praxisSlider.value = p;
+            updateChart();
+        }
+
+        noesisSlider.addEventListener('input', updateChart);
+        sophiaSlider.addEventListener('input', updateChart);
+        praxisSlider.addEventListener('input', updateChart);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createChart();
+            updateChart();
+        });
+
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Art of Proactive & Adaptive AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .flow-arrow {
+            position: relative;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+        .flow-arrow::after {
+            content: '▼';
+            font-size: 2rem;
+            color: #7a5195;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header class="bg-[#003f5c] text-white text-center p-8 md:p-16">
+        <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wide">Beyond Clippy</h1>
+        <p class="text-xl md:text-2xl mt-4 font-light max-w-3xl mx-auto">The Science of Building a Truly Respectful & Proactive AI Partner</p>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <section id="problem" class="text-center my-12 md:my-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-[#003f5c]">The High Cost of Poor Interruption</h2>
+            <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">Unsolicited and poorly-timed interruptions aren't just annoying; they carry a massive cognitive cost, derailing focus and productivity. A truly intelligent AI must first understand this cost.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center mt-8 md:mt-12">
+                <div class="bg-white rounded-lg shadow-xl p-8">
+                    <p class="text-7xl md:text-8xl font-black text-[#bc5090]">~23</p>
+                    <p class="text-2xl font-bold text-[#003f5c] mt-2">Minutes</p>
+                    <p class="text-gray-600 mt-4">The average time it takes to fully refocus on a task after being interrupted.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-xl p-6">
+                    <h3 class="text-xl font-bold text-center mb-4 text-[#003f5c]">Daily Work Time Lost to Interruptions</h3>
+                    <div class="chart-container h-64 md:h-80">
+                        <canvas id="interruptionCostChart"></canvas>
+                    </div>
+                     <p class="text-center text-gray-600 mt-4">Research shows interruptions can consume up to 28% of a knowledge worker's day.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="w-full h-1 bg-gray-200 rounded-full my-16"></div>
+
+        <section id="calculus" class="my-12 md:my-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-[#003f5c]">The Calculus of Interruption</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-center text-gray-600">To be a valued partner, an AI must operate like a cognitive economist, continuously weighing the cost of a user's attention against the value of its information. This requires a dynamic, three-layered model.</p>
+
+            <div class="mt-12">
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                    <div class="flex items-center">
+                        <span class="text-4xl font-black text-white bg-[#7a5195] rounded-full w-16 h-16 flex items-center justify-center">1</span>
+                        <h3 class="text-2xl font-bold ml-4 text-[#003f5c]">Layer 1: Detect User's Cognitive State</h3>
+                    </div>
+                    <p class="mt-4 text-gray-600">The foundation is understanding the user's current mental state to estimate the "price" of an interruption. The AI must sense whether a user is focused, frustrated, or learning.</p>
+                    <div class="chart-container mt-6">
+                        <canvas id="userStateChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"></div>
+
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                    <div class="flex items-center">
+                        <span class="text-4xl font-black text-white bg-[#bc5090] rounded-full w-16 h-16 flex items-center justify-center">2</span>
+                        <h3 class="text-2xl font-bold ml-4 text-[#003f5c]">Layer 2: Score Information Salience</h3>
+                    </div>
+                    <p class="mt-4 text-gray-600">Next, the AI calculates the "value" of its potential contribution. Is the information urgent? Is it relevant to the user's current task? This score determines if an interruption is worth making.</p>
+                    <div class="chart-container mt-6">
+                        <canvas id="salienceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"></div>
+
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                     <div class="flex items-center">
+                        <span class="text-4xl font-black text-white bg-[#ef5675] rounded-full w-16 h-16 flex items-center justify-center">3</span>
+                        <h3 class="text-2xl font-bold ml-4 text-[#003f5c]">Layer 3: Choose the Right Coordination Strategy</h3>
+                    </div>
+                    <p class="mt-4 text-gray-600">Finally, the AI synthesizes the "price" and "value" to select the optimal intervention method, from an immediate alert to scheduling it for later, ensuring the notification's intrusiveness matches its utility.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 items-center">
+                        <div class="chart-container h-64 md:h-80">
+                            <canvas id="coordinationChart"></canvas>
+                        </div>
+                        <div class="space-y-4 text-left">
+                            <div class="p-4 bg-gray-100 rounded-lg">
+                                <h4 class="font-bold text-[#7a5195]">Immediate</h4>
+                                <p class="text-sm text-gray-600">For critical, high-urgency alerts only. (e.g., Security Warning)</p>
+                            </div>
+                             <div class="p-4 bg-gray-100 rounded-lg">
+                                <h4 class="font-bold text-[#bc5090]">Negotiated</h4>
+                                <p class="text-sm text-gray-600">Offer help but give the user control. (e.g., "Need a suggestion?")</p>
+                            </div>
+                             <div class="p-4 bg-gray-100 rounded-lg">
+                                <h4 class="font-bold text-[#ff764a]">Mediated</h4>
+                                <p class="text-sm text-gray-600">Pass to a notification manager for batching. (e.g., Low-priority updates)</p>
+                            </div>
+                            <div class="p-4 bg-gray-100 rounded-lg">
+                                <h4 class="font-bold text-[#ffa600]">Scheduled</h4>
+                                <p class="text-sm text-gray-600">Hold until a natural breakpoint in activity. (e.g., "FYI, your doc was updated.")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="w-full h-1 bg-gray-200 rounded-full my-16"></div>
+
+        <section id="repair" class="my-12 md:my-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-[#003f5c]">The Art of Conversational Repair</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-center text-gray-600">Breakdowns in communication are inevitable. A truly intelligent AI is defined by its ability to gracefully recover from misunderstanding, turning failure into a collaborative success.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                    <h3 class="text-xl font-bold text-center mb-4 text-[#003f5c]">The Four Types of Repair</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-[#e0e7ff] p-4 rounded-lg">
+                            <h4 class="font-bold text-[#374c80]">Self-Initiated Self-Repair</h4>
+                            <p class="text-sm mt-1">"I need to go to the... I mean, the post office."</p>
+                        </div>
+                        <div class="bg-[#e0e7ff] p-4 rounded-lg">
+                            <h4 class="font-bold text-[#374c80]">Other-Initiated Self-Repair</h4>
+                             <p class="text-sm mt-1">A: "See you Tuesday." B: "Tuesday?" A: "Sorry, Wednesday."</p>
+                        </div>
+                         <div class="bg-[#e0e7ff] p-4 rounded-lg">
+                            <h4 class="font-bold text-[#374c80]">Self-Initiated Other-Repair</h4>
+                             <p class="text-sm mt-1">"What's the name of that actor...?"</p>
+                        </div>
+                         <div class="bg-[#e0e7ff] p-4 rounded-lg">
+                            <h4 class="font-bold text-[#374c80]">Other-Initiated Other-Repair</h4>
+                             <p class="text-sm mt-1">A: "He's from Boston." B: "Actually, Chicago."</p>
+                        </div>
+                    </div>
+                    <p class="text-center text-gray-600 mt-4">Human conversation shows a strong preference for <b class="text-[#374c80]">self-repair</b>. Instead of saying "I don't understand," a good AI should prompt the user to clarify, empowering them to fix the issue.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+                    <h3 class="text-xl font-bold text-center mb-4 text-[#003f5c]">Most Effective AI Repair Strategies</h3>
+                     <div class="chart-container">
+                        <canvas id="repairStrategiesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="w-full h-1 bg-gray-200 rounded-full my-16"></div>
+
+        <section id="principles" class="my-12 md:my-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-[#003f5c]">Principles for a Human-Centered AI</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-center text-gray-600">To avoid the pitfalls of the past (like Clippy), the next generation of AI must be built on a foundation of deference, transparency, and ethical design.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                <div class="bg-red-100 border-l-4 border-red-500 p-6 rounded-r-lg">
+                    <h3 class="text-2xl font-bold text-red-800">The Clippy Anti-Patterns 👎</h3>
+                    <ul class="mt-4 space-y-2 list-disc list-inside text-red-700">
+                        <li>Context-blind and not personalized</li>
+                        <li>Invasive and ignorant of user state</li>
+                        <li>Optimized for novelty, not utility</li>
+                        <li>Insular design process ignoring feedback</li>
+                        <li>Technologically over-ambitious for its time</li>
+                    </ul>
+                </div>
+                 <div class="bg-green-100 border-l-4 border-green-500 p-6 rounded-r-lg">
+                    <h3 class="text-2xl font-bold text-green-800">The HCAI Principles 👍</h3>
+                    <ul class="mt-4 space-y-2 list-disc list-inside text-green-700">
+                        <li><b>Deference:</b> Honor user autonomy</li>
+                        <li><b>Pertinence:</b> Be valuable and relevant</li>
+                        <li><b>Flexibility:</b> Adapt to any context</li>
+                        <li><b>Learned Adaptation:</b> Improve from every interaction</li>
+                        <li><b>Augment, Don't Replace:</b> Enhance human capability</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-xl p-6 md:p-8 mt-12">
+                <h3 class="text-2xl font-bold text-center text-[#003f5c]">A Proactive Ethical Framework</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8 text-center">
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-4xl">🔍</div>
+                        <h4 class="font-bold mt-2 text-[#374c80]">Inferential Transparency</h4>
+                        <p class="text-sm text-gray-600 mt-1">Users can ask "Why did you do that?" and get a clear answer.</p>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-4xl">🤝</div>
+                        <h4 class="font-bold mt-2 text-[#7a5195]">Dynamic Consent</h4>
+                        <p class="text-sm text-gray-600 mt-1">Seek "micro-consent" for actions rather than relying on a one-time agreement.</p>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-4xl">⚙️</div>
+                        <h4 class="font-bold mt-2 text-[#bc5090]">User Auditing & Control</h4>
+                        <p class="text-sm text-gray-600 mt-1">Allow users to review and correct the AI's inferences about them.</p>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-4xl">🛡️</div>
+                        <h4 class="font-bold mt-2 text-[#ef5675]">Context-Aware Constraints</h4>
+                        <p class="text-sm text-gray-600 mt-1">Automatically limit data collection during privacy-sensitive tasks.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#003f5c] text-white text-center p-8 mt-16">
+        <p class="text-lg">The future of AI is not just about power, but partnership.</p>
+        <p class="text-sm opacity-70 mt-2">Infographic based on "The Calculus of Interruption and the Art of Repair" research.</p>
+    </footer>
+
+    <script>
+        const brilliantBlues = ['#7a5195', '#bc5090', '#ff764a', '#ffa600', '#374c80', '#ef5675'];
+        const brilliantBluesBg = ['rgba(122, 81, 149, 0.5)', 'rgba(188, 80, 144, 0.5)', 'rgba(255, 118, 74, 0.5)', 'rgba(255, 166, 0, 0.5)', 'rgba(55, 76, 128, 0.5)', 'rgba(239, 86, 117, 0.5)'];
+
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+                return label.join(' ');
+            }
+            return label;
+        };
+
+        const wrapLabel = (str, maxWidth) => {
+            if (str.length <= maxWidth) return str;
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + word).length > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine.trim());
+                    currentLine = '';
+                }
+                currentLine += word + ' ';
+            }
+            lines.push(currentLine.trim());
+            return lines;
+        };
+
+        const createChart = (ctx, config) => {
+            if (ctx) {
+                new Chart(ctx, config);
+            }
+        };
+
+        const interruptionCostCtx = document.getElementById('interruptionCostChart');
+        createChart(interruptionCostCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Time Lost to Interruptions', 'Focused Work Time'],
+                datasets: [{
+                    label: 'Workday Distribution',
+                    data: [28, 72],
+                    backgroundColor: ['#bc5090', '#e0e7ff'],
+                    borderColor: ['#bc5090', '#e0e7ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                           title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+        const userStateCtx = document.getElementById('userStateChart');
+        createChart(userStateCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Flow (Focused)', 'Frustration', 'High Cognitive Load', 'Learning (Novice)', 'Idle / Low Focus'],
+                datasets: [{
+                    label: 'Example User State',
+                    data: [8, 3, 7, 2, 4],
+                    fill: true,
+                    backgroundColor: brilliantBluesBg[0],
+                    borderColor: brilliantBlues[0],
+                    pointBackgroundColor: brilliantBlues[0],
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: brilliantBlues[0]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                 scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { size: 12 } },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#6b7280'
+                        },
+                         suggestedMin: 0,
+                         suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                           title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+        const salienceCtx = document.getElementById('salienceChart');
+        createChart(salienceCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Urgency', 'Relevance', 'Importance', 'User Preference'],
+                datasets: [{
+                    label: 'Information Salience Score',
+                    data: [9, 8, 6, 7],
+                    backgroundColor: [brilliantBlues[1], brilliantBlues[2], brilliantBlues[3], brilliantBlues[4]],
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { display: false },
+                        suggestedMax: 10
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                           title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+        const coordinationCtx = document.getElementById('coordinationChart');
+        createChart(coordinationCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Immediate', 'Negotiated', 'Mediated', 'Scheduled'],
+                datasets: [{
+                    data: [10, 35, 25, 30],
+                    backgroundColor: [brilliantBlues[0], brilliantBlues[1], brilliantBlues[3], brilliantBlues[4]],
+                    borderColor: '#fff',
+                    borderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                           title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+        const repairStrategiesCtx = document.getElementById('repairStrategiesChart');
+        const repairLabels = [
+            'Deferral to Human (for complex issues)',
+            'Offering Options (e.g., buttons)',
+            'Clarification Request (e.g., "Did you mean X?")',
+            'Sincere Apology (with blame acceptance)',
+            'Generic "I don\'t understand"',
+            'Blame-Shifting Apology'
+        ];
+        createChart(repairStrategiesCtx, {
+            type: 'bar',
+            data: {
+                labels: repairLabels.map(label => wrapLabel(label, 16)),
+                datasets: [{
+                    label: 'User-Perceived Effectiveness',
+                    data: [9.5, 9, 8.5, 7, 3, 1],
+                    backgroundColor: [
+                        brilliantBlues[0],
+                        brilliantBlues[4],
+                        brilliantBlues[2],
+                        brilliantBlues[3],
+                        '#9ca3af',
+                        '#ef4444'
+                    ],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { display: false },
+                        suggestedMax: 10,
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                           title: tooltipTitleCallback
+                        }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

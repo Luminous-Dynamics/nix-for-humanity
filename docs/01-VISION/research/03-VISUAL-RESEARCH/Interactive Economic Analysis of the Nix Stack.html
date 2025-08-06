@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Economic Physics of the Nix Stack: An Interactive Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A modular, single-page dashboard design. The user is introduced with a hero section and can navigate via a sticky header to four distinct, interactive sections: Micro, Meso, Macro, and Meta. This structure was chosen to break down the dense, academic report into digestible, self-contained, and explorable modules. It prioritizes user engagement and non-linear exploration over the report's original linear format, allowing users to dive into the topics that interest them most. Each section uses interactive elements (sliders, charts, toggles) to make abstract concepts tangible and understandable. -->
+    <!-- Visualization & Content Choices:
+        - Part I (Micro): Report info on the Sovereignty Utility Function (SUF) is visualized with interactive sliders and a donut chart. Goal: Personalize the abstract SUF concept. Interaction: Sliders for SPK/HEART/WIS update the chart and a descriptive text block. Justification: Transforms a formula into a self-discovery tool. Library: Chart.js.
+        - Part II (Meso): Report info comparing incumbent platforms to creator co-ops is shown with a comparative bar chart. Goal: Demonstrate value extraction. Interaction: A revenue slider updates two bar charts showing value distribution. Justification: Makes the economic argument visceral and clear. Library: Chart.js.
+        - Part III (Macro): Report info on GDP vs. PEI and monetary policy is visualized with a dual-axis line chart and a policy effectiveness meter. Goal: Show competing narratives and systemic impact. Interaction: Scenario toggles change chart data; a slider shows policy effectiveness declining with SPK adoption. Justification: Visualizes abstract macroeconomic conflicts. Library: Chart.js.
+        - Part IV (Meta): Report info on the philosophical debate is presented as an interactive poll. Goal: Engage user in the core dilemma. Interaction: Users click a button to "vote" and see aggregated results. Justification: Fosters reflection on a non-data-driven topic. Library: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F5F2;
+            color: #3D405B;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #E07A5F;
+        }
+        .active-nav {
+            color: #E07A5F;
+            font-weight: 600;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #E07A5F;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #E07A5F;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-lg font-bold text-[#3D405B]">The Nix Stack Economy</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#micro" class="nav-link text-gray-600">Micro</a>
+                <a href="#meso" class="nav-link text-gray-600">Meso</a>
+                <a href="#macro" class="nav-link text-gray-600">Macro</a>
+                <a href="#meta" class="nav-link text-gray-600">Meta</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 md:py-32 text-center bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-6xl font-bold text-[#3D405B] mb-4">The Economic Physics of a New World</h2>
+                <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto">
+                    An interactive exploration of the Nix for Humanity stack, a system proposing a fundamental shift in how we define value, organize work, and govern our societies. Move beyond the report and engage directly with the core concepts.
+                </p>
+            </div>
+        </section>
+
+        <section id="micro" class="py-16 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-sm font-semibold uppercase text-[#E07A5F] tracking-wider">Part I: Microeconomic Transformation</h3>
+                    <h2 class="text-3xl md:text-4xl font-bold mt-2">The Rationality of the Sovereign Agent</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-gray-600">
+                        The system introduces *Homo Coherens*, an economic agent who maximizes a "Sovereignty Utility Function" (SUF) beyond mere income. This function balances income (SPK), community connection (HEART), and purpose (WIS). Use the sliders below to discover your own utility function and see what kind of economic agent you are.
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="bg-white p-8 rounded-xl shadow-lg">
+                        <h4 class="font-bold text-xl mb-6 text-center">What do you value most?</h4>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="spkSlider" class="font-medium">Income (SPK)</label>
+                                <input id="spkSlider" type="range" min="1" max="100" value="33" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="heartSlider" class="font-medium">Connection (HEART)</label>
+                                <input id="heartSlider" type="range" min="1" max="100" value="33" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="wisSlider" class="font-medium">Purpose (WIS)</label>
+                                <input id="wisSlider" type="range" min="1" max="100" value="34" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="chart-container max-w-sm h-72 md:h-80">
+                            <canvas id="sufChart"></canvas>
+                        </div>
+                        <div id="persona" class="mt-6 text-center bg-white p-6 rounded-xl shadow-md">
+                            <h5 class="font-bold text-lg">Your Persona: The Balanced Pragmatist</h5>
+                            <p class="text-gray-600 mt-2">You seek a healthy equilibrium between financial stability, strong community ties, and meaningful work.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="meso" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-sm font-semibold uppercase text-[#E07A5F] tracking-wider">Part II: Mesoeconomic Disruption</h3>
+                    <h2 class="text-3xl md:text-4xl font-bold mt-2">From Platforms to Protocols</h2>
+                     <p class="mt-4 max-w-3xl mx-auto text-gray-600">
+                        The Nix stack enables "Creator Cooperatives" that challenge incumbent platforms by redirecting value from shareholders to creators and their communities. The key difference lies in the "take-rate." See how much value is captured by platforms versus returned to creators.
+                    </p>
+                </div>
+                <div class="max-w-4xl mx-auto">
+                    <div class="mb-8">
+                        <label for="revenueSlider" class="font-medium">Creator's Gross Revenue: <span id="revenueValue" class="font-bold text-[#E07A5F]">$50,000</span></label>
+                        <input id="revenueSlider" type="range" min="1000" max="100000" value="50000" step="1000" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-[#F8F5F2] p-6 rounded-xl">
+                            <h4 class="font-bold text-center text-xl mb-4">Incumbent Platform</h4>
+                            <div class="chart-container h-64">
+                                <canvas id="incumbentChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-[#F8F5F2] p-6 rounded-xl">
+                            <h4 class="font-bold text-center text-xl mb-4">Creator Cooperative</h4>
+                            <div class="chart-container h-64">
+                                <canvas id="coopChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="macro" class="py-16 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-sm font-semibold uppercase text-[#E07A5F] tracking-wider">Part III: Macroeconomic Transmutation</h3>
+                    <h2 class="text-3xl md:text-4xl font-bold mt-2">The Challenge to the Nation-State</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">
+                        Widespread adoption challenges the state's monopoly on defining economic reality. A verifiable, bottom-up Psycho-Economic Indicator (PEI) can directly contradict official GDP reports, creating competing narratives. Explore how these indicators might diverge in different economic scenarios.
+                    </p>
+                </div>
+                 <div class="bg-white p-8 rounded-xl shadow-lg max-w-5xl mx-auto">
+                    <div class="flex justify-center space-x-2 md:space-x-4 mb-6">
+                        <button id="scenario1" class="scenario-btn bg-[#E07A5F] text-white px-4 py-2 rounded-full text-sm font-medium">Tech Boom</button>
+                        <button id="scenario2" class="scenario-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">Social Recession</button>
+                        <button id="scenario3" class="scenario-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">Stagnation</button>
+                    </div>
+                    <div class="chart-container h-80 md:h-96">
+                        <canvas id="macroChart"></canvas>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h4 class="font-bold text-lg text-center">Monetary Policy Effectiveness</h4>
+                        <p class="text-sm text-gray-600 text-center mb-4">As the parallel SPK economy grows, the central bank's power wanes.</p>
+                        <label for="spkAdoptionSlider" class="font-medium text-sm">SPK Adoption: <span id="spkAdoptionValue" class="font-bold text-[#E07A5F]">10%</span></label>
+                        <input id="spkAdoptionSlider" type="range" min="0" max="100" value="10" class="slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-4 mt-4">
+                            <div id="policyEffectivenessBar" class="bg-[#E07A5F] h-4 rounded-full transition-all duration-300" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="meta" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                     <h3 class="text-sm font-semibold uppercase text-[#E07A5F] tracking-wider">Part IV: Meta-Economic Inquiry</h3>
+                    <h2 class="text-3xl md:text-4xl font-bold mt-2">The Commodification of Virtue</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">
+                        The system's most profound challenge is philosophical. Does financially rewarding ethical behavior create a better society, or does it risk "crowding out" the intrinsic motivation that makes kindness and honesty genuine? This is the system's great, unresolved gamble. Where do you stand?
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-[#F8F5F2] p-8 rounded-xl text-center flex flex-col">
+                        <h4 class="text-xl font-bold mb-4">The Techno-Optimist View</h4>
+                        <p class="text-gray-600 flex-grow">Incentivizing pro-social behavior aligns self-interest with the common good, creating a more cooperative and truthful society through rational design.</p>
+                        <button id="voteOptimist" class="vote-btn mt-6 bg-[#3D405B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">I Agree</button>
+                    </div>
+                    <div class="bg-[#F8F5F2] p-8 rounded-xl text-center flex flex-col">
+                        <h4 class="text-xl font-bold mb-4">The Humanist-Skeptic View</h4>
+                        <p class="text-gray-600 flex-grow">Putting a price on virtue corrupts it. It turns acts of kindness into transactions, hollowing out the intrinsic motivations that form the basis of genuine community.</p>
+                        <button id="voteSkeptic" class="vote-btn mt-6 bg-[#3D405B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">I Agree</button>
+                    </div>
+                </div>
+                <div id="pollResults" class="hidden mt-8 max-w-md mx-auto bg-white p-6 rounded-xl shadow-md text-center">
+                    <h4 class="font-bold text-lg mb-4">Community Poll Results</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between mb-1 text-sm font-medium">
+                                <span>Techno-Optimist</span>
+                                <span id="optimistPercent">58%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="optimistBar" class="bg-[#81B29A] h-2.5 rounded-full" style="width: 58%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1 text-sm font-medium">
+                                <span>Humanist-Skeptic</span>
+                                <span id="skepticPercent">42%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="skepticBar" class="bg-[#E07A5F] h-2.5 rounded-full" style="width: 42%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4">(Note: This is a simulated poll for illustrative purposes.)</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-[#3D405B] text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025. An interactive analysis based on the "Economic Physics of the Sovereign Agent" report.</p>
+            <p class="text-sm text-gray-400 mt-2">This application is for illustrative and educational purposes only.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const sufChartCtx = document.getElementById('sufChart').getContext('2d');
+            const spkSlider = document.getElementById('spkSlider');
+            const heartSlider = document.getElementById('heartSlider');
+            const wisSlider = document.getElementById('wisSlider');
+            const personaDiv = document.getElementById('persona');
+
+            let sufChart = new Chart(sufChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Income (SPK)', 'Connection (HEART)', 'Purpose (WIS)'],
+                    datasets: [{
+                        data: [33, 33, 34],
+                        backgroundColor: ['#81B29A', '#F2CC8F', '#E07A5F'],
+                        borderColor: '#F8F5F2',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            function updateSufChart() {
+                const spk = parseInt(spkSlider.value);
+                const heart = parseInt(heartSlider.value);
+                const wis = parseInt(wisSlider.value);
+                const total = spk + heart + wis;
+
+                const spk_p = Math.round((spk / total) * 100);
+                const heart_p = Math.round((heart / total) * 100);
+                const wis_p = 100 - spk_p - heart_p;
+
+                sufChart.data.datasets[0].data = [spk_p, heart_p, wis_p];
+                sufChart.update();
+
+                let personaTitle = '';
+                let personaText = '';
+
+                if (spk_p > 50) {
+                    personaTitle = 'The Wealth Maximizer';
+                    personaText = 'Your primary focus is on financial security and building wealth through the SPK token.';
+                } else if (heart_p > 50) {
+                    personaTitle = 'The Community Builder';
+                    personaText = 'You thrive on deep social connections and prioritize the health of your network (HEART).';
+                } else if (wis_p > 50) {
+                    personaTitle = 'The Purpose Seeker';
+                    personaText = 'You are driven by meaningful contribution and building your reputation for wisdom (WIS).';
+                } else if (spk_p > 35 && wis_p > 35) {
+                    personaTitle = 'The Pragmatic Visionary';
+                    personaText = 'You aim to fund your purpose-driven work with a solid income stream.';
+                } else if (spk_p > 35 && heart_p > 35) {
+                    personaTitle = 'The Social Entrepreneur';
+                    personaText = 'You leverage your network and financial resources to build thriving communities.';
+                } else if (heart_p > 35 && wis_p > 35) {
+                    personaTitle = 'The Servant Leader';
+                    personaText = 'Your goal is to serve your community through meaningful, purpose-driven actions.';
+                } else {
+                    personaTitle = 'The Balanced Pragmatist';
+                    personaText = 'You seek a healthy equilibrium between financial stability, strong community ties, and meaningful work.';
+                }
+
+                personaDiv.innerHTML = `<h5 class="font-bold text-lg">${personaTitle}</h5><p class="text-gray-600 mt-2">${personaText}</p>`;
+            }
+
+            [spkSlider, heartSlider, wisSlider].forEach(slider => {
+                slider.addEventListener('input', updateSufChart);
+            });
+
+            const revenueSlider = document.getElementById('revenueSlider');
+            const revenueValue = document.getElementById('revenueValue');
+            const incumbentCtx = document.getElementById('incumbentChart').getContext('2d');
+            const coopCtx = document.getElementById('coopChart').getContext('2d');
+
+            const platformTakeRate = 0.50;
+            const coopProtocolFee = 0.05;
+
+            const commonChartOptions = {
+                type: 'bar',
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                callback: value => `$${(value/1000)}k`
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            display: false
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            let incumbentChart = new Chart(incumbentCtx, { ...commonChartOptions,
+                data: {
+                    labels: ['Value'],
+                    datasets: []
+                }
+            });
+            let coopChart = new Chart(coopCtx, { ...commonChartOptions,
+                data: {
+                    labels: ['Value'],
+                    datasets: []
+                }
+            });
+
+            function updateMesoCharts() {
+                const revenue = parseInt(revenueSlider.value);
+                revenueValue.textContent = `$${revenue.toLocaleString()}`;
+
+                const incumbentTake = revenue * platformTakeRate;
+                const incumbentNet = revenue - incumbentTake;
+
+                const coopTake = revenue * coopProtocolFee;
+                const coopNet = revenue - coopTake;
+
+                incumbentChart.data.datasets = [{
+                    label: 'Creator Net Income',
+                    data: [incumbentNet],
+                    backgroundColor: '#81B29A',
+                }, {
+                    label: 'Platform Take-Rate',
+                    data: [incumbentTake],
+                    backgroundColor: '#E07A5F',
+                }];
+
+                coopChart.data.datasets = [{
+                    label: 'Creator Net Income',
+                    data: [coopNet],
+                    backgroundColor: '#81B29A',
+                }, {
+                    label: 'Protocol Fee',
+                    data: [coopTake],
+                    backgroundColor: '#F2CC8F',
+                }];
+
+                incumbentChart.options.scales.x.max = revenue;
+                coopChart.options.scales.x.max = revenue;
+                incumbentChart.update();
+                coopChart.update();
+            }
+
+            revenueSlider.addEventListener('input', updateMesoCharts);
+
+            const macroChartCtx = document.getElementById('macroChart').getContext('2d');
+            const macroScenarios = {
+                scenario1: {
+                    label: 'Tech Boom',
+                    gdp: [100, 105, 115, 125, 140],
+                    pei: [100, 98, 95, 90, 88]
+                },
+                scenario2: {
+                    label: 'Social Recession',
+                    gdp: [100, 102, 103, 101, 100],
+                    pei: [100, 90, 82, 75, 70]
+                },
+                scenario3: {
+                    label: 'Stagnation',
+                    gdp: [100, 100, 101, 100, 101],
+                    pei: [100, 99, 98, 97, 96]
+                }
+            };
+
+            let macroChart = new Chart(macroChartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    datasets: [
+                        {
+                            label: 'GDP Index',
+                            data: macroScenarios.scenario1.gdp,
+                            borderColor: '#81B29A',
+                            backgroundColor: '#81B29A20',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true,
+                        },
+                        {
+                            label: 'PEI Index',
+                            data: macroScenarios.scenario1.pei,
+                            borderColor: '#E07A5F',
+                            backgroundColor: '#E07A5F20',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Scenario: Tech Boom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Index Value'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const scenarioBtns = document.querySelectorAll('.scenario-btn');
+            scenarioBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    scenarioBtns.forEach(b => b.classList.remove('bg-[#E07A5F]', 'text-white'));
+                    scenarioBtns.forEach(b => b.classList.add('bg-gray-200', 'text-gray-700'));
+                    btn.classList.add('bg-[#E07A5F]', 'text-white');
+                    btn.classList.remove('bg-gray-200', 'text-gray-700');
+
+                    const scenarioData = macroScenarios[btn.id];
+                    macroChart.data.datasets[0].data = scenarioData.gdp;
+                    macroChart.data.datasets[1].data = scenarioData.pei;
+                    macroChart.options.plugins.title.text = `Scenario: ${scenarioData.label}`;
+                    macroChart.update();
+                });
+            });
+
+            const spkAdoptionSlider = document.getElementById('spkAdoptionSlider');
+            const spkAdoptionValue = document.getElementById('spkAdoptionValue');
+            const policyEffectivenessBar = document.getElementById('policyEffectivenessBar');
+
+            spkAdoptionSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                spkAdoptionValue.textContent = `${value}%`;
+                policyEffectivenessBar.style.width = `${100 - value}%`;
+            });
+
+            const voteBtns = document.querySelectorAll('.vote-btn');
+            const pollResultsDiv = document.getElementById('pollResults');
+
+            voteBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    pollResultsDiv.classList.remove('hidden');
+                    voteBtns.forEach(b => b.disabled = true);
+                    btn.classList.add('ring-2', 'ring-offset-2', 'ring-[#E07A5F]');
+                });
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 60) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active-nav');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active-nav');
+                    }
+                });
+            });
+
+            updateSufChart();
+            updateMesoCharts();
+        });
+    </script>
+</body>
+</html>

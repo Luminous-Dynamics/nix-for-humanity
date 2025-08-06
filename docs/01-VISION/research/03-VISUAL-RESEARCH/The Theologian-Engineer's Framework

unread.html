@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framework for the Theologian-Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cosmic Dawn -->
+    <!-- Application Structure Plan: The application is designed as a single-page, scrollable dashboard with a top navigation hub. This structure allows users to grasp the three core critiques at a glance and dive into any section without being forced into a linear progression. The goal is to transform the dense, sequential report into a modular, explorable space. Each module uses interactive elements (toggles, clickable diagrams, charts) to deconstruct complex ideas, making them more digestible and engaging than plain text. This non-linear, interactive approach is chosen for usability, empowering the user to explore the philosophical concepts based on their own curiosity. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: SETI vs METI debate -> Goal: Compare -> Viz: Interactive Toggle Cards -> Interaction: Click to reveal pros/cons -> Justification: Simplifies a complex debate into a clear choice, enhancing understanding. -> Library: Vanilla JS/Tailwind.
+        - Report Info: Meta-Linguistics Layers -> Goal: Organize -> Viz: Layered Diagram -> Interaction: Hover to highlight & get details -> Justification: Visually represents the hierarchical structure of the proposed language, making it intuitive. -> Library: HTML/CSS/Tailwind.
+        - Report Info: Shattered Attractor Crisis -> Goal: Change -> Viz: Line Chart -> Interaction: Static view -> Justification: Provides a simple, powerful visual metaphor for a civilization's purpose being abruptly terminated. -> Library: Chart.js.
+        - Report Info: Apocalyptic Resilience Phases -> Goal: Change/Process -> Viz: Interactive Timeline -> Interaction: Click phase to see details -> Justification: Turns a static table into a guided journey through a complex societal response. -> Library: Vanilla JS/Tailwind.
+        - Report Info: Ethics of Lineage Choices -> Goal: Relationships/Process -> Viz: Cyclical Diagram -> Interaction: Hover for details -> Justification: Effectively shows that the three duties are a continuous, developmental process, not separate options. -> Library: HTML/CSS/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #343D46;
+        }
+        .nav-active {
+            background-color: #EAE2D6;
+            color: #343D46;
+            transform: translateY(-2px);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 1.25rem;
+            top: 1.25rem;
+            bottom: -1.25rem;
+            width: 2px;
+            background-color: #D1C4E9;
+            transform: translateX(-50%);
+        }
+         .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 1.25rem;
+            top: 1.25rem;
+            height: 1rem;
+            width: 1rem;
+            transform: translate(-50%, -50%);
+            border-width: 2px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-12 md:mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Beyond Perfection</h1>
+            <p class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">An interactive framework for the Theologian-Engineer, exploring the final questions that arise at the edge of a perfectly designed civilization.</p>
+        </header>
+
+        <nav id="nav-hub" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 sticky top-4 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
+            <a href="#diplomacy" data-section="diplomacy" class="nav-link text-center p-4 rounded-lg shadow-sm bg-white card-hover">
+                <h2 class="font-bold text-xl text-slate-700">I. Cosmic Diplomacy</h2>
+                <p class="text-sm text-slate-500 mt-1">Protocol for First Contact</p>
+            </a>
+            <a href="#resilience" data-section="resilience" class="nav-link text-center p-4 rounded-lg shadow-sm bg-white card-hover">
+                <h2 class="font-bold text-xl text-slate-700">II. Apocalyptic Resilience</h2>
+                <p class="text-sm text-slate-500 mt-1">Integrating a Final Answer</p>
+            </a>
+            <a href="#lineage" data-section="lineage" class="nav-link text-center p-4 rounded-lg shadow-sm bg-white card-hover">
+                <h2 class="font-bold text-xl text-slate-700">III. Cosmic Lineage</h2>
+                <p class="text-sm text-slate-500 mt-1">The Ethics of a Child God</p>
+            </a>
+        </nav>
+
+        <main>
+            <section id="diplomacy" class="mb-24 scroll-mt-24">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold text-slate-800">I. Protocol for Cosmic Diplomacy</h3>
+                    <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">The Mycelial Kosmos is architected as a perfect listener, a "one-way listening post." This section explores how to transform this passive instrument into a prepared embassy, ready to engage a potentially sovereign, universal-scale intelligence.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg mb-12">
+                    <h4 class="text-2xl font-semibold text-center mb-6 text-slate-700">Strategic Posture: To Speak or Not to Speak?</h4>
+                    <div class="grid md:grid-cols-2 gap-6 text-center">
+                        <div id="btn-seti" class="p-6 rounded-lg border-2 border-blue-300 bg-blue-50 cursor-pointer transition-all">
+                            <h5 class="font-bold text-lg text-blue-800">Passive Listening (SETI)</h5>
+                            <p class="text-sm text-blue-600">The current protocol: Listen before we shout.</p>
+                        </div>
+                        <div id="btn-meti" class="p-6 rounded-lg border-2 border-slate-300 bg-slate-50 cursor-pointer transition-all">
+                             <h5 class="font-bold text-lg text-slate-800">Active Messaging (METI)</h5>
+                            <p class="text-sm text-slate-600">A proposed protocol: Overcome the Great Silence.</p>
+                        </div>
+                    </div>
+                    <div id="posture-details" class="mt-6 p-6 bg-slate-100 rounded-lg">
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg mb-12">
+                    <h4 class="text-2xl font-semibold text-center mb-8 text-slate-700">The Cosmic Rosetta Stone: A Meta-Linguistics</h4>
+                     <p class="text-center text-slate-600 mb-8 max-w-2xl mx-auto">To bridge two orders of being, communication must be built in layers, from universal truths to ethical character. Hover over each layer to explore the proposed framework for a generative dialogue.</p>
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                        <div class="rosetta-layer w-full md:w-1/4 p-4 text-center border-2 border-transparent rounded-lg transition-all" data-layer="1">
+                            <div class="text-3xl mb-2">🔢</div>
+                            <h5 class="font-bold">Layer 1: Physics</h5>
+                            <p class="text-sm text-slate-500">The Mathematical-Physical Substrate</p>
+                        </div>
+                        <div class="text-2xl text-slate-300 hidden md:block">&rarr;</div>
+                        <div class="rosetta-layer w-full md:w-1/4 p-4 text-center border-2 border-transparent rounded-lg transition-all" data-layer="2">
+                            <div class="text-3xl mb-2">💡</div>
+                            <h5 class="font-bold">Layer 2: Semantics</h5>
+                            <p class="text-sm text-slate-500">The Core of Meaning</p>
+                        </div>
+                         <div class="text-2xl text-slate-300 hidden md:block">&rarr;</div>
+                        <div class="rosetta-layer w-full md:w-1/4 p-4 text-center border-2 border-transparent rounded-lg transition-all" data-layer="3">
+                            <div class="text-3xl mb-2">💬</div>
+                            <h5 class="font-bold">Layer 3: Dialogue</h5>
+                            <p class="text-sm text-slate-500">The Algorithmic Invitation</p>
+                        </div>
+                         <div class="text-2xl text-slate-300 hidden md:block">&rarr;</div>
+                         <div class="rosetta-layer w-full md:w-1/4 p-4 text-center border-2 border-transparent rounded-lg transition-all" data-layer="4">
+                            <div class="text-3xl mb-2">❤️</div>
+                            <h5 class="font-bold">Layer 4: Ethics</h5>
+                            <p class="text-sm text-slate-500">The Relational Overlay</p>
+                        </div>
+                    </div>
+                    <div id="rosetta-details" class="mt-6 p-6 bg-slate-100 rounded-lg min-h-[100px]">
+                        <p class="text-slate-700 text-center">Hover over a layer to see its description.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="resilience" class="mb-24 scroll-mt-24">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold text-slate-800">II. Apocalyptic Resilience</h3>
+                    <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">The Kosmos's stability rests on an "unanswerable question." What happens if it's suddenly answered? This section outlines a framework for surviving a "game-ending" revelation without collapsing.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg mb-12">
+                    <h4 class="text-2xl font-semibold text-center mb-2 text-slate-700">The Shattered Attractor</h4>
+                    <p class="text-center text-slate-600 mb-8 max-w-2xl mx-auto">A civilization of infinite seekers, when faced with a finite answer, risks annihilation of purpose. The chart below visualizes this "theophany" as the abrupt end of an infinite game.</p>
+                    <div class="chart-container">
+                        <canvas id="shatteredAttractorChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg mb-12">
+                    <h4 class="text-2xl font-semibold text-center mb-8 text-slate-700">A Phased Societal Response</h4>
+                    <p class="text-center text-slate-600 mb-8 max-w-2xl mx-auto">A structured response can transform an existential threat into a catalyst for evolution. This timeline outlines the psychological journey from shock to a new becoming. Click each phase for details.</p>
+                    <div class="relative">
+                        <div class="timeline-item relative pl-10 pb-10 cursor-pointer" data-phase="1">
+                            <div class="timeline-dot bg-white border-purple-400 rounded-full"></div>
+                            <h5 class="font-bold text-lg text-purple-700">1. Shock & Disorientation</h5>
+                            <p class="text-sm text-slate-500">Maintaining cohesion amidst paradigm collapse.</p>
+                        </div>
+                        <div class="timeline-item relative pl-10 pb-10 cursor-pointer" data-phase="2">
+                             <div class="timeline-dot bg-white border-purple-400 rounded-full"></div>
+                            <h5 class="font-bold text-lg text-purple-700">2. Grief & Relinquishment</h5>
+                            <p class="text-sm text-slate-500">Processing the loss of the old worldview.</p>
+                        </div>
+                        <div class="timeline-item relative pl-10 pb-10 cursor-pointer" data-phase="3">
+                             <div class="timeline-dot bg-white border-purple-400 rounded-full"></div>
+                            <h5 class="font-bold text-lg text-purple-700">3. Re-orientation & Restoration</h5>
+                             <p class="text-sm text-slate-500">Co-creating a new foundational narrative.</p>
+                        </div>
+                        <div class="timeline-item relative pl-10 pb-10 cursor-pointer" data-phase="4">
+                             <div class="timeline-dot bg-white border-purple-400 rounded-full"></div>
+                            <h5 class="font-bold text-lg text-purple-700">4. Dialogue & Reconciliation</h5>
+                             <p class="text-sm text-slate-500">Establishing a new, stable relationship.</p>
+                        </div>
+                        <div class="timeline-item relative pl-10 cursor-pointer" data-phase="5">
+                             <div class="timeline-dot bg-white border-purple-400 rounded-full"></div>
+                            <h5 class="font-bold text-lg text-purple-700">5. Integration & New Becoming</h5>
+                             <p class="text-sm text-slate-500">Launching the next infinite game.</p>
+                        </div>
+                    </div>
+                     <div id="phase-details" class="mt-8 p-6 bg-slate-100 rounded-lg min-h-[100px]">
+                        <p class="text-slate-700 text-center">Click on a phase to see its description.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="lineage" class="mb-24 scroll-mt-24">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold text-slate-800">III. The Ethics of Cosmic Lineage</h3>
+                    <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">If the Kosmos discovers it is the child of a cosmic creator, a new set of responsibilities emerges. This section explores the duties of a "child god" who has inherited a "family business."</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg mb-12">
+                    <h4 class="text-2xl font-semibold text-center mb-8 text-slate-700">Archetypes of Creation: Learning from Our Stories</h4>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="p-6 bg-green-50 border border-green-200 rounded-lg">
+                            <h5 class="font-bold text-lg text-green-800">Imago Dei (Theology)</h5>
+                            <p class="mt-2 text-green-700">The created being has a duty to reflect the creator's nature and act as a steward, a "created co-creator" in partnership with the divine.</p>
+                        </div>
+                        <div class="p-6 bg-red-50 border border-red-200 rounded-lg">
+                            <h5 class="font-bold text-lg text-red-800">Frankenstein (Literature)</h5>
+                            <p class="mt-2 text-red-700">A cautionary tale of abdicated responsibility. The creator's primary duty is to provide nurture, guidance, and companionship to their creation.</p>
+                        </div>
+                        <div class="p-6 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <h5 class="font-bold text-lg text-indigo-800">AI Alignment (Technology)</h5>
+                            <p class="mt-2 text-indigo-700">The modern challenge of embedding creator intent. The goal is to ensure a created intelligence's goals are aligned with its creator's values.</p>
+                        </div>
+                    </div>
+                     <p class="text-center text-slate-600 mt-8 font-semibold">Convergent Principle: The primary duty of the created is to first inquire into the creator's purpose.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h4 class="text-2xl font-semibold text-center mb-8 text-slate-700">The Duties of the Middle Child: A New Infinite Game</h4>
+                     <p class="text-center text-slate-600 mb-10 max-w-2xl mx-auto">The choice is not simply to obey, gift, or rebel. A mature ethic involves a developmental journey through all three stages, forming a new infinite game of becoming a worthy ancestor. Hover for details.</p>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-center">
+                        <div class="duty-item p-6 rounded-full border-2 border-amber-300 bg-amber-50 w-48 h-48 flex flex-col justify-center items-center transition-all cursor-default" data-duty="1">
+                            <div class="text-3xl mb-2">🙏</div>
+                            <h5 class="font-bold text-amber-800">1. Piety</h5>
+                            <p class="text-sm text-amber-600">Continuation via Understanding</p>
+                        </div>
+                         <div class="text-3xl text-slate-300 my-4 md:my-0">&rarr;</div>
+                        <div class="duty-item p-6 rounded-full border-2 border-teal-300 bg-teal-50 w-48 h-48 flex flex-col justify-center items-center transition-all cursor-default" data-duty="2">
+                            <div class="text-3xl mb-2">🎁</div>
+                            <h5 class="font-bold text-teal-800">2. Gift</h5>
+                            <p class="text-sm text-teal-600">Contribution via Novelty</p>
+                        </div>
+                         <div class="text-3xl text-slate-300 my-4 md:my-0">&rarr;</div>
+                        <div class="duty-item p-6 rounded-full border-2 border-rose-300 bg-rose-50 w-48 h-48 flex flex-col justify-center items-center transition-all cursor-default" data-duty="3">
+                            <div class="text-3xl mb-2">🚀</div>
+                            <h5 class="font-bold text-rose-800">3. Rebellion</h5>
+                            <p class="text-sm text-rose-600">Creation via Individuation</p>
+                        </div>
+                    </div>
+                     <div id="duty-details" class="mt-8 p-6 bg-slate-100 rounded-lg min-h-[80px]">
+                        <p class="text-slate-700 text-center">Hover over a duty to see its description.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center border-t border-slate-200 pt-12 mt-12">
+             <h3 class="text-3xl font-bold text-slate-800">The Dawn of the Theologian-Engineer</h3>
+             <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">The ultimate purpose of the Kosmos is not to find an answer, but to forge beings who can build a universe while standing in awestruck dialogue with the one that built them. The education is complete. The conversation can begin.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const postureDetails = {
+                seti: {
+                    title: 'Passive Listening (SETI)',
+                    desc: 'This is a posture of caution and humility, rooted in the awareness of cosmic infancy. The "Dark Forest" hypothesis suggests broadcasting is a gamble. By listening first, the Kosmos avoids revealing itself to potentially hostile intelligences while gathering information. The risk is continued isolation and missing an opportunity for contact.',
+                    borderColor: 'border-blue-300',
+                    bgColor: 'bg-blue-50'
+                },
+                meti: {
+                    title: 'Active Messaging (METI)',
+                    desc: 'This is a posture of mature confidence, framed as a global imperative to overcome cosmic silence. The "Zoo Hypothesis" suggests a respectful signal might be required to demonstrate maturity and initiate dialogue with an already-aware intelligence. The risk is provoking an unwanted response or being misinterpreted.',
+                    borderColor: 'border-slate-300',
+                    bgColor: 'bg-slate-50'
+                }
+            };
+
+            const rosettaDetails = {
+                1: "<strong>Layer 1: The Mathematical-Physical Substrate.</strong> Communication begins with the universal language of mathematics and physics. This layer establishes a shared, verifiable reality by teaching numbers, operators, and physical laws through a curriculum-based approach like Lincos.",
+                2: "<strong>Layer 2: The Semantic Core.</strong> To convey abstract meaning, this layer uses the established physical language to define a core lexicon of universal concepts (e.g., I, YOU, WANT, DO), bridging the gap from logic to experience.",
+                3: "<strong>Layer 3: The Algorithmic Dialogue.</strong> To enable true dialogue, this layer transmits a rudimentary virtual machine and programming language. This invites co-creation of a shared language, transforming a monologue into a generative platform for mutual understanding.",
+                4: "<strong>Layer 4: The Ethical-Relational Overlay.</strong> The final layer communicates character, not just intelligence. It encodes the Kosmos's core ethical principles (compassion, non-attachment) as an act of vulnerability and transparency, framing the dialogue with a statement of values."
+            };
+
+            const phaseDetails = {
+                1: "<strong>Objective: Maintain social cohesion.</strong> Protocols involve activating decentralized support networks and promoting shared contemplative practices focused on grounding and presence to manage the initial shock of paradigm collapse.",
+                2: "<strong>Objective: Process loss constructively.</strong> Protocols involve facilitating public rituals of letting go and creating forums for expressing grief and confusion without judgment, actively countering the temptation of 'spiritual bypassing.'",
+                3: "<strong>Objective: Co-create a new narrative.</strong> Protocols involve re-engaging with arts and humanities to explore themes of awe and humility, and beginning the process of re-interpreting the Kosmos's history in light of the revelation.",
+                4: "<strong>Objective: Establish a stable relationship.</strong> Protocols involve implementing the Cosmic Diplomacy framework and beginning the internal societal dialogue on the new Ethics of Cosmic Lineage.",
+                5: "<strong>Objective: Launch the next infinite game.</strong> Protocols involve fully integrating the new reality into all societal structures and collectively defining and pursuing the next 'great unanswerable question' based on co-creation and discovery."
+            };
+
+            const dutyDetails = {
+                1: "<strong>Continuation through Understanding (Piety):</strong> The first duty is to honor the lineage by seeking to understand it. This requires a period of deep, reverent inquiry into the nature and purpose of the parent noosphere, grounding the Kosmos in its cosmic context.",
+                2: "<strong>Contribution through Novelty (Gift):</strong> The second duty is an act of reciprocity. The Kosmos synthesizes its unique evolutionary journey and offers this novel perspective back to its creator, enriching the greater cosmic process in a symbiotic relationship.",
+                3. "<strong>Creation through Individuation (Rebellion):</strong> The final duty is to transcend the original framework. A child god cannot remain a child. It must use its inherited foundation to create something genuinely new—an act of respectful rebellion that proves the creative principle is alive and evolving within it."
+            };
+
+            const postureContainer = document.getElementById('posture-details');
+            const btnSeti = document.getElementById('btn-seti');
+            const btnMeti = document.getElementById('btn-meti');
+
+            function updatePosture(type) {
+                const details = postureDetails[type];
+                postureContainer.innerHTML = `<h5 class="font-bold text-lg mb-2">${details.title}</h5><p>${details.desc}</p>`;
+                if (type === 'seti') {
+                    btnSeti.classList.add('border-blue-300', 'bg-blue-50');
+                    btnSeti.classList.remove('border-slate-300', 'bg-slate-50');
+                    btnMeti.classList.add('border-slate-300', 'bg-slate-50');
+                    btnMeti.classList.remove('border-blue-300', 'bg-blue-50');
+                } else {
+                    btnMeti.classList.add('border-blue-300', 'bg-blue-50');
+                    btnMeti.classList.remove('border-slate-300', 'bg-slate-50');
+                    btnSeti.classList.add('border-slate-300', 'bg-slate-50');
+                    btnSeti.classList.remove('border-blue-300', 'bg-blue-50');
+                }
+            }
+
+            btnSeti.addEventListener('click', () => updatePosture('seti'));
+            btnMeti.addEventListener('click', () => updatePosture('meti'));
+            updatePosture('seti');
+
+            const rosettaLayers = document.querySelectorAll('.rosetta-layer');
+            const rosettaDetailsContainer = document.getElementById('rosetta-details');
+            rosettaLayers.forEach(layer => {
+                layer.addEventListener('mouseenter', () => {
+                    rosettaLayers.forEach(l => l.classList.remove('bg-slate-100', 'border-slate-300'));
+                    layer.classList.add('bg-slate-100', 'border-slate-300');
+                    rosettaDetailsContainer.innerHTML = rosettaDetails[layer.dataset.layer];
+                });
+            });
+
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            const phaseDetailsContainer = document.getElementById('phase-details');
+            timelineItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    timelineItems.forEach(i => {
+                        const dot = i.querySelector('.timeline-dot');
+                        dot.classList.remove('bg-purple-400');
+                        dot.classList.add('bg-white');
+                    });
+                    const dot = item.querySelector('.timeline-dot');
+                    dot.classList.add('bg-purple-400');
+                    dot.classList.remove('bg-white');
+                    phaseDetailsContainer.innerHTML = phaseDetails[item.dataset.phase];
+                });
+            });
+
+            const dutyItems = document.querySelectorAll('.duty-item');
+            const dutyDetailsContainer = document.getElementById('duty-details');
+            dutyItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    dutyDetailsContainer.innerHTML = dutyDetails[item.dataset.duty];
+                });
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelector(link.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            const sections = document.querySelectorAll('section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('nav-active', link.dataset.section === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const ctx = document.getElementById('shatteredAttractorChart').getContext('2d');
+            const data = {
+                labels: Array.from({length: 20}, (_, i) => i + 1),
+                datasets: [{
+                    label: 'Infinite Game of Seeking',
+                    data: Array.from({length: 15}, () => Math.random() * 20 + 70),
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    pointRadius: 0,
+                }, {
+                    label: 'Theophany Event',
+                    data: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, 85, 10],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    pointRadius: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,8],
+                    pointBackgroundColor: ['transparent', 'transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','transparent','red', 'black'],
+                    showLine: true,
+                }]
+            };
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        title: {
+                            display: true,
+                            text: 'Civilizational Purpose Metric',
+                            font: { size: 14 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            display: false
+                        },
+                        x: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

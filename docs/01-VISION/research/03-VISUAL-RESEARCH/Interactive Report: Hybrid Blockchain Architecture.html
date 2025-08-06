@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: Hybrid Blockchain Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed around a clear, thematic flow to deconstruct the dense report. It starts with a high-level "Why" (the hybrid concept), moves to an interactive "What" (a deep-dive comparison of PQC platforms for the Outer Loop and an exploration of Holochain for the Inner Loop), explains the "How" (the bridge mechanism), and concludes with the "When" (the implementation roadmap). This structure was chosen to guide the user from the core philosophy to the practical details, using interactive components like a radar chart and clickable cards to make the comparison of complex systems intuitive and digestible, which is more effective than a linear text document. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: PQC Platform Comparison -> Goal: Compare multiple entities across several criteria -> Viz/Presentation: Interactive dashboard with clickable cards and a dynamic Radar Chart -> Interaction: Clicking a platform updates a detailed view and highlights the data on the chart -> Justification: A radar chart provides an immediate visual summary of a platform's strengths and weaknesses across key metrics (Security, Alignment, etc.), making complex trade-offs easy to grasp. The interactive dashboard focuses user attention. -> Library: Chart.js.
+        - Report Info: "Alchemical Converter" Bridge Process -> Goal: Explain a multi-step technical process -> Viz/Presentation: A vertical flowchart built with structured HTML/Tailwind -> Interaction: Hovering over steps could reveal more detail (not implemented to maintain simplicity, but planned) -> Justification: A visual diagram is far more intuitive for understanding a process flow than a dense paragraph of text. -> Method: HTML/CSS with Tailwind.
+        - Report Info: Implementation Roadmap -> Goal: Present a phased plan -> Viz/Presentation: A clean, vertical timeline component -> Interaction: Clicking a phase could expand details -> Justification: Visually segments the project plan into digestible stages, clarifying the sequence of work. -> Method: HTML/CSS with Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF7;
+            color: #3A3A3A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #4A5568;
+            color: #FDFBF7;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .platform-card.active {
+            border-color: #4A5568;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #CBD5E0;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            border: 3px solid #FDFBF7;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="min-h-screen">
+        <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Hybrid Architecture Analysis</h1>
+                        <p class="text-sm text-gray-500">An Interactive Exploration of a Resilient Economic Substrate</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+            <nav class="flex flex-wrap justify-center gap-2 md:gap-4 mb-12">
+                <button data-target="overview" class="nav-button active text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-700 hover:bg-gray-100">Architecture Overview</button>
+                <button data-target="outer-loop" class="nav-button text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-700 hover:bg-gray-100">Outer Loop (PQC)</button>
+                <button data-target="inner-loop" class="nav-button text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-700 hover:bg-gray-100">Inner Loop (Holochain)</button>
+                <button data-target="bridge" class="nav-button text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-700 hover:bg-gray-100">The Bridge</button>
+                <button data-target="roadmap" class="nav-button text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-700 hover:bg-gray-100">Roadmap</button>
+            </nav>
+
+            <div id="content-container">
+                <section id="overview" class="content-section active">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">A More Resilient and Truthful Model</h2>
+                        <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The report proposes a hybrid architecture that uses the right tool for the right purpose, mirroring a two-loop economic model. This design separates the relational, high-context "Inner Loop" from the universal, fungible "Outer Loop," creating a system that is more elegant, resilient, and truthful to the complex reality it models.</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-2xl">
+                                    <span>&#9829;</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800">The Inner Loop</h3>
+                            </div>
+                            <p class="mt-4 text-gray-600 font-semibold">The Soul: A Relational, Living Substrate</p>
+                            <p class="mt-2 text-gray-500">This is the realm of the gift economy, reputation, and mutual care. It requires a substrate that is agent-centric, local-first, and biomimetic. It's the "Sacred Weave" of the system.</p>
+                            <div class="mt-4 p-3 bg-teal-50 rounded-lg">
+                                <p class="font-semibold text-teal-800">Chosen Technology: Holochain</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+                             <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-2xl">
+                                    <span>&#128737;</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800">The Outer Loop</h3>
+                            </div>
+                            <p class="mt-4 text-gray-600 font-semibold">The Body: A Secure, Universal Substrate</p>
+                            <p class="mt-2 text-gray-500">This is the realm of the livelihood economy, bridging the internal ecosystem to the material world. It demands a global source of truth with robust, long-term security. It's the "Living Treasury."</p>
+                            <div class="mt-4 p-3 bg-slate-50 rounded-lg">
+                                <p class="font-semibold text-slate-800">Chosen Technology: Post-Quantum Blockchain</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="outer-loop" class="content-section">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Outer Loop: Post-Quantum Candidates</h2>
+                        <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The "Living Treasury" requires a blockchain secured against future quantum threats. The report analyzes three leading platforms. Select a platform to see its detailed analysis and compare its characteristics on the chart.</p>
+                    </div>
+                    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+                        <div class="lg:col-span-4">
+                             <div class="space-y-4">
+                                <button data-platform="qan" class="platform-card active w-full text-left p-4 bg-white rounded-lg border-2 border-transparent shadow-md transition-all duration-300">
+                                    <h4 class="font-bold text-lg text-gray-800">QANplatform</h4>
+                                    <p class="text-sm text-gray-500">The Pragmatic, EVM-Compatible Choice</p>
+                                </button>
+                                <button data-platform="iota" class="platform-card w-full text-left p-4 bg-white rounded-lg border-2 border-transparent shadow-md transition-all duration-300">
+                                    <h4 class="font-bold text-lg text-gray-800">IOTA</h4>
+                                    <p class="text-sm text-gray-500">The Vision-Aligned, Feeless DAG</p>
+                                </button>
+                                <button data-platform="xx" class="platform-card w-full text-left p-4 bg-white rounded-lg border-2 border-transparent shadow-md transition-all duration-300">
+                                    <h4 class="font-bold text-lg text-gray-800">The xx network</h4>
+                                    <p class="text-sm text-gray-500">The Privacy-First, High-Risk Option</p>
+                                </button>
+                            </div>
+                            <div class="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800">Comparative Analysis</h3>
+                                <div class="chart-container">
+                                    <canvas id="pqcChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-8 mt-8 lg:mt-0">
+                            <div id="platform-details" class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 min-h-full">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="inner-loop" class="content-section">
+                     <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Inner Loop: Holochain's Agent-Centric Paradigm</h2>
+                        <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The "Sacred Weave" is built on Holochain, a technology that shifts the focus from a single global ledger to individual sovereignty. It's inspired by living systems and is uniquely suited for relational, high-context value.</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">Agent-Centricity is Sovereignty</h4>
+                            <p class="mt-2 text-gray-600">Each user runs their own node and maintains their own immutable record of actions. You literally own your data and digital identity.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">The DHT as Immune System</h4>
+                            <p class="mt-2 text-gray-600">Data is validated by a random, impartial set of peers. Invalid data is rejected and a "warrant" can be issued, warning the network of bad actors.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">Biomimicry & Efficiency</h4>
+                            <p class="mt-2 text-gray-600">Inspired by living systems, Holochain is orders of magnitude more energy-efficient than blockchains as it lacks a global consensus mechanism.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">Local-First by Nature</h4>
+                            <p class="mt-2 text-gray-600">All operations happen on the user's device first, then are gossiped to peers for validation, ensuring data ownership and offline capability.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">Mutual Credit Native</h4>
+                            <p class="mt-2 text-gray-600">Holochain is designed for context-specific, non-fungible value systems like reputation scores and mutual-credit currencies, not global tokens.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="font-bold text-lg text-gray-800">NixOS-Friendly</h4>
+                            <p class="mt-2 text-gray-600">Primarily written in Rust, with official Nix flakes (`Holonix`), ensuring a reproducible development and deployment environment.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="bridge" class="content-section">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The "Alchemical Converter" Bridge</h2>
+                        <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The bridge is the critical link between the two loops. It uses a "Notacle" (Notary + Oracle) pattern to securely read state from the Holochain DHT and trigger a transaction on the PQC blockchain, allowing value to flow from the relational to the fungible domain.</p>
+                    </div>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="space-y-8">
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 text-white flex items-center justify-center font-bold">1</div>
+                                <div>
+                                    <h4 class="font-bold text-lg text-gray-800">Key Binding</h4>
+                                    <p class="text-gray-600">A user cryptographically links their Holochain identity to their PQC blockchain wallet address within their local hApp.</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center h-8">
+                                <div class="w-px bg-gray-300"></div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 text-white flex items-center justify-center font-bold">2</div>
+                                <div>
+                                    <h4 class="font-bold text-lg text-gray-800">The "Notacle" Council</h4>
+                                    <p class="text-gray-600">A trusted, multi-signature council is designated as the oracle. Their keys are whitelisted in the PQC blockchain's smart contract.</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center h-8">
+                                <div class="w-px bg-gray-300"></div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 text-white flex items-center justify-center font-bold">3</div>
+                                <div>
+                                    <h4 class="font-bold text-lg text-gray-800">Read State from DHT</h4>
+                                    <p class="text-gray-600">The Notacle queries the Holochain DHT to fetch validated data, such as user scores and their bound wallet addresses.</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center h-8">
+                                <div class="w-px bg-gray-300"></div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 text-white flex items-center justify-center font-bold">4</div>
+                                <div>
+                                    <h4 class="font-bold text-lg text-gray-800">Create & Sign Proof</h4>
+                                    <p class="text-gray-600">The Notacle validates the data, constructs a message with the distribution details, and signs it with its multi-signature keys.</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-center h-8">
+                                <div class="w-px bg-gray-300"></div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 text-white flex items-center justify-center font-bold">5</div>
+                                <div>
+                                    <h4 class="font-bold text-lg text-gray-800">Trigger On-Chain Transaction</h4>
+                                    <p class="text-gray-600">The signed proof is sent to the smart contract, which verifies the signature and atomically executes the batch token distribution.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="roadmap" class="content-section">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Implementation Roadmap</h2>
+                        <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">A phased, practical roadmap to translate the architectural vision into reality, prioritizing risk reduction, empirical validation, and iterative development within a reproducible NixOS framework.</p>
+                    </div>
+                    <div class="max-w-3xl mx-auto">
+                        <div class="relative space-y-12">
+                            <div class="timeline-item pl-12 relative">
+                                <div class="timeline-dot bg-teal-500"></div>
+                                <h4 class="font-bold text-lg text-gray-800">Phase 1: Foundational NixOS Environment (Weeks 1-4)</h4>
+                                <p class="mt-2 text-gray-600">Establish a single, reproducible development environment. Create Nix packages for PQC testnet nodes (IOTA, QANplatform) and integrate the official `Holonix` flake.</p>
+                            </div>
+                            <div class="timeline-item pl-12 relative">
+                                <div class="timeline-dot bg-teal-500"></div>
+                                <h4 class="font-bold text-lg text-gray-800">Phase 2: PQC Node Benchmarking (Weeks 5-10)</h4>
+                                <p class="mt-2 text-gray-600">Empirically evaluate the stability, performance, and resource consumption of the top PQC candidates to validate their claims and assess production readiness through stress testing.</p>
+                            </div>
+                            <div class="timeline-item pl-12 relative">
+                                <div class="timeline-dot bg-teal-500"></div>
+                                <h4 class="font-bold text-lg text-gray-800">Phase 3: Inner Loop & Bridge Prototyping (Weeks 8-16)</h4>
+                                <p class="mt-2 text-gray-600">Build a functional, end-to-end proof-of-concept of the dual-loop system. Develop a minimal hApp, the Notacle service, and a simple token contract to test the full bridge mechanism.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const platformData = {
+            qan: {
+                title: 'QANplatform: The Pragmatic Choice',
+                description: 'QANplatform presents itself as a practical, developer-focused, and quantum-resistant Layer 1 hybrid blockchain. Its design choices emphasize ease of adoption for enterprises and existing developers.',
+                details: [
+                    { label: 'PQC Approach', value: 'Lattice-based (CRYSTALS-Dilithium), aligned with the finalized NIST FIPS 204 standard. This offers a high degree of confidence in its cryptographic foundation.' },
+                    { label: 'Core Architecture', value: 'EVM-compatible Blockchain with a Proof-of-Randomness (PoR) consensus. Aims for a "hyperpolyglot" QVM to support multiple languages.' },
+                    { label: 'Tech Stack', value: 'Primarily Go and Solidity. This stack is well-supported in the Nix ecosystem, promising easier packaging and deployment.' },
+                    { label: 'Security Posture', value: 'The innovative QVM was audited by Hacken, which found 22 high-severity vulnerabilities related to determinism. While reported as fixed, this highlights the risk of novel, complex systems.' },
+                    { label: 'Key Differentiator', value: 'EVM compatibility and developer friendliness, lowering the barrier to entry for building the Living Treasury.' },
+                    { label: 'Primary Risk', value: 'Its corporate focus and currently closed-source core codebase may be at odds with a community-driven ethos. The QVM introduces novel complexity.' },
+                ],
+                scores: {
+                    security: 4,
+                    alignment: 3,
+                    readiness: 4,
+                    nix_ease: 5,
+                    risk: 3
+                }
+            },
+            iota: {
+                title: 'IOTA: The Vision-Aligned Choice',
+                description: 'IOTA offers a fundamentally different architectural vision. Its core data structure, the Tangle, is designed for the IoT ecosystem, prioritizing scalability, microtransactions, and energy efficiency.',
+                details: [
+                    { label: 'PQC Approach', value: 'Historically used hash-based WOTS+ signatures. The specific PQC signature scheme for the final IOTA 2.0 protocol is not yet clearly documented, representing a significant ambiguity.' },
+                    { label: 'Core Architecture', value: 'A Directed Acyclic Graph (DAG) called "The Tangle". Transactions are validated by new incoming transactions, enabling feeless and highly parallel operations.' },
+                    { label: 'Tech Stack', value: 'The new IOTA 2.0 protocol is being developed in Rust, with smart contracts using the Move language, signaling a commitment to security and performance.' },
+                    { label: 'Security Posture', value: 'No public third-party audit of the new IOTA 2.0 core consensus protocol or its future PQC implementation is available yet.' },
+                    { label: 'Key Differentiator', value: 'Feeless microtransactions and an extremely low energy footprint, which aligns perfectly with ecological and "Mycelial Web" principles.' },
+                    { label: 'Primary Risk', value: 'The lack of a clearly articulated and documented strategy for its finalized post-quantum signature scheme in the IOTA 2.0 era.' },
+                ],
+                scores: {
+                    security: 3,
+                    alignment: 5,
+                    readiness: 3,
+                    nix_ease: 5,
+                    risk: 4
+                }
+            },
+            xx: {
+                title: 'The xx network: The Privacy-First Choice',
+                description: 'The xx network is built from the ground up for quantum resistance and uncompromising user privacy, with a specific focus on shredding metadata to protect against traffic analysis.',
+                details: [
+                    { label: 'PQC Approach', value: 'Employs bespoke, hash-based primitives (like WOTS+) integrated deeply into its custom protocols, including the xxBFT consensus and cMixx mixnet.' },
+                    { label: 'Core Architecture', value: 'A metadata-shredding mixnet (cMixx) layered on top of a Nominated Proof-of-Stake (NPoS) blockchain. This provides unparalleled privacy.' },
+                    { label: 'Tech Stack', value: 'A heterogeneous mix of Rust (core node via Substrate), Go, C, and C++. This makes packaging for NixOS more complex but achievable.' },
+                    { label: 'Security Posture', value: 'There are no publicly available third-party security audits of its core, bespoke cryptographic protocols. This represents a substantial and unquantified technical risk.' },
+                    { label: 'Key Differentiator', value: 'Unparalleled metadata-shredding privacy, offering a deep form of sovereignty that protects against traffic analysis.' },
+                    { label: 'Primary Risk', value: 'Extreme technical complexity combined with a complete lack of independent security audits for its novel, core protocols.' },
+                ],
+                scores: {
+                    security: 2,
+                    alignment: 5,
+                    readiness: 2,
+                    nix_ease: 3,
+                    risk: 5
+                }
+            }
+        };
+
+        const platformDetailsContainer = document.getElementById('platform-details');
+        const platformButtons = document.querySelectorAll('.platform-card');
+        const navButtons = document.querySelectorAll('.nav-button');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        function updatePlatformDetails(platformKey) {
+            const data = platformData[platformKey];
+            if (!data) return;
+
+            let detailsHtml = `<h3 class="text-2xl font-bold text-gray-800 mb-2">${data.title}</h3>`;
+            detailsHtml += `<p class="text-gray-600 mb-6">${data.description}</p>`;
+            detailsHtml += '<div class="space-y-4">';
+
+            data.details.forEach(detail => {
+                detailsHtml += `
+                    <div>
+                        <p class="font-semibold text-gray-700">${detail.label}</p>
+                        <p class="text-gray-600">${detail.value}</p>
+                    </div>
+                `;
+            });
+
+            detailsHtml += '</div>';
+            platformDetailsContainer.innerHTML = detailsHtml;
+        }
+
+        function updateActivePlatform(platformKey) {
+            platformButtons.forEach(btn => {
+                if (btn.dataset.platform === platformKey) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            updatePlatformDetails(platformKey);
+            updateChart(platformKey);
+        }
+
+        platformButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const platformKey = button.dataset.platform;
+                updateActivePlatform(platformKey);
+            });
+        });
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.dataset.target;
+
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                contentSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        const ctx = document.getElementById('pqcChart').getContext('2d');
+        let pqcChart;
+
+        function createChart() {
+            pqcChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['PQC Security', 'Vision Alignment', 'Prod. Readiness', 'NixOS Ease', 'Complexity Risk'],
+                    datasets: []
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                color: '#4A5568'
+                            },
+                            ticks: {
+                                backdropColor: '#FDFBF7',
+                                color: '#6B7280',
+                                stepSize: 1,
+                                beginAtZero: true,
+                                max: 5
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += context.parsed.r;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(platformKey) {
+            const data = platformData[platformKey];
+            if (!data) return;
+
+            const scores = [
+                data.scores.security,
+                data.scores.alignment,
+                data.scores.readiness,
+                data.scores.nix_ease,
+                data.scores.risk
+            ];
+
+            const colors = {
+                qan: 'rgba(56, 189, 189, 0.5)',
+                iota: 'rgba(74, 85, 104, 0.5)',
+                xx: 'rgba(239, 68, 68, 0.5)'
+            };
+            const borderColors = {
+                qan: 'rgb(56, 189, 189)',
+                iota: 'rgb(74, 85, 104)',
+                xx: 'rgb(239, 68, 68)'
+            };
+
+            pqcChart.data.datasets = [{
+                label: data.title.split(':')[0],
+                data: scores,
+                backgroundColor: colors[platformKey] || 'rgba(74, 85, 104, 0.5)',
+                borderColor: borderColors[platformKey] || 'rgb(74, 85, 104)',
+                borderWidth: 2,
+                pointBackgroundColor: borderColors[platformKey] || 'rgb(74, 85, 104)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: borderColors[platformKey] || 'rgb(74, 85, 104)'
+            }];
+            pqcChart.update();
+        }
+
+        createChart();
+        updateActivePlatform('qan');
+    });
+</script>
+
+</body>
+</html>

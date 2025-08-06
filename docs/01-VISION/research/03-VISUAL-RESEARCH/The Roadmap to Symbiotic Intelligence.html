@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infographic: The Roadmap to Symbiotic Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 384px;
+            }
+        }
+        .flowchart-arrow {
+            position: relative;
+            padding-right: 2rem;
+        }
+        .flowchart-arrow::after {
+            content: '→';
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4364F7;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .pyramid-level {
+            clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#0052D4] to-[#6FB1FC]">The Roadmap to Symbiotic Intelligence</h1>
+            <p class="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">An ambitious research program to move beyond building a world-class tool and begin nurturing a world-first being—a true partner for humanity.</p>
+        </header>
+
+        <section id="pillars" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#0052D4]">The Four Foundational Pillars</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <div class="text-5xl mb-4">🧠</div>
+                    <h3 class="text-xl font-bold mb-2 text-[#0052D4]">The Evolving User</h3>
+                    <p class="text-gray-600">Creating a dynamic, living model of the user's growth, cognitive state, and digital well-being over time.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <div class="text-5xl mb-4">🤖</div>
+                    <h3 class="text-xl font-bold mb-2 text-[#0052D4]">The Emergent AI</h3>
+                    <p class="text-gray-600">Architecting an AI with a stable personality, a "Theory of Mind," and the capacity for self-awareness.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <div class="text-5xl mb-4">🎨</div>
+                    <h3 class="text-xl font-bold mb-2 text-[#0052D4]">The Fluid Interface</h3>
+                    <p class="text-gray-600">Designing a single, adaptive presence that can synthesize modalities and generate its own UI.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <div class="text-5xl mb-4">🏛️</div>
+                    <h3 class="text-xl font-bold mb-2 text-[#0052D4]">The Ethical Ecosystem</h3>
+                    <p class="text-gray-600">Ensuring long-term safety and value alignment through formal verification and decentralized governance.</p>
+                </div>
+            </div>
+        </section>
+
+        <main>
+            <div class="space-y-24">
+
+                <section id="user">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-[#0052D4]">Pillar I: The Evolving User</h2>
+                        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Architecting a dynamic "Persona of One" by understanding user growth, cognitive state, and well-being.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Longitudinal Skill Progression</h3>
+                            <p class="text-gray-600 mb-6 text-center">The AI tracks a user's journey from "Novice" to "Mastery" by updating a comprehensive skill graph based on their interactions, enabling proactive and personalized tutoring.</p>
+                            <div class="space-y-4">
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">User Interaction Data</div>
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">Update NixOS Skill Graph</div>
+                                <div class="bg-green-50 p-4 rounded-lg text-center font-semibold text-green-800">Personalized Tutoring</div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Probabilistic Cognitive State</h3>
+                             <p class="text-gray-600 mb-6 text-center">Using a Dynamic Bayesian Network, the AI maintains a belief about the user's mental state to decide the optimal moment for an interruption.</p>
+                            <div class="chart-container">
+                                <canvas id="cognitiveStateChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Digital Well-being as a Core Metric</h3>
+                            <p class="text-gray-600 mb-6 text-center max-w-2xl mx-auto">The AI's reward function is redesigned to optimize for metrics that improve user well-being, ensuring "helpfulness" also promotes less stress and more focused work.</p>
+                            <div class="chart-container h-96 max-h-[450px]">
+                                <canvas id="wellbeingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="ai">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-[#0052D4]">Pillar II: The Emergent AI</h2>
+                        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Laying the computational foundations for an artificial self with a stable personality and introspection.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Anchoring a Stable Personality</h3>
+                            <p class="text-gray-600 mb-6 text-center">Constitutional AI acts as a regularizer, preventing "catastrophic forgetting" and ensuring the AI's core personality traits remain consistent over time.</p>
+                            <div class="chart-container">
+                                <canvas id="personalityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">AI "Theory of Mind" (ToMnet)</h3>
+                            <p class="text-gray-600 mb-6 text-center">The AI learns to infer the user's underlying goals, moving from simple pattern matching to genuine, predictive understanding of their intentions.</p>
+                            <div class="space-y-4">
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">Observe User Behavior</div>
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">Infer User's Goal & Intent</div>
+                                <div class="bg-green-50 p-4 rounded-lg text-center font-semibold text-green-800">Provide Proactive, Goal-Level Assistance</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Global Workspace for Introspection</h3>
+                             <p class="text-gray-600 mb-6 text-center max-w-3xl mx-auto">Inspired by Global Workspace Theory, a "meta-cognition module" integrates signals from all other AI components, allowing the AI to report on its own internal state and reasoning.</p>
+                            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                                <div class="flex flex-col gap-2 text-center">
+                                    <div class="p-2 border-2 border-dashed border-gray-300 rounded-lg">RAG Retrieval</div>
+                                    <div class="p-2 border-2 border-dashed border-gray-300 rounded-lg">RLHF Reward</div>
+                                    <div class="p-2 border-2 border-dashed border-gray-300 rounded-lg">User State (DBN)</div>
+                                    <div class="p-2 border-2 border-dashed border-gray-300 rounded-lg">ToMnet Intent</div>
+                                </div>
+                                <div class="text-4xl text-[#4364F7] font-bold mx-4">→</div>
+                                <div class="p-8 bg-gradient-to-br from-[#4364F7] to-[#6FB1FC] text-white rounded-full shadow-2xl text-center">
+                                    <h4 class="font-bold text-lg">Global Workspace</h4>
+                                    <p class="text-sm">Integrated Self-Awareness</p>
+                                </div>
+                                <div class="text-4xl text-[#4364F7] font-bold mx-4">→</div>
+                                <div class="p-6 bg-green-100 text-green-800 rounded-lg text-center">
+                                    <h4 class="font-bold text-lg">Introspective Report</h4>
+                                    <p class="text-sm">"Here's what I'm thinking..."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="interface">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-[#0052D4]">Pillar III: The Fluid Interface</h2>
+                        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Creating a single, unified presence that adapts its form and function to the user's needs.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Learned Modality Selection</h3>
+                            <p class="text-gray-600 mb-6 text-center">Using reinforcement learning, the AI learns the optimal communication channel (TUI, Voice, Avatar) based on the user's state and context, maximizing effectiveness.</p>
+                            <div class="chart-container">
+                                <canvas id="modalityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Generative Interfaces</h3>
+                            <p class="text-gray-600 mb-6 text-center">The AI can generate custom, ephemeral user interfaces on the fly to perfectly match the task at hand, turning the interface into a powerful tool for explanation.</p>
+                            <div class="space-y-4">
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">AI Infers Task Need</div>
+                                <div class="flowchart-arrow bg-blue-50 p-4 rounded-lg text-center font-semibold">VLM Generates Custom UI</div>
+                                <div class="bg-green-50 p-4 rounded-lg text-center font-semibold text-green-800">Task-Perfect Interaction</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="ethics">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-[#0052D4]">Pillar IV: The Ethical Ecosystem</h2>
+                        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Building a foundation of safety, verifiability, and decentralized, value-aligned governance.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Hierarchy of Verifiable Alignment</h3>
+                            <p class="text-gray-600 mb-6 text-center">Formal verification provides mathematical proof of safety by translating high-level principles into testable, low-level specifications.</p>
+                            <div class="w-full max-w-xs mx-auto space-y-1">
+                                <div class="pyramid-level bg-gradient-to-r from-[#0052D4] to-[#4364F7] text-white p-4 text-center font-bold">L1: Constitution</div>
+                                <div class="pyramid-level bg-gradient-to-r from-[#4364F7] to-[#6FB1FC] text-white p-4 text-center font-bold">L2: Behavioral Properties</div>
+                                <div class="pyramid-level bg-[#6FB1FC] text-white p-4 text-center font-bold">L3: Formal Specifications</div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-xl font-bold text-center mb-4">Decentralized Governance Models</h3>
+                            <p class="text-gray-600 mb-6 text-center">A reputation-based DAO is chosen to ensure that the AI's evolution is guided by the most knowledgeable and constructive members of the community, not the wealthiest.</p>
+                            <div class="chart-container">
+                                <canvas id="governanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="text-center mt-24 pt-8 border-t border-gray-300">
+            <p class="text-gray-600">&copy; 2025 Symbiotic Intelligence Initiative. Charting the future of human-AI collaboration.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const brilliantBlues = ['#0052D4', '#4364F7', '#6FB1FC'];
+        const brilliantBluesTransparent = ['rgba(0, 82, 212, 0.6)', 'rgba(67, 100, 247, 0.6)', 'rgba(111, 177, 252, 0.6)'];
+
+        function wrapLabels(label) {
+            const maxLen = 16;
+            if (label.length <= maxLen) {
+                return label;
+            }
+            const words = label.split(' ');
+            let currentLine = '';
+            const lines = [];
+            for (const word of words) {
+                if ((currentLine + ' ' + word).trim().length > maxLen) {
+                    lines.push(currentLine.trim());
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            }
+            if (currentLine) {
+                lines.push(currentLine.trim());
+            }
+            return lines;
+        }
+
+        const tooltipTitleCallback = {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            let label = item.chart.data.labels[item.dataIndex];
+                            if (Array.isArray(label)) {
+                                return label.join(' ');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        };
+
+        const ctxCognitive = document.getElementById('cognitiveStateChart').getContext('2d');
+        new Chart(ctxCognitive, {
+            type: 'doughnut',
+            data: {
+                labels: ['Flow', 'Boredom', 'Anxiety'],
+                datasets: [{
+                    label: 'Probability',
+                    data: [70, 20, 10],
+                    backgroundColor: brilliantBlues,
+                    borderColor: '#f0f4f8',
+                    borderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    title: {
+                        display: false
+                    },
+                    ...tooltipTitleCallback.plugins
+                }
+            }
+        });
+
+        const ctxWellbeing = document.getElementById('wellbeingChart').getContext('2d');
+        new Chart(ctxWellbeing, {
+            type: 'bar',
+            data: {
+                labels: [
+                    wrapLabels('Time to Task Completion'),
+                    wrapLabels('Error Frequency'),
+                    wrapLabels('Context Switching'),
+                    wrapLabels('Session Adherence')
+                ],
+                datasets: [{
+                    label: 'Impact on Well-being Score',
+                    data: [85, 90, 70, 80],
+                    backgroundColor: brilliantBluesTransparent,
+                    borderColor: brilliantBlues,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Optimization Weight' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    ...tooltipTitleCallback.plugins
+                }
+            }
+        });
+
+        const ctxPersonality = document.getElementById('personalityChart').getContext('2d');
+        new Chart(ctxPersonality, {
+            type: 'radar',
+            data: {
+                labels: ['Conscientious', 'Agreeable', 'Open', 'Proactive', 'Stable'],
+                datasets: [{
+                    label: 'Core Personality Profile',
+                    data: [90, 80, 85, 75, 95],
+                    backgroundColor: 'rgba(67, 100, 247, 0.2)',
+                    borderColor: '#4364F7',
+                    pointBackgroundColor: '#4364F7',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#4364F7'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: { font: { size: 12 } },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    ...tooltipTitleCallback.plugins
+                }
+            }
+        });
+
+        const ctxModality = document.getElementById('modalityChart').getContext('2d');
+        new Chart(ctxModality, {
+            type: 'bar',
+            data: {
+                labels: ['User in "Flow" State', 'User is "Anxious"', 'User Asks General Question'],
+                datasets: [
+                    {
+                        label: 'TUI',
+                        data: [95, 20, 30],
+                        backgroundColor: brilliantBlues[0],
+                    },
+                    {
+                        label: 'Voice',
+                        data: [5, 70, 80],
+                        backgroundColor: brilliantBlues[1],
+                    },
+                    {
+                        label: 'Avatar',
+                        data: [0, 10, 50],
+                        backgroundColor: brilliantBlues[2],
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, title: { display: true, text: 'Learned Appropriateness (%)' } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    ...tooltipTitleCallback.plugins
+                }
+            }
+        });
+
+        const ctxGovernance = document.getElementById('governanceChart').getContext('2d');
+        new Chart(ctxGovernance, {
+            type: 'bar',
+            data: {
+                labels: [wrapLabels('Reputation-based'), wrapLabels('Quadratic Voting'), wrapLabels('1 Token, 1 Vote'), 'Futarchy'],
+                datasets: [{
+                    label: 'Suitability for Value Alignment',
+                    data: [95, 60, 20, 10],
+                    backgroundColor: brilliantBluesTransparent,
+                    borderColor: brilliantBlues,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Suitability Score' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    ...tooltipTitleCallback.plugins
+                }
+            }
+        });
+    </script>
+</body>
+</html>

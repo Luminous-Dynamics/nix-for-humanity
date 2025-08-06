@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Luminous Economy: An Infographic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .flowchart-arrow {
+            font-size: 2rem;
+            line-height: 1;
+            color: #EDC951;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .energetic-playful-bg-1 { background-color: #00A0B0; }
+        .energetic-playful-text-1 { color: #00A0B0; }
+        .energetic-playful-bg-2 { background-color: #6A4A3C; }
+        .energetic-playful-text-2 { color: #6A4A3C; }
+        .energetic-playful-bg-3 { background-color: #CC333F; }
+        .energetic-playful-text-3 { color: #CC333F; }
+        .energetic-playful-bg-4 { background-color: #EB6841; }
+        .energetic-playful-text-4 { color: #EB6841; }
+        .energetic-playful-bg-5 { background-color: #EDC951; }
+        .energetic-playful-text-5 { color: #EDC951; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <main class="container mx-auto px-4 py-8 md:py-16">
+
+        <header class="text-center mb-16 md:mb-24">
+            <h1 class="text-4xl md:text-6xl font-extrabold energetic-playful-text-1 mb-4">Architecting the Luminous Economy</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">An exploration of a new tokenomics paradigm designed for resilience, alignment, and holistic value recognition, moving beyond the brittle models of the past.</p>
+        </header>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4 energetic-playful-text-2">The Challenge: Failure Modes of Monolithic Reputation</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">Single-score reputation systems, even hybrids, are vulnerable to exploits that misrepresent true value. Our design must be resilient to these failure modes.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card text-center">
+                    <div class="text-5xl mb-4">👨‍🌾</div>
+                    <h3 class="text-xl font-bold mb-2 energetic-playful-text-3">The "Cred Farmer"</h3>
+                    <p class="text-gray-600">Actors game the system with high-volume, low-value contributions, inflating their score without creating meaningful impact.</p>
+                </div>
+                <div class="card text-center">
+                    <div class="text-5xl mb-4">👑</div>
+                    <h3 class="text-xl font-bold mb-2 energetic-playful-text-3">The "Popularity Contest"</h3>
+                    <p class="text-gray-600">Charismatic members receive disproportionate rewards over quiet, critical builders, skewing value recognition.</p>
+                </div>
+                <div class="card text-center">
+                    <div class="text-5xl mb-4">🏰</div>
+                    <h3 class="text-xl font-bold mb-2 energetic-playful-text-3">The "Ivory Tower"</h3>
+                    <p class="text-gray-600">Experts form cliques, gatekeeping influence and preventing new contributors from participating meaningfully.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4 energetic-playful-text-1">The Solution: A "Three-Bodied" Tokenomics Model</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">By decoupling value into three distinct forms, we create a holistic and resilient economy that recognizes the multi-dimensional nature of contribution.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card text-center border-t-4 border-[#00A0B0]">
+                    <div class="text-5xl mb-4">🧠</div>
+                    <h3 class="text-2xl font-bold mb-2 energetic-playful-text-1">WISDOM (WIS)</h3>
+                    <p class="font-semibold text-gray-700 mb-4">The Soul: Governance Token</p>
+                    <p class="text-gray-600">A non-transferable, soul-bound token representing governance power. WIS cannot be bought; it can only be earned through recognized contribution, ensuring a true meritocracy.</p>
+                </div>
+                <div class="card text-center border-t-4 border-[#EB6841]">
+                    <div class="text-5xl mb-4">⚡</div>
+                    <h3 class="text-2xl font-bold mb-2 energetic-playful-text-4">SPARK (SPK)</h3>
+                    <p class="font-semibold text-gray-700 mb-4">The Body: Utility & Reward Token</p>
+                    <p class="text-gray-600">A standard fungible token representing economic energy. Used for rewards, grants, and payments, primarily distributed via a "Flourishing Airdrop" to WIS holders.</p>
+                </div>
+                <div class="card text-center border-t-4 border-[#EDC951]">
+                    <div class="text-5xl mb-4">❤️</div>
+                    <h3 class="text-2xl font-bold mb-2 energetic-playful-text-5">HEART (HRT)</h3>
+                    <p class="font-semibold text-gray-700 mb-4">The Spirit: Achievement & Identity Token</p>
+                    <p class="text-gray-600">Non-transferable NFTs representing a member's roles, achievements, and "soul resume." They foster belonging and can multiply WIS generation.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4 energetic-playful-text-4">The Virtuous Cycle of Generative Upliftment</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">The Luminous Economy creates a powerful feedback loop where contribution is holistically recognized and rewarded, aligning individual incentives with collective flourishing.</p>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                <div class="card p-4">
+                    <p class="font-bold text-lg">Contribution</p>
+                    <p class="text-sm text-gray-500">(e.g., Code, Docs, Mentorship)</p>
+                </div>
+                <div class="flowchart-arrow">→</div>
+                <div class="card p-4">
+                    <p class="font-bold text-lg energetic-playful-text-5">Earns HEART ❤️</p>
+                    <p class="text-sm text-gray-500">(Identity & Recognition)</p>
+                </div>
+                <div class="flowchart-arrow">→</div>
+                <div class="card p-4">
+                    <p class="font-bold text-lg energetic-playful-text-1">Earns WISDOM 🧠</p>
+                    <p class="text-sm text-gray-500">(Governance Power)</p>
+                </div>
+                <div class="flowchart-arrow">→</div>
+                <div class="card p-4">
+                    <p class="font-bold text-lg energetic-playful-text-4">Begets SPARK ⚡</p>
+                    <p class="text-sm text-gray-500">(Economic Flourishing)</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-12 energetic-playful-text-2">Pillar 1: Calibrating Sacred Reciprocity</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="card">
+                    <h3 class="text-xl font-bold text-center mb-4">Initial WIS Contribution Weights</h3>
+                    <p class="text-center text-gray-600 mb-6">WIS is earned from a balanced blend of contribution types to ensure a holistic measure of wisdom. These weights can be adjusted by the DAO over time.</p>
+                    <div class="chart-container">
+                        <canvas id="wisWeightsChart"></canvas>
+                    </div>
+                </div>
+                <div class="space-y-8">
+                    <div class="card text-center">
+                        <p class="text-lg text-gray-600">WIS Decay Half-Life</p>
+                        <p class="text-5xl font-extrabold energetic-playful-text-1">365 <span class="text-3xl">days</span></p>
+                        <p class="text-gray-600 mt-2">Ensures influence remains current and prevents power concentration from inactive members.</p>
+                    </div>
+                    <div class="card text-center">
+                        <p class="text-lg text-gray-600">Max HEART Multiplier</p>
+                        <p class="text-5xl font-extrabold energetic-playful-text-4">1.5x</p>
+                        <p class="text-gray-600 mt-2">Provides a meaningful but capped incentive for values-aligned community behaviors.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-12 energetic-playful-text-1">Pillars 2 & 3: Ensuring Systemic Health & Resilience</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="card order-2 md:order-1">
+                    <h3 class="text-xl font-bold text-center mb-4">Predicted Governance Power Distribution</h3>
+                    <p class="text-center text-gray-600 mb-6">Simulations show the Luminous Economy's mechanisms, like reputation decay, naturally resist power concentration, keeping the Gini Coefficient low and stable.</p>
+                    <div class="chart-container">
+                        <canvas id="giniChart"></canvas>
+                    </div>
+                </div>
+                <div class="card order-1 md:order-2">
+                    <h3 class="text-xl font-bold text-center mb-4">Fractal Scaling via Resonance Circles</h3>
+                    <p class="text-center text-gray-600 mb-6">To avoid cognitive overload at scale, peer review occurs in smaller, high-context "Guilds" or "Circles," allowing the system to scale horizontally.</p>
+                    <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                        <p class="font-bold">Main DAO</p>
+                        <div class="flex justify-around mt-4">
+                            <div class="p-3 border border-blue-300 rounded-lg bg-blue-50">Circle A</div>
+                            <div class="p-3 border border-green-300 rounded-lg bg-green-50">Circle B</div>
+                            <div class="p-3 border border-yellow-300 rounded-lg bg-yellow-50">Circle C</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-12 energetic-playful-text-3">Pillar 4: Building the Bridge to the Real World</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="card">
+                    <h3 class="text-xl font-bold text-center mb-6">Optimal Legal Wrapper: A Comparison</h3>
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="p-2">Feature</th>
+                                <th class="p-2 font-bold energetic-playful-text-1">Swiss Association</th>
+                                <th class="p-2 text-gray-500">Wyoming DAO LLC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b">
+                                <td class="p-2">Purpose</td>
+                                <td class="p-2 font-semibold text-green-600">Idealistic / Non-Profit</td>
+                                <td class="p-2">For-Profit or Non-Profit</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="p-2">Credibility</td>
+                                <td class="p-2 font-semibold text-green-600">Globally Recognized</td>
+                                <td class="p-2">Novel / Developing</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2">Alignment</td>
+                                <td class="p-2 font-semibold text-green-600">High (Values-first)</td>
+                                <td class="p-2">Moderate</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="text-center mt-4 text-gray-600">The Swiss Association is the recommended choice for its strong international credibility and clear alignment with an idealistic, values-driven purpose.</p>
+                </div>
+                <div class="card">
+                    <h3 class="text-xl font-bold text-center mb-6">Bridging SPK to Off-Chain Value</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="p-3 bg-gray-100 rounded-lg">
+                            <p class="font-semibold">Ecosystem Services</p>
+                            <p class="text-xs text-gray-500">Pay for premium tools & support</p>
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded-lg">
+                            <p class="font-semibold">Real-World Grants</p>
+                            <p class="text-xs text-gray-500">Fund projects aligned with the 7 Harmonies</p>
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded-lg">
+                            <p class="font-semibold">Infrastructure Staking</p>
+                            <p class="text-xs text-gray-500">Security bonds for node operators</p>
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded-lg">
+                            <p class="font-semibold">RWA Treasury</p>
+                            <p class="text-xs text-gray-500">Diversify treasury into stable assets</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16 md:mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4 energetic-playful-text-1">The Community Mirror: A Transparency Dashboard</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">Radical transparency is key. A public dashboard will translate on-chain data into the legible language of the Seven Harmonies, allowing the community to see a true reflection of its collective soul.</p>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">🌿</p>
+                    <p class="font-semibold">Pan-Sentient Flourishing</p>
+                    <p class="text-xs text-gray-500">Track WIS Gini Coefficient</p>
+                </div>
+                <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">💡</p>
+                    <p class="font-semibold">Integral Wisdom Cultivation</p>
+                    <p class="text-xs text-gray-500">Track HEART token distribution</p>
+                </div>
+                <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">🤝</p>
+                    <p class="font-semibold">Universal Interconnectedness</p>
+                    <p class="text-xs text-gray-500">Visualize GIVE network graph</p>
+                </div>
+                 <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">🎁</p>
+                    <p class="font-semibold">Sacred Reciprocity</p>
+                    <p class="text-xs text-gray-500">Measure SPK grant velocity</p>
+                </div>
+                <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">🎨</p>
+                    <p class="font-semibold">Infinite Play</p>
+                    <p class="text-xs text-gray-500">Count creative bounties funded</p>
+                </div>
+                <div class="card text-center p-4">
+                    <p class="text-3xl mb-2">🚀</p>
+                    <p class="font-semibold">Evolutionary Progression</p>
+                    <p class="text-xs text-gray-500">Log successful protocol upgrades</p>
+                </div>
+                <div class="card text-center p-4 col-span-2 md:col-span-1 lg:col-span-2">
+                    <p class="text-3xl mb-2">⚖️</p>
+                    <p class="font-semibold">Resonant Coherence</p>
+                    <p class="text-xs text-gray-500">Display real-time Treasury balance</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center mt-16 border-t pt-8">
+            <p class="text-gray-600">This is more than a system; it is the sacred work of co-creating a world where value is seen, wisdom is rewarded, and we all flourish, together.</p>
+        </footer>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapLabel = (label, maxLength = 16) => {
+                if (label.length <= maxLength) {
+                    return label;
+                }
+                const words = label.split(' ');
+                const lines = [];
+                let currentLine = '';
+                for (const word of words) {
+                    if ((currentLine + ' ' + word).trim().length > maxLength) {
+                        lines.push(currentLine.trim());
+                        currentLine = word;
+                    } else {
+                        currentLine = (currentLine + ' ' + word).trim();
+                    }
+                }
+                if (currentLine) {
+                    lines.push(currentLine.trim());
+                }
+                return lines;
+            };
+
+            const tooltipTitleCallback = (tooltipItems) => {
+                const item = tooltipItems[0];
+                let label = item.chart.data.labels[item.dataIndex];
+                if (Array.isArray(label)) {
+                    return label.join(' ');
+                }
+                return label;
+            };
+
+            const sharedChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: "'Inter', sans-serif"
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: tooltipTitleCallback
+                        }
+                    }
+                }
+            };
+
+            const wisCtx = document.getElementById('wisWeightsChart')?.getContext('2d');
+            if (wisCtx) {
+                new Chart(wisCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Peer Appreciation (GIVE)', 'Graph-Based Impact (Cred)', 'Trusted Roles'],
+                        datasets: [{
+                            label: 'WIS Contribution Weight',
+                            data: [40, 40, 20],
+                            backgroundColor: ['#00A0B0', '#EB6841', '#EDC951'],
+                            borderColor: '#ffffff',
+                            borderWidth: 4,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: { ...sharedChartOptions }
+                });
+            }
+
+            const giniCtx = document.getElementById('giniChart')?.getContext('2d');
+            if (giniCtx) {
+                new Chart(giniCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Year 0', 'Year 2', 'Year 4', 'Year 6', 'Year 8', 'Year 10'],
+                        datasets: [{
+                            label: 'Typical DAO (Power Concentration)',
+                            data: [0.70, 0.78, 0.85, 0.89, 0.92, 0.95],
+                            borderColor: '#CC333F',
+                            backgroundColor: 'rgba(204, 51, 63, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Luminous Economy (Stable & Decentralized)',
+                            data: [0.70, 0.72, 0.73, 0.72, 0.74, 0.73],
+                            borderColor: '#00A0B0',
+                            backgroundColor: 'rgba(0, 160, 176, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...sharedChartOptions,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                max: 1.0,
+                                title: {
+                                    display: true,
+                                    text: 'Gini Coefficient (0=Equality, 1=Inequality)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

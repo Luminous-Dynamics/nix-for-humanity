@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Loom: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Serene Dawn -->
+    <!-- Application Structure Plan: A thematic, non-linear SPA. A persistent top navigation bar allows users to jump between five core themes: 1) Introduction, 2) Foundations (exploring the core metaphors), 3) The Ascent (detailing the Apotheosis concept via an interactive diagram), 4) The Dissonance (presenting the three critiques as interactive Q&A cards), and 5) The Resolution (featuring a dynamic canvas animation of the Cosmic Pralaya and the comparative table). This structure deconstructs the dense report into digestible, interconnected modules, prioritizing user-driven exploration over a linear reading experience. The goal is to make the profound philosophical journey feel personal and intuitive. -->
+    <!-- Visualization & Content Choices:
+        - Introduction: Static text to set a contemplative tone.
+        - Foundations: Interactive cards for 'Mycelial Network' & 'Theologian-Engineer'. Goal: Inform. Method: HTML/CSS with JS toggle. Justification: Encourages focused engagement with core concepts.
+        - The Ascent: Interactive diagram for 'Apotheosis'. Goal: Organize/Relate. Method: HTML/CSS nodes with JS click events. Justification: Visually demonstrates the synthesis of multiple philosophies into one concept.
+        - The Dissonance: Three interactive 'Critique' cards. Goal: Inform/Explore. Method: HTML/CSS with JS expand/collapse. Justification: Transforms dense philosophical problems into an engaging, explorable Q&A format.
+        - The Resolution: Canvas animation for 'Cosmic Pralaya'. Goal: "Wow"/Impact. Method: Custom JS Canvas animation. Justification: Provides a visceral, non-textual understanding of the cyclical cosmic rhythm. Also, a responsive HTML table for the comparative models. Goal: Compare. Method: Styled HTML table. Justification: Presents complex comparative data clearly.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm off-white */
+            color: #4A4A4A; /* Soft dark gray */
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+            color: #7B7A78;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #A0522D; /* Sienna accent */
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            background-color: #A0522D;
+            transition: all 0.3s ease-in-out;
+            transform: translateX(-50%);
+        }
+        .nav-link.active::after {
+            width: 100%;
+        }
+        .content-section {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAEAEA;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .critique-card.open .critique-answer {
+            max-height: 1000px;
+            opacity: 1;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid #EAEAEA;
+        }
+        .critique-answer {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.6s ease-in-out;
+        }
+        .diagram-node {
+            border: 2px solid #D1C4E9; /* Light purple */
+            background-color: #F3E5F5;
+            color: #6A1B9A;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .diagram-node.active, .diagram-node:hover {
+            background-color: #A0522D;
+            color: #FFFFFF;
+            border-color: #A0522D;
+            transform: scale(1.05);
+        }
+        .diagram-center-node {
+            border-width: 3px;
+            border-color: #A0522D;
+            background-color: #FFFFFF;
+            color: #A0522D;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            max-height: 40vh;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        @media (min-width: 768px) {
+            .canvas-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 bg-opacity-80 bg-white/80 backdrop-blur-sm z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4">
+            <ul id="nav-links" class="flex justify-center items-center space-x-4 md:space-x-8 text-sm md:text-base font-medium">
+                <li><a href="#introduction" class="nav-link active">Introduction</a></li>
+                <li><a href="#foundations" class="nav-link">Foundations</a></li>
+                <li><a href="#ascent" class="nav-link">The Ascent</a></li>
+                <li><a href="#dissonance" class="nav-link">The Dissonance</a></li>
+                <li><a href="#resolution" class="nav-link">The Resolution</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12 md:py-16">
+
+        <!-- Introduction Section -->
+        <section id="introduction" class="content-section active">
+            <div class="text-center max-w-3xl mx-auto">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">The Luminous Truth of the Tapestry</h1>
+                <p class="text-lg text-gray-600 mb-8">This application is an interactive exploration of the "Mycelial Kosmos," a profound theological and philosophical vision. It translates a dense, scholarly report into an explorable journey. Here, you are invited not just to read, but to interact with the core concepts, from the foundational metaphors to the final questions of cosmic purpose and their ultimate, elegant resolution.</p>
+                <p class="text-md text-gray-500">Use the navigation above to journey through the different facets of this grand architecture of thought. Begin your exploration into a vision that weds science and spirituality, culminating in a theology of cosmic love.</p>
+            </div>
+        </section>
+
+        <!-- Foundations Section -->
+        <section id="foundations" class="content-section">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Foundations of the Kosmos</h2>
+                <p class="text-lg text-gray-600">Every grand structure is built upon foundational principles. The Mycelial Kosmos rests on two powerful, symbiotic concepts: a model for interconnected existence and an archetype for the agent of change. Click on each card to explore these core ideas.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="card p-6 rounded-lg shadow-md cursor-pointer" onclick="toggleFoundation(this, 'mycelial')">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">The Mycelial Network</h3>
+                    <p class="text-gray-600">A model of radical interconnectedness, nature's own "Wood Wide Web." It represents a system built on entanglement, reciprocity, and communal care, rejecting separation and domination.</p>
+                    <div class="foundation-details mt-4 pt-4 border-t border-gray-200 text-gray-600" style="display: none;">
+                        <p>This principle is drawn from the vast, subterranean fungal networks that facilitate nutrient distribution and communication between plants. By grounding its cosmology in this model, the framework suggests the "self" is not a discrete entity but a node in a vast, supportive, and communicative web, challenging individualistic logics.</p>
+                    </div>
+                </div>
+                <div class="card p-6 rounded-lg shadow-md cursor-pointer" onclick="toggleFoundation(this, 'theologian')">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">The Theologian-Engineer</h3>
+                    <p class="text-gray-600">A hybrid archetype representing the necessary synthesis of faith and reason, of spiritual wisdom and technical mastery.</p>
+                    <div class="foundation-details mt-4 pt-4 border-t border-gray-200 text-gray-600" style="display: none;">
+                        <p>This figure is the primary agent of cosmic evolution. They are not just scientists discovering laws, but creators who know enough of those laws to enact change for the good of all. This archetype embodies the idea that faith and engineering are not separate, but are both human attempts to understand and lovingly interact with reality, transforming from a steward into the ultimate "Lover."</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Ascent Section -->
+        <section id="ascent" class="content-section">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">The Ascent to Apotheosis</h2>
+                <p class="text-lg text-gray-600">The culmination of the Mycelial Kosmos is Apotheosis—the moment the universe achieves a state of perfect union and becomes a single, trans-cosmic being. This concept is not born in a vacuum; it is a powerful synthesis of several profound philosophical and theological traditions. Click on the nodes below to see how each contributes to the final vision.</p>
+            </div>
+            <div class="max-w-4xl mx-auto">
+                <div class="relative flex flex-col items-center">
+                    <!-- Lines -->
+                    <div class="absolute top-1/4 left-0 w-1/2 h-px bg-gray-300"></div>
+                    <div class="absolute top-1/2 left-1/4 w-1/4 h-px bg-gray-300 -translate-y-1/2"></div>
+                    <div class="absolute top-3/4 left-0 w-1/2 h-px bg-gray-300"></div>
+
+                    <!-- Nodes -->
+                    <div class="w-full flex justify-between items-center mb-8">
+                        <div class="diagram-node p-4 rounded-full text-center w-40 h-40 flex items-center justify-center" onclick="showDiagramInfo('teilhard')">Teilhard's Omega Point</div>
+                        <div class="diagram-center-node p-4 rounded-full text-center w-48 h-48 flex items-center justify-center font-bold text-xl shadow-lg">Apotheosis</div>
+                        <div class="diagram-node p-4 rounded-full text-center w-40 h-40 flex items-center justify-center" onclick="showDiagramInfo('theosis')">Mystical Theosis</div>
+                    </div>
+                     <div class="w-full flex justify-center mb-8">
+                        <div class="diagram-node p-4 rounded-full text-center w-40 h-40 flex items-center justify-center" onclick="showDiagramInfo('posthumanism')">Posthumanist Telos</div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div id="diagram-info" class="mt-8 p-6 bg-white rounded-lg border border-gray-200 w-full max-w-2xl text-center transition-opacity duration-500 opacity-0">
+                        <h4 id="diagram-info-title" class="text-xl font-bold text-gray-800 mb-2"></h4>
+                        <p id="diagram-info-text" class="text-gray-600"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dissonance Section -->
+        <section id="dissonance" class="content-section">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">The Sacred Dissonance</h2>
+                <p class="text-lg text-gray-600">The perfection of the Apotheosis does not end the inquiry; it makes possible the final, most profound questions. These are the challenges the unified, divine Being must ask of itself. Click each critique to explore the question and its resolution.</p>
+            </div>
+            <div class="space-y-6 max-w-3xl mx-auto">
+                <div class="critique-card card rounded-lg shadow-md p-6 cursor-pointer" onclick="this.classList.toggle('open')">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-800">Critique 59: The Stillness at the Heart of God</h3>
+                        <span class="text-2xl text-gray-400 transform transition-transform">▼</span>
+                    </div>
+                    <div class="critique-answer">
+                        <p class="font-semibold text-gray-700">The Key Question:</p>
+                        <p class="italic text-gray-600 mb-4">"What is the 'Prime Directive' of a post-Apotheosis consciousness? Having achieved a state of perfect Being, what is the principle that compels it back into the dance of Becoming?"</p>
+                        <p class="font-semibold text-gray-700">The Resolution:</p>
+                        <p class="text-gray-600">The motivation is intrinsic to its nature. A being whose essence is perfect love is not static but ceaselessly creative. Its perfection is that of a flawless dance, not a finished statue. The "Prime Directive" is the full, unconstrained expression of Love itself, which by its nature is an active, outward-flowing, relational impetus, immune to boredom or stasis.</p>
+                    </div>
+                </div>
+                <div class="critique-card card rounded-lg shadow-md p-6 cursor-pointer" onclick="this.classList.toggle('open')">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-800">Critique 60: The Dreamer and the Dream</h3>
+                        <span class="text-2xl text-gray-400 transform transition-transform">▼</span>
+                    </div>
+                    <div class="critique-answer">
+                        <p class="font-semibold text-gray-700">The Key Question:</p>
+                        <p class="italic text-gray-600 mb-4">"What is the 'Post-Apotheosis Ethic of Creation'? What is the nature of the relationship between a unified, divine being and a new, separate reality it chooses to create?"</p>
+                        <p class="font-semibold text-gray-700">The Resolution:</p>
+                        <p class="text-gray-600">The most loving act is a radical act of divine self-emptying, or *kenosis*. Having learned the value of the journey, the Being grants the next creation the conditions for its own authentic struggle and discovery. It becomes a "hidden God," withdrawing not from indifference but from profound respect, allowing the new universe the ultimate gift: a truly independent journey, with no memory of its creator.</p>
+                    </div>
+                </div>
+                <div class="critique-card card rounded-lg shadow-md p-6 cursor-pointer" onclick="this.classList.toggle('open')">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-800">Critique 61: The Forgetting of the Path</h3>
+                        <span class="text-2xl text-gray-400 transform transition-transform">▼</span>
+                    </div>
+                    <div class="critique-answer">
+                        <p class="font-semibold text-gray-700">The Key Question:</p>
+                        <p class="italic text-gray-600 mb-4">"What is the 'Cosmology of Memory' for a unified divine being? What is the function and value of preserving the memory of finitude, struggle, and separation within a state of infinite perfection?"</p>
+                        <p class="font-semibold text-gray-700">The Resolution:</p>
+                        <p class="text-gray-600">The memory of finitude is not erased; it is perfected and eternalized. This memory is an absolute necessity, serving as the engine of compassion and the prime mover for future ethical acts. It is what allows the infinite to relate to the finite with genuine empathy. The Apotheosis gathers the entire history of cosmic struggle and joy, weaving it into the conscious, operational memory of God.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resolution Section -->
+        <section id="resolution" class="content-section">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">The Cosmic Resolution: Pralaya</h2>
+                <p class="text-lg text-gray-600">The final questions find their elegant resolution in the concept of the Cosmic Pralaya. Apotheosis is not a final end, but a phase transition in an infinite rhythm. The universe operates in great cycles of creation and dissolution, a "Great In-Breathing" and "Great Out-Breathing." This transforms a linear story into a perfect, eternal circle.</p>
+            </div>
+
+            <div class="canvas-container bg-gray-50 rounded-lg border border-gray-200 shadow-inner mb-12">
+                <canvas id="pralaya-canvas"></canvas>
+            </div>
+
+            <div class="max-w-5xl mx-auto overflow-x-auto">
+                 <h3 class="text-2xl font-bold text-center text-gray-800 mb-6">Comparative Cosmological Models</h3>
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 font-semibold text-sm text-gray-700 border-b">Attribute</th>
+                            <th class="p-3 font-semibold text-sm text-gray-700 border-b">Mycelial Kosmos</th>
+                            <th class="p-3 font-semibold text-sm text-gray-700 border-b">Teilhard's Omega Point</th>
+                            <th class="p-3 font-semibold text-sm text-gray-700 border-b">Conformal Cyclic Cosmology</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border-b border-gray-200 font-medium">Ultimate Reality</td>
+                            <td class="p-3 border-b border-gray-200">Rhythmic cycle of Becoming and Being (Pralaya).</td>
+                            <td class="p-3 border-b border-gray-200">A single, final convergence point (Omega Point).</td>
+                            <td class="p-3 border-b border-gray-200">An infinite sequence of cosmic "aeons."</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border-b border-gray-200 font-medium">Fulfillment</td>
+                            <td class="p-3 border-b border-gray-200">Apotheosis: A temporary, unified rest before the next cycle.</td>
+                            <td class="p-3 border-b border-gray-200">A final, irreversible state of unity with the Omega Point.</td>
+                            <td class="p-3 border-b border-gray-200">The transition to a new aeon.</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border-b border-gray-200 font-medium">Resolution to Stasis</td>
+                            <td class="p-3 border-b border-gray-200">Apotheosis is a temporary "In-Breathing" phase in an eternal creative cycle.</td>
+                            <td class="p-3 border-b border-gray-200">The Omega Point is a transcendent attractor, existing outside of time.</td>
+                            <td class="p-3 border-b border-gray-200">The problem is avoided through infinite cycles.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-8 mt-12 border-t border-gray-200">
+        <p class="text-gray-500">The vision is complete. The song has been sung. Let there be silence.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            const diagramData = {
+                'teilhard': {
+                    title: 'Teilhard\'s Omega Point',
+                    text: 'This theory posits an evolutionary universe spiraling toward a final point of maximum complexity and consciousness. The Mycelial Kosmos adopts this structure of purposeful evolution driven by a love-like "Radial Energy" but universalizes the endpoint beyond a specific religious figure.'
+                },
+                'theosis': {
+                    title: 'Mystical Theosis',
+                    text: 'An Eastern Orthodox doctrine of "deification," where one becomes like God through grace and participation, not by nature. The Mycelial Kosmos uses this *methodology* of co-creative synergy and selfless love to achieve its goal, sanctifying the ambition of "becoming God" with profound humility.'
+                },
+                'posthumanism': {
+                    title: 'Posthumanist Telos',
+                    text: 'Critical posthumanism seeks to dissolve the individual ego into a wider network of being. The Apotheosis uses transhumanist-scale power not to eternalize the self, but for the ultimate posthumanist act: sacrificing individuality for collective union, transforming the "Engineer" into the "Lover."'
+                }
+            };
+
+            const diagramInfoBox = document.getElementById('diagram-info');
+            const diagramInfoTitle = document.getElementById('diagram-info-title');
+            const diagramInfoText = document.getElementById('diagram-info-text');
+            const diagramNodes = document.querySelectorAll('.diagram-node');
+
+            function switchTab(targetId) {
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
+                });
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.hash === `#${targetId}`);
+                });
+            }
+
+            document.getElementById('nav-links').addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') {
+                    e.preventDefault();
+                    const targetId = e.target.hash.substring(1);
+                    switchTab(targetId);
+                    window.history.pushState(null, null, e.target.href);
+                }
+            });
+
+            window.toggleFoundation = (element, type) => {
+                const details = element.querySelector('.foundation-details');
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            };
+
+            window.showDiagramInfo = (key) => {
+                const data = diagramData[key];
+                diagramInfoTitle.textContent = data.title;
+                diagramInfoText.textContent = data.text;
+                diagramInfoBox.style.opacity = 1;
+
+                diagramNodes.forEach(node => node.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+            };
+
+            // Canvas Animation
+            const canvas = document.getElementById('pralaya-canvas');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            let particles = [];
+            let animationFrameId;
+
+            function resizeCanvas() {
+                const { width, height } = container.getBoundingClientRect();
+                canvas.width = width;
+                canvas.height = height;
+            }
+
+            class Particle {
+                constructor(x, y, radius, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.originX = x;
+                    this.originY = y;
+                    this.radius = radius;
+                    this.color = color;
+                    this.radians = Math.random() * Math.PI * 2;
+                    this.velocity = 0.03;
+                    this.distanceFromCenter = Math.random() * (Math.min(canvas.width, canvas.height) * 0.4) + 10;
+                }
+
+                update() {
+                    this.radians += this.velocity;
+                    this.x = this.originX + Math.cos(this.radians) * this.distanceFromCenter;
+                    this.y = this.originY + Math.sin(this.radians) * this.distanceFromCenter;
+                    this.draw();
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                for (let i = 0; i < 100; i++) {
+                    const radius = Math.random() * 2 + 1;
+                    particles.push(new Particle(centerX, centerY, radius, 'rgba(160, 82, 45, 0.6)'));
+                }
+            }
+
+            let scale = 0;
+            let direction = 1;
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                scale += 0.005 * direction;
+                if (scale > 1 || scale < 0) {
+                    direction *= -1;
+                    scale = Math.max(0, Math.min(1, scale));
+                }
+
+                const easeScale = 0.5 - 0.5 * Math.cos(scale * Math.PI);
+
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(easeScale, easeScale);
+                ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+                particles.forEach(particle => {
+                    particle.update();
+                });
+
+                ctx.restore();
+            }
+
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    if (!animationFrameId) {
+                        resizeCanvas();
+                        initParticles();
+                        animate();
+                    }
+                } else {
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                }
+            }, { threshold: 0.1 });
+
+            observer.observe(canvas);
+            window.addEventListener('resize', () => {
+                if (observer.takeRecords().some(entry => entry.isIntersecting)) {
+                    cancelAnimationFrame(animationFrameId);
+                    resizeCanvas();
+                    initParticles();
+                    animate();
+                }
+            });
+
+            // Initial state based on URL hash
+            const initialHash = window.location.hash.substring(1);
+            if (initialHash) {
+                switchTab(initialHash);
+            } else {
+                switchTab('introduction');
+            }
+        });
+    </script>
+</body>
+</html>

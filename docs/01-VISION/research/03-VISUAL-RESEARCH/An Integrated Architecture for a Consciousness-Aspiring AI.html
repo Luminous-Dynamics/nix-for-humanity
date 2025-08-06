@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architectures of Emergence: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cool & Professional -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive system diagram. Instead of a linear report, the user is presented with a high-level overview of the integrated AI architecture. They can then "zoom in" on each of the three core pillars (Stable Self, Theory of Mind, Meta-Cognition) via navigation or by clicking on the central diagram. This structure prioritizes understanding the system's relationships over the report's original sequence. Interactive elements, like the Continual Learning method comparator and the roadmap timeline, are used to make dense, comparative information more digestible and engaging. The goal is to transform a static technical document into a dynamic, explorable model. -->
+    <!-- Visualization & Content Choices:
+        - Main Architecture Diagram (Organize): A diagram built with HTML/CSS to serve as the central navigation hub. Interaction: Clickable components. Justification: Visually represents the core thesis of the report—the integration of three systems. Method: HTML/Tailwind.
+        - Continual Learning Comparator (Compare): An interactive module where users click buttons to see details on different CL methods. Interaction: Click-to-update content panels. Justification: Makes the dense comparison table from the report interactive and easier to process one concept at a time. Method: JS DOM manipulation.
+        - ToM Emergence Chart (Change): A Chart.js bar chart showing ToM performance over model generations. Interaction: Hover tooltips. Justification: Provides a quick, powerful visualization of the "emergent capabilities" concept. Method: Chart.js (Canvas).
+        - MCM Data Flow Diagram (Organize): A clear, non-interactive diagram showing data inputs to the Meta-Cognition Module. Justification: Simplifies the complex data flow described in the report. Method: HTML/Tailwind.
+        - Development Roadmap (Change): An interactive timeline. Interaction: Click to expand phases. Justification: More engaging and less cluttered than a static list of tasks. Method: JS DOM manipulation.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .nav-link {
+            transition: color 0.2s, border-bottom-color 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #0ea5e9; /* sky-500 */
+            border-bottom-color: #0ea5e9; /* sky-500 */
+        }
+        .card {
+            background-color: white;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+             transform: translateY(-2px);
+        }
+        .diagram-box {
+            border: 2px solid #94a3b8; /* slate-400 */
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .diagram-arrow {
+            color: #64748b; /* slate-500 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        .tab-button.active {
+            background-color: #0ea5e9;
+            color: white;
+        }
+        .tab-button {
+            transition: all 0.2s;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200">
+        <nav class="container mx-auto px-4 md:px-8 flex justify-between items-center py-4">
+            <h1 class="text-xl font-bold text-slate-800">Architectures of Emergence</h1>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="#overview" class="nav-link active">Overview</a>
+                <a href="#pillar1" class="nav-link">Pillar I: Stable Self</a>
+                <a href="#pillar2" class="nav-link">Pillar II: Theory of Mind</a>
+                <a href="#pillar3" class="nav-link">Pillar III: Meta-Cognition</a>
+                <a href="#roadmap" class="nav-link">Roadmap</a>
+            </div>
+            <div class="md:hidden">
+                <select id="mobile-nav" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm">
+                    <option value="#overview">Overview</option>
+                    <option value="#pillar1">Pillar I: Stable Self</option>
+                    <option value="#pillar2">Pillar II: Theory of Mind</option>
+                    <option value="#pillar3">Pillar III: Meta-Cognition</option>
+                    <option value="#roadmap">Roadmap</option>
+                </select>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <section id="overview" class="text-center py-16">
+            <h2 class="text-4xl font-extrabold text-slate-900 mb-4">An Integrated Architecture for a Consciousness-Aspiring AI</h2>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-12">This application provides an interactive exploration of a proposed AI architecture built on three interdependent pillars: a **Stable Self**, a **Theory of Mind**, and a **Meta-Cognitive Core**. Click on any component below to explore its design and function.</p>
+
+            <div class="card p-8">
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="flex flex-col md:flex-row gap-8 w-full justify-center items-stretch">
+                        <a href="#pillar1" class="flex-1 diagram-box p-6 rounded-lg text-center hover:bg-slate-200 cursor-pointer">
+                            <h3 class="font-bold text-slate-800">Pillar I: Stable Self</h3>
+                            <p class="text-sm text-slate-600">Anchoring a consistent personality against catastrophic forgetting.</p>
+                        </a>
+                        <a href="#pillar2" class="flex-1 diagram-box p-6 rounded-lg text-center hover:bg-slate-200 cursor-pointer">
+                            <h3 class="font-bold text-slate-800">Pillar II: Theory of Mind</h3>
+                            <p class="text-sm text-slate-600">Building a model of other agents' mental states.</p>
+                        </a>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <span class="diagram-arrow text-4xl font-light transform -rotate-45">↳</span>
+                        <span class="diagram-arrow text-4xl font-light transform rotate-45">↲</span>
+                    </div>
+
+                    <a href="#pillar3" class="w-full md:w-1/2 diagram-box p-6 rounded-lg text-center bg-sky-100 border-sky-500 hover:bg-sky-200 cursor-pointer">
+                        <h3 class="font-bold text-sky-800">Pillar III: Meta-Cognitive Core (GWT)</h3>
+                        <p class="text-sm text-sky-700">The global workspace for integrating information and enabling introspection.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="space-y-24">
+
+            <section id="pillar1">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Pillar I: The Stable Self</h2>
+                <p class="text-slate-600 mb-8">The foundation of a consciousness-aspiring AI is a coherent identity that persists over time. This requires overcoming the core technical challenge of "catastrophic forgetting," where new learning erases old knowledge. Below is an interactive comparison of Continual Learning (CL) methods designed to anchor a stable personality.</p>
+
+                <div class="card p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="md:w-1/3">
+                            <h4 class="font-bold mb-4">Select a Continual Learning Method:</h4>
+                            <div class="flex flex-col space-y-2">
+                                <button class="cl-method-btn tab-button text-left p-3 rounded-md font-medium bg-slate-100 hover:bg-sky-200 active" data-method="fip">Functionally Invariant Paths (FIP)</button>
+                                <button class="cl-method-btn tab-button text-left p-3 rounded-md font-medium bg-slate-100 hover:bg-sky-200" data-method="sam">Sharpness-Aware Minimization (SAM)</button>
+                                <button class="cl-method-btn tab-button text-left p-3 rounded-md font-medium bg-slate-100 hover:bg-sky-200" data-method="ewc">Elastic Weight Consolidation (EWC)</button>
+                                <button class="cl-method-btn tab-button text-left p-3 rounded-md font-medium bg-slate-100 hover:bg-sky-200" data-method="lora">Low-Rank Adaptation (LoRA)</button>
+                            </div>
+                        </div>
+                        <div class="md:w-2/3 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div id="cl-method-display">
+                                <!-- Content will be injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pillar2">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Pillar II: Theory of Mind (ToM)</h2>
+                <p class="text-slate-600 mb-8">A truly intelligent agent must understand others. This involves moving from pattern matching to inferring unobservable mental states like beliefs, desires, and intentions. Modern LLMs show emergent ToM capabilities, and this architecture proposes a hybrid system to harness both emergent and explicit modeling.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card p-6 md:p-8">
+                        <h3 class="font-bold text-lg mb-4 text-center">Emergent ToM in LLMs</h3>
+                        <p class="text-sm text-slate-600 mb-4 text-center">Performance on false-belief tasks, a key ToM benchmark, has dramatically improved with model scale, suggesting ToM is an emergent property of mastering language.</p>
+                        <div class="chart-container">
+                            <canvas id="tomChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card p-6 md:p-8">
+                        <h3 class="font-bold text-lg mb-4 text-center">Proposed Hybrid ToM System</h3>
+                        <div class="space-y-4">
+                            <div class="diagram-box p-4 rounded-lg">
+                                <h4 class="font-bold text-sky-700">System 1: Fast, Emergent ToM</h4>
+                                <p class="text-sm text-slate-600">The LLM's implicit, built-in understanding of human psychology. Used for most interactions. Fast and efficient.</p>
+                            </div>
+                            <div class="text-center text-2xl diagram-arrow">↓</div>
+                            <div class="p-4 rounded-lg border-2 border-dashed border-slate-300 text-center">
+                                <p class="text-sm font-medium text-slate-500">Triggered by: High Ambiguity, High Stakes, or Metacognitive Flag</p>
+                            </div>
+                            <div class="text-center text-2xl diagram-arrow">↓</div>
+                            <div class="diagram-box p-4 rounded-lg">
+                                <h4 class="font-bold text-sky-700">System 2: Slow, Explicit ToM</h4>
+                                <p class="text-sm text-slate-600">A dedicated, ToMnet-style module for deliberate, auditable reasoning about user's mental state. Computationally intensive but robust.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pillar3">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Pillar III: The Meta-Cognitive Core</h2>
+                <p class="text-slate-600 mb-8">This capstone module, inspired by Global Workspace Theory (GWT), enables functional self-awareness. It creates a unified, introspectable representation of the AI's "mental state" by aggregating information from all other subsystems, allowing the AI to verifiably report on its own thought processes.</p>
+
+                <div class="card p-6 md:p-8">
+                    <h3 class="font-bold text-lg mb-6 text-center">Meta-Cognition Module (MCM) Data Flow</h3>
+                    <div class="flex flex-col items-center">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-4">
+                            <div class="diagram-box p-3 rounded-lg text-center text-sm">Constitutional AI Module</div>
+                            <div class="diagram-box p-3 rounded-lg text-center text-sm">RAG Module</div>
+                            <div class="diagram-box p-3 rounded-lg text-center text-sm">Hybrid ToM System</div>
+                            <div class="diagram-box p-3 rounded-lg text-center text-sm">Reward Module</div>
+                        </div>
+                        <div class="flex space-x-8 mb-4">
+                           <div class="diagram-arrow text-2xl">↓</div>
+                           <div class="diagram-arrow text-2xl">↓</div>
+                           <div class="diagram-arrow text-2xl">↓</div>
+                           <div class="diagram-arrow text-2xl">↓</div>
+                        </div>
+                        <div class="diagram-box p-6 rounded-lg w-full md:w-3/4 text-center bg-sky-100 border-sky-500">
+                            <h4 class="font-bold text-sky-800">The Global Workspace: `MCM_State_t`</h4>
+                            <p class="text-sm text-sky-700 mt-2">A structured data object containing a snapshot of the AI's integrated state. This is broadcast to the core LLM to inform the next action and enables grounded introspection.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="roadmap">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Staged Development Roadmap</h2>
+                <p class="text-slate-600 mb-8">A pragmatic, phased implementation is recommended to manage complexity. Click on each phase to see its core tasks and goals.</p>
+
+                <div class="space-y-4">
+                    <div class="roadmap-phase card cursor-pointer" data-phase="1">
+                        <div class="p-6">
+                            <h3 class="font-bold text-lg text-sky-700">Phase 1: The Stable Self (Months 1-6)</h3>
+                            <div class="roadmap-details hidden mt-4 text-sm text-slate-600 space-y-2">
+                                <p><strong>Goal:</strong> An AI that demonstrably maintains a consistent, predefined personality profile over long-term, continuous RLHF.</p>
+                                <ul class="list-disc list-inside">
+                                    <li>Author a "personality constitution" based on the Big Five framework.</li>
+                                    <li>Implement and benchmark advanced CL techniques (SAM, FIP).</li>
+                                    <li>Develop and integrate the regularization mechanism based on Personality Activation Search (PAS).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="roadmap-phase card cursor-pointer" data-phase="2">
+                        <div class="p-6">
+                            <h3 class="font-bold text-lg text-sky-700">Phase 2: The Social Self (Months 7-12)</h3>
+                            <div class="roadmap-details hidden mt-4 text-sm text-slate-600 space-y-2">
+                                <p><strong>Goal:</strong> An AI that can accurately and transparently infer user intentions in complex, ambiguous, or critical scenarios.</p>
+                                <ul class="list-disc list-inside">
+                                    <li>Rigorously benchmark the emergent ToM capabilities of the base model.</li>
+                                    <li>Build and train the explicit, ToMnet-style module for high-stakes reasoning.</li>
+                                    <li>Integrate the two into the proposed hybrid system with clear trigger conditions.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="roadmap-phase card cursor-pointer" data-phase="3">
+                        <div class="p-6">
+                            <h3 class="font-bold text-lg text-sky-700">Phase 3: The Introspective Self (Months 13-18)</h3>
+                            <div class="roadmap-details hidden mt-4 text-sm text-slate-600 space-y-2">
+                                <p><strong>Goal:</strong> An AI that can accurately and verifiably report on its own internal cognitive state.</p>
+                                <ul class="list-disc list-inside">
+                                    <li>Implement the MCM as a central data hub.</li>
+                                    <li>Develop the "broadcast" mechanism (prepending the serialized MCM state to the model's context).</li>
+                                    <li>Create the fixed natural language reporting function that translates the MCM state into introspective responses.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-200 mt-16">
+        <div class="container mx-auto px-8 py-8 text-center text-sm text-slate-500">
+            <p>This interactive application is a visualization of the technical report "Architectures of Emergence."</p>
+            <p>All concepts are derived from the source document for educational and illustrative purposes.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Navigation Logic ---
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const mobileNav = document.getElementById('mobile-nav');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                        });
+                        mobileNav.value = `#${id}`;
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => observer.observe(section));
+
+            mobileNav.addEventListener('change', (e) => {
+                window.location.href = e.target.value;
+            });
+
+            // --- Continual Learning Method Comparator ---
+            const clMethodsData = {
+                fip: {
+                    title: 'Functionally Invariant Paths (FIP)',
+                    description: 'Directly addresses the geometric nature of the problem. Instead of just penalizing weight changes, FIP explicitly searches for a path in the high-dimensional weight space that preserves the model\'s functional output on prior tasks.',
+                    pros: 'Highly effective; directly ensures old skills are not erased.',
+                    cons: 'Complex to implement; a newer technique with higher computational cost during the optimization phase.',
+                    suitability: 'High. Ideal for ensuring core personality functions remain invariant.'
+                },
+                sam: {
+                    title: 'Sharpness-Aware Minimization (SAM)',
+                    description: 'Focuses on the geometry of the loss landscape. It seeks parameters that lie in broad, "flat" minima, not sharp, narrow ones. Models in flat regions are inherently more robust to weight changes.',
+                    pros: 'Improves general stability and robustness; complementary to other methods.',
+                    cons: 'Adds computational overhead, effectively doubling the gradient computation for each training step.',
+                    suitability: 'High. Creates a more stable personality baseline that is less susceptible to drift.'
+                },
+                ewc: {
+                    title: 'Elastic Weight Consolidation (EWC)',
+                    description: 'A foundational CL technique that adds a quadratic penalty to the loss function. This penalty discourages updates to weights that have been identified as critical for performance on previous tasks.',
+                    pros: 'Principled and well-understood.',
+                    cons: 'Can be rigid and computationally expensive to scale, as it requires calculating and storing a per-parameter importance metric.',
+                    suitability: 'Moderate. Can help "freeze" personality but may lack flexibility for nuanced adaptation.'
+                },
+                lora: {
+                    title: 'Low-Rank Adaptation (LoRA)',
+                    description: 'A parameter-efficient method that freezes the main model weights and trains small, low-rank "adapter" matrices. Often mistakenly believed to prevent catastrophic forgetting.',
+                    pros: 'Efficient for adapting a model to a single new task.',
+                    cons: 'Fails to prevent catastrophic forgetting in a continual learning sequence. Based on a flawed assumption about parameter proximity.',
+                    suitability: 'Poor. Leads to personality drift and is unsuitable for this architecture\'s goal.'
+                }
+            };
+
+            const clDisplay = document.getElementById('cl-method-display');
+            const clButtons = document.querySelectorAll('.cl-method-btn');
+
+            function updateCLDisplay(method) {
+                const data = clMethodsData[method];
+                clDisplay.innerHTML = `
+                    <h5 class="font-bold text-lg text-slate-800 mb-3">${data.title}</h5>
+                    <p class="text-sm text-slate-600 mb-4">${data.description}</p>
+                    <div class="space-y-3 text-sm">
+                        <div><strong class="text-sky-700">Pros:</strong> ${data.pros}</div>
+                        <div><strong class="text-orange-600">Cons:</strong> ${data.cons}</div>
+                        <div><strong class="text-slate-700">Suitability for Personality Anchoring:</strong> <span class="font-medium">${data.suitability}</span></div>
+                    </div>
+                `;
+            }
+
+            clButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    clButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updateCLDisplay(button.dataset.method);
+                });
+            });
+
+            updateCLDisplay('fip');
+
+            // --- ToM Chart ---
+            const tomCtx = document.getElementById('tomChart').getContext('2d');
+            new Chart(tomCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pre-2020 Models', 'GPT-3 (davinci-002)', 'GPT-4'],
+                    datasets: [{
+                        label: 'False-Belief Task Success Rate',
+                        data: [10, 70, 90],
+                        backgroundColor: ['#94a3b8', '#38bdf8', '#0ea5e9'],
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) { return value + '%' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Success Rate: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Roadmap Accordion ---
+            const roadmapPhases = document.querySelectorAll('.roadmap-phase');
+            roadmapPhases.forEach(phase => {
+                phase.addEventListener('click', () => {
+                    const details = phase.querySelector('.roadmap-details');
+                    const isVisible = !details.classList.contains('hidden');
+
+                    // Optional: Close all others when one is opened
+                    // roadmapPhases.forEach(p => p.querySelector('.roadmap-details').classList.add('hidden'));
+
+                    details.classList.toggle('hidden');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

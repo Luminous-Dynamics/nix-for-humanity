@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Blueprint: The Persona of One</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutrals with Tech Accents" - A custom palette using #F5F5F5 (Alabaster) as the base, #4A5568 (Slate Gray) for text, #4299E1 (Sky Blue) for primary actions/highlights, and #A0AEC0 (Cool Gray) for borders and secondary elements. -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive, hub-and-spoke dashboard. The "hub" is a central, clickable architectural diagram representing the core system components. This structure was chosen because the source report is dense and conceptual; a non-linear, visual-first approach allows users to grasp the high-level system flow immediately and then drill down into specific modules (cognitive, affective, pedagogical) at their own pace. This prioritizes user-led exploration over a rigid, linear presentation of the report's sections, making the complex information more digestible and engaging. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Core System Architecture -> Goal: Organize/Relationships -> Viz: Interactive Diagram (HTML/CSS) -> Interaction: Click to navigate -> Justification: Provides a mental model of the entire system, serving as the primary navigation.
+        - Report Info: NixOS Skill Graph -> Goal: Organize/Relationships -> Viz: Illustrative Graph (HTML/CSS) -> Interaction: Hover to highlight prerequisites -> Justification: Visually demonstrates the concept of skill dependencies without needing a complex library.
+        - Report Info: Bayesian Knowledge Tracing -> Goal: Change/Inform -> Viz: Dynamic Line Chart (Chart.js) -> Interaction: Buttons to simulate success/failure -> Justification: Makes the abstract probabilistic update tangible and easy to understand.
+        - Report Info: Affective DBN States -> Goal: Inform/Compare -> Viz: Dynamic Radar Chart (Chart.js) -> Interaction: Sliders to change evidence -> Justification: Effectively shows the multi-dimensional, probabilistic nature of the inferred affective state and its response to changing evidence.
+        - Report Info: RLHF Process -> Goal: Organize -> Viz: Flowchart (HTML/CSS) -> Interaction: Static -> Justification: Clearly presents the sequential steps of the training process.
+        - Report Info: Architectural Patterns -> Goal: Compare/Organize -> Viz: Styled Table (HTML/CSS) -> Interaction: Static -> Justification: The most effective way to present a structured comparison of technical trade-offs.
+        -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F5;
+            color: #4A5568;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+            border: 1px solid #E2E8F0;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            color: #4299E1;
+            border-bottom: 2px solid #4299E1;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .connector {
+            position: absolute;
+            background-color: #A0AEC0;
+            z-index: 0;
+        }
+        .arrowhead {
+            width: 0;
+            height: 0;
+            border-style: solid;
+            position: absolute;
+        }
+        .skill-node {
+            transition: all 0.2s ease-in-out;
+            cursor: default;
+        }
+        .skill-node.highlight, .skill-node.prereq {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+        }
+        .skill-node.highlight { border-color: #4299E1; }
+        .skill-node.prereq { border-color: #F56565; }
+    </style>
+</head>
+<body class="antialiased">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">The Persona of One</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#architecture" class="nav-link text-gray-600 hover:text-blue-500 pb-1">Architecture</a>
+                <a href="#cognitive" class="nav-link text-gray-600 hover:text-blue-500 pb-1">Cognitive Model</a>
+                <a href="#affective" class="nav-link text-gray-600 hover:text-blue-500 pb-1">Affective Model</a>
+                <a href="#pedagogical" class="nav-link text-gray-600 hover:text-blue-500 pb-1">Pedagogical Engine</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <section id="intro" class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-gray-800 leading-tight">A Dynamic Blueprint for Human-AI Partnership</h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This interactive application deconstructs the technical report on the "Persona of One"—a system designed to create a deeply personalized, evolving digital representation of a user. Explore the core components below to understand how it works.</p>
+        </section>
+
+        <section id="architecture" class="mb-20 scroll-mt-24">
+            <div class="card p-6 md:p-8">
+                <h3 class="text-3xl font-bold text-gray-800 text-center mb-2">System Architecture Hub</h3>
+                <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">The system is based on a classic Intelligent Tutoring System (ITS) architecture. Click on any component in the diagram below to learn more about its role and function.</p>
+                <div id="architecture-diagram" class="relative w-full min-h-[500px] md:min-h-[400px] flex flex-col md:flex-row justify-center items-center gap-8 md:gap-0">
+                    <!-- Connectors -->
+                    <div class="connector" style="width: 2px; height: 60px; top: 110px; left: 50%;"></div>
+                    <div class="arrowhead" style="border-width: 8px 6px 0 6px; border-color: #A0AEC0 transparent transparent transparent; top: 170px; left: calc(50% - 6px);"></div>
+                    <div class="connector" style="width: 2px; height: 60px; bottom: 110px; left: 50%;"></div>
+                    <div class="arrowhead" style="border-width: 0 6px 8px 6px; border-color: transparent transparent #A0AEC0 transparent; bottom: 170px; left: calc(50% - 6px);"></div>
+                    <div class="hidden md:block connector" style="height: 2px; width: 100px; top: 50%; left: calc(50% - 170px);"></div>
+                    <div class="hidden md:block arrowhead" style="border-width: 6px 0 6px 8px; border-color: transparent transparent transparent #A0AEC0; top: calc(50% - 6px); left: calc(50% - 70px);"></div>
+                    <div class="hidden md:block connector" style="height: 2px; width: 100px; top: 50%; right: calc(50% - 170px);"></div>
+                    <div class="hidden md:block arrowhead" style="border-width: 6px 8px 6px 0; border-color: transparent #A0AEC0 transparent transparent; top: calc(50% - 6px); right: calc(50% - 70px);"></div>
+
+                    <!-- Components -->
+                    <div class="absolute top-0 md:top-auto md:relative z-10">
+                        <a href="#cognitive" class="arch-component block text-center p-6 rounded-lg bg-blue-50 border-2 border-blue-200 hover:shadow-xl transition-shadow w-64">
+                            <h4 class="font-bold text-lg text-blue-800">Cognitive Model</h4>
+                            <p class="text-sm text-blue-700">What the user knows.</p>
+                        </a>
+                    </div>
+                    <div class="absolute md:relative left-0 z-10">
+                        <a href="#affective" class="arch-component block text-center p-6 rounded-lg bg-green-50 border-2 border-green-200 hover:shadow-xl transition-shadow w-64">
+                            <h4 class="font-bold text-lg text-green-800">Affective Model</h4>
+                            <p class="text-sm text-green-700">How the user feels.</p>
+                        </a>
+                    </div>
+                    <div class="absolute md:relative z-10">
+                        <div class="text-center p-6 rounded-lg bg-gray-100 border-2 border-gray-300 w-64">
+                            <h4 class="font-bold text-lg text-gray-800">Pedagogical Engine</h4>
+                            <p class="text-sm text-gray-700">The AI's brain.</p>
+                        </div>
+                    </div>
+                    <div class="absolute md:relative right-0 z-10">
+                        <a href="#pedagogical" class="arch-component block text-center p-6 rounded-lg bg-purple-50 border-2 border-purple-200 hover:shadow-xl transition-shadow w-64">
+                            <h4 class="font-bold text-lg text-purple-800">Adaptive UI</h4>
+                            <p class="text-sm text-purple-700">How the system interacts.</p>
+                        </a>
+                    </div>
+                    <div class="absolute bottom-0 md:bottom-auto md:relative z-10">
+                        <div class="text-center p-6 rounded-lg bg-yellow-50 border-2 border-yellow-300 w-64">
+                            <h4 class="font-bold text-lg text-yellow-800">User Interaction</h4>
+                            <p class="text-sm text-yellow-700">The user's actions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="cognitive" class="mb-20 scroll-mt-24">
+            <h3 class="text-3xl font-bold text-gray-800 text-center mb-8">The Cognitive Model: Mapping Mastery</h3>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">The cognitive model tracks what the user knows and where they are on their learning journey. It combines a structured map of all skills (the Skill Graph) with a dynamic "GPS" to pinpoint the user's current knowledge state (Bayesian Knowledge Tracing).</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h4 class="text-xl font-bold text-center text-gray-800 mb-4">Illustrative NixOS Skill Graph</h4>
+                    <p class="text-center text-gray-600 mb-6">This diagram shows how skills are connected. Hover over a skill to see its prerequisites. This structure allows the AI to guide learning logically.</p>
+                    <div id="skill-graph-vis" class="flex flex-col items-center justify-center space-y-4">
+                        <div data-skill="overlays" data-prereqs="derivations,nixpkgs" class="skill-node border-2 border-gray-300 rounded-lg px-4 py-2 bg-white w-48 text-center">Overlays</div>
+                        <div class="flex space-x-8">
+                             <div data-skill="derivations" data-prereqs="builtins" class="skill-node border-2 border-gray-300 rounded-lg px-4 py-2 bg-white w-48 text-center">Derivations</div>
+                             <div data-skill="nixpkgs" data-prereqs="builtins" class="skill-node border-2 border-gray-300 rounded-lg px-4 py-2 bg-white w-48 text-center">Nixpkgs Structure</div>
+                        </div>
+                        <div data-skill="builtins" data-prereqs="" class="skill-node border-2 border-gray-300 rounded-lg px-4 py-2 bg-white w-48 text-center">Built-in Functions</div>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <h4 class="text-xl font-bold text-center text-gray-800 mb-4">Bayesian Knowledge Tracing (BKT)</h4>
+                    <p class="text-center text-gray-600 mb-6">BKT dynamically estimates the probability that a user has mastered a skill. Simulate this by clicking the buttons below to see how the mastery probability changes with each success or failure.</p>
+                    <div class="chart-container h-64">
+                        <canvas id="bktChart"></canvas>
+                    </div>
+                    <div class="flex justify-center space-x-4 mt-4">
+                        <button id="bkt-success" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Log Success</button>
+                        <button id="bkt-failure" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Log Failure</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="affective" class="mb-20 scroll-mt-24">
+            <h3 class="text-3xl font-bold text-gray-800 text-center mb-8">The Affective Model: Understanding the Inner World</h3>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">This model uses a Dynamic Bayesian Network (DBN) to infer the user's unobservable mental state (like flow, anxiety, or boredom) from their observable actions. This allows the AI to be empathetic and adapt its strategy accordingly.</p>
+            <div class="card p-6">
+                <h4 class="text-xl font-bold text-center text-gray-800 mb-4">Live Affective State Inference</h4>
+                <p class="text-center text-gray-600 mb-6">Adjust the sliders below to simulate different user behaviors and watch how the system's belief about the user's mental state changes in real-time. This probabilistic approach acknowledges the uncertainty of inferring feelings from actions.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="chart-container h-80">
+                        <canvas id="affectiveChart"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <label for="error-slider" class="font-semibold text-gray-700">Error Frequency</label>
+                            <input id="error-slider" type="range" min="0" max="100" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label for="time-slider" class="font-semibold text-gray-700">Time on Task (vs. Expected)</label>
+                            <input id="time-slider" type="range" min="0" max="100" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label for="skill-slider" class="font-semibold text-gray-700">Current Skill Level (from BKT)</label>
+                            <input id="skill-slider" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pedagogical" class="scroll-mt-24">
+            <h3 class="text-3xl font-bold text-gray-800 text-center mb-8">The Pedagogical Engine: Optimizing for Well-being</h3>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">The engine's goal is not just to teach, but to enhance the user's digital well-being. It uses Reinforcement Learning from Human Feedback (RLHF) to learn which actions (like offering a hint or suggesting a break) lead to better outcomes, less stress, and more focus for the user.</p>
+            <div class="card p-6">
+                <h4 class="text-xl font-bold text-center text-gray-800 mb-4">RLHF Training Process</h4>
+                <p class="text-center text-gray-600 mb-8">This process aligns the AI's behavior with complex human values, teaching it to prioritize user flourishing.</p>
+                <div class="flex flex-col md:flex-row justify-around items-start space-y-8 md:space-y-0 md:space-x-4">
+                    <div class="text-center flex-1">
+                        <div class="text-3xl font-bold text-blue-500 bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">1</div>
+                        <h5 class="font-bold text-lg">Fine-Tune Model</h5>
+                        <p class="text-sm text-gray-600">Start with a base model and train it on high-quality examples of helpful interactions in the NixOS domain.</p>
+                    </div>
+                    <div class="text-center flex-1">
+                        <div class="text-3xl font-bold text-green-500 bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">2</div>
+                        <h5 class="font-bold text-lg">Train Reward Model</h5>
+                        <p class="text-sm text-gray-600">Humans rank different AI responses. A reward model is trained to predict these human preferences.</p>
+                    </div>
+                    <div class="text-center flex-1">
+                        <div class="text-3xl font-bold text-purple-500 bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">3</div>
+                        <h5 class="font-bold text-lg">Optimize Policy</h5>
+                        <p class="text-sm text-gray-600">The AI is further trained to generate responses that maximize the score from the reward model, effectively learning to be helpful and supportive.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center mt-16 py-8 border-t border-gray-200">
+        <p class="text-gray-500">An interactive exploration of the "Persona of One" technical blueprint.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+            sections.forEach(section => observer.observe(section));
+
+            // Skill Graph Interaction
+            const skillNodes = document.querySelectorAll('.skill-node');
+            skillNodes.forEach(node => {
+                node.addEventListener('mouseenter', () => {
+                    node.classList.add('highlight');
+                    const prereqs = node.dataset.prereqs.split(',').filter(p => p);
+                    prereqs.forEach(prereqId => {
+                        const prereqNode = document.querySelector(`[data-skill="${prereqId}"]`);
+                        if (prereqNode) prereqNode.classList.add('prereq');
+                    });
+                });
+                node.addEventListener('mouseleave', () => {
+                    skillNodes.forEach(n => n.classList.remove('highlight', 'prereq'));
+                });
+            });
+
+            // BKT Chart
+            const bktCtx = document.getElementById('bktChart').getContext('2d');
+            const bktData = {
+                labels: [0],
+                datasets: [{
+                    label: 'P(Mastery)',
+                    data: [0.1],
+                    borderColor: '#4299E1',
+                    backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            };
+            const bktChart = new Chart(bktCtx, {
+                type: 'line',
+                data: bktData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 1 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            let p_init = 0.1, p_learn = 0.15, p_slip = 0.1, p_guess = 0.2;
+            let p_mastery = p_init;
+            let attempts = 0;
+
+            function updateBkt(correct) {
+                let p_mastery_given_evidence;
+                if (correct) {
+                    p_mastery_given_evidence = (p_mastery * (1 - p_slip)) / (p_mastery * (1 - p_slip) + (1 - p_mastery) * p_guess);
+                } else {
+                    p_mastery_given_evidence = (p_mastery * p_slip) / (p_mastery * p_slip + (1 - p_mastery) * (1 - p_guess));
+                }
+                p_mastery = p_mastery_given_evidence + (1 - p_mastery_given_evidence) * p_learn;
+
+                attempts++;
+                bktData.labels.push(attempts);
+                bktData.datasets[0].data.push(p_mastery);
+                bktChart.update();
+            }
+
+            document.getElementById('bkt-success').addEventListener('click', () => updateBkt(true));
+            document.getElementById('bkt-failure').addEventListener('click', () => updateBkt(false));
+
+            // Affective Chart
+            const affectiveCtx = document.getElementById('affectiveChart').getContext('2d');
+            const affectiveData = {
+                labels: ['Flow', 'Engagement', 'Boredom', 'Anxiety', 'Fatigue'],
+                datasets: [{
+                    label: 'Inferred State Probability',
+                    data: [0.5, 0.6, 0.1, 0.2, 0.1],
+                    backgroundColor: 'rgba(66, 153, 225, 0.2)',
+                    borderColor: '#4299E1',
+                    pointBackgroundColor: '#4299E1',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#4299E1'
+                }]
+            };
+            const affectiveChart = new Chart(affectiveCtx, {
+                type: 'radar',
+                data: affectiveData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 1, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const errorSlider = document.getElementById('error-slider');
+            const timeSlider = document.getElementById('time-slider');
+            const skillSlider = document.getElementById('skill-slider');
+
+            function updateAffectiveState() {
+                const errorFreq = errorSlider.value / 100;
+                const timeOnTask = timeSlider.value / 100;
+                const skillLevel = skillSlider.value / 100;
+
+                const anxiety = Math.min(1, (errorFreq * 0.8) + ((1 - skillLevel) * 0.5));
+                const boredom = Math.min(1, (timeOnTask * 0.6) * (skillLevel * 1.2));
+                const fatigue = Math.min(1, (timeOnTask * 0.4) + (errorFreq * 0.2));
+                const flow = Math.min(1, (1 - errorFreq) * skillLevel * (1 - timeOnTask * 0.5));
+                const engagement = Math.min(1, (1 - boredom) * (1 - fatigue) * 0.8);
+
+                affectiveChart.data.datasets[0].data = [flow, engagement, boredom, anxiety, fatigue];
+                affectiveChart.update();
+            }
+
+            errorSlider.addEventListener('input', updateAffectiveState);
+            timeSlider.addEventListener('input', updateAffectiveState);
+            skillSlider.addEventListener('input', updateAffectiveState);
+
+            updateAffectiveState();
+        });
+    </script>
+</body>
+</html>

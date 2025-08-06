@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Architectural Blueprint: Symbiotic AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A dashboard-style, thematic SPA. The structure abandons the linear report format for a user-centric model focused on key architectural decisions. A sticky top navigation allows jumps to three core thematic sections: 'The Learning System', 'Data & Reasoning', and 'The Fluid Interface'. Each section uses interactive components like comparison charts (Chart.js), tabbed content panes, and HTML/CSS diagrams to visualize trade-offs and implementation flows. This non-linear, interactive design was chosen to make the dense technical information digestible and to facilitate direct comparison between competing technologies, which is more useful for a developer making strategic decisions than a simple text document. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: MLflow vs. alternatives. Goal: Inform/Organize. Viz: Tabbed content for implementation steps. Interaction: Click tabs to reveal stages. Justification: Breaks down a complex process into manageable steps. Library: HTML/CSS/JS.
+        - Report Info: Label Studio vs. doccano. Goal: Compare. Viz: Horizontal Bar Chart. Interaction: Hover/click to highlight details. Justification: Visually quantifies the superiority of the recommended tool across key metrics. Library: Chart.js.
+        - Report Info: Graph DBs (SQLite vs. Kùzu vs. Neo4j). Goal: Compare. Viz: Radar Chart. Interaction: Tooltips on hover. Justification: Effectively shows multi-dimensional trade-offs (performance, setup, footprint) in a single view. Library: Chart.js.
+        - Report Info: Orchestration (SK vs. LangChain). Goal: Compare/Inform. Viz: HTML/CSS diagram of SK's Planner. Interaction: Hover effects on diagram nodes. Justification: Visually explains the abstract "Planner" concept which is the key differentiator. Library: HTML/CSS/JS.
+        - Report Info: IPC (gRPC vs. Cap'n Proto). Goal: Compare. Viz: Bar Chart. Interaction: Tooltips. Justification: Clearly shows the balance of performance vs. ecosystem maturity. Library: Chart.js.
+        - Report Info: RLHF & State Management Flows. Goal: Inform. Viz: HTML/CSS flow diagrams. Interaction: Hover highlights. Justification: Simplifies abstract data flow concepts into easy-to-follow visual paths. Library: HTML/CSS/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F5F2;
+            color: #333333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #4A6C8C;
+            border-bottom-color: #4A6C8C;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAEAEA;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.07);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #4A6C8C;
+            color: #FFFFFF;
+        }
+        .flow-diagram-node {
+            transition: all 0.2s ease-in-out;
+            border: 2px solid #B88A6D;
+        }
+        .flow-diagram-node:hover {
+            background-color: #B88A6D;
+            color: white;
+            transform: scale(1.05);
+        }
+        .flow-diagram-arrow {
+            color: #B88A6D;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-[#4A6C8C]">Symbiotic AI Blueprint</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#introduction" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Introduction</a>
+                        <a href="#learning-system" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Learning System</a>
+                        <a href="#data-reasoning" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Data & Reasoning</a>
+                        <a href="#interface-state" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Interface & State</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="introduction" class="text-center mb-16">
+            <h2 class="text-3xl font-bold tracking-tight text-[#4A6C8C] sm:text-4xl">Architecting a Symbiotic AI Partner</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-700">This interactive blueprint translates the comprehensive technical report into an explorable guide. It's designed to help navigate the key architectural decisions required to build a "consciousness-first," local-first AI system. Explore the trade-offs, implementation strategies, and recommended technologies for each core component of the project.</p>
+        </section>
+
+        <section id="learning-system" class="mb-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-[#4A6C8C]">Part 1: The Learning System</h3>
+                <p class="mt-2 text-lg text-gray-600">Engineering the "Persona of One" by managing the ML lifecycle, capturing affective data, and creating a sustainable feedback loop.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">ML Lifecycle Management</h4>
+                    <p class="text-gray-600 mb-4">For a solo developer, tracking model experiments is critical. <strong class="text-[#4A6C8C]">MLflow</strong> is recommended as an essential discipline for reproducibility and clarity.</p>
+                    <div id="mlflow-tabs" class="mt-4">
+                        <div class="mb-4 border-b border-gray-200">
+                            <nav class="flex space-x-2" aria-label="Tabs">
+                                <button class="tab-button active px-3 py-2 font-medium text-sm rounded-t-lg" data-tab="mlflow-setup">Setup</button>
+                                <button class="tab-button px-3 py-2 font-medium text-sm rounded-t-lg" data-tab="mlflow-workflow">Workflow</button>
+                                <button class="tab-button px-3 py-2 font-medium text-sm rounded-t-lg" data-tab="mlflow-deploy">Deployment</button>
+                            </nav>
+                        </div>
+                        <div id="mlflow-setup" class="tab-content">
+                            <h5 class="font-semibold mb-2">Local-First Server</h5>
+                            <p class="text-sm text-gray-600">Run a local tracking server with a SQLite backend for robust, private metadata storage.</p>
+                            <pre class="bg-gray-100 text-xs p-2 rounded-md mt-2 overflow-x-auto"><code>mlflow server --backend-store-uri sqlite:///mlflow.db</code></pre>
+                        </div>
+                        <div id="mlflow-workflow" class="tab-content hidden">
+                             <h5 class="font-semibold mb-2">Experiment Tracking</h5>
+                            <p class="text-sm text-gray-600">Use the `start_run` context manager to log parameters, metrics, and models for each experiment.</p>
+                             <pre class="bg-gray-100 text-xs p-2 rounded-md mt-2 overflow-x-auto"><code>with mlflow.start_run():
+    mlflow.log_param("lr", 0.01)
+    mlflow.log_metric("acc", 0.95)</code></pre>
+                        </div>
+                        <div id="mlflow-deploy" class="tab-content hidden">
+                             <h5 class="font-semibold mb-2">Model Registry</h5>
+                            <p class="text-sm text-gray-600">Promote high-performing models to the registry and use aliases like "champion" for dynamic loading.</p>
+                             <pre class="bg-gray-100 text-xs p-2 rounded-md mt-2 overflow-x-auto"><code>model = mlflow.pytorch.load_model("models:/BKT@champion")</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">Capturing the Affective Twin</h4>
+                    <p class="text-gray-600 mb-4">Keystroke dynamics provide a rich, privacy-preserving data stream to model the user's cognitive state. The <strong class="text-[#4A6C8C]">pynput</strong> library is ideal for this.</p>
+                    <div class="text-center mt-6">
+                        <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">Keyboard Events (Press/Release)</div>
+                        <div class="flow-diagram-arrow text-2xl font-light my-1">↓</div>
+                        <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">pynput Listener</div>
+                        <div class="flow-diagram-arrow text-2xl font-light my-1">↓</div>
+                        <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">Calculate Dwell/Flight Time</div>
+                        <div class="flow-diagram-arrow text-2xl font-light my-1">↓</div>
+                         <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">Update DBN Evidence Nodes</div>
+                    </div>
+                </div>
+
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">Powering RLHF</h4>
+                    <p class="text-gray-600 mb-4">Efficiently collecting human preference data is the key to RLHF. <strong class="text-[#4A6C8C]">Label Studio</strong> is unequivocally superior to alternatives like doccano for this task.</p>
+                    <div class="chart-container h-64 md:h-72">
+                        <canvas id="rlhfChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="data-reasoning" class="mb-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-[#4A6C8C]">Part 2: Data & Reasoning</h3>
+                <p class="mt-2 text-lg text-gray-600">Building a persistent knowledge graph and orchestrating AI components to enable higher-level reasoning.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">NixOS Skill Graph Storage</h4>
+                    <p class="text-gray-600 mb-4">The choice of database for the skill graph impacts the AI's ability to reason. A native graph DB is essential for complex queries. The recommended path is to prototype with SQLite and migrate to <strong class="text-[#4A6C8C]">Kùzu</strong>.</p>
+                    <div class="chart-container">
+                        <canvas id="graphDbChart"></canvas>
+                    </div>
+                </div>
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">AI Component Orchestration</h4>
+                    <p class="text-gray-600 mb-4">To create a proactive partner, the system needs to plan and execute multi-step tasks. <strong class="text-[#4A6C8C]">Microsoft's Semantic Kernel</strong> and its `Planner` are strongly recommended over LangChain for this goal-oriented approach.</p>
+                    <div class="mt-6">
+                        <p class="text-center font-semibold mb-2">Semantic Kernel's Planner Flow</p>
+                        <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm text-center">User Goal:<br>"Plan my path to master Nix flakes"</div>
+                        <div class="flow-diagram-arrow text-2xl font-light my-1 text-center">↓</div>
+                        <div class="flow-diagram-node p-3 rounded-md bg-gray-50 text-sm text-center font-bold">Planner</div>
+                        <div class="flex justify-around mt-1">
+                            <div class="flow-diagram-arrow text-2xl font-light">↙</div>
+                            <div class="flow-diagram-arrow text-2xl font-light">↓</div>
+                            <div class="flow-diagram-arrow text-2xl font-light">↘</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50">SkillGraph Plugin</div>
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50">AffectiveDBN Plugin</div>
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50">Executor Plugin</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="interface-state" class="mb-12">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-[#4A6C8C]">Part 3: The Fluid Interface</h3>
+                <p class="mt-2 text-lg text-gray-600">Managing complex UI state and ensuring high-performance communication for a seamless user experience.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">TUI State Management</h4>
+                    <p class="text-gray-600 mb-4">To avoid complexity in the Textual TUI, a <strong class="text-[#4A6C8C]">vanilla Python Redux pattern</strong> is recommended. This decouples the AI "brain" from the UI "face" for maintainability.</p>
+                     <div class="mt-6">
+                        <p class="text-center font-semibold mb-2">Unidirectional Data Flow</p>
+                        <div class="grid grid-cols-5 items-center gap-1 text-center">
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">Action</div>
+                            <div class="flow-diagram-arrow text-2xl font-light">→</div>
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm font-bold">Store</div>
+                            <div class="flow-diagram-arrow text-2xl font-light">→</div>
+                            <div class="flow-diagram-node p-2 rounded-md bg-gray-50 text-sm">UI</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card rounded-lg p-6 shadow-md">
+                    <h4 class="text-xl font-semibold mb-3 text-[#B88A6D]">Inter-Process Communication (IPC)</h4>
+                    <p class="text-gray-600 mb-4">For instantaneous interaction between the backend and frontends, a binary protocol is superior. <strong class="text-[#4A6C8C]">gRPC</strong> is the pragmatic choice, offering a balance of performance and a mature, well-documented ecosystem.</p>
+                    <div class="chart-container h-64 md:h-72">
+                        <canvas id="ipcChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-gray-500">
+            <p>&copy; 2025 Symbiotic AI Project. Interactive Blueprint.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const initTabs = () => {
+                const tabContainer = document.getElementById('mlflow-tabs');
+                if (!tabContainer) return;
+
+                const tabButtons = tabContainer.querySelectorAll('.tab-button');
+                const tabContents = tabContainer.querySelectorAll('.tab-content');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+
+                        const targetId = button.dataset.tab;
+                        tabContents.forEach(content => {
+                            if (content.id === targetId) {
+                                content.classList.remove('hidden');
+                            } else {
+                                content.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+            };
+
+            const initCharts = () => {
+                const rlhfCtx = document.getElementById('rlhfChart');
+                if (rlhfCtx) {
+                    new Chart(rlhfCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['RLHF Templates', 'UI Customization', 'AI Assistance', 'Ecosystem Focus'],
+                            datasets: [{
+                                label: 'Label Studio',
+                                data: [9, 8, 7, 9],
+                                backgroundColor: '#4A6C8C',
+                                borderColor: '#3E5A73',
+                                borderWidth: 1
+                            }, {
+                                label: 'doccano',
+                                data: [3, 5, 2, 6],
+                                backgroundColor: '#B88A6D',
+                                borderColor: '#9C755A',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Tool Comparison for RLHF Data Collection' },
+                                legend: { position: 'bottom' }
+                            },
+                            scales: { x: { beginAtZero: true, max: 10 } }
+                        }
+                    });
+                }
+
+                const graphDbCtx = document.getElementById('graphDbChart');
+                if (graphDbCtx) {
+                    new Chart(graphDbCtx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['Traversal Perf.', 'Ease of Setup', 'Query Language', 'Resource Footprint', 'Dependencies'],
+                            datasets: [{
+                                label: 'Kùzu (Recommended)',
+                                data: [9, 8, 9, 8, 7],
+                                backgroundColor: 'rgba(74, 108, 140, 0.2)',
+                                borderColor: '#4A6C8C',
+                                pointBackgroundColor: '#4A6C8C',
+                            }, {
+                                label: 'SQLite (Prototype)',
+                                data: [3, 10, 4, 10, 10],
+                                backgroundColor: 'rgba(184, 138, 109, 0.2)',
+                                borderColor: '#B88A6D',
+                                pointBackgroundColor: '#B88A6D',
+                            }, {
+                                label: 'Neo4j (Server)',
+                                data: [8, 5, 9, 4, 5],
+                                backgroundColor: 'rgba(150, 150, 150, 0.2)',
+                                borderColor: '#969696',
+                                pointBackgroundColor: '#969696',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Graph Database Trade-offs' },
+                                legend: { position: 'bottom' }
+                            },
+                            scales: {
+                                r: {
+                                    angleLines: { display: false },
+                                    suggestedMin: 0,
+                                    suggestedMax: 10,
+                                    pointLabels: { font: { size: 10 } }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                const ipcCtx = document.getElementById('ipcChart');
+                if (ipcCtx) {
+                    new Chart(ipcCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Performance', 'API Contract', 'Tooling/Ecosystem', 'Streaming Support'],
+                            datasets: [{
+                                label: 'gRPC (Recommended)',
+                                data: [8, 10, 9, 10],
+                                backgroundColor: '#4A6C8C',
+                            }, {
+                                label: 'Cap\'n Proto',
+                                data: [10, 10, 5, 8],
+                                backgroundColor: '#B88A6D',
+                            }, {
+                                label: 'JSON-RPC (Baseline)',
+                                data: [4, 5, 7, 3],
+                                backgroundColor: '#969696',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'IPC Protocol Comparison' },
+                                legend: { position: 'bottom' }
+                            },
+                            scales: { y: { beginAtZero: true, max: 10 } }
+                        }
+                    });
+                }
+            };
+
+            const initNavHighlight = () => {
+                const sections = document.querySelectorAll('section');
+                const navLinks = document.querySelectorAll('.nav-link');
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            navLinks.forEach(link => {
+                                link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                            });
+                        }
+                    });
+                }, { rootMargin: "-50% 0px -50% 0px" });
+
+                sections.forEach(section => {
+                    observer.observe(section);
+                });
+            };
+
+            initTabs();
+            initCharts();
+            initNavHighlight();
+        });
+    </script>
+</body>
+</html>

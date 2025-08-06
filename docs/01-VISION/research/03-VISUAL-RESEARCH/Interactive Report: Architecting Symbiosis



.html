@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: Architecting Symbiosis for "Nix for Humanity"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style SPA with a persistent sidebar navigation. This non-linear structure allows users to freely explore the six distinct technological pillars of the report without being forced into a linear reading. Each pillar is treated as a self-contained module with its own interactive visualizations. This design was chosen to make the dense, technical information more digestible and to facilitate comparison between concepts across different sections, enhancing user understanding and engagement. -->
+    <!-- Visualization & Content Choices:
+        - Pillar 1 (Attentional Computing): Report Info -> Table 1.1 data. Goal -> Compare signal trade-offs. Viz -> Interactive Bar Chart (Chart.js) + HTML Table. Interaction -> Click chart bar to highlight table row. Justification -> Visually links quantitative comparison to qualitative details.
+        - Pillar 2 (Conversational Repair): Report Info -> Table 2.1 data. Goal -> Organize repair strategies. Viz -> HTML/CSS Diagram. Interaction -> Click strategy to reveal example. Justification -> Makes the abstract flow tangible.
+        - Pillar 3 (Counterfactuals): Report Info -> Concept of counterfactuals. Goal -> Demonstrate the "what-if" idea. Viz -> HTML Form Simulation. Interaction -> User input triggers a generated explanation. Justification -> Provides a hands-on experience with the concept.
+        - Pillar 4 (Causal Viz): Report Info -> Causal playground concept. Goal -> Simulate interactive model debugging. Viz -> HTML/CSS Graph + Sliders. Interaction -> Sliders update a predicted outcome text. Justification -> Mimics the dynamic feedback loop described.
+        - Pillar 5 (AST Parsing): Report Info -> AST concept. Goal -> Explain code structure. Viz -> Side-by-side code and HTML AST representation. Interaction -> Hovering on code highlights the corresponding AST node. Justification -> Visually connects syntax to semantic structure.
+        - Pillar 6 (PKM Tools): Report Info -> Table 6.1 data. Goal -> Compare tools. Viz -> Interactive HTML Table. Interaction -> Click row to expand details. Justification -> Progressive disclosure prevents information overload.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: all 0.2s ease-in-out; }
+        .sidebar-link.active { background-color: #D1D5DB; color: #111827; }
+        .sidebar-link:not(.active):hover { background-color: #F3F4F6; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+        .ast-node { border-left: 2px solid #D1D5DB; padding-left: 1rem; margin-left: 1rem; margin-top: 0.5rem; transition: background-color 0.2s; }
+        .ast-node:hover, .ast-node.highlight { background-color: #FEF3C7; }
+        .code-line:hover { background-color: #FEF3C7; cursor: pointer; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 p-5 flex-shrink-0 flex flex-col">
+            <h1 class="text-xl font-bold text-gray-900 mb-2">Architecting Symbiosis</h1>
+            <p class="text-sm text-gray-500 mb-8">An Interactive Report</p>
+            <nav class="flex flex-col space-y-2">
+                <a href="#introduction" class="sidebar-link active text-gray-600 font-medium rounded-lg px-4 py-2" data-section="introduction">Introduction</a>
+                <a href="#attentional-computing" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="attentional-computing">1. Attentional Computing</a>
+                <a href="#conversational-repair" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="conversational-repair">2. Conversational Repair</a>
+                <a href="#counterfactuals" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="counterfactuals">3. Counterfactuals</a>
+                <a href="#causal-visualization" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="causal-visualization">4. Causal Visualization</a>
+                <a href="#ast-parsing" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="ast-parsing">5. AST Parsing</a>
+                <a href="#pkm-tools" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="pkm-tools">6. PKM Tools</a>
+                <a href="#conclusion" class="sidebar-link text-gray-600 font-medium rounded-lg px-4 py-2" data-section="conclusion">Conclusion</a>
+            </nav>
+            <div class="mt-auto text-xs text-gray-400">
+                <p>Interactive SPA based on the "Nix for Humanity" report.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-10 bg-gray-50">
+            <div class="max-w-7xl mx-auto">
+                <!-- Introduction Section -->
+                <section id="introduction" class="content-section active">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Architecting Symbiosis: An Expert Analysis</h2>
+                    <p class="text-lg text-gray-600 mb-6">This interactive application translates the "Nix for Humanity" report into an explorable experience. The project's goal is to create a "consciousness-first" computing partner, grounded in respect for the user's cognitive state, transparency, and collaboration. This application deconstructs the six advanced technologies proposed to achieve this vision.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">How to Use This Application</h3>
+                        <p class="text-gray-700">Use the sidebar navigation to jump between the six core technological pillars. Each section provides a summary of the concept, key data from the report, and interactive elements designed to make the technical details more tangible. Explore the sections in any order to build your understanding of this ambitious initiative.</p>
+                    </div>
+                </section>
+
+                <!-- Attentional Computing Section -->
+                <section id="attentional-computing" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">1. Attentional Computing</h2>
+                    <p class="text-lg text-gray-600 mb-6">This section explores how to build a considerate AI partner by inferring the user's focus, or "flow state." The core idea is to use OS-level signals to determine the best moment to interact, minimizing cognitive disruption. The challenge lies in balancing the power of these signals against their privacy implications.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Comparing OS-Level Signals</h3>
+                        <p class="text-gray-700 mb-4">The chart below visualizes the trade-off between a signal's power to infer focus ("Inferential Power") and its potential impact on user privacy ("Privacy Implication"). Click on a bar in the chart to see details for that signal in the table below.</p>
+                        <div class="chart-container mb-8">
+                            <canvas id="attentionalChart"></canvas>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-3">Signal Details</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200" id="attentionalTable">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signal Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Conversational Repair Section -->
+                <section id="conversational-repair" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">2. Conversational Repair</h2>
+                    <p class="text-lg text-gray-600 mb-6">A true AI partner must handle misunderstandings gracefully. This section outlines a framework for "conversational repair," where the AI uses collaborative strategies to resolve breakdowns in communication based on its confidence in understanding the user's intent.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Mapping Repair Strategies to Dialogue Policies</h3>
+                        <p class="text-gray-700 mb-6">The following diagram illustrates how different trigger conditions, based on the AI's confidence, lead to specific repair actions. Click on any strategy to see a detailed example of the interaction.</p>
+                        <div id="repairStrategiesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Counterfactuals Section -->
+                <section id="counterfactuals" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">3. Counterfactual Explanations</h2>
+                    <p class="text-lg text-gray-600 mb-6">To empower users, the AI must explain not just *why* something failed, but *what could be done differently*. This is the power of counterfactuals: "what-if" explanations that provide actionable recourse. This section provides a hands-on simulation of this concept.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Build Failure Explanation Simulator</h3>
+                        <p class="text-gray-700 mb-4">Imagine a Nix build has failed. The AI has analyzed the situation based on several factors. Use the controls below to set the conditions of the failed build, then generate a counterfactual explanation.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="dependencyVersion" class="block text-sm font-medium text-gray-700">`openssl` Version</label>
+                                <select id="dependencyVersion" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option>1.0 (Incompatible)</option>
+                                    <option>1.1 (Compatible)</option>
+                                    <option>3.0 (Incompatible)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="compilerFlag" class="block text-sm font-medium text-gray-700">Compiler Flag `-O`</label>
+                                <select id="compilerFlag" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option>2 (Stable)</option>
+                                    <option>3 (Aggressive - Unstable)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="generateCfButton" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Generate Explanation</button>
+                        <div id="cfResult" class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                            <h4 class="font-semibold text-yellow-800">Counterfactual Explanation:</h4>
+                            <p id="cfText" class="text-yellow-700"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Causal Visualization Section -->
+                <section id="causal-visualization" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">4. Interactive Causal Visualization</h2>
+                    <p class="text-lg text-gray-600 mb-6">To debug and refine the AI's reasoning, the developer needs to "play" with its causal model. This section simulates an interactive developer dashboard—a "causal playground"—for exploring how changing inputs affects predicted outcomes.</p>
+                     <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Causal Playground Simulator</h3>
+                        <p class="text-gray-700 mb-6">Manipulate the input nodes of the causal model using the sliders below. Observe how your changes to `RAM` and `CPU Cores` impact the predicted probability of a successful build, which is updated in real-time.</p>
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <!-- Controls -->
+                            <div class="w-full lg:w-1/3">
+                                <h4 class="font-semibold mb-4">Input Nodes</h4>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label for="ramSlider" class="block text-sm font-medium text-gray-700">Available RAM: <span id="ramValue" class="font-bold">8 GB</span></label>
+                                        <input id="ramSlider" type="range" min="4" max="32" value="8" step="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                    <div>
+                                        <label for="cpuSlider" class="block text-sm font-medium text-gray-700">CPU Cores: <span id="cpuValue" class="font-bold">4</span></label>
+                                        <input id="cpuSlider" type="range" min="1" max="16" value="4" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Visualization -->
+                            <div class="w-full lg:w-2/3">
+                                <h4 class="font-semibold mb-4">Causal Graph & Outcome</h4>
+                                <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                                    <div class="text-gray-600 font-mono">
+                                        [RAM_Available] ---> [Build_Success] <--- [CPU_Cores]
+                                    </div>
+                                </div>
+                                <div class="mt-6 text-center">
+                                    <p class="text-gray-600">Predicted Build Success Probability:</p>
+                                    <p id="buildSuccessProb" class="text-4xl font-bold text-indigo-600">50%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AST Parsing Section -->
+                <section id="ast-parsing" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">5. Abstract Syntax Tree (AST) Parsing</h2>
+                    <p class="text-lg text-gray-600 mb-6">To truly understand code, the AI must see its structure, not just its text. Parsing code into an Abstract Syntax Tree (AST) unlocks deep semantic understanding. This section visually demonstrates the relationship between Nix code and its corresponding AST.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Code to AST Explorer</h3>
+                        <p class="text-gray-700 mb-6">On the left is a snippet of a `configuration.nix` file. On the right is its structural representation as an AST. Hover over a line of code to highlight the corresponding part of the tree, revealing the code's underlying grammar.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
+                            <!-- Code Pane -->
+                            <div id="codePane" class="bg-gray-800 text-white p-4 rounded-lg overflow-x-auto">
+                                <pre><code><div class="code-line" data-ast="ast-1">services.nginx = {</div>
+<div class="code-line" data-ast="ast-2">  enable = true;</div>
+<div class="code-line" data-ast="ast-3">  virtualHosts = {</div>
+<div class="code-line" data-ast="ast-4">    "example.com" = {</div>
+<div class="code-line" data-ast="ast-5">      root = "/var/www";</div>
+<div class="code-line" data-ast="ast-6">    };</div>
+<div class="code-line" data-ast="ast-7">  };</div>
+<div class="code-line" data-ast="ast-8">};</div>
+                                </code></pre>
+                            </div>
+                            <!-- AST Pane -->
+                            <div id="astPane" class="bg-gray-100 p-4 rounded-lg">
+                                <div class="ast-node" id="ast-1">
+                                    <span>attrset_body</span>
+                                    <div class="ast-node" id="ast-2">
+                                        <span>key_value (key: enable, value: bool)</span>
+                                    </div>
+                                    <div class="ast-node" id="ast-3">
+                                        <span>key_value (key: virtualHosts)</span>
+                                        <div class="ast-node" id="ast-4">
+                                            <span>attrset_body</span>
+                                            <div class="ast-node" id="ast-5">
+                                                <span>key_value (key: root, value: string)</span>
+                                            </div>
+                                            <div class="ast-node" id="ast-6"></div>
+                                        </div>
+                                         <div class="ast-node" id="ast-7"></div>
+                                    </div>
+                                     <div class="ast-node" id="ast-8"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PKM Tools Section -->
+                <section id="pkm-tools" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">6. Personal Knowledge Management (PKM)</h2>
+                    <p class="text-lg text-gray-600 mb-6">A long-term project's success depends on managing its "second brain"—the visionary's knowledge and the reasoning behind decisions. This section provides an interactive comparison of two leading PKM tools, Obsidian and Logseq, evaluated for this specific developer-centric workflow.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Developer-Centric PKM Tool Comparison</h3>
+                        <p class="text-gray-700 mb-4">The table below compares Obsidian and Logseq across several criteria critical for the "Nix for Humanity" project. Click on any row to expand it and read the detailed justification for its rating.</p>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200" id="pkmTable">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criterion</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Obsidian</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logseq</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Conclusion Section -->
+                <section id="conclusion" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Conclusion & Strategic Synthesis</h2>
+                    <p class="text-lg text-gray-600 mb-6">The true power of this architecture lies not in any single component, but in the potent, synergistic feedback loops that emerge when they are integrated. This transforms a collection of disparate features into a cohesive, intelligent system capable of complex, collaborative problem-solving.</p>
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">The Synergistic Workflow</h3>
+                        <p class="text-gray-700 mb-4">Consider this integrated workflow:</p>
+                        <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                            <li><strong class="font-semibold text-gray-800">Error and Analysis:</strong> A Nix build fails. The AI uses its <strong class="text-indigo-600">AST Parser</strong> to analyze configuration files and feeds this semantic data into its <strong class="text-indigo-600">Causal Model</strong> to infer the cause.</li>
+                            <li><strong class="font-semibold text-gray-800">Explanation and Intervention:</strong> The <strong class="text-indigo-600">DiCE</strong> library generates actionable counterfactuals. The <strong class="text-indigo-600">Attentional Computing</strong> module detects a pause in the user's workflow and presents the explanation at an opportune moment.</li>
+                            <li><strong class="font-semibold text-gray-800">Dialogue and Resolution:</strong> The user asks for clarification, engaging in <strong class="text-indigo-600">Conversational Repair</strong>. The AI explains the issue, and upon acceptance, uses its AST understanding to apply the correct fix.</li>
+                            <li><strong class="font-semibold text-gray-800">Memory and Learning:</strong> The entire interaction is logged to the developer's <strong class="text-indigo-600">PKM vault</strong>, and the Git commit links back to this note, creating a permanent record.</li>
+                        </ol>
+                        <p class="mt-6 text-gray-700 font-medium">This is the blueprint for architecting symbiosis—an AI that is considerate, collaborative, transparent, expert, and mindful of its shared history.</p>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function navigateToSection(sectionId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                sidebarLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+
+                const activeSection = document.getElementById(sectionId);
+                const activeLink = document.querySelector(`.sidebar-link[data-section="${sectionId}"]`);
+
+                if (activeSection && activeLink) {
+                    activeSection.classList.add('active');
+                    activeLink.classList.add('active');
+                    window.location.hash = sectionId;
+                }
+            }
+
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    navigateToSection(sectionId);
+                });
+            });
+
+            const initialSection = window.location.hash.substring(1) || 'introduction';
+            navigateToSection(initialSection);
+
+            // --- Section 1: Attentional Computing ---
+            const attentionalData = [
+                { name: 'Input Idle Time (TUI-Only)', power: 2, privacy: 1, desc: "Time since last input within the AI's own TUI.", perms: 'None' },
+                { name: 'Input Idle Time (System-Wide)', power: 5, privacy: 5, desc: 'Time since last input anywhere in the OS.', perms: 'macOS: Accessibility; Linux: root' },
+                { name: 'Active Application Type', power: 8, privacy: 6, desc: 'Classifying the foreground app (e.g., IDE, Browser).', perms: 'macOS: Potentially Accessibility' },
+                { name: 'Window Switch Frequency', power: 4, privacy: 4, desc: 'Rate at which the user changes the active window.', perms: 'macOS: Potentially Accessibility' },
+                { name: 'Typing Speed & Error Rate', power: 9, privacy: 9, desc: 'Keystrokes per minute and backspace frequency.', perms: 'macOS: Accessibility; Linux: root' }
+            ];
+
+            const attentionalTableBody = document.querySelector('#attentionalTable tbody');
+            function renderAttentionalTable(highlightIndex = -1) {
+                attentionalTableBody.innerHTML = '';
+                attentionalData.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    if (index === highlightIndex) {
+                        row.classList.add('bg-yellow-100');
+                    }
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.desc}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.perms}</td>
+                    `;
+                    attentionalTableBody.appendChild(row);
+                });
+            }
+
+            const ctx = document.getElementById('attentionalChart').getContext('2d');
+            const attentionalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: attentionalData.map(d => d.name),
+                    datasets: [
+                        {
+                            label: 'Inferential Power',
+                            data: attentionalData.map(d => d.power),
+                            backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Privacy Implication',
+                            data: attentionalData.map(d => d.privacy),
+                            backgroundColor: 'rgba(249, 115, 22, 0.7)',
+                            borderColor: 'rgba(249, 115, 22, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 10, title: { display: true, text: 'Rating (1-10)' } } },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => context[0].label.length > 20 ? context[0].label.match(/.{1,20}/g) : context[0].label
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const chartElement = elements[0];
+                            renderAttentionalTable(chartElement.index);
+                        }
+                    }
+                }
+            });
+            renderAttentionalTable();
+
+            // --- Section 2: Conversational Repair ---
+            const repairData = [
+                { strategy: 'Explicit Confirmation', trigger: 'Intent is critical AND NLU Confidence > 80%', action: 'action_confirm_critical_intent', example: '<strong>User:</strong> nix remove git<br><strong>AI:</strong> "Just to confirm, you want to permanently remove the \'git\' package from your system?"' },
+                { strategy: 'Understanding Check', trigger: 'NLU Confidence is medium (40% < C < 80%)', action: 'action_clarify_intent', example: '<strong>User:</strong> nix git<br><strong>AI:</strong> "I\'m not perfectly sure, but it sounds like you want to install \'git\'. Is that correct?"' },
+                { strategy: 'Contextual Explanation', trigger: 'Intent is `explain` AND `requested_slot` is set', action: 'action_explain_slot', example: '<strong>AI:</strong> "Which version of the package?"<br><strong>User:</strong> "Why?"<br><strong>AI:</strong> "I need the version number to ensure the build is reproducible."' },
+                { strategy: 'Unspecified Repair', trigger: 'NLU Confidence is very low (C < 40%)', action: 'action_admit_non_understanding', example: '<strong>User:</strong> nix flibbertigibbet<br><strong>AI:</strong> "I\'m sorry, I didn\'t understand that. Could you please rephrase?"' }
+            ];
+            const repairContainer = document.getElementById('repairStrategiesContainer');
+            repairData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'p-4 border border-gray-200 rounded-lg cursor-pointer hover:shadow-md transition-shadow bg-white';
+                card.innerHTML = `
+                    <h4 class="font-semibold text-gray-800">${item.strategy}</h4>
+                    <p class="text-sm text-gray-500 mt-1">Trigger: ${item.trigger}</p>
+                    <div class="repair-example hidden mt-4 p-3 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                        <p class="font-semibold text-gray-700 mb-1">Example:</p>
+                        <p class="text-gray-600">${item.example}</p>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    card.querySelector('.repair-example').classList.toggle('hidden');
+                });
+                repairContainer.appendChild(card);
+            });
+
+            // --- Section 3: Counterfactuals ---
+            const generateCfButton = document.getElementById('generateCfButton');
+            const cfResult = document.getElementById('cfResult');
+            const cfText = document.getElementById('cfText');
+            const dependencyVersion = document.getElementById('dependencyVersion');
+            const compilerFlag = document.getElementById('compilerFlag');
+
+            generateCfButton.addEventListener('click', () => {
+                const dep = dependencyVersion.value;
+                const flag = compilerFlag.value;
+                let explanation = "The build failed due to the selected configuration. ";
+
+                if (dep.includes('Incompatible') && flag.includes('Unstable')) {
+                    explanation += "<strong>If you had used `openssl` version 1.1 (Compatible) AND compiler flag -O2, the build would have succeeded.</strong>";
+                } else if (dep.includes('Incompatible')) {
+                    explanation += "<strong>If you had used `openssl` version 1.1 (Compatible), the build would have succeeded.</strong>";
+                } else if (flag.includes('Unstable')) {
+                    explanation += "<strong>If you had used compiler flag -O2 (Stable), the build would have succeeded.</strong>";
+                } else {
+                    explanation = "The build succeeded with this configuration. Try an incompatible setting to see a counterfactual explanation.";
+                }
+
+                cfText.innerHTML = explanation;
+                cfResult.classList.remove('hidden');
+            });
+
+            // --- Section 4: Causal Visualization ---
+            const ramSlider = document.getElementById('ramSlider');
+            const cpuSlider = document.getElementById('cpuSlider');
+            const ramValue = document.getElementById('ramValue');
+            const cpuValue = document.getElementById('cpuValue');
+            const buildSuccessProb = document.getElementById('buildSuccessProb');
+
+            function updateCausalPrediction() {
+                const ram = parseInt(ramSlider.value);
+                const cpu = parseInt(cpuSlider.value);
+                ramValue.textContent = `${ram} GB`;
+                cpuValue.textContent = `${cpu}`;
+
+                const baseProb = 0.2;
+                const ramEffect = (ram - 4) / 28; // Normalize 4-32 to 0-1
+                const cpuEffect = (cpu - 1) / 15; // Normalize 1-16 to 0-1
+
+                let probability = baseProb + (ramEffect * 0.5) + (cpuEffect * 0.3);
+                probability = Math.min(Math.max(probability, 0), 1); // Clamp between 0 and 1
+
+                buildSuccessProb.textContent = `${(probability * 100).toFixed(0)}%`;
+            }
+            ramSlider.addEventListener('input', updateCausalPrediction);
+            cpuSlider.addEventListener('input', updateCausalPrediction);
+            updateCausalPrediction();
+
+            // --- Section 5: AST Parsing ---
+            const codeLines = document.querySelectorAll('.code-line');
+            const astNodes = document.querySelectorAll('.ast-node');
+
+            codeLines.forEach(line => {
+                line.addEventListener('mouseenter', () => {
+                    const astId = line.getAttribute('data-ast');
+                    const targetNode = document.getElementById(astId);
+                    if (targetNode) {
+                        targetNode.classList.add('highlight');
+                    }
+                });
+                line.addEventListener('mouseleave', () => {
+                    astNodes.forEach(n => n.classList.remove('highlight'));
+                });
+            });
+
+            // --- Section 6: PKM Tools ---
+            const pkmData = [
+                { criterion: 'Outlining for AI-Generated Content', obsidian: 'Good', logseq: 'Excellent', justification: "Logseq's native block-based outliner is a more natural fit for hierarchical, conversational data." },
+                { criterion: 'Long-Form Technical Documentation', obsidian: 'Excellent', logseq: 'Fair', justification: "Obsidian's page-based model and standard Markdown support are superior for writing articles and documentation." },
+                { criterion: 'Git Workflow Integration (Desktop)', obsidian: 'Excellent', logseq: 'Good', justification: "The `obsidian-git` plugin is feature-complete and IDE-like. Logseq relies on a simpler plugin and command-line usage." },
+                { criterion: 'Plugin Ecosystem & Maturity', obsidian: 'Excellent', logseq: 'Good', justification: "Obsidian has a larger, more mature ecosystem and user base, leading to more robust tooling." },
+                { criterion: 'Open Source Ethos', obsidian: 'No (Proprietary)', logseq: 'Yes (AGPL-3.0)', justification: "Logseq is fully open-source, which may align better with the NixOS philosophy." },
+                { criterion: 'Overall Recommendation', obsidian: 'Recommended', logseq: 'Not Recommended', justification: "The decisive factor is Obsidian's superior Git integration, which is critical for the proposed developer-centric workflow." }
+            ];
+            const pkmTableBody = document.querySelector('#pkmTable tbody');
+            pkmData.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'cursor-pointer';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.criterion}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.obsidian}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.logseq}</td>
+                `;
+                const detailRow = document.createElement('tr');
+                detailRow.className = 'hidden';
+                detailRow.innerHTML = `<td colspan="3" class="px-6 py-4 text-sm text-gray-600 bg-gray-50">${item.justification}</td>`;
+
+                row.addEventListener('click', () => {
+                    detailRow.classList.toggle('hidden');
+                });
+
+                pkmTableBody.appendChild(row);
+                pkmTableBody.appendChild(detailRow);
+            });
+
+        });
+    </script>
+</body>
+</html>

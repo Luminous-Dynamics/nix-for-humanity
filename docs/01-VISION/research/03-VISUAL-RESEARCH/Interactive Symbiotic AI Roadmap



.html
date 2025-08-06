@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecting Symbiosis: An Interactive Roadmap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A tab-based single-page application with four main sections: Philosophy, Roadmap, Toolkit, and Future Horizons. This thematic structure allows users to explore the core concepts non-linearly, which is more intuitive than a simple document scroll. The 'Roadmap' section is the interactive centerpiece, using clickable cards and a summary chart to visualize the phased plan. This design prioritizes user-driven exploration and synthesis of the complex information. -->
+    <!-- Visualization & Content Choices:
+        - Philosophy: Presented as three interactive cards to highlight the core pillars. Goal: Inform. Method: HTML/CSS cards with JS-powered reveal animations for engagement.
+        - Roadmap: An interactive timeline of clickable technology cards and a Chart.js polar area chart. Goal: Compare & Organize. Method: HTML/Tailwind for the timeline structure, JS for click-to-reveal details, and Chart.js for a visual summary of how phases align with the philosophy. This provides both granular detail and a high-level overview.
+        - Toolkit & Future: Grid-based card layouts for clarity and scannability. Goal: Inform & Organize. Method: HTML/Tailwind grid with JS for interaction, presenting dense information in a digestible format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+            color: #374151; /* gray-700 */
+        }
+        .nav-active {
+            color: #1D4ED8; /* blue-700 */
+            border-bottom-color: #1D4ED8;
+        }
+        .nav-inactive {
+            color: #4B5563; /* gray-600 */
+            border-bottom-color: transparent;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .detail-view {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .detail-view.open {
+            max-height: 1500px; /* Adjust as needed */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="min-h-screen">
+        <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">S</div>
+                        <h1 class="text-2xl font-bold text-gray-800">Architecting Symbiosis</h1>
+                    </div>
+                    <nav class="hidden md:flex space-x-6">
+                        <button data-target="philosophy" class="nav-button text-lg font-medium border-b-2 pb-1 nav-active">Philosophy</button>
+                        <button data-target="roadmap" class="nav-button text-lg font-medium border-b-2 pb-1 nav-inactive">Roadmap</button>
+                        <button data-target="toolkit" class="nav-button text-lg font-medium border-b-2 pb-1 nav-inactive">Toolkit</button>
+                        <button data-target="future" class="nav-button text-lg font-medium border-b-2 pb-1 nav-inactive">Future Horizons</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+            <!-- Philosophy Section -->
+            <section id="philosophy" class="content-section active">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-extrabold text-gray-900">A Manifesto for Symbiotic Intelligence</h2>
+                    <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">The system envisioned is not a tool, but a co-evolving partner. This partnership is built on three foundational, non-negotiable architectural principles that create a virtuous cycle of trust, consideration, and mutual growth.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Pillar 1 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl text-blue-600">🧠</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Consciousness-First</h3>
+                        </div>
+                        <p class="text-gray-600">The user's cognitive state is the primary context for all AI actions. The AI must be considerate, timing its interventions to augment, not disrupt, the user's flow of thought by respecting attention as a precious resource.</p>
+                    </div>
+                    <!-- Pillar 2 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl text-green-600">🤝</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Vulnerability as Strength</h3>
+                        </div>
+                        <p class="text-gray-600">An AI that openly acknowledges uncertainty and collaborates to resolve it builds deeper trust than one that feigns omniscience. Errors become shared problem-solving opportunities, strengthening the human-AI bond.</p>
+                    </div>
+                    <!-- Pillar 3 -->
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl text-purple-600">🛡️</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Privacy as a Sanctuary</h3>
+                        </div>
+                        <p class="text-gray-600">An absolute, inviolable constraint. All user data and interactions remain sovereign, stored locally, and are never used for third-party analysis. This ethical foundation makes true symbiosis possible.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roadmap Section -->
+            <section id="roadmap" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-extrabold text-gray-900">The Three-Phase Implementation Roadmap</h2>
+                    <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">The vision is built in disciplined phases. Each stage establishes a solid foundation of capability and trust before reaching for more advanced functionalities. Click on any item to explore its technical and strategic details.</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-8">
+                        <!-- Phase 1 -->
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-blue-700 border-l-4 border-blue-700 pl-4">Phase 1: The Humane Interface</h3>
+                            <div class="space-y-4">
+                                <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item1">
+                                    <p class="font-semibold">1. Attentional Computing</p>
+                                    <div class="detail-view" id="item1"></div>
+                                </div>
+                                <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item2">
+                                    <p class="font-semibold">2. Conversational Repair</p>
+                                    <div class="detail-view" id="item2"></div>
+                                </div>
+                                <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item3">
+                                    <p class="font-semibold">3. Counterfactual Explanations</p>
+                                    <div class="detail-view" id="item3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Phase 2 -->
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-green-700 border-l-4 border-green-700 pl-4">Phase 2: Deep Domain Mastery</h3>
+                             <div class="space-y-4">
+                                <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item4">
+                                    <p class="font-semibold">4. Nix AST Parsing</p>
+                                    <div class="detail-view" id="item4"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Phase 3 -->
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-purple-700 border-l-4 border-purple-700 pl-4">Phase 3: The Living System</h3>
+                             <div class="space-y-4">
+                                <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item5">
+                                    <p class="font-semibold">5. Async Memory Consolidator</p>
+                                    <div class="detail-view" id="item5"></div>
+                                </div>
+                                 <div class="roadmap-item card bg-white rounded-lg p-4 cursor-pointer" data-content="item6">
+                                    <p class="font-semibold">6. Lifelong Learning with SSR</p>
+                                    <div class="detail-view" id="item6"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-center mb-4">Phase Alignment with Core Philosophy</h3>
+                        <div class="chart-container">
+                            <canvas id="roadmapChart"></canvas>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-4 text-center">This chart illustrates how each implementation phase emphasizes the core philosophical pillars, showing the shift in focus from establishing the interface to achieving deep intelligence and long-term evolution.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Toolkit Section -->
+            <section id="toolkit" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-extrabold text-gray-900">The Visionary's Toolkit</h2>
+                    <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">Building a symbiotic AI requires powerful instruments for the architect. This toolkit ensures the development process itself is aligned with the core principles of clarity, reproducibility, and transparency.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="toolkit-item card bg-white rounded-lg p-6 cursor-pointer" data-content="tool7">
+                        <h3 class="font-bold text-lg">7. Declarative Foundation</h3>
+                        <p class="text-sm text-gray-500 mt-1">`poetry2nix`</p>
+                        <div class="detail-view" id="tool7"></div>
+                    </div>
+                    <div class="toolkit-item card bg-white rounded-lg p-6 cursor-pointer" data-content="tool8">
+                        <h3 class="font-bold text-lg">8. Preserve Intent</h3>
+                        <p class="text-sm text-gray-500 mt-1">Obsidian + `obsidian-git`</p>
+                        <div class="detail-view" id="tool8"></div>
+                    </div>
+                    <div class="toolkit-item card bg-white rounded-lg p-6 cursor-pointer" data-content="tool9">
+                        <h3 class="font-bold text-lg">9. Illuminate Causality</h3>
+                        <p class="text-sm text-gray-500 mt-1">`DoWhy` + `Streamlit`</p>
+                        <div class="detail-view" id="tool9"></div>
+                    </div>
+                    <div class="toolkit-item card bg-white rounded-lg p-6 cursor-pointer" data-content="tool10">
+                        <h3 class="font-bold text-lg">10. Radical Transparency</h3>
+                        <p class="text-sm text-gray-500 mt-1">`Datasette`</p>
+                        <div class="detail-view" id="tool10"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Future Horizons Section -->
+            <section id="future" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-extrabold text-gray-900">The Next Horizon</h2>
+                    <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">Beyond the roadmap lies the next ascent: evolving from profound understanding to true wisdom and co-creation. These research-level concepts represent the project's ultimate philosophical goals.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900">AI as Creative Muse</h3>
+                        <p class="mt-2 text-gray-600">Move from assistance to co-creation using test-driven generation (`AlphaCodium`) to produce correct, validated code, making the AI a true co-developer.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900">AI as Cognitive Guardian</h3>
+                        <p class="mt-2 text-gray-600">Move from mirroring to prediction using time-series forecasting (`LSTM`) to anticipate cognitive states and proactively guard the user's well-being.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900">AI as Identity Custodian</h3>
+                        <p class="mt-2 text-gray-600">Extend privacy from local to global using decentralized identity (`DIDs/VCs`) to create a secure digital passport that protects the user's sovereignty online.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900">AI as Ecosystem Contributor</h3>
+                        <p class="mt-2 text-gray-600">Move from user to contributor using Genetic Improvement of Software to discover novel optimizations and evolve the very ecosystem the AI inhabits.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const contentData = {
+            item1: {
+                title: 'Attentional Computing',
+                tech: '`pynput`',
+                details: 'Implement an OS-level listener to gain a basic sense of user rhythm. An `IdleTimer` signals when the user is inactive, allowing the AI to time interventions considerately. This is the first step toward a "Consciousness-First" partner that respects the user\'s cognitive state.'
+            },
+            item2: {
+                title: 'Conversational Repair',
+                tech: 'Custom Python (Rasa Concepts)',
+                details: 'Implement a dialogue manager that uses confidence scores to handle uncertainty. In cases of medium confidence, it triggers a clarification action ("It sounds like you want to... Is that correct?"), embodying "Vulnerability as Strength" by turning potential errors into collaborative moments.'
+            },
+            item3: {
+                title: 'Counterfactual Explanations',
+                tech: '`DiCE` Library',
+                details: 'Use the DiCE library to provide actionable explanations for errors. Instead of just saying why something failed, it explains what needs to change for success (e.g., correcting a typo). This transforms the AI from an explainer into a teacher, fostering user growth.'
+            },
+            item4: {
+                title: 'Nix AST Parsing',
+                tech: '`tree-sitter-nix`',
+                details: 'Use `tree-sitter` to parse the Nix language into an Abstract Syntax Tree (AST). This gives the AI a deep, structural understanding of the code, enabling highly precise, context-aware error diagnosis and forming the foundation for all future code intelligence.'
+            },
+            item5: {
+                title: 'Async Memory Consolidator',
+                tech: '`APScheduler`, Local `Mistral-7B`',
+                details: 'A nightly background job summarizes the day\'s interactions into a "journal entry." This mimics biological memory consolidation, building a long-term, high-level narrative of the user\'s journey that enables reasoning about progress and goals over time.'
+            },
+            item6: {
+                title: 'Lifelong Learning with SSR',
+                tech: 'Hugging Face `TRL` (DPO)',
+                details: 'Employ Self-Synthesized Rehearsal (SSR) to combat catastrophic forgetting without storing user data. The model generates its own practice examples, allowing it to adapt and learn continuously while perfectly upholding the "Privacy as a Sanctuary" principle.'
+            },
+            tool7: {
+                title: 'Declarative Foundation',
+                tech: '`poetry2nix`',
+                details: 'Use `poetry2nix` to create a fully declarative, reproducible Python development environment managed by Nix. This embodies architectural purity and eliminates the "works on my machine" problem.'
+            },
+            tool8: {
+                title: 'Preserve Intent',
+                tech: 'Obsidian + `obsidian-git`',
+                details: 'Forge a durable link between high-level architectural decisions (in Obsidian) and the code (in Git) by referencing design notes in commit messages. This prevents "intent decay" in a long-term project.'
+            },
+            tool9: {
+                title: 'Illuminate Causality',
+                tech: '`DoWhy` + `Streamlit`',
+                details: 'Create a developer dashboard to visualize the AI\'s internal causal model. This provides a direct window into the AI\'s "brain," allowing for inspection and validation of its decision-making logic.'
+            },
+            tool10: {
+                title: 'Radical Transparency',
+                tech: '`Datasette`',
+                details: 'Provide a simple script that launches a local web interface for the user to explore every byte of data the AI stores. This is the ultimate expression of user sovereignty and builds profound trust through verifiable transparency.'
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const roadmapItems = document.querySelectorAll('.roadmap-item');
+            const toolkitItems = document.querySelectorAll('.toolkit-item');
+
+            const switchTab = (targetId) => {
+                navButtons.forEach(button => {
+                    button.classList.toggle('nav-active', button.dataset.target === targetId);
+                    button.classList.toggle('nav-inactive', button.dataset.target !== targetId);
+                });
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
+                });
+            };
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => switchTab(button.dataset.target));
+            });
+
+            const toggleDetail = (item) => {
+                const contentId = item.dataset.content;
+                const detailView = document.getElementById(contentId);
+
+                if (detailView.classList.contains('open')) {
+                    detailView.classList.remove('open');
+                    detailView.innerHTML = '';
+                } else {
+                    const data = contentData[contentId];
+                    if (data) {
+                        detailView.innerHTML = `
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <h4 class="font-bold text-gray-800">${data.title}</h4>
+                                <p class="text-sm font-mono bg-gray-100 text-gray-600 rounded px-2 py-1 inline-block my-2">${data.tech}</p>
+                                <p class="text-gray-600">${data.details}</p>
+                            </div>
+                        `;
+                        // Close other open items
+                        document.querySelectorAll('.detail-view.open').forEach(openView => {
+                            if(openView.id !== contentId) {
+                                openView.classList.remove('open');
+                                openView.innerHTML = '';
+                            }
+                        });
+                        detailView.classList.add('open');
+                    }
+                }
+            };
+
+            roadmapItems.forEach(item => {
+                item.addEventListener('click', () => toggleDetail(item));
+            });
+            toolkitItems.forEach(item => {
+                item.addEventListener('click', () => toggleDetail(item));
+            });
+
+            const ctx = document.getElementById('roadmapChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Phase 1: Humane Interface', 'Phase 2: Domain Mastery', 'Phase 3: Living System'],
+                    datasets: [{
+                        label: 'Consciousness-First',
+                        data: [3, 1, 2],
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)'
+                    }, {
+                        label: 'Vulnerability as Strength',
+                        data: [3, 1, 1],
+                        backgroundColor: 'rgba(16, 185, 129, 0.5)'
+                    }, {
+                        label: 'Privacy as a Sanctuary',
+                        data: [1, 1, 3],
+                        backgroundColor: 'rgba(139, 92, 246, 0.5)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            pointLabels: {
+                                display: true,
+                                centerPointLabels: true,
+                                font: {
+                                    size: 14
+                                }
+                            },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                z: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

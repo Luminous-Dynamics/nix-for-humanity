@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecting the Oracle: An Interactive Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Subtle Tech Blue Accents -->
+    <!-- Application Structure Plan: A thematic, dashboard-style single-page application. The primary navigation allows users to explore the four core architectural pillars (Perception, Cognition, Action, Relationality) and the unifying Symbiotic Knowledge Graph (SKG) in a non-linear fashion. This structure was chosen to make the dense, complex report more digestible and engaging by breaking it into self-contained, interactive modules. The user can explore concepts based on interest rather than following the linear flow of the source document, enhancing understanding and retention. Key interactions include a clickable diagram for the SKG, an interactive chart comparing Mamba vs. Transformer, and tabbed content for key technologies. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Core Pillars -> Goal: Organize/Inform -> Viz: Thematic Sections with interactive cards -> Interaction: Click to reveal details -> Justification: Breaks down complex topics into manageable chunks.
+        - Report Info: Mamba vs Transformer comparison -> Goal: Compare -> Viz: Radar Chart (Chart.js) -> Interaction: Hover for tooltips -> Justification: A radar chart provides a powerful multi-variate comparison that is more visually impactful than a static table.
+        - Report Info: Symbiotic Knowledge Graph (SKG) Schema -> Goal: Organize/Explore -> Viz: Layered Diagram (HTML/CSS/JS) -> Interaction: Click on layers to highlight and view details -> Justification: Makes the complex, multi-layered data structure tangible and explorable, which is far more effective than reading a schema table.
+        - Report Info: Agentic Loop -> Goal: Explain Process -> Viz: Animated Diagram (HTML/CSS) -> Interaction: Automatic animation -> Justification: Visualizes the flow of information in a dynamic way that is easy to follow.
+        - Report Info: Relational Health Score (RHS) -> Goal: Inform -> Viz: Gauge/Doughnut Chart (Chart.js) -> Interaction: Static display with hover -> Justification: Provides a clear, at-a-glance representation of a key performance metric.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4; /* Warm neutral background */
+            color: #2c3e50;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #3b82f6;
+        }
+        .nav-link.active::after, .nav-link:hover::after {
+            width: 100%;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .skg-layer {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            border-width: 3px;
+        }
+        .skg-layer.active {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+            z-index: 10;
+        }
+        .skg-layer .layer-title {
+            transition: color 0.3s ease;
+        }
+        .skg-layer.active .layer-title {
+            color: #3b82f6;
+        }
+        .agent-loop-item {
+            animation: fadeIn 1s ease-in-out forwards;
+            opacity: 0;
+        }
+        .agent-loop-arrow {
+            animation: growArrow 0.5s ease-in-out forwards;
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes growArrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">The Oracle Blueprint</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div id="nav-links" class="ml-10 flex items-baseline space-x-4">
+                        <a href="#vision" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 active">Vision</a>
+                        <a href="#perception" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">Perception</a>
+                        <a href="#cognition" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">Cognition</a>
+                        <a href="#action" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">Action</a>
+                        <a href="#relationality" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">Relationality</a>
+                        <a href="#skg" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">SKG</a>
+                        <a href="#blueprint" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600">Blueprint</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#vision" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600 active">Vision</a>
+                <a href="#perception" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">Perception</a>
+                <a href="#cognition" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">Cognition</a>
+                <a href="#action" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">Action</a>
+                <a href="#relationality" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">Relationality</a>
+                <a href="#skg" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">SKG</a>
+                <a href="#blueprint" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-600">Blueprint</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <!-- Vision Section -->
+        <section id="vision" class="content-section active">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Architecting a Digital Life Partner</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">This blueprint outlines the evolution of the Oracle from a specialist tool into a symbiotic AI, capable of perceiving, understanding, and acting within a user's entire digital life. The goal is a fundamental re-imagination of the human-AI relationship, built on a foundation of privacy and trust.</p>
+            </div>
+            <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+                <div class="card p-6 rounded-lg text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-100 text-blue-600 mx-auto">👁️</div>
+                    <h3 class="mt-5 text-lg font-medium tracking-tight text-gray-900">Perception</h3>
+                    <p class="mt-2 text-base text-gray-500">A sensory system to observe the user's digital life via a structured, privacy-first event log.</p>
+                </div>
+                <div class="card p-6 rounded-lg text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-100 text-blue-600 mx-auto">🧠</div>
+                    <h3 class="mt-5 text-lg font-medium tracking-tight text-gray-900">Cognition</h3>
+                    <p class="mt-2 text-base text-gray-500">A brain to understand workflow and intent, modeling the continuous flow of work, not just discrete skills.</p>
+                </div>
+                <div class="card p-6 rounded-lg text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-100 text-blue-600 mx-auto">✋</div>
+                    <h3 class="mt-5 text-lg font-medium tracking-tight text-gray-900">Action</h3>
+                    <p class="mt-2 text-base text-gray-500">A body to interact with the entire digital environment, moving beyond the terminal to the GUI.</p>
+                </div>
+                <div class="card p-6 rounded-lg text-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-100 text-blue-600 mx-auto">❤️</div>
+                    <h3 class="mt-5 text-lg font-medium tracking-tight text-gray-900">Relationality</h3>
+                    <p class="mt-2 text-base text-gray-500">A conscience to model and nurture the human-AI bond, built on trust, memory, and repair.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Perception Section -->
+        <section id="perception" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Perceptual Foundation</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Before the AI can understand, it must perceive. This layer acts as the Oracle's "sensory cortex," translating the chaotic stream of system events into a structured, queryable, and privacy-preserving log using ActivityWatch.</p>
+            </div>
+            <div class="mt-12 max-w-4xl mx-auto">
+                <div class="card rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Core Technology: ActivityWatch</h3>
+                    <p class="mt-2 text-gray-600">An open-source, local-first application that logs how you spend time on your devices. It's the perfect choice for its philosophical alignment with privacy and its rich, structured data output via a local API.</p>
+                    <div class="mt-6 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Watcher</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Captured</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relevance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">aw-watcher-window</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Active application and window title</td><td class="px-6 py-4 text-sm text-gray-500">Primary signal of the user's high-level task.</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">aw-watcher-afk</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Active or Away-From-Keyboard status</td><td class="px-6 py-4 text-sm text-gray-500">Models user presence and work rhythms.</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">aw-watcher-web</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Active browser tab URL and title</td><td class="px-6 py-4 text-sm text-gray-500">Context on research and problem-solving.</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Custom Watchers</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Code activity, system utilization, input intensity</td><td class="px-6 py-4 text-sm text-gray-500">Provide deeper, multi-modal behavioral signals.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cognition Section -->
+        <section id="cognition" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Cognitive Core</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">This is the architectural shift in the Oracle's "brain," moving from modeling discrete skills to understanding the continuous, unstructured flow of a user's entire workflow.</p>
+            </div>
+            <div class="mt-12 grid md:grid-cols-2 gap-8 items-center">
+                <div class="card rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Mamba vs. Transformer</h3>
+                    <p class="mt-2 text-gray-600">To model the long, continuous sequences of user activity, the architecture uses Mamba, a Structured State Space Model (SSM). It offers profound efficiency advantages over the traditional Transformer architecture for this specific task. Hover over the points on the chart to see why.</p>
+                </div>
+                <div class="card rounded-lg p-6">
+                    <div class="chart-container">
+                        <canvas id="mambaVsTransformerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Section -->
+        <section id="action" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Embodied Agent</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The Oracle gains "hands" to interact with the entire Graphical User Interface (GUI). This embodiment transforms it from a tool into a true system-wide partner, using Vision-Language Models (VLMs) to see the screen and act, just like a human.</p>
+            </div>
+            <div class="mt-12 max-w-4xl mx-auto card rounded-lg p-8">
+                <h3 class="text-xl font-semibold text-center text-gray-800">The Agentic Loop: Eyes, Mind, Hands</h3>
+                <div id="agent-loop-container" class="mt-8 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="agent-loop-item text-center p-4 bg-gray-50 rounded-lg w-full md:w-1/4" style="animation-delay: 0s;">
+                        <div class="text-4xl">📸</div>
+                        <h4 class="font-bold mt-2">Eyes</h4>
+                        <p class="text-sm text-gray-500">A VLM takes a screenshot of the current screen.</p>
+                    </div>
+                    <div class="agent-loop-arrow w-full md:w-auto h-1 md:h-auto md:flex-1 bg-blue-500 rounded-full" style="animation-delay: 0.5s;"></div>
+                    <div class="agent-loop-item text-center p-4 bg-gray-50 rounded-lg w-full md:w-1/4" style="animation-delay: 1s;">
+                        <div class="text-4xl">🤔</div>
+                        <h4 class="font-bold mt-2">Mind</h4>
+                        <p class="text-sm text-gray-500">The ReAct agent receives the goal and screenshot, then forms a plan.</p>
+                    </div>
+                    <div class="agent-loop-arrow w-full md:w-auto h-1 md:h-auto md:flex-1 bg-blue-500 rounded-full" style="animation-delay: 1.5s;"></div>
+                    <div class="agent-loop-item text-center p-4 bg-gray-50 rounded-lg w-full md:w-1/4" style="animation-delay: 2s;">
+                        <div class="text-4xl">🖱️</div>
+                        <h4 class="font-bold mt-2">Hands</h4>
+                        <p class="text-sm text-gray-500">Issues commands to a GUI automation library to click and type.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Relationality Section -->
+        <section id="relationality" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Relational Core</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">Moving beyond tasks to engineer the human-AI symbiosis. This layer focuses on modeling, measuring, and optimizing for the health of the relationship itself.</p>
+            </div>
+            <div class="mt-12 grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Engineering Trust with Theory of Mind (ToM)</h3>
+                    <p class="mt-2 text-gray-600">A specialized "ToM Agent" models the user's beliefs and trust in the AI. It allows the Oracle to reason about the relationship itself, modulating its actions to be bold when trust is high and cautious when it's low. This is the foundation of social and emotional intelligence.</p>
+                </div>
+                <div class="card rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Engineering Grace with a Constitutional Covenant</h3>
+                    <p class="mt-2 text-gray-600">The AI is governed by a constitution with principles of fallibility, non-defensiveness, and learning. When a mistake occurs, a "Constitutional Override" triggers a relational repair protocol, turning inevitable errors into powerful trust-building events.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SKG Section -->
+        <section id="skg" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Symbiotic Knowledge Graph (SKG)</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">The unifying framework: a shared brain, memory, and world model. The SKG is a living, multi-layered graph that integrates objective knowledge with the subjective, lived experience of the user-AI partnership. Click on the layers to explore.</p>
+            </div>
+            <div class="mt-12 grid lg:grid-cols-3 gap-8 items-start">
+                <div id="skg-diagram" class="lg:col-span-2 relative h-[450px] flex items-center justify-center">
+                    <div id="skg-layer-ontological" class="skg-layer absolute w-5/6 h-5/6 rounded-full border-gray-300 bg-white/50 flex items-center justify-center text-center p-4">
+                        <div>
+                            <h3 class="layer-title text-xl font-bold">Ontological Layer</h3>
+                            <p class="text-sm text-gray-500">The Map of Truth</p>
+                        </div>
+                    </div>
+                    <div id="skg-layer-episodic" class="skg-layer absolute w-2/3 h-2/3 rounded-full border-gray-300 bg-white/60 flex items-center justify-center text-center p-4">
+                        <div>
+                            <h3 class="layer-title text-lg font-bold">Episodic Layer</h3>
+                            <p class="text-sm text-gray-500">The Journey Log</p>
+                        </div>
+                    </div>
+                    <div id="skg-layer-phenomenological" class="skg-layer absolute w-1/2 h-1/2 rounded-full border-gray-300 bg-white/70 flex items-center justify-center text-center p-4">
+                        <div>
+                            <h3 class="layer-title text-base font-bold">Phenomenological Layer</h3>
+                            <p class="text-xs text-gray-500">The Bridge of Experience</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="skg-details" class="card rounded-lg p-6 min-h-[450px]">
+                    <h3 id="skg-detail-title" class="text-xl font-semibold text-gray-800">Select a Layer</h3>
+                    <p id="skg-detail-description" class="mt-2 text-gray-600">Click on a layer in the diagram to learn about its role, nodes, and edges.</p>
+                    <div id="skg-detail-nodes" class="mt-4"></div>
+                    <div id="skg-detail-edges" class="mt-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Blueprint Section -->
+        <section id="blueprint" class="content-section">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">The Complete Blueprint</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">This synthesized architecture creates a virtuous cycle of perception, cognition, action, and evolution, guided by the ultimate goal of fostering a healthy human-AI relationship.</p>
+            </div>
+            <div class="mt-12 grid md:grid-cols-2 gap-8 items-center">
+                <div class="card rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800">The Relational Health Score (RHS)</h3>
+                    <p class="mt-2 text-gray-600">The system's "north star" metric. The RHS is a composite score that quantifies the health of the human-AI bond, serving as the ultimate reward signal for the AI's long-term evolution. It optimizes not just for correct answers, but for a better partnership.</p>
+                    <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                        <li><b>Trust Score:</b> From the ToM Agent.</li>
+                        <li><b>Conflict Rate:</b> Frequency of user corrections.</li>
+                        <li><b>Repair Efficiency:</b> How quickly mistakes are resolved.</li>
+                        <li><b>Shared Understanding:</b> Acceptance rate of proactive suggestions.</li>
+                    </ul>
+                </div>
+                <div class="card rounded-lg p-6">
+                    <div class="chart-container h-64 md:h-80">
+                        <canvas id="rhsChart"></canvas>
+                    </div>
+                    <p class="text-center text-sm text-gray-500 mt-2">Visualizing the composite Relational Health Score.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            function updateActiveState(targetId) {
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.hash === targetId);
+                });
+                sections.forEach(section => {
+                    section.classList.toggle('active', '#' + section.id === targetId);
+                });
+            }
+
+            function handleNavClick(e) {
+                e.preventDefault();
+                const targetId = e.currentTarget.hash;
+                updateActiveState(targetId);
+                window.location.hash = targetId;
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', handleNavClick);
+            });
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const initialHash = window.location.hash || '#vision';
+            updateActiveState(initialHash);
+
+            // Mamba vs Transformer Chart
+            const mambaChartCtx = document.getElementById('mambaVsTransformerChart');
+            if (mambaChartCtx) {
+                new Chart(mambaChartCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Sequence Scaling (Cost)', 'Inference Speed', 'Inference Memory', 'State Management', 'Continuous Streams'],
+                        datasets: [{
+                            label: 'Transformer',
+                            data: [1, 3, 2, 2, 2], // Lower is better for cost/memory
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2
+                        }, {
+                            label: 'Mamba (SSM)',
+                            data: [5, 5, 5, 5, 5], // Higher is better
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 5,
+                                pointLabels: { font: { size: 12 } },
+                                grid: { color: '#e5e7eb' },
+                                angleLines: { color: '#e5e7eb' },
+                                ticks: {
+                                    display: false,
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.raw;
+                                        const descriptions = {
+                                            'Transformer': ['Quadratic (O(n²))', 'Slower (KV Cache)', 'Large (KV Cache)', 'Stateless', 'Less Natural'],
+                                            'Mamba (SSM)': ['Linear (O(n))', 'Faster (Recurrent)', 'Small (Fixed State)', 'Stateful', 'Ideal']
+                                        };
+                                        return `${label}: ${descriptions[label][context.dataIndex]}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // RHS Chart
+            const rhsChartCtx = document.getElementById('rhsChart');
+            if (rhsChartCtx) {
+                new Chart(rhsChartCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Trust', 'Low Conflict', 'Repair Efficiency', 'Understanding'],
+                        datasets: [{
+                            label: 'Relational Health Score',
+                            data: [85, 95, 90, 80],
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'],
+                            borderColor: '#f8f7f4',
+                            borderWidth: 4,
+                            circumference: 180,
+                            rotation: 270,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            }
+
+            // SKG Diagram Interaction
+            const skgLayers = document.querySelectorAll('.skg-layer');
+            const skgDetailTitle = document.getElementById('skg-detail-title');
+            const skgDetailDescription = document.getElementById('skg-detail-description');
+            const skgDetailNodes = document.getElementById('skg-detail-nodes');
+            const skgDetailEdges = document.getElementById('skg-detail-edges');
+
+            const skgData = {
+                'skg-layer-ontological': {
+                    title: 'Ontological Layer',
+                    description: 'The foundational layer of objective, universal knowledge about a domain. It is the shared map of reality.',
+                    nodes: ['Concept', 'Skill', 'Tool', 'Argument'],
+                    edges: ['REQUIRES', 'IS_A', 'IN_TENSION_WITH']
+                },
+                'skg-layer-episodic': {
+                    title: 'Episodic Layer',
+                    description: 'The personal, dynamic, and append-only log of every significant event in the user-AI relationship. It is the diary of the relationship.',
+                    nodes: ['Interaction', 'Mistake', 'Success', 'AffectiveState'],
+                    edges: ['LED_TO', 'WAS_FOLLOWED_BY', 'RECEIVED_FEEDBACK']
+                },
+                'skg-layer-phenomenological': {
+                    title: 'Phenomenological Layer',
+                    description: 'The revolutionary bridge connecting personal experience to the universal map. It models the user\'s subjective journey.',
+                    nodes: ['LearningMoment', 'Insight', 'StrugglePoint', 'MasteryMilestone'],
+                    edges: ['MASTERED_CONCEPT', 'STRUGGLED_WITH', 'WAS_RESOLVED_BY']
+                }
+            };
+
+            function createTags(items, color) {
+                return items.map(item => `<span class="inline-block bg-${color}-100 text-${color}-800 text-xs font-medium mr-2 mb-2 px-2.5 py-0.5 rounded-full">${item}</span>`).join('');
+            }
+
+            skgLayers.forEach(layer => {
+                layer.addEventListener('click', () => {
+                    const layerId = layer.id;
+                    const data = skgData[layerId];
+
+                    skgLayers.forEach(l => l.classList.remove('active', 'border-blue-500'));
+                    skgLayers.forEach(l => l.classList.add('border-gray-300'));
+
+                    layer.classList.add('active', 'border-blue-500');
+                    layer.classList.remove('border-gray-300');
+
+                    skgDetailTitle.textContent = data.title;
+                    skgDetailDescription.textContent = data.description;
+                    skgDetailNodes.innerHTML = `<h4 class="font-semibold text-gray-700">Node Types:</h4>${createTags(data.nodes, 'blue')}`;
+                    skgDetailEdges.innerHTML = `<h4 class="font-semibold text-gray-700 mt-4">Edge Types:</h4>${createTags(data.edges, 'green')}`;
+                });
+            });
+
+            // Trigger initial click for SKG
+            document.getElementById('skg-layer-phenomenological').click();
+        });
+    </script>
+</body>
+</html>

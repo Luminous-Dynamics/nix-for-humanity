@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sovereign Stack: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earthy Harmony -->
+    <!-- Application Structure Plan: The application is designed as a three-part interactive narrative, moving from the 'Problem' (current IT crisis), to the 'Transformation' (the Nix Stack solution), and finally to the 'Frontier' (future research). This thematic structure, rather than a linear report summary, allows users to grasp the core argument—problem, solution, future—and explore concepts non-linearly. The 'Transformation' section is the interactive core, using toggles, charts, and diagrams to directly compare the 'before' and 'after' states for IT roles, business models, and products. This design choice prioritizes conceptual understanding and engagement over simple information retrieval, making the dense material more accessible. -->
+    <!-- Visualization & Content Choices:
+        - Roles Comparison: Goal=Compare. Method=Interactive Table + Radar Chart (Chart.js). Interaction=Clicking rows reveals details; chart visually contrasts skillsets. Justification=Directly visualizes the shift from 'Mechanic' to 'Tender'.
+        - Business Model Flow: Goal=Compare. Method=HTML/CSS Diagram. Interaction=Clicking nodes reveals explanations. Justification=Clearly illustrates the abstract flow of value from 'Rent-Seeking' to 'Co-Creation'.
+        - Holistic Dashboard: Goal=Inform/Demonstrate. Method=Interactive Bar Chart (Chart.js). Interaction=Toggle adds 'Human Metrics' to a standard tech dashboard. Justification=Provides a concrete 'Aha!' moment, showing the value of psycho-technical data.
+        - Research Questions: Goal=Organize. Method=Accordion List. Interaction=Click to expand. Justification=Presents dense text in a manageable, user-controlled format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #FDFBF8; }
+        .nav-active { color: #3B82F6; border-bottom-color: #3B82F6; }
+        .nav-inactive { color: #4B5563; border-bottom-color: transparent; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        .comparison-table tr:not(:first-child) { cursor: pointer; }
+        .comparison-table tr:not(:first-child):hover { background-color: #f0f9ff; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .diagram-node { transition: all 0.2s ease-in-out; }
+        .diagram-node:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-2">The Sovereign Stack</h1>
+            <p class="text-lg text-gray-600">An Interactive Exploration of the Next IT Paradigm</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-12">
+            <button data-target="problem" class="nav-btn nav-active text-lg font-medium py-3 px-6 border-b-2 transition-colors duration-200">The Problem</button>
+            <button data-target="transformation" class="nav-btn nav-inactive text-lg font-medium py-3 px-6 border-b-2 transition-colors duration-200">The Transformation</button>
+            <button data-target="frontier" class="nav-btn nav-inactive text-lg font-medium py-3 px-6 border-b-2 transition-colors duration-200">The Frontier</button>
+        </nav>
+
+        <main>
+            <!-- Section 1: The Problem -->
+            <section id="problem" class="content-section active">
+                <div class="max-w-3xl mx-auto text-center mb-12">
+                    <h2 class="text-3xl font-bold mb-4">The Crisis of the Current Paradigm</h2>
+                    <p class="text-gray-600 text-lg">The modern IT industry operates on a foundation of systemic fragility, leading to quantifiable negative outcomes for both businesses and the people who build them. This section outlines the core issues that the Nix for Humanity stack aims to solve, highlighting the immense human and financial costs of our current tools and processes.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-2xl font-semibold text-blue-600 mb-2">Alert Fatigue</h3>
+                        <p class="text-gray-600">Engineers are inundated with a high volume of low-signal alerts, leading to desensitization, slower incident response, and profound burnout.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-2xl font-semibold text-blue-600 mb-2">Configuration Drift</h3>
+                        <p class="text-gray-600">Systems diverge from their intended state through undocumented manual changes, creating brittle, unpredictable environments and endless "it works on my machine" problems.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-2xl font-semibold text-blue-600 mb-2">Vendor Lock-In</h3>
+                        <p class="text-gray-600">Rent-seeking models based on proprietary platforms create dependency, stifle innovation, and expose organizations to unacceptable platform risk.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: The Transformation -->
+            <section id="transformation" class="content-section">
+                <div class="max-w-3xl mx-auto text-center mb-12">
+                    <h2 class="text-3xl font-bold mb-4">A Paradigm Shift in Action</h2>
+                    <p class="text-gray-600 text-lg">The Nix Stack—NixOS, Holochain, and Local-First AI—offers a coherent technical solution to the industry's systemic problems. It enables a fundamental transformation across three key layers: how we work (Roles), how we create value (Business Models), and the tools we build (Products). Explore the shift from the old paradigm to the new.</p>
+                </div>
+
+                <div class="flex justify-center mb-8 rounded-lg bg-gray-100 p-1 max-w-md mx-auto">
+                    <button data-subtarget="roles" class="sub-nav-btn w-1/3 py-2 px-4 text-sm font-semibold rounded-md bg-white text-blue-600 shadow">Roles</button>
+                    <button data-subtarget="models" class="sub-nav-btn w-1/3 py-2 px-4 text-sm font-semibold rounded-md text-gray-600">Models</button>
+                    <button data-subtarget="products" class="sub-nav-btn w-1/3 py-2 px-4 text-sm font-semibold rounded-md text-gray-600">Products</button>
+                </div>
+
+                <div id="roles" class="sub-content active">
+                    <h3 class="text-2xl font-bold text-center mb-2">From Machine Mechanic to System Tender</h3>
+                    <p class="text-gray-600 text-center max-w-2xl mx-auto mb-8">The Nix stack automates away reactive firefighting, elevating the IT role from fixing broken parts to cultivating the health of the entire socio-technical ecosystem. This is a shift from a cost center to a value multiplier.</p>
+                    <div class="grid lg:grid-cols-2 gap-12 items-start">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h4 class="text-xl font-semibold mb-4 text-center">Role Comparison</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left comparison-table">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="py-2 font-semibold">Metric</th>
+                                            <th class="py-2 font-semibold">Old: Machine Mechanic</th>
+                                            <th class="py-2 font-semibold">New: System Tender</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b" data-detail="The core purpose shifts from damage control to proactive value creation. The Mechanic's value is visible when things are broken; the Tender's value is visible in the productivity and well-being of others.">
+                                            <td class="py-3 font-medium">Primary Goal</td>
+                                            <td>Minimize downtime</td>
+                                            <td>Maximize coherence</td>
+                                        </tr>
+                                        <tr class="border-b" data-detail="Activities change from reactive, high-stress tasks to strategic, high-leverage work. The focus moves from the machine's state to the human experience of using the system.">
+                                            <td class="py-3 font-medium">Core Activities</td>
+                                            <td>Firefighting</td>
+                                            <td>Cultivating DevEx</td>
+                                        </tr>
+                                        <tr class="border-b" data-detail="Success is no longer measured by how fast you fix things (MTTR), but by how infrequently they break (MTBF) and how fast the team can innovate.">
+                                            <td class="py-3 font-medium">Key Metrics</td>
+                                            <td>MTTR, SLOs</td>
+                                            <td>Developer Velocity</td>
+                                        </tr>
+                                        <tr class="border-b" data-detail="The technological foundation moves from mutable, unpredictable systems to immutable, reproducible ones, which is the key enabler of this role transformation.">
+                                            <td class="py-3 font-medium">Underlying Tech</td>
+                                            <td>Imperative, Mutable</td>
+                                            <td>Declarative, Immutable</td>
+                                        </tr>
+                                        <tr data-detail="The psychological stance transitions from one of anxiety and fear to one of stewardship and confidence, reducing cognitive load and burnout for the entire organization.">
+                                            <td class="py-3 font-medium">Psychological Stance</td>
+                                            <td>Reactive, Anxious</td>
+                                            <td>Proactive, Confident</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="comparison-detail" class="mt-4 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm min-h-[50px]">
+                                Click on a row to see more detail.
+                            </div>
+                        </div>
+                        <div>
+                           <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                <h4 class="text-xl font-semibold mb-4 text-center">Focus Area Visualization</h4>
+                                <div class="chart-container">
+                                    <canvas id="roleFocusChart"></canvas>
+                                </div>
+                                <p class="text-xs text-gray-500 text-center mt-2">A visual representation of the shift in focus and skills between the two roles.</p>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="models" class="sub-content hidden">
+                    <h3 class="text-2xl font-bold text-center mb-2">From Rent-Seeking to Value Co-Creation</h3>
+                    <p class="text-gray-600 text-center max-w-2xl mx-auto mb-8">The stack enables a move away from models that extract value through dependency (rent) to models that generate value through partnership and collective ownership (co-creation). This is the foundation of the **Sovereignty Dividend**.</p>
+                    <div class="grid lg:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h4 class="text-xl font-semibold mb-4 text-center">Old Model: Rent-Seeking</h4>
+                             <div class="space-y-4 text-center">
+                                <div class="diagram-node bg-red-100 text-red-800 p-3 rounded-lg" data-detail="Centralized platforms (AWS, GCP, SaaS) provide infrastructure and software.">Customer rents access</div>
+                                <div class="text-2xl text-red-400">↓</div>
+                                <div class="diagram-node bg-red-100 text-red-800 p-3 rounded-lg" data-detail="Proprietary APIs, data formats, and high switching costs create dependency.">Vendor Lock-In</div>
+                                <div class="text-2xl text-red-400">↓</div>
+                                <div class="diagram-node bg-red-100 text-red-800 p-3 rounded-lg" data-detail="The provider extracts ongoing fees, controls the platform's future, and holds the customer's data hostage.">Value Extraction (Rent)</div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h4 class="text-xl font-semibold mb-4 text-center">New Model: Co-Creation</h4>
+                            <div class="space-y-4 text-center">
+                                <div class="diagram-node bg-green-100 text-green-800 p-3 rounded-lg" data-detail="Organizations own their reproducible NixOS configurations and build on agent-centric Holochain apps.">Customer Owns Logic</div>
+                                <div class="text-2xl text-green-400">↓</div>
+                                <div class="diagram-node bg-green-100 text-green-800 p-3 rounded-lg" data-detail="Platform Cooperatives and Federated Hosting providers offer services without lock-in, competing on quality.">Partnership & Capability</div>
+                                <div class="text-2xl text-green-400">↓</div>
+                                <div class="diagram-node bg-green-100 text-green-800 p-3 rounded-lg" data-detail="Value is co-created and shared. The customer is sovereign, and the ecosystem thrives on mutual benefit.">Value Co-Creation</div>
+                            </div>
+                        </div>
+                    </div>
+                     <div id="model-detail" class="mt-6 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm min-h-[50px] max-w-3xl mx-auto">
+                        Click on a diagram node to see more detail.
+                    </div>
+                </div>
+
+                <div id="products" class="sub-content hidden">
+                    <h3 class="text-2xl font-bold text-center mb-2">From Siloed Tools to Holistic Dashboards</h3>
+                    <p class="text-gray-600 text-center max-w-2xl mx-auto mb-8">The new stack generates rich psycho-technical data, enabling products that manage the entire socio-technical system, not just isolated machine metrics. This is the practical application of the **Coherence Premium**.</p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-3xl mx-auto">
+                        <h4 class="text-xl font-semibold mb-4 text-center">Holistic System Dashboard</h4>
+                        <div class="chart-container h-[300px] max-h-[300px]">
+                            <canvas id="dashboardChart"></canvas>
+                        </div>
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600 mb-4">A drop in a team's coherence is a leading indicator of future technical problems. Toggle the human metrics to see the full picture.</p>
+                            <button id="toggleMetricsBtn" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
+                                Add Human Metrics
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: The Frontier -->
+            <section id="frontier" class="content-section">
+                <div class="max-w-3xl mx-auto text-center mb-12">
+                    <h2 class="text-3xl font-bold mb-4">Probing the Frontiers</h2>
+                    <p class="text-gray-600 text-lg">This transformation is not a foregone conclusion. It opens a new continent of research questions that must be rigorously investigated to validate its claims and guide its development. This section outlines the most pressing inquiries for the new paradigm.</p>
+                </div>
+                <div class="max-w-4xl mx-auto space-y-4">
+                    <div class="accordion-item bg-white border border-gray-200 rounded-lg">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold text-lg">
+                            <span>The New IT Labor Market</span>
+                            <span class="accordion-icon text-2xl text-gray-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5">
+                            <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Upskilling Chasm Inquiry</h4>
+                                <p class="text-gray-600 mt-1">The transition to a "System Tender" requires a leap from imperative scripting to declarative, functional programming. What is the scale of this challenge, and what are the most effective pedagogical models for retraining the IT workforce at scale?</p>
+                            </div>
+                            <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Value of Tending Inquiry</h4>
+                                <p class="text-gray-600 mt-1">How do we prove the superior economic value of the "System Tender" role? A study comparing the Total Cost of Ownership (TCO) and resolution metrics (MTTR, MTBF) between a traditional DevOps team and a "System Tender" team is needed to provide hard, quantitative data.</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white border border-gray-200 rounded-lg">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold text-lg">
+                            <span>The New Competitive Landscape</span>
+                            <span class="accordion-icon text-2xl text-gray-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5">
+                             <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Incumbent's Trilemma Inquiry</h4>
+                                <p class="text-gray-600 mt-1">How will dominant players (AWS, Microsoft, Google) respond? They face an Innovator's Dilemma: (a) ignore the movement, (b) compete by launching their own offerings and cannibalizing high-margin services, or (c) envelop and co-opt it by offering superficial "sovereignty" features within their walled gardens.</p>
+                            </div>
+                             <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Sovereignty Premium Inquiry</h4>
+                                <p class="text-gray-600 mt-1">How much more are customers actually willing to pay for a verifiably sovereign, cooperatively-owned solution? Quantifying this "Sovereignty Premium" through market research techniques like conjoint analysis is essential for the business case of the entire ecosystem.</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white border border-gray-200 rounded-lg">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold text-lg">
+                            <span>The New Generation of Tools</span>
+                            <span class="accordion-icon text-2xl text-gray-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5">
+                             <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Ethics of Psycho-Technical Monitoring Inquiry</h4>
+                                <p class="text-gray-600 mt-1">The "Holistic Dashboard" is ethically perilous. What robust privacy frameworks are required to prevent this from becoming a tool of surveillance? A framework built on user sovereignty, purpose limitation, data minimization, and democratic governance is critical.</p>
+                            </div>
+                             <div class="py-4 border-t">
+                                <h4 class="font-semibold text-blue-600">The Coherence Signal-to-Noise Ratio Inquiry</h4>
+                                <p class="text-gray-600 mt-1">How do we prove the new coherence metrics (WIS, HEART) are not just noise? This requires rigorous statistical analysis and correlation studies to validate that these signals have genuine predictive power in forecasting bugs or outages.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const contentSections = document.querySelectorAll('.content-section');
+            const subNavButtons = document.querySelectorAll('.sub-nav-btn');
+            const subContentSections = document.querySelectorAll('.sub-content');
+            const accordionItems = document.querySelectorAll('.accordion-item');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const target = button.dataset.target;
+
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('nav-active');
+                        btn.classList.add('nav-inactive');
+                    });
+                    button.classList.add('nav-active');
+                    button.classList.remove('nav-inactive');
+
+                    contentSections.forEach(section => {
+                        if (section.id === target) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            subNavButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const subtarget = button.dataset.subtarget;
+
+                    subNavButtons.forEach(btn => {
+                        btn.classList.remove('bg-white', 'text-blue-600', 'shadow');
+                        btn.classList.add('text-gray-600');
+                    });
+                    button.classList.add('bg-white', 'text-blue-600', 'shadow');
+                    button.classList.remove('text-gray-600');
+
+                    subContentSections.forEach(section => {
+                        section.classList.add('hidden');
+                        section.classList.remove('active');
+                        if (section.id === subtarget) {
+                            section.classList.remove('hidden');
+                            section.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const icon = item.querySelector('.accordion-icon');
+
+                header.addEventListener('click', () => {
+                    const isExpanded = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                    accordionItems.forEach(otherItem => {
+                        otherItem.querySelector('.accordion-content').style.maxHeight = '0px';
+                        otherItem.querySelector('.accordion-icon').textContent = '+';
+                    });
+
+                    if (!isExpanded) {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        icon.textContent = '-';
+                    }
+                });
+            });
+
+            const comparisonTableRows = document.querySelectorAll('.comparison-table tr:not(:first-child)');
+            const detailBox = document.getElementById('comparison-detail');
+            comparisonTableRows.forEach(row => {
+                row.addEventListener('click', () => {
+                    detailBox.textContent = row.dataset.detail;
+                });
+            });
+
+            const diagramNodes = document.querySelectorAll('.diagram-node');
+            const modelDetailBox = document.getElementById('model-detail');
+            diagramNodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    modelDetailBox.textContent = node.dataset.detail;
+                });
+            });
+
+            let roleFocusChart, dashboardChart;
+            let humanMetricsVisible = false;
+
+            function createRoleFocusChart() {
+                const ctx = document.getElementById('roleFocusChart').getContext('2d');
+                if (roleFocusChart) roleFocusChart.destroy();
+                roleFocusChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Reactive Tasks', 'System Stability', 'Tooling/Automation', 'Proactive Strategy', 'Human Experience', 'Developer Velocity'],
+                        datasets: [{
+                            label: 'Machine Mechanic',
+                            data: [5, 4, 4, 1, 1, 2],
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2
+                        }, {
+                            label: 'System Tender',
+                            data: [1, 3, 5, 4, 5, 5],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { display: true },
+                                suggestedMin: 0,
+                                suggestedMax: 5,
+                                pointLabels: { font: { size: 10 } },
+                                ticks: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'top' }
+                        }
+                    }
+                });
+            }
+
+            function createDashboardChart() {
+                const ctx = document.getElementById('dashboardChart').getContext('2d');
+                const baseData = {
+                    labels: ['Service A', 'Service B', 'Database', 'API Gateway', 'Auth Service'],
+                    datasets: [{
+                        label: 'CPU Usage (%)',
+                        data: [85, 50, 65, 30, 75],
+                        backgroundColor: '#60A5FA',
+                        borderColor: '#3B82F6',
+                        borderWidth: 1
+                    }, {
+                        label: 'Latency (ms)',
+                        data: [120, 80, 250, 90, 150],
+                        backgroundColor: '#93C5FD',
+                        borderColor: '#60A5FA',
+                        borderWidth: 1
+                    }]
+                };
+
+                const humanData = {
+                    label: 'Team HEART Score',
+                    data: [8, 9, 5, 9, 4],
+                    backgroundColor: '#FBBF24',
+                    borderColor: '#F59E0B',
+                    borderWidth: 1
+                };
+
+                if (dashboardChart) dashboardChart.destroy();
+
+                let datasets = [...baseData.datasets];
+                if (humanMetricsVisible) {
+                    datasets.push(humanData);
+                }
+
+                dashboardChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: baseData.labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            title: { display: true, text: 'System Health Overview' },
+                            legend: { position: 'bottom' }
+                        },
+                        responsive: true
+                    }
+                });
+            }
+
+            document.getElementById('toggleMetricsBtn').addEventListener('click', () => {
+                humanMetricsVisible = !humanMetricsVisible;
+                const btn = document.getElementById('toggleMetricsBtn');
+                btn.textContent = humanMetricsVisible ? 'Remove Human Metrics' : 'Add Human Metrics';
+                btn.classList.toggle('bg-amber-500', humanMetricsVisible);
+                btn.classList.toggle('hover:bg-amber-600', humanMetricsVisible);
+                btn.classList.toggle('bg-blue-600', !humanMetricsVisible);
+                btn.classList.toggle('hover:bg-blue-700', !humanMetricsVisible);
+                createDashboardChart();
+            });
+
+            createRoleFocusChart();
+            createDashboardChart();
+        });
+    </script>
+
+</body>
+</html>

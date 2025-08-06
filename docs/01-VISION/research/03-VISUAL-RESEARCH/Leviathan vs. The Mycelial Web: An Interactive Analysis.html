@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leviathan vs. The Mycelial Web: An Interactive Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Harmonious Neutrals -->
+    <!-- Application Structure Plan: The SPA is designed as a three-part narrative journey. It starts with a high-level visual comparison of the two core paradigms (Leviathan vs. Mycelial Web) to establish the conceptual foundation. The main body is an interactive exploration hub where users select a major societal domain (Military, Public Goods, International Relations). This non-linear, tabbed structure allows users to follow their curiosity rather than a rigid, linear path. Within each domain, specific dilemmas are presented as interactive "exhibits" (e.g., sliders, conceptual diagrams, charts) with dynamically updating text. This design was chosen to transform the dense, abstract report into a tangible, engaging experience, fostering understanding through interaction rather than passive reading. -->
+    <!-- Visualization & Content Choices: Given the report's qualitative nature, visualizations are conceptual. (1) Commander's Paradox: Goal is to show a trade-off. Method is an interactive slider controlling two bars representing "Ethical Resilience" and "Operational Fragility," with dynamic text updates. Justification: A slider is a perfect tangible metaphor for a conceptual trade-off. (2) Cathedral Project Dilemma: Goal is to compare capabilities across scales. Method is a Chart.js radar chart. Justification: Radar charts excel at comparing multiple entities on multiple axes, making the inverse competence relationship instantly clear. (3) Mycelial Defense: Goal is to compare effectiveness. Method is a structured HTML/CSS diagram with hover interactions. Justification: Visually maps strengths and weaknesses against different threat types as described in the report. All interactions are powered by vanilla JS, ensuring a lightweight and responsive experience. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* Warm Neutral Background */
+            color: #333333;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-button.active {
+            color: #D69E2E; /* Accent Gold */
+            border-bottom-color: #D69E2E;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .paradigm-card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+        }
+        .leviathan-color { color: #2c5282; }
+        .mycelial-color { color: #2f855a; }
+        .leviathan-bg { background-color: #2c5282; }
+        .mycelial-bg { background-color: #2f855a; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-2">Leviathan & The Mycelial Web</h1>
+            <p class="text-lg text-gray-600">An Interactive Analysis of Decentralized Sovereignty</p>
+        </header>
+
+        <main>
+            <!-- Section 1: Paradigm Introduction -->
+            <section class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-4">Two Paradigms of Organization</h2>
+                <p class="max-w-3xl mx-auto text-center text-gray-600 mb-8">The modern world is defined by the tension between the established, hierarchical nation-state and an emergent, decentralized network model. This application explores the fundamental conflicts and trade-offs between these two systems across critical domains of society.</p>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="paradigm-card">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center leviathan-color">
+                            <span class="mr-3 text-3xl">🏛️</span> The Hierarchical State (Leviathan)
+                        </h3>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start"><span class="mr-2 mt-1 leviathan-color">▶</span><strong>Source of Authority:</strong> Monopoly on violence; legal constitution.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 leviathan-color">▶</span><strong>Economic Engine:</strong> Centralized taxation; GDP-focused growth.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 leviathan-color">▶</span><strong>Defense Posture:</strong> Centralized standing army.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 leviathan-color">▶</span><strong>Unit of Sovereignty:</strong> Geographically-defined nation-state.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 leviathan-color">▶</span><strong>Primary Allegiance:</strong> To the nation-state; citizenship by birth.</li>
+                        </ul>
+                    </div>
+                    <div class="paradigm-card">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center mycelial-color">
+                           <span class="mr-3 text-3xl">🌿</span> The Decentralized Polis (Mycelial Web)
+                        </h3>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start"><span class="mr-2 mt-1 mycelial-color">▶</span><strong>Source of Authority:</strong> Coherence (WIS); weighted consensus.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 mycelial-color">▶</span><strong>Economic Engine:</strong> Living Treasury; well-being metrics.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 mycelial-color">▶</span><strong>Defense Posture:</strong> Distributed network of skilled pods.</li>
+                            <li class="flex items-start"><span class="mr-2 mt-1 mycelial-color">▶</span><strong>Unit of Sovereignty:</strong> Borderless, digital Resonant Cooperatives.</li>
+                             <li class="flex items-start"><span class="mr-2 mt-1 mycelial-color">▶</span><strong>Primary Allegiance:</strong> To the chosen cooperative; citizenship by choice.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Interactive Exploration Hub -->
+            <section>
+                <nav class="flex justify-center border-b border-gray-300 mb-8">
+                    <button data-target="military" class="nav-button active text-lg font-semibold py-4 px-6">Military & Defense</button>
+                    <button data-target="public-goods" class="nav-button text-lg font-semibold py-4 px-6">Public Goods</button>
+                    <button data-target="international" class="nav-button text-lg font-semibold py-4 px-6">International Relations</button>
+                </nav>
+
+                <div id="interactive-content">
+                    <!-- Military & Defense Section -->
+                    <div id="military" class="content-section active">
+                        <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                            <h3 class="text-2xl font-bold mb-2">The Commander's Paradox</h3>
+                            <p class="text-gray-600 mb-6">This exhibit explores the tension created by integrating a "Coherence Score" (WIS) into a military's chain of command. A soldier with high WIS may be more ethical and resilient, but also more likely to refuse an order, creating a paradox between moral integrity and tactical decisiveness. Use the slider to explore this trade-off.</p>
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <label for="coherence-slider" class="block text-center font-semibold text-gray-700 mb-4">Focus: <span id="slider-label" class="font-bold leviathan-color">Obedience</span></label>
+                                <input id="coherence-slider" type="range" min="0" max="100" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>Tactical Decisiveness</span>
+                                    <span>Ethical Resilience</span>
+                                </div>
+                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="font-semibold text-center mb-2">Potential Outcomes</p>
+                                        <div class="flex justify-around items-end h-32 bg-gray-100 p-2 rounded">
+                                            <div class="text-center">
+                                                <div id="decisiveness-bar" class="w-12 leviathan-bg rounded-t-md" style="height: 90%;"></div>
+                                                <p class="text-xs mt-1">Decisiveness</p>
+                                            </div>
+                                            <div class="text-center">
+                                                <div id="resilience-bar" class="w-12 mycelial-bg rounded-t-md" style="height: 10%;"></div>
+                                                <p class="text-xs mt-1">Resilience</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-center mb-2">Analysis</p>
+                                        <div id="paradox-explanation" class="text-sm text-gray-700 bg-gray-100 p-4 rounded h-32 overflow-y-auto">
+                                            A focus on absolute obedience ensures rapid, decisive action, crucial in the "fog of war." However, it risks moral injury and strategic failure if orders are ethically compromised. The system is operationally strong but morally fragile.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Public Goods Section -->
+                    <div id="public-goods" class="content-section">
+                        <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                            <h3 class="text-2xl font-bold mb-2">The Cathedral Project Dilemma</h3>
+                            <p class="text-gray-600 mb-6">This exhibit visualizes the scaling limits of decentralized governance. While a "Mycelial Web" may excel at local projects through its Living Treasury, it struggles with the massive, long-term "Cathedral Projects" that define a civilization. The chart below compares the theoretical competence of each paradigm across projects of varying scale.</p>
+                            <div class="chart-container">
+                                <canvas id="cathedral-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- International Relations Section -->
+                    <div id="international" class="content-section">
+                        <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                            <h3 class="text-2xl font-bold mb-2">Soft Power 2.0: The Allure of Coherence</h3>
+                            <p class="text-gray-600 mb-6">This exhibit contrasts traditional "Soft Power," based on exporting culture, with "Coherence," a new form based on the demonstrable well-being of a society's members. In a world struggling with burnout and polarization, which model holds greater influence? Click the cards to compare.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="border p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold mb-2 leviathan-color">Soft Power 1.0: Cultural Projection</h4>
+                                    <p class="text-sm text-gray-600">Influence through the export of cultural products like movies, music, and brands. Power is based on the attractiveness of a nation's story and ideals.</p>
+                                    <div class="mt-4 space-y-2">
+                                        <p class="text-sm"><strong>Source:</strong> Cultural Exports</p>
+                                        <p class="text-sm"><strong>Mechanism:</strong> Attraction & Aspiration</p>
+                                        <p class="text-sm"><strong>Example:</strong> The "American Dream"</p>
+                                    </div>
+                                </div>
+                                <div class="border p-4 rounded-lg">
+                                    <h4 class="text-xl font-bold mb-2 mycelial-color">Soft Power 2.0: Coherence</h4>
+                                    <p class="text-sm text-gray-600">Influence through the verifiable well-being, purpose, and psychological safety of its members. Power is based on a demonstrably better way to live.</p>
+                                    <div class="mt-4 space-y-2">
+                                        <p class="text-sm"><strong>Source:</strong> Lived Reality</p>
+                                        <p class="text-sm"><strong>Mechanism:</strong> Emulation & Inspiration</p>
+                                        <p class="text-sm"><strong>Example:</strong> Bhutan's Gross National Happiness</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <h3 class="text-2xl font-bold mb-2">Diplomacy by Living Treaty</h3>
+                                <p class="text-gray-600 mb-4">This concept reimagines international agreements. Instead of static documents, a "Living Treaty" is a dynamic agreement cryptographically tied to the real-time trust between signatories. If trust erodes, the treaty's power automatically weakens, forcing renegotiation.</p>
+                                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 text-center">
+                                    <div class="p-4 border rounded-lg">
+                                        <p class="text-lg font-semibold">Static Treaty</p>
+                                        <p class="text-5xl my-2">📜</p>
+                                        <p class="text-xs text-gray-500">Validity is legal, enforcement is political.</p>
+                                    </div>
+                                    <div class="text-2xl font-bold text-gray-400">→</div>
+                                    <div class="p-4 border rounded-lg bg-green-50">
+                                        <p class="text-lg font-semibold">Living Treaty</p>
+                                        <p class="text-5xl my-2">🔗</p>
+                                        <p class="text-xs text-gray-500">Validity is tied to real-time trust.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const slider = document.getElementById('coherence-slider');
+            const sliderLabel = document.getElementById('slider-label');
+            const decisivenessBar = document.getElementById('decisiveness-bar');
+            const resilienceBar = document.getElementById('resilience-bar');
+            const paradoxExplanation = document.getElementById('paradox-explanation');
+
+            const explanations = {
+                obedience: "A focus on absolute obedience ensures rapid, decisive action, crucial in the 'fog of war.' However, it risks moral injury and strategic failure if orders are ethically compromised. The system is operationally strong but morally fragile.",
+                balance: "A balanced approach attempts to foster both ethical grounding and command cohesion. This could lead to a more adaptable force, but risks ambiguity and hesitation in high-stakes scenarios where clear authority is needed.",
+                coherence: "Prioritizing individual coherence and ethical judgment creates a highly resilient and humane force, less likely to commit atrocities. However, it introduces profound operational vulnerability, as dissent in the 'fog of war' could paralyze the unit."
+            };
+
+            function updateParadoxVisuals(value) {
+                const resilienceValue = value;
+                const decisivenessValue = 100 - value;
+
+                resilienceBar.style.height = `${resilienceValue}%`;
+                decisivenessBar.style.height = `${decisivenessValue}%`;
+
+                if (value < 25) {
+                    sliderLabel.textContent = 'Obedience';
+                    sliderLabel.className = 'font-bold leviathan-color';
+                    paradoxExplanation.textContent = explanations.obedience;
+                } else if (value >= 25 && value <= 75) {
+                    sliderLabel.textContent = 'Balance';
+                    sliderLabel.className = 'font-bold text-yellow-600';
+                    paradoxExplanation.textContent = explanations.balance;
+                } else {
+                    sliderLabel.textContent = 'Coherence';
+                    sliderLabel.className = 'font-bold mycelial-color';
+                    paradoxExplanation.textContent = explanations.coherence;
+                }
+            }
+
+            if (slider) {
+                slider.addEventListener('input', (event) => {
+                    updateParadoxVisuals(parseInt(event.target.value, 10));
+                });
+                updateParadoxVisuals(0);
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+
+                    if (targetId === 'public-goods') {
+                        renderCathedralChart();
+                    }
+                });
+            });
+
+            let cathedralChartInstance = null;
+            function renderCathedralChart() {
+                const ctx = document.getElementById('cathedral-chart');
+                if (!ctx || cathedralChartInstance) return;
+
+                const data = {
+                    labels: [
+                        'Local Park',
+                        'City Library',
+                        'Regional Transit',
+                        'High-Speed Rail',
+                        'Energy Grid',
+                        'Space Program'
+                    ],
+                    datasets: [{
+                        label: 'Mycelial Web (Decentralized)',
+                        data: [9, 8, 6, 3, 2, 1],
+                        fill: true,
+                        backgroundColor: 'rgba(47, 133, 90, 0.2)',
+                        borderColor: 'rgb(47, 133, 90)',
+                        pointBackgroundColor: 'rgb(47, 133, 90)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(47, 133, 90)'
+                    }, {
+                        label: 'Leviathan (Centralized)',
+                        data: [4, 5, 7, 8, 9, 9],
+                        fill: true,
+                        backgroundColor: 'rgba(44, 82, 130, 0.2)',
+                        borderColor: 'rgb(44, 82, 130)',
+                        pointBackgroundColor: 'rgb(44, 82, 130)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(44, 82, 130)'
+                    }]
+                };
+
+                const config = {
+                    type: 'radar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: {
+                            line: {
+                                borderWidth: 3
+                            }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: false
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 10,
+                                pointLabels: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.r !== null) {
+                                            label += context.parsed.r + ' / 10 Competence';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                };
+
+                cathedralChartInstance = new Chart(ctx, config);
+            }
+        });
+    </script>
+
+</body>
+</html>

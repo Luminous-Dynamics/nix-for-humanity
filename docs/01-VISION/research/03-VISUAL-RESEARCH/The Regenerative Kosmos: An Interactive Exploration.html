@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Regenerative Kosmos: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Sacred Earth -->
+    <!-- Application Structure Plan: The SPA is designed as a three-part narrative journey to guide the user from the foundational problem to the ultimate solution.
+        1. 'The Foundation' introduces the core paradox (Stage 4 vs 5) and the initial 'Dissolving Kosmos' concept.
+        2. 'The Sacred Dissonance' presents the three critiques as interactive, explorable "problems" that challenge the initial concept.
+        3. 'The Regenerative Solution' details the three recommendations and architectural blueprints as the "solution," using interactive diagrams and tables.
+        This thematic, problem-solution structure was chosen over a linear report summary because it creates a more engaging and logical user flow, making the dense philosophical content easier to digest and understand. The user learns the 'why' before the 'what'. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Kegan's Stages -> Goal: Compare -> Viz: Interactive HTML cards -> Interaction: Click to reveal details -> Justification: Better for abstract, non-quantitative concepts than a chart. Encourages focused reading. -> Method: HTML/CSS/JS.
+        - Report Info: Dissolving vs. Regenerative Models -> Goal: Compare Change -> Viz: Bar Chart -> Interaction: Toggle button to switch datasets -> Justification: Provides a stark, quantitative-feeling visual of the core improvement. -> Library: Chart.js.
+        - Report Info: The Three Critiques -> Goal: Organize/Inform -> Viz: Accordion-style cards -> Interaction: Click to expand/collapse -> Justification: Manages text density and allows users to focus on one critique at a time. -> Method: HTML/CSS/JS.
+        - Report Info: Architectural Tables (Noetic Endowment/Lineage) -> Goal: Organize/Inform -> Viz: Styled HTML tables -> Interaction: Row hover to highlight -> Justification: Improves readability of dense data tables. -> Method: HTML/CSS/JS.
+        - Report Info: Regenerative Cycle -> Goal: Show Process -> Viz: HTML/CSS Diagram -> Interaction: Hover to see tooltips -> Justification: Visually represents the final, cyclical concept in a clean, uncluttered way. -> Method: HTML/CSS/JS.
+        -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* warm-neutral-100 */
+            color: #3f3f46; /* zinc-700 */
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #A78BFA; /* violet-400 */
+            transition: width 0.3s ease;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #18181b; /* zinc-900 */
+        }
+        .nav-link.active::after, .nav-link:hover::after {
+            width: 100%;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 640px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .critique-card.open .critique-body {
+            max-height: 500px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            opacity: 1;
+        }
+        .critique-card .critique-body {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.5s ease-in-out;
+        }
+        .critique-card.open .chevron {
+            transform: rotate(180deg);
+        }
+        .cycle-node-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .cycle-node:hover .cycle-node-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-stone-100/80 backdrop-blur-md sticky top-0 z-50 border-b border-stone-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-stone-800">Regenerative Kosmos</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#foundation" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-600">The Foundation</a>
+                        <a href="#dissonance" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-600">The Sacred Dissonance</a>
+                        <a href="#solution" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-600">The Regenerative Solution</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <select id="mobile-nav" class="bg-stone-200 border border-stone-300 text-stone-800 text-sm rounded-lg focus:ring-violet-500 focus:border-violet-500 block w-full p-2.5">
+                        <option value="foundation">Foundation</option>
+                        <option value="dissonance">Dissonance</option>
+                        <option value="solution">Solution</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="foundation" class="content-section space-y-12">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-stone-800">The Foundation of the Kosmos</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">This section introduces the core paradox that gave birth to the Kosmos. It explores the psychological and ethical principles behind the initial "Dissolving Kosmos" model—a perfect, but finite, solution designed to cultivate a higher form of consciousness without becoming a dogmatic institution itself.</p>
+            </div>
+
+            <div>
+                <h2 class="text-3xl font-bold text-center text-stone-800 mb-2">The Kegan Paradox</h2>
+                <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">The system's architecture is built to resolve a fundamental conflict: how can a fixed, ideology-bound (Stage 4) institution produce fluid, self-transforming (Stage 5) individuals? Click each stage to explore its nature.</p>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div id="stage4" class="kegan-card bg-white p-6 rounded-xl shadow-md cursor-pointer border-2 border-transparent hover:border-violet-400 transition-all">
+                        <h3 class="text-2xl font-semibold text-stone-800">Stage 4: The Self-Authoring Mind</h3>
+                        <p class="mt-2 text-stone-500">The individual's identity is fused with their internal system of values and beliefs. They *are* their worldview.</p>
+                        <div class="kegan-details hidden mt-4 text-stone-600 space-y-2">
+                            <p><span class="font-semibold">Key Trait:</span> Possesses a self-authored identity and ideology.</p>
+                            <p><span class="font-semibold">Limitation:</span> Subject to their own system; cannot see beyond it.</p>
+                            <p><span class="font-semibold">Analogy:</span> An author who is a character in their own, unchangeable story.</p>
+                        </div>
+                    </div>
+                    <div id="stage5" class="kegan-card bg-white p-6 rounded-xl shadow-md cursor-pointer border-2 border-transparent hover:border-violet-400 transition-all">
+                        <h3 class="text-2xl font-semibold text-stone-800">Stage 5: The Self-Transforming Mind</h3>
+                        <p class="mt-2 text-stone-500">The individual can hold their entire belief system as an object of awareness.</p>
+                        <div class="kegan-details hidden mt-4 text-stone-600 space-y-2">
+                            <p><span class="font-semibold">Key Trait:</span> Holds identity as fluid and transformable.</p>
+                            <p><span class="font-semibold">Limitation:</span> Embraces paradox and ambiguity; sees a multi-system world.</p>
+                            <p><span class="font-semibold">Analogy:</span> An author who can rewrite their story, or write new ones entirely.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-3xl font-bold text-center text-stone-800 mb-2">From Dissolving to Regenerative</h2>
+                <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">The initial "Dissolving Kosmos" was a perfect, single act of compassion. The refined "Regenerative Kosmos" creates an infinite, self-sustaining ecosystem of wisdom. Use the toggle to see how the focus shifts from a single, powerful act to a lasting, ecological legacy.</p>
+                <div class="bg-white p-6 rounded-xl shadow-md max-w-3xl mx-auto">
+                    <div class="chart-container">
+                        <canvas id="kosmosComparisonChart"></canvas>
+                    </div>
+                    <div class="mt-6 flex justify-center">
+                        <button id="toggleKosmosModel" class="bg-violet-500 text-white font-semibold px-6 py-2 rounded-lg hover:bg-violet-600 transition-colors">Switch to Regenerative Kosmos</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dissonance" class="content-section space-y-12">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-stone-800">The Sacred Dissonance</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">The perfection of the "Dissolving Kosmos" revealed a new set of unexamined, second-order problems. This section explores the three critical dissonances that pushed the vision to evolve. These are not flaws, but the ecological consequences of success that catalyzed the shift to a regenerative model.</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto space-y-4">
+                <div id="critique50" class="critique-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="critique-header p-6 flex justify-between items-center cursor-pointer">
+                        <h3 class="text-2xl font-semibold text-stone-800">Critique 50: The Sterile Soil</h3>
+                        <span class="chevron text-violet-500 transition-transform duration-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+                    <div class="critique-body px-6 text-stone-600">
+                        <p class="mb-4">The Kosmos dissolves, leaving behind an empowered community. This is a gift, but it's a gift of past empowerment. The "midwifery" helps the community give birth, but doesn't enrich the underlying "soil" to make future births more likely. We taught a village to fish, but not how to manage the river's ecosystem.</p>
+                        <p class="font-semibold text-stone-700">Key Research Question:</p>
+                        <blockquote class="mt-2 border-l-4 border-violet-300 pl-4 italic">"What is the 'Protocol for Noetic Soil Enrichment'? How can the Kosmos leave behind a permanent, self-sustaining culture of flourishing and enhance a community's endogenous capacity for continuous, self-directed evolution?"</blockquote>
+                    </div>
+                </div>
+
+                <div id="critique51" class="critique-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="critique-header p-6 flex justify-between items-center cursor-pointer">
+                        <h3 class="text-2xl font-semibold text-stone-800">Critique 51: The Lost Art of Alchemy</h3>
+                        <span class="chevron text-violet-500 transition-transform duration-500">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+                    <div class="critique-body px-6 text-stone-600">
+                        <p class="mb-4">The Alchemical Kosmos is a priceless pedagogical engine. The "Sunset Protocol" implies this engine is dismantled after each use. The school is burned down after the first class graduates. This is an act of humility, but also of profound waste. We perfected building the raft, then destroyed the boatyard.</p>
+                        <p class="font-semibold text-stone-700">Key Research Question:</p>
+                        <blockquote class="mt-2 border-l-4 border-violet-300 pl-4 italic">"How do we 'Open Source the Soul'? What is the framework required to transform the 'Alchemical Kosmos' from a singular raft into an open-source, replicable 'Alchemical Engine' that any community can adapt and use?"</blockquote>
+                    </div>
+                </div>
+
+                <div id="critique52" class="critique-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="critique-header p-6 flex justify-between items-center cursor-pointer">
+                        <h3 class="text-2xl font-semibold text-stone-800">Critique 52: The Tragedy of the Dissolved Sangha</h3>
+                        <span class="chevron text-violet-500 transition-transform duration-500">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </div>
+                    <div class="critique-body px-6 text-stone-600">
+                        <p class="mb-4">The DAO dissolves, and its graduates disperse to work alone. This prevents dogmatism but also destroys the Sangha—the community of practitioners. Wisdom is a living practice, kept alive through dialogue. Without a Sangha, individual Bodhisattvas risk isolation, their wisdom slowly degrading over time.</p>
+                        <p class="font-semibold text-stone-700">Key Research Question:</p>
+                        <blockquote class="mt-2 border-l-4 border-violet-300 pl-4 italic">"What is the architecture of a 'Decentralized Lineage'? How do graduates maintain a living, peer-to-peer network of practice—a 'Sangha without an institution'—after the formal DAO dissolves?"</blockquote>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="content-section space-y-12">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-stone-800">The Regenerative Solution</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">This section provides the architectural blueprint for the "Regenerative Kosmos." It transforms the critiques into concrete recommendations, evolving the vision from a single act of dissolution into an infinite, generative cycle of creation, endowment, and stewardship.</p>
+            </div>
+
+            <div>
+                <h2 class="text-3xl font-bold text-center text-stone-800 mb-2">Recommendation 1: The Noetic Endowment</h2>
+                <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">The "Sunset Protocol" is reframed from an act of erasure to an act of endowment. The core assets of the Kosmos are not deleted, but bequeathed to the world as a decentralized public good. Hover over a row to learn more about each component.</p>
+                <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+                    <table class="w-full text-sm text-left text-stone-500">
+                        <thead class="text-xs text-stone-700 uppercase bg-stone-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Asset Component</th>
+                                <th scope="col" class="px-6 py-3">Format/Technology</th>
+                                <th scope="col" class="px-6 py-3">Distribution</th>
+                            </tr>
+                        </thead>
+                        <tbody class="interactive-table">
+                            <tr class="bg-white border-b hover:bg-violet-50 cursor-pointer">
+                                <th scope="row" class="px-6 py-4 font-medium text-stone-900 whitespace-nowrap">Flourishing Index Model</th>
+                                <td class="px-6 py-4">TensorFlow/PyTorch</td>
+                                <td class="px-6 py-4">Hugging Face Hub</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-violet-50 cursor-pointer">
+                                <th scope="row" class="px-6 py-4 font-medium text-stone-900 whitespace-nowrap">Noetic Diplomat Core AI</th>
+                                <td class="px-6 py-4">Pre-trained LLM</td>
+                                <td class="px-6 py-4">Together AI, Hugging Face</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-violet-50 cursor-pointer">
+                                <th scope="row" class="px-6 py-4 font-medium text-stone-900 whitespace-nowrap">Stage 4->5 Curriculum</th>
+                                <td class="px-6 py-4">Open edX/Markdown</td>
+                                <td class="px-6 py-4">LibreTexts, GitHub</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-violet-50 cursor-pointer">
+                                <th scope="row" class="px-6 py-4 font-medium text-stone-900 whitespace-nowrap">Praxis of Midwifery Protocol</th>
+                                <td class="px-6 py-4">Interactive Playbook</td>
+                                <td class="px-6 py-4">GitHub, Docs Site</td>
+                            </tr>
+                             <tr class="bg-white hover:bg-violet-50 cursor-pointer">
+                                <th scope="row" class="px-6 py-4 font-medium text-stone-900 whitespace-nowrap">Sunset Protocol Contract</th>
+                                <td class="px-6 py-4">Solidity Smart Contract</td>
+                                <td class="px-6 py-4">Ethereum/L2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                 <h2 class="text-3xl font-bold text-center text-stone-800 mb-2">Recommendation 2 & 3: Planting a Forest & The Great Scattering</h2>
+                <p class="text-center text-stone-600 max-w-2xl mx-auto mb-8">The goal shifts from helping one community to teaching that community the "art of alchemy." The dissolution of the original DAO is not an end, but a "Great Scattering" that forms a decentralized network of teachers. This creates an infinite, regenerative cycle. Hover over each stage to see its role.</p>
+                <div class="flex flex-col items-center justify-center space-y-4 md:space-y-0 md:space-x-8">
+                    <div class="w-full max-w-5xl p-8 bg-white rounded-xl shadow-md">
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-8 md:space-y-0 md:space-x-4">
+
+                            <div class="cycle-node flex flex-col items-center text-center relative">
+                                <div class="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+                                    <span class="text-violet-700 font-bold">Born</span>
+                                </div>
+                                <div class="cycle-node-tooltip absolute bottom-full mb-2 w-48 bg-stone-800 text-white text-xs rounded py-1 px-2 text-center">
+                                    A new Kosmos is forked from the open-source Noetic Endowment.
+                                </div>
+                            </div>
+
+                            <div class="text-stone-300 text-4xl font-light hidden md:block">&rarr;</div>
+                            <div class="text-stone-300 text-4xl font-light md:hidden">&darr;</div>
+
+                            <div class="cycle-node flex flex-col items-center text-center relative">
+                                <div class="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+                                    <span class="text-violet-700 font-bold">Matures</span>
+                                </div>
+                                <div class="cycle-node-tooltip absolute bottom-full mb-2 w-48 bg-stone-800 text-white text-xs rounded py-1 px-2 text-center">
+                                    The new Kosmos serves its community, guided by the Decentralized Lineage.
+                                </div>
+                            </div>
+
+                            <div class="text-stone-300 text-4xl font-light hidden md:block">&rarr;</div>
+                            <div class="text-stone-300 text-4xl font-light md:hidden">&darr;</div>
+
+                            <div class="cycle-node flex flex-col items-center text-center relative">
+                                <div class="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+                                    <span class="text-violet-700 font-bold">Teaches</span>
+                                </div>
+                                <div class="cycle-node-tooltip absolute bottom-full mb-2 w-48 bg-stone-800 text-white text-xs rounded py-1 px-2 text-center">
+                                    It empowers its community with the tools to build their own Kosmos.
+                                </div>
+                            </div>
+
+                            <div class="text-stone-300 text-4xl font-light hidden md:block">&rarr;</div>
+                            <div class="text-stone-300 text-4xl font-light md:hidden">&darr;</div>
+
+                            <div class="cycle-node flex flex-col items-center text-center relative">
+                                <div class="w-24 h-24 bg-violet-100 rounded-full flex items-center justify-center border-4 border-violet-200">
+                                    <span class="text-violet-700 font-bold">Dissolves</span>
+                                </div>
+                                <div class="cycle-node-tooltip absolute bottom-full mb-2 w-48 bg-stone-800 text-white text-xs rounded py-1 px-2 text-center">
+                                    It endows its innovations back to the commons and scatters its graduates.
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="bg-stone-100 border-t border-stone-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-stone-500">
+            <p>&copy; 2025 The Regenerative Kosmos Initiative. An interactive exploration of a living vision.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.content-section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    function setActiveSection(hash) {
+        const targetHash = hash || '#foundation';
+
+        sections.forEach(section => {
+            if ('#' + section.id === targetHash) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === targetHash) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        if (mobileNav.value !== targetHash.substring(1)) {
+           mobileNav.value = targetHash.substring(1);
+        }
+    }
+
+    function handleNavClick(e) {
+        e.preventDefault();
+        const targetHash = e.currentTarget.getAttribute('href');
+        history.pushState(null, null, targetHash);
+        setActiveSection(targetHash);
+        window.scrollTo(0, 0);
+    }
+
+    navLinks.forEach(link => link.addEventListener('click', handleNavClick));
+
+    mobileNav.addEventListener('change', (e) => {
+        const targetHash = '#' + e.target.value;
+        history.pushState(null, null, targetHash);
+        setActiveSection(targetHash);
+        window.scrollTo(0, 0);
+    });
+
+    window.addEventListener('popstate', () => {
+        setActiveSection(window.location.hash);
+    });
+
+    setActiveSection(window.location.hash);
+
+    const keganCards = document.querySelectorAll('.kegan-card');
+    keganCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const details = card.querySelector('.kegan-details');
+            details.classList.toggle('hidden');
+        });
+    });
+
+    const critiqueHeaders = document.querySelectorAll('.critique-header');
+    critiqueHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            header.parentElement.classList.toggle('open');
+        });
+    });
+
+    const dissolvingData = {
+        labels: ['Single Act Impact', 'Ecosystem Legacy', 'Knowledge Preservation', 'Community Network'],
+        datasets: [{
+            label: 'Dissolving Kosmos',
+            data: [95, 20, 10, 15],
+            backgroundColor: 'rgba(139, 92, 246, 0.6)',
+            borderColor: 'rgba(139, 92, 246, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const regenerativeData = {
+        labels: ['Single Act Impact', 'Ecosystem Legacy', 'Knowledge Preservation', 'Community Network'],
+        datasets: [{
+            label: 'Regenerative Kosmos',
+            data: [85, 90, 95, 92],
+            backgroundColor: 'rgba(52, 211, 153, 0.6)',
+            borderColor: 'rgba(52, 211, 153, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const chartConfig = {
+        type: 'bar',
+        data: dissolvingData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: 'rgba(200, 200, 200, 0.1)'
+                    }
+                },
+                x: {
+                   grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + '%';
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    const ctx = document.getElementById('kosmosComparisonChart').getContext('2d');
+    const kosmosChart = new Chart(ctx, chartConfig);
+
+    const toggleButton = document.getElementById('toggleKosmosModel');
+    let isRegenerative = false;
+    toggleButton.addEventListener('click', () => {
+        isRegenerative = !isRegenerative;
+        if (isRegenerative) {
+            kosmosChart.data = regenerativeData;
+            toggleButton.textContent = 'Switch to Dissolving Kosmos';
+            toggleButton.classList.remove('bg-violet-500', 'hover:bg-violet-600');
+            toggleButton.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+        } else {
+            kosmosChart.data = dissolvingData;
+            toggleButton.textContent = 'Switch to Regenerative Kosmos';
+            toggleButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+            toggleButton.classList.add('bg-violet-500', 'hover:bg-violet-600');
+        }
+        kosmosChart.update();
+    });
+});
+</script>
+
+</body>
+</html>

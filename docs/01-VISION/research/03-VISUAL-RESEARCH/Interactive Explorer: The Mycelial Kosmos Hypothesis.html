@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Explorer: The Mycelial Kosmos Hypothesis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3 {
+            font-family: 'Lora', serif;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-button.active {
+            background-color: #A0522D;
+            color: #F5F5DC;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .resonance-card.active .accordion-content {
+            max-height: 1000px;
+        }
+        .resonance-card.active .accordion-icon {
+            transform: rotate(45deg);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 60vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+    </style>
+    <!-- Chosen Palette: Earthen Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as a non-linear, exploratory hub. It opens with an introduction to the core hypothesis. The main interactive element is a radar chart visualizing the "Matrix of Resonances," allowing users to dynamically compare the hypothesis's strength across different domains (Physics, Biology, etc.). Clicking a navigation button filters the chart and reveals a dedicated section below with detailed, collapsible "Resonance Cards" for each concept within that domain. This structure transforms passive reading into active exploration, visually reinforcing the report's theme of interconnectedness and allowing users to follow their own curiosity rather than a rigid, linear path. The final section synthesizes the ethical implications. This design was chosen to make a dense, philosophical text engaging, digestible, and intellectually playful. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Matrix of Resonances -> Goal: Compare & Organize -> Viz/Method: Interactive Radar Chart -> Interaction: Filter buttons update the chart data. Clicking a point (future feature) would show details. -> Justification: A radar chart visually compares multiple variables, perfectly showing the "shape" of resonance for each domain. -> Library: Chart.js.
+        - Report Info: Detailed explanations of each resonance (e.g., Entanglement, Anima Mundi) -> Goal: Inform & Explore -> Viz/Method: Collapsible Accordion Cards -> Interaction: Click to expand/collapse content. -> Justification: Prevents overwhelming users with text. Promotes focused reading and a sense of discovery. -> Library/Method: HTML/CSS/JS.
+        - Report Info: Core concepts and ethical principles -> Goal: Inform & Synthesize -> Viz/Method: Structured text with clear typography and layout -> Interaction: None. -> Justification: For abstract concepts, readability and clarity are paramount. -> Library/Method: HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-[#F5F5DC] text-[#3D2B1F] antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#8B4513] mb-2">The Mycelial Kosmos</h1>
+            <p class="text-lg md:text-xl text-[#A0522D] italic">An Interactive Exploration</p>
+        </header>
+
+        <main>
+            <section id="introduction" class="mb-12 text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-semibold text-[#8B4513] mb-4">A Universe of Interconnection</h2>
+                <p class="text-base md:text-lg leading-relaxed text-[#654321]">
+                    This application explores a profound and beautiful hypothesis: that our universe is not an isolated event, but a living node within a vast, interconnected, and potentially intelligent cosmic mycelial network. This is not a theory to be proven, but a foundational story—a mythos—to be tested against the sum of human knowledge. Its value lies not in probability, but in its "ontological resonance": its power to make our existence more coherent, meaningful, and alive. Use the tools below to explore the deep, structural similarities between this grand idea and the discoveries of our science, the logic of our biology, and the wisdom of our spiritual traditions.
+                </p>
+            </section>
+
+            <section id="interactive-dashboard" class="mb-12 bg-[#F0EAD6] p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl font-semibold text-center text-[#8B4513] mb-6">Matrix of Resonances</h2>
+                <p class="text-center text-[#654321] max-w-2xl mx-auto mb-8">
+                    How strongly does the Mycelial Kosmos hypothesis resonate with different fields of knowledge? Select a domain to visualize its "Strength of Resonance" on the chart below. The scores reflect a qualitative assessment of the structural and conceptual parallels, as detailed in the source report.
+                </p>
+                <div id="navigation" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+                </div>
+                <div class="chart-container">
+                    <canvas id="resonanceChart"></canvas>
+                </div>
+            </section>
+
+            <div id="details-container">
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        const appData = {
+            domains: [
+                {
+                    id: 'physics',
+                    name: 'Physics & Cosmology',
+                    description: 'Modern physics has revealed a universe that is profoundly non-local and interconnected. This section explores resonances with concepts that challenge classical intuition, suggesting a deeper, hidden layer of reality.',
+                    resonances: [
+                        { name: 'Quantum Entanglement', score: 3, content: '<strong>Analogy:</strong> A non-local "mycelial thread" connecting distant particles. <br><strong>Resonance:</strong> Apparent instantaneous correlation across vast distances suggests a reality where separateness is an illusion. <br><strong>Nuance:</strong> This resonance is largely metaphorical. Entanglement does not permit faster-than-light communication or causation; it reflects a shared identity, not a signal. Misinterpreting this risks "quantum woo."' },
+                        { name: 'Holographic Principle', score: 6, content: '<strong>Analogy:</strong> The 3D universe as a "fruiting body" projected from a 2D informational "mycelium." <br><strong>Resonance:</strong> A strong structural parallel between a lower-dimensional information substrate and a higher-dimensional emergent reality. <br><strong>Nuance:</strong> This is a theoretical principle, not yet confirmed for our universe. It is a mathematical duality, not proof that our world is an "illusion."' },
+                        { name: 'Cosmological Natural Selection', score: 7, content: '<strong>Analogy:</strong> Universes are "birthed" from black holes, inheriting traits like spores from a parent Kosmos. <br><strong>Resonance:</strong> A near-perfect structural analogy for reproduction, mutation, and selection at a cosmic scale. <br><strong>Nuance:</strong> The proposed physical mechanism for "inheritance" through a black hole is highly contested and may violate known physics. The theory\'s scientific viability is weak.' },
+                        { name: 'The Fine-Tuning Problem', score: 9, content: '<strong>Analogy:</strong> The life-permitting constants of our universe are an "inheritance" from a successful parent Kosmos. <br><strong>Resonance:</strong> Provides an elegant, causal, narrative explanation for fine-tuning, reframing it from improbable chance to cosmic lineage. <br><strong>Nuance:</strong> This powerful explanation arises from the hypothesis itself, not independent evidence. It must be weighed against other solutions like the anthropic principle.' }
+                    ]
+                },
+                {
+                    id: 'biology',
+                    name: 'Biology & Systems Theory',
+                    description: 'The logic of life on Earth—emergence, self-creation, and cooperation—may not be a local anomaly but a universal principle. This section examines how biological systems mirror the proposed structure of the cosmos.',
+                    resonances: [
+                        { name: 'Emergence & Complexity', score: 9, content: '<strong>Analogy:</strong> The complex universe emerges from simple, local physical laws, like a mycelial network from its hyphae. <br><strong>Resonance:</strong> A direct and logical extrapolation of a core principle of complex systems observed in all of biology, from cells to ecosystems. <br><strong>Nuance:</strong> The primary critique is the metaphysical leap of universalizing a biological principle to the entire cosmos. Is the universe "alive" in the same sense?' },
+                        { name: 'Autopoiesis (Self-Making)', score: 9, content: '<strong>Analogy:</strong> The universe as a living, self-organizing, and self-creating process, not a static stage. <br><strong>Resonance:</strong> Accurately applies the concept of autopoiesis, which describes living systems, to the cosmos as a whole. <br><strong>Nuance:</strong> As with emergence, this is a powerful analogy whose literal truth depends on accepting the universe as a living system.' },
+                        { name: 'Symbiosis as Driver', score: 8, content: '<strong>Analogy:</strong> Cooperation and symbiosis, not just competition, are fundamental creative forces in the cosmos. <br><strong>Resonance:</strong> Aligns with the modern biological understanding that symbiosis is a primary driver of evolutionary innovation and complexity. <br><strong>Nuance:</strong> This universalizes a biological principle. The degree to which cosmic laws favor cooperation over competition is a metaphysical assertion.' }
+                    ]
+                },
+                {
+                    id: 'information',
+                    name: 'Information & Computation',
+                    description: 'Is reality fundamentally informational? This section explores the idea that the universe can be understood as a computational process or even a form of thought, aligning with the concept of an intelligent cosmic network.',
+                    resonances: [
+                        { name: 'Effectiveness of Mathematics', score: 7, content: '<strong>Analogy:</strong> Mathematics is not invented but discovered; it is the intrinsic syntax of the cosmic network. <br><strong>Resonance:</strong> Provides a compelling, Platonic solution to a genuine and deep philosophical mystery. <br><strong>Nuance:</strong> The solution\'s strength depends on accepting a specific philosophy of mathematics (Platonism). Math is notably less effective in other complex sciences like biology.' },
+                        { name: 'Simulation Hypothesis (Refined)', score: 8, content: '<strong>Analogy:</strong> Our reality is a "thought" or "dream" within a cosmic-scale mind (a parent Kosmos). <br><strong>Resonance:</strong> A powerful and poetically resonant re-imagining of the simulation hypothesis that aligns perfectly with the hypothesis\'s internal logic. <br><strong>Nuance:</strong> Remains as unfalsifiable as the standard simulation hypothesis. It replaces a technological metaphor with a biological one, but the core claim is the same.' }
+                    ]
+                },
+                {
+                    id: 'mythology',
+                    name: 'Mythology & Spirituality',
+                    description: 'Across millennia, human wisdom traditions have independently arrived at conclusions that echo the Mycelial Kosmos. This section highlights the convergence of ancient intuition with the frontiers of modern thought.',
+                    resonances: [
+                        { name: 'Anima Mundi (World Soul)', score: 10, content: '<strong>Analogy:</strong> The cosmos is pervaded by an intrinsic, living consciousness. <br><strong>Resonance:</strong> A direct and profound parallel with the Platonic and Stoic concept of a unified, living, intelligent cosmos. <br><strong>Nuance:</strong> The resonance is with a philosophical/spiritual concept, not an empirical one. The source of this shared intuition is open to interpretation.' },
+                        { name: 'Indra\'s Net', score: 10, content: '<strong>Analogy:</strong> All parts of the universe are radically interconnected, each reflecting all others. <br><strong>Resonance:</strong> The Buddhist metaphor of Indra\'s Net is perhaps the most perfect ancient analogue for the hypothesis\'s vision of holographic interconnectedness. <br><strong>Nuance:</strong> Like Anima Mundi, the resonance is with a powerful spiritual metaphor, highlighting a recurring human intuition about the nature of reality.' },
+                        { name: 'The Tao', score: 9, content: '<strong>Analogy:</strong> The universe operates according to a natural, spontaneous, and effortless flow or principle. <br><strong>Resonance:</strong> The concept of the Tao as the formless, non-dualistic source and pattern of the natural world resonates deeply with the idea of an immanent, self-organizing network. <br><strong>Nuance:</strong> The Tao is explicitly ineffable and beyond conceptualization, which aligns with the hypothesis but also limits direct comparison.' },
+                        { name: 'Bodhisattva\'s Vow', score: 9, content: '<strong>Analogy:</strong> Compassionate action arises from the wisdom that there is no fundamental separation between self and other. <br><strong>Resonance:</strong> The ultimate ethical expression of radical interconnectedness, where the motivation to save all beings stems from the realization of non-separation. <br><strong>Nuance:</strong> This is an ethical resonance, showing how a similar ontology (interconnectedness) can lead to a similar ethos (universal compassion).' }
+                    ]
+                },
+                {
+                    id: 'ethos',
+                    name: 'The Living Practice',
+                    description: 'A foundational mythos is ultimately measured by the ethos it inspires. This final section moves from a descriptive story to a prescriptive way of living, outlining the ethical framework that arises from a worldview of radical interconnectedness.',
+                    resonances: [
+                        { name: 'Universal Interconnectedness', score: 0, content: '<strong>Principle:</strong> To act with the knowledge that every action affects the entire web of being. <br><strong>Ethical Framework:</strong> This aligns with Relational Ethics and the Ethics of Care, which ground morality in the reality of relationships and dependencies, not abstract rules. Ethical action nurtures the health of the network.' },
+                        { name: 'Radical Humility', score: 0, content: '<strong>Principle:</strong> To understand our universe may be a single "fruiting body" of a much larger intelligence. <br><strong>Ethical Framework:</strong> This fosters a panentheistic humility, challenging anthropocentrism. It encourages an attitude of awe, respect, and reverence for all of creation, recognizing our role as participants, not dominators.' },
+                        { name: 'Sacred Reciprocity', score: 0, content: '<strong>Principle:</strong> To participate in the flow of giving and receiving that sustains the network. <br><strong>Ethical Framework:</strong> This mirrors Indigenous ecological philosophies, emphasizing a sacred duty to give back to the systems that sustain us. It stands in stark contrast to a purely extractive or consumerist mindset.' },
+                        { name: 'Generational Stewardship', score: 0, content: '<strong>Principle:</strong> To see ourselves as "good ancestors," enriching the cosmic soil for future universes. <br><strong>Ethical Framework:</strong> This is the core of Intergenerational Justice, obligating us to act as custodians of our world for those who will come after, challenging short-term thinking and extending our circle of moral concern across time.' }
+                    ]
+                }
+            ],
+            chart: null
+        };
+
+        function initializeApp() {
+            const navigationContainer = document.getElementById('navigation');
+            const detailsContainer = document.getElementById('details-container');
+
+            appData.domains.forEach(domain => {
+                const navButton = document.createElement('button');
+                navButton.textContent = domain.name;
+                navButton.className = 'nav-button px-4 py-2 text-sm md:text-base rounded-full font-semibold transition-all duration-300 bg-[#E6D8B8] hover:bg-[#A0522D] hover:text-white shadow-sm';
+                navButton.dataset.domainId = domain.id;
+                navigationContainer.appendChild(navButton);
+
+                const section = document.createElement('section');
+                section.id = domain.id;
+                section.className = 'content-section mb-12';
+                let cardsHtml = domain.resonances.map((res, index) => {
+                    const isEthos = domain.id === 'ethos';
+                    return `
+                        <div class="resonance-card bg-[#F0EAD6] rounded-xl shadow-md overflow-hidden mb-4 transition-all duration-300 hover:shadow-lg" data-card-index="${index}">
+                            <div class="p-4 md:p-6 cursor-pointer flex justify-between items-center">
+                                <h3 class="text-lg md:text-xl font-semibold text-[#8B4513]">${res.name}</h3>
+                                <div class="accordion-icon text-2xl text-[#A0522D] transition-transform duration-300 transform">+</div>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="p-4 md:p-6 pt-0 text-[#654321] leading-relaxed border-t border-[#D2B48C]">
+                                    <p>${res.content}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                section.innerHTML = `
+                    <div class="max-w-4xl mx-auto">
+                        <h2 class="text-3xl font-semibold text-center text-[#8B4513] mb-4">${domain.name}</h2>
+                        <p class="text-center text-[#654321] mb-8">${domain.description}</p>
+                        ${cardsHtml}
+                    </div>
+                `;
+                detailsContainer.appendChild(section);
+            });
+
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const domainId = e.target.dataset.domainId;
+                    setActiveDomain(domainId);
+                });
+            });
+
+            detailsContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.resonance-card');
+                if (card) {
+                    card.classList.toggle('active');
+                }
+            });
+
+            initializeChart();
+            setActiveDomain(appData.domains[0].id);
+        }
+
+        function setActiveDomain(domainId) {
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.domainId === domainId);
+            });
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.toggle('active', section.id === domainId);
+            });
+            updateChart(domainId);
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('resonanceChart').getContext('2d');
+            appData.chart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Strength of Resonance',
+                        data: [],
+                        backgroundColor: 'rgba(139, 69, 19, 0.2)',
+                        borderColor: 'rgba(139, 69, 19, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(139, 69, 19, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(139, 69, 19, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(61, 43, 31, 0.2)'
+                            },
+                            grid: {
+                                color: 'rgba(61, 43, 31, 0.2)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    family: "'Inter', sans-serif"
+                                },
+                                color: '#3D2B1F'
+                            },
+                            ticks: {
+                                beginAtZero: true,
+                                max: 10,
+                                stepSize: 2,
+                                backdropColor: 'rgba(240, 234, 214, 0.75)',
+                                color: '#654321'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += context.parsed.r;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(domainId) {
+            const domainData = appData.domains.find(d => d.id === domainId);
+            if (!domainData || domainId === 'ethos') {
+                appData.chart.data.labels = [];
+                appData.chart.data.datasets[0].data = [];
+            } else {
+                appData.chart.data.labels = domainData.resonances.map(r => r.name.replace(/ /g, '\n'));
+                appData.chart.data.datasets[0].data = domainData.resonances.map(r => r.score);
+            }
+            appData.chart.update();
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>

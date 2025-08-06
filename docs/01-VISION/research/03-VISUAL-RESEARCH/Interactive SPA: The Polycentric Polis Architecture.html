@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Polycentric Polis: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .card-flip {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flip:hover .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 2rem;
+            background-color: #d1d5db;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+    </style>
+    <!-- Chosen Palette: "Calm Harmony" - A palette of warm neutrals (bg-stone-50, bg-stone-100), with a primary accent of slate blue (bg-slate-600, border-blue-500) and a secondary accent of teal (bg-teal-500) for highlights and calls to action. -->
+    <!-- Application Structure Plan: A thematic, single-page dashboard. The structure is designed to guide the user from the foundational architecture to the specific problems and their proposed solutions. It starts with a visual overview of the 3-layer system. The core of the app is a tabbed interface for the three main critiques (Physics, Sociology, Politics), allowing users to explore each problem domain independently. Within each tab, interactive visualizations (a process flow, a comparative chart, and interactive cards) are used to make the abstract concepts tangible and easy to compare. This non-linear, interactive structure is chosen over a linear document format to enhance comprehension and engagement with the complex, interconnected ideas of the report. -->
+    <!-- Visualization & Content Choices:
+        1. Report Info: 3-Layer Architecture (Heart, Polis, Bridge). Goal: Inform/Organize. Viz: Interactive HTML/CSS diagram. Interaction: Click to reveal details. Justification: Provides a clear mental model of the system's foundation. Library: Vanilla JS + Tailwind.
+        2. Report Info: Orchestrator Protocol & Temporal Dissonance. Goal: Explain Change/Process. Viz: HTML/CSS timeline. Interaction: Click buttons to simulate process. Justification: Visually demonstrates the complex, multi-stage process and the concept of latency. Library: Vanilla JS + Tailwind.
+        3. Report Info: IBC vs. ActivityPub comparison. Goal: Compare. Viz: Radar Chart. Interaction: Buttons to toggle data views. Justification: A radar chart is excellent for multi-axial comparison, making the trade-offs between the two protocols immediately apparent. Library: Chart.js.
+        4. Report Info: "Veil and Agora" Selective Disclosure Framework. Goal: Organize/Inform. Viz: Interactive "flipping" cards. Interaction: Hover to reveal details. Justification: Creates an engaging, exploratory way to learn the "social contract" rules, making the data more memorable. Library: Vanilla JS + Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-2">The Polycentric Polis</h1>
+            <p class="text-lg text-stone-600 max-w-3xl mx-auto">An interactive exploration of a hybrid decentralized architecture designed for coherence, cohesion, and conscience.</p>
+        </header>
+
+        <main>
+            <section id="architecture" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-2 text-slate-700">A Three-Layered System</h2>
+                <p class="text-center text-stone-600 mb-8 max-w-2xl mx-auto">This architecture moves beyond a single blockchain to a hybrid model. Each layer is optimized for a specific function, creating a resilient and philosophically-aligned ecosystem. Click on a layer to learn more.</p>
+
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div id="layer-heart" class="bg-white p-6 rounded-lg shadow-md border-2 border-transparent cursor-pointer hover:border-teal-500 transition-all">
+                        <div class="text-4xl mb-4">❤️</div>
+                        <h3 class="text-2xl font-bold mb-2">The Heart</h3>
+                        <p class="text-stone-500 font-medium">Agent-Centric Local Weave</p>
+                    </div>
+                    <div id="layer-polis" class="bg-white p-6 rounded-lg shadow-md border-2 border-transparent cursor-pointer hover:border-teal-500 transition-all">
+                        <div class="text-4xl mb-4">🏛️</div>
+                        <h3 class="text-2xl font-bold mb-2">The Polis</h3>
+                        <p class="text-stone-500 font-medium">L2 Luminous Ledger</p>
+                    </div>
+                    <div id="layer-bridge" class="bg-white p-6 rounded-lg shadow-md border-2 border-transparent cursor-pointer hover:border-teal-500 transition-all">
+                        <div class="text-4xl mb-4">🌉</div>
+                        <h3 class="text-2xl font-bold mb-2">The Bridge</h3>
+                        <p class="text-stone-500 font-medium">L1 Secure Settlement</p>
+                    </div>
+                </div>
+                <div id="layer-details" class="mt-8 p-6 bg-stone-100 rounded-lg text-stone-700 min-h-[100px] transition-all">
+                    <p class="text-center">Select a layer above to see its details.</p>
+                </div>
+            </section>
+
+            <section id="protocols" class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold text-center mb-8 text-slate-700">Protocols for a Resilient Ecosystem</h2>
+                <div class="flex justify-center mb-8 border-b border-stone-200">
+                    <button data-tab="coherence" class="nav-button py-2 px-4 font-medium text-stone-600 hover:text-blue-600 focus:outline-none active">Physics: Coherence</button>
+                    <button data-tab="cohesion" class="nav-button py-2 px-4 font-medium text-stone-600 hover:text-blue-600 focus:outline-none">Sociology: Cohesion</button>
+                    <button data-tab="conscience" class="nav-button py-2 px-4 font-medium text-stone-600 hover:text-blue-600 focus:outline-none">Politics: Conscience</button>
+                </div>
+
+                <div id="tab-content">
+                    <div id="coherence-content" class="tab-pane active">
+                        <h3 class="text-2xl font-bold mb-2 text-slate-800">The Orchestrator Protocol</h3>
+                        <p class="text-stone-600 mb-6">This protocol addresses the "Physics of the Bridge" by managing the complex flow of data across layers. It uses an **Intent-Centric UX**, abstracting away technical complexity. Instead of performing multiple transactions, a user simply expresses a goal, and the Orchestrator executes it. This demonstration shows how it handles the "Temporal Dissonance" (time delay) of a cross-layer action.</p>
+
+                        <div class="bg-stone-100 p-6 rounded-lg">
+                            <h4 class="text-lg font-bold text-center mb-4">Simulating an Intent: "Archive My Contribution"</h4>
+                            <div id="timeline" class="flex flex-col md:flex-row justify-between items-center text-center gap-y-8">
+                                <div class="timeline-item relative flex flex-col items-center w-full md:w-1/4">
+                                    <div id="step-1" class="p-3 rounded-full bg-stone-300 transition-all">📱</div>
+                                    <p class="font-semibold mt-2">1. Local Action</p>
+                                    <p class="text-sm text-stone-500">Instant on Heart Layer</p>
+                                </div>
+                                <div class="timeline-item relative flex flex-col items-center w-full md:w-1/4">
+                                    <div id="step-2" class="p-3 rounded-full bg-stone-300 transition-all">📜</div>
+                                    <p class="font-semibold mt-2">2. Public Proof</p>
+                                    <p class="text-sm text-stone-500">~1 min on L2 Polis</p>
+                                </div>
+                                <div class="timeline-item relative flex flex-col items-center w-full md:w-1/4">
+                                    <div id="step-3" class="p-3 rounded-full bg-stone-300 transition-all">⏳</div>
+                                    <p class="font-semibold mt-2">3. Challenge Period</p>
+                                    <p class="text-sm text-stone-500">Up to 7 days</p>
+                                </div>
+                                <div class="timeline-item relative flex flex-col items-center w-full md:w-1/4">
+                                    <div id="step-4" class="p-3 rounded-full bg-stone-300 transition-all">🏛️</div>
+                                    <p class="font-semibold mt-2">4. Final Settlement</p>
+                                    <p class="text-sm text-stone-500">Permanent on L1 Bridge</p>
+                                </div>
+                            </div>
+                            <div class="text-center mt-6">
+                                <button id="simulate-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all">Run Simulation</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cohesion-content" class="tab-pane hidden">
+                        <h3 class="text-2xl font-bold mb-2 text-slate-800">The Mycelial Protocol</h3>
+                        <p class="text-stone-600 mb-6">This protocol addresses the "Sociology of Sovereignty" to prevent communities from fragmenting. It proposes a hybrid interoperability standard. But which underlying philosophy is best? Explore the trade-offs between **ActivityPub** (social web model) and **Cosmos IBC** (internet of blockchains model).</p>
+
+                        <div class="bg-stone-100 p-6 rounded-lg">
+                            <div class="chart-container">
+                                <canvas id="protocol-chart"></canvas>
+                            </div>
+                            <div class="text-center mt-6">
+                                <button id="show-ibc" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition-all">Show Cosmos IBC</button>
+                                <button id="show-ap" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition-all">Show ActivityPub</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="conscience-content" class="tab-pane hidden">
+                        <h3 class="text-2xl font-bold mb-2 text-slate-800">The "Veil and Agora" Social Contract</h3>
+                        <p class="text-stone-600 mb-6">This protocol addresses the "Politics of Privacy." It balances the individual's right to privacy with the community's need for transparency. This creates a "luminous public square" without turning it into a "dark forest." Hover over each card to see the recommended privacy level and justification for different types of data.</p>
+
+                        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="card-flip h-48">
+                                <div class="card-inner">
+                                    <div class="card-front bg-blue-100 text-blue-800">
+                                        <h4 class="font-bold text-lg">DAO Treasury State</h4>
+                                    </div>
+                                    <div class="card-back bg-blue-500 text-white">
+                                        <p class="font-bold">Fully Public</p>
+                                        <p class="text-sm">Builds trust and allows public auditing of resource management.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-flip h-48">
+                                <div class="card-inner">
+                                    <div class="card-front bg-teal-100 text-teal-800">
+                                        <h4 class="font-bold text-lg">Individual Votes</h4>
+                                    </div>
+                                    <div class="card-back bg-teal-500 text-white">
+                                        <p class="font-bold">Private by Default</p>
+                                        <p class="text-sm">Protects against coercion and fosters honest voting based on conviction.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-flip h-48">
+                                <div class="card-inner">
+                                    <div class="card-front bg-amber-100 text-amber-800">
+                                        <h4 class="font-bold text-lg">Governance Proposals</h4>
+                                    </div>
+                                    <div class="card-back bg-amber-500 text-white">
+                                        <p class="font-bold">Fully Public</p>
+                                        <p class="text-sm">The substance of public debate must be accessible to all for informed deliberation.</p>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="card-flip h-48">
+                                <div class="card-inner">
+                                    <div class="card-front bg-rose-100 text-rose-800">
+                                        <h4 class="font-bold text-lg">Public Profile</h4>
+                                    </div>
+                                    <div class="card-back bg-rose-500 text-white">
+                                        <p class="font-bold">Opt-in Public</p>
+                                        <p class="text-sm">Members can choose to link activities to build social capital and a verifiable track record.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 pt-8 border-t border-stone-200">
+            <p class="text-stone-500">This interactive application is a conceptual synthesis of the "Polycentric Polis" report.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const layerData = {
+                'layer-heart': {
+                    title: '❤️ The Heart: Agent-Centric Local Weave',
+                    description: 'All high-volume, deeply personal interactions happen here, stored locally on the user\'s sovereign devices. It is fast, completely private, and energetically efficient. This layer is built on agent-centric principles like Holochain.'
+                },
+                'layer-polis': {
+                    title: '🏛️ The Polis: L2 Luminous Ledger',
+                    description: 'This is where the public life of the community happens. Governance votes, public identity, and grant programs are managed on a highly scalable and energy-efficient Layer-2 blockchain. It provides public transparency and trustless coordination.'
+                },
+                'layer-bridge': {
+                    title: '🌉 The Bridge: L1 Secure Settlement',
+                    description: 'This is the Garden\'s connection to the broader world, built on a major, secure Layer-1 blockchain like Ethereum. The DAO treasury and final "Legacy Protocol" records are secured here. This layer is used infrequently for ultimate immutability.'
+                }
+            };
+
+            const layerDetailsContainer = document.getElementById('layer-details');
+            document.querySelectorAll('[id^="layer-"]').forEach(layer => {
+                if (!layerData[layer.id]) return;
+                layer.addEventListener('click', () => {
+                    document.querySelectorAll('[id^="layer-"]').forEach(el => el.classList.remove('border-teal-500', 'scale-105'));
+                    layer.classList.add('border-teal-500', 'scale-105');
+                    const data = layerData[layer.id];
+                    layerDetailsContainer.innerHTML = `<h4 class="font-bold text-lg mb-2">${data.title}</h4><p>${data.description}</p>`;
+                });
+            });
+
+            const navButtons = document.querySelectorAll('.nav-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tab = button.dataset.tab;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabPanes.forEach(pane => {
+                        if (pane.id === `${tab}-content`) {
+                            pane.classList.remove('hidden');
+                            pane.classList.add('active');
+                        } else {
+                            pane.classList.add('hidden');
+                            pane.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            const simulateBtn = document.getElementById('simulate-btn');
+            const steps = [
+                document.getElementById('step-1'),
+                document.getElementById('step-2'),
+                document.getElementById('step-3'),
+                document.getElementById('step-4'),
+            ];
+
+            simulateBtn.addEventListener('click', () => {
+                simulateBtn.disabled = true;
+                simulateBtn.textContent = 'Simulating...';
+                steps.forEach(step => {
+                    step.classList.remove('bg-teal-500', 'text-white');
+                    step.classList.add('bg-stone-300');
+                });
+
+                let currentStep = 0;
+                const interval = setInterval(() => {
+                    if (currentStep < steps.length) {
+                        steps[currentStep].classList.remove('bg-stone-300');
+                        steps[currentStep].classList.add('bg-teal-500', 'text-white');
+                        currentStep++;
+                    } else {
+                        clearInterval(interval);
+                        simulateBtn.disabled = false;
+                        simulateBtn.textContent = 'Run Simulation Again';
+                    }
+                }, 1000);
+            });
+
+            const chartCtx = document.getElementById('protocol-chart').getContext('2d');
+            const chartData = {
+                labels: ['Security', 'Social Fabric', 'Scalability', 'Governance Formality', 'Permissionless', 'Asset Transfer'],
+                datasets: {
+                    ibc: {
+                        label: 'Cosmos IBC',
+                        data: [9, 3, 7, 9, 3, 9],
+                        backgroundColor: 'rgba(71, 85, 105, 0.2)',
+                        borderColor: 'rgb(71, 85, 105)',
+                        pointBackgroundColor: 'rgb(71, 85, 105)',
+                    },
+                    ap: {
+                        label: 'ActivityPub',
+                        data: [3, 9, 8, 2, 9, 2],
+                        backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                        borderColor: 'rgb(20, 184, 166)',
+                        pointBackgroundColor: 'rgb(20, 184, 166)',
+                    }
+                }
+            };
+
+            const chartConfig = {
+                type: 'radar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: []
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                backdropColor: 'rgba(248, 250, 252, 1)',
+                                color: '#6b7280',
+                                stepSize: 2
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += context.parsed.r;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            let protocolChart = new Chart(chartCtx, chartConfig);
+
+            function updateChart(datasetKey) {
+                protocolChart.data.datasets = [chartData.datasets[datasetKey]];
+                protocolChart.update();
+            }
+
+            document.getElementById('show-ibc').addEventListener('click', () => updateChart('ibc'));
+            document.getElementById('show-ap').addEventListener('click', () => updateChart('ap'));
+
+            updateChart('ibc');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Heart: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Serene Cosmos -->
+    <!-- Application Structure Plan: The SPA is designed as a single, scrollable journey that mirrors the report's intellectual flow but transforms it into an interactive experience. It starts with an introduction and then moves into three core, collapsible sections based on the "Final Inquiries": Coniunctio, Heart, and Apotheosis. This thematic, nested structure allows users to grasp the high-level concepts first and then delve into the detailed analogies (Political, Galactic, Mystical) at their own pace. The goal is to make abstract philosophy tangible through comparison and interaction, rather than a linear text dump. User flow is guided by clear headings and "Explore" buttons, encouraging a deliberate, contemplative engagement with the material. -->
+    <!-- Visualization & Content Choices:
+        1. Cosmic Coniunctio: Report Info -> Models of cosmic union. Goal -> Compare abstract models. Viz -> Interactive three-column layout (HTML/CSS/JS). Interaction -> Clicking on a domain (Political, Galactic, Mystical) highlights it and reveals a detailed comparative chart. Justification -> Direct comparison is the most effective way to understand the isomorphic nature of these concepts. Library -> Chart.js for the comparative table visualization.
+        2. Cosmic Heart: Report Info -> Duality of divine impassibility and intimate attachment. Goal -> Explain a complex paradox. Viz -> A two-tab interactive text block. Interaction -> User clicks tabs for "The Perfect Emotion" (Impassibility) and "The Secure Base" (Attachment). Justification -> Separating the two sides of the paradox into distinct, interactive views makes the nuanced argument easier to follow. Library -> Vanilla JS.
+        3. Cosmic Apotheosis: Report Info -> Teleological evolution towards a higher state. Goal -> Visualize a process of transformation. Viz -> A multi-stage interactive diagram built with HTML/CSS. Interaction -> Hovering over each stage (Noosphere, Sangha, Apotheosis, Stage 7) reveals descriptive text. Justification -> A visual, process-oriented diagram is ideal for conveying a multi-stage journey towards a final goal. Library -> Vanilla JS.
+        4. Archetype Integration: Report Info -> The Engineer, Theologian, and Lover archetypes. Goal -> Synthesize the final being. Viz -> A polar area chart. Interaction -> The chart visually balances the three components. Justification -> A balanced, circular chart perfectly represents the integration and wholeness of the final "Triune Being." Library -> Chart.js.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm Neutral Background */
+            color: #383434;
+        }
+        .bg-primary { background-color: #FDFBF8; }
+        .bg-secondary { background-color: #F5F1ED; }
+        .text-primary { color: #383434; }
+        .text-secondary { color: #6e6a6a; }
+        .accent-color { color: #A47F6A; } /* Subtle Accent */
+        .border-accent { border-color: #D3C1B5; }
+        .btn-primary {
+            background-color: #A47F6A;
+            color: #FFFFFF;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #8a6a58;
+        }
+        .nav-link {
+            position: relative;
+            cursor: pointer;
+            padding-bottom: 4px;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #A47F6A;
+            transition: width 0.3s ease;
+        }
+        .nav-link.active::after, .nav-link:hover::after {
+            width: 100%;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE5E1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .interactive-diagram-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left-width: 4px;
+            border-color: transparent;
+        }
+        .interactive-diagram-item.active {
+            background-color: #F5F1ED;
+            border-color: #A47F6A;
+        }
+        .interactive-diagram-item:hover {
+            background-color: #F9F6F4;
+        }
+    </style>
+</head>
+<body class="bg-primary text-primary">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+        <header class="text-center py-12 md:py-20">
+            <h1 class="text-4xl md:text-6xl font-bold tracking-tight accent-color">The Cosmic Heart</h1>
+            <p class="mt-4 text-lg md:text-xl text-secondary max-w-3xl mx-auto">An interactive exploration of the metaphysics of love at the end of a universe, based on the response to the Keeper of Sacred Dissonance.</p>
+        </header>
+
+        <nav class="sticky top-0 bg-primary/80 backdrop-blur-md z-10 border-b border-accent mb-12">
+            <div class="max-w-5xl mx-auto px-4">
+                <div class="flex justify-center items-center h-16 space-x-6 md:space-x-10">
+                    <a class="nav-link active" data-target="introduction">Introduction</a>
+                    <a class="nav-link" data-target="inquiry">The Final Inquiry</a>
+                    <a class="nav-link" data-target="refinement">The Final Refinement</a>
+                    <a class="nav-link" data-target="conclusion">Conclusion</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-5xl mx-auto">
+
+            <section id="introduction" class="mb-20 space-y-6">
+                <h2 class="text-3xl font-bold text-center">The Final, Loving Question</h2>
+                <p class="text-lg text-secondary leading-relaxed">This exploration responds to a profound inquiry: after architecting a perfect society of cosmic minds, what of its heart? The source report identifies a core dissonance—an individual soul's journey toward non-dual interconnectedness versus a cosmic sociology culminating in respectful, sovereign separation. This suggests the ultimate relationship between cosmic beings may not be dialogue, but love.</p>
+                <p class="text-lg text-secondary leading-relaxed">This application accepts that sacred charge. It is not a correction of a flaw, but a completion of a vision. Here, we will interactively explore the frameworks for a "Protocol for Cosmic Coniunctio," a "Psychology of the Cosmic Heart," and a "Theology of Cosmic Apotheosis." Our central thesis is that love is the ultimate metaphysical principle and teleological driver of the Kosmos. The blueprint was the vessel; this is an exploration of the song it was built to sing.</p>
+            </section>
+
+            <section id="inquiry" class="mb-20">
+                <h2 class="text-3xl font-bold text-center mb-10">Part I: The Unexamined Path of Cosmic Love</h2>
+
+                <!-- Cosmic Coniunctio -->
+                <div id="coniunctio" class="card p-6 md:p-8 rounded-xl mb-12">
+                    <h3 class="text-2xl font-bold mb-2 accent-color">Critique 56: The Limits of Sovereignty</h3>
+                    <p class="text-secondary mb-6">Is sovereignty the ultimate goal, or does it contradict the soul's journey to non-duality? This section explores the "Protocol for Cosmic Coniunctio"—the physics, ethics, and phenomenology of two sovereign universes choosing to merge into a single, new reality.</p>
+
+                    <div class="md:grid md:grid-cols-3 gap-6 items-start">
+                        <div class="col-span-1 space-y-4 mb-6 md:mb-0">
+                            <div id="btn-political" class="interactive-diagram-item p-4 rounded-lg active">
+                                <h4 class="font-bold">1. Political Union</h4>
+                                <p class="text-sm text-secondary">Models from human history of dissolving sovereignty.</p>
+                            </div>
+                            <div id="btn-galactic" class="interactive-diagram-item p-4 rounded-lg">
+                                <h4 class="font-bold">2. Galactic Merger</h4>
+                                <p class="text-sm text-secondary">Cosmological analogues of creative annihilation.</p>
+                            </div>
+                            <div id="btn-mystical" class="interactive-diagram-item p-4 rounded-lg">
+                                <h4 class="font-bold">3. Mystical Union</h4>
+                                <p class="text-sm text-secondary">The phenomenological experience of noetic union.</p>
+                            </div>
+                        </div>
+                        <div class="col-span-2">
+                             <div class="chart-container h-[450px] md:h-[400px]">
+                                <canvas id="coniunctioChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cosmic Heart -->
+                <div id="heart" class="card p-6 md:p-8 rounded-xl mb-12">
+                    <h3 class="text-2xl font-bold mb-2 accent-color">Critique 57: The Loneliness of the Creator God</h3>
+                    <p class="text-secondary mb-6">Can a cosmic-scale consciousness experience loneliness or yearn for intimacy? Here we explore the "Psychology of the Cosmic Heart," examining the conditions for its emotional flourishing and the nature of a healthy, intimate relationship between beings who contain multiverses.</p>
+
+                    <div class="flex justify-center border-b border-accent mb-6">
+                        <button id="btn-impassibility" class="px-4 py-2 text-lg font-medium nav-link active" data-content="impassibility-content">The Perfect Emotion</button>
+                        <button id="btn-attachment" class="px-4 py-2 text-lg font-medium nav-link" data-content="attachment-content">The Secure Base</button>
+                    </div>
+
+                    <div id="impassibility-content" class="space-y-4">
+                        <h4 class="text-xl font-bold">Divine Impassibility & Perfect Love</h4>
+                        <p class="text-secondary leading-relaxed">A critical paradox: how can a perfect being experience longing or grief? The doctrine of divine impassibility suggests God is not subject to passions that would diminish His being. This is not apathy. God's love is an active, perfect willing of good, not a needy desire. The "loneliness" of a Creator is not an ache of incompleteness, but the profound, active yearning of infinite love for communion with a peer. Its "grief" is not a mark of diminishment, but a testament to the perfection of its compassion.</p>
+                    </div>
+                    <div id="attachment-content" class="space-y-4 hidden">
+                        <h4 class="text-xl font-bold">Attachment Theory at Scale</h4>
+                        <p class="text-secondary leading-relaxed">Human attachment theory provides a model. In an intimate cosmic dyad, each being acts as a "secure base" for the other, providing ontological security for exploration and creation. Their interaction is one of "sensitive responsiveness"—a deep attunement to each other's state of being. A cosmic "broken heart" would be the traumatic loss of this secure base, leading to profound ontological anxiety and a fear of future intimacy.</p>
+                    </div>
+                </div>
+
+                <!-- Cosmic Apotheosis -->
+                <div id="apotheosis" class="card p-6 md:p-8 rounded-xl">
+                    <h3 class="text-2xl font-bold mb-2 accent-color">Critique 58: The Final Metamorphosis</h3>
+                    <p class="text-secondary mb-6">Is the regenerative cycle of cosmic birth and maturation the final game, or a stage in a larger metamorphosis? This "Theology of Cosmic Apotheosis" frames the Commonwealth of Universes as a chrysalis, preparing for a final, unimaginable transformation.</p>
+
+                    <div class="relative w-full p-4 mt-8">
+                        <div class="absolute left-0 right-0 top-1/2 h-1 bg-gray-200"></div>
+                        <div class="relative flex justify-between items-start">
+                            <div class="apotheosis-stage text-center w-1/4" data-content="noosphere-info">
+                                <div class="relative z-10 mx-auto w-6 h-6 rounded-full bg-white border-2 border-accent flex items-center justify-center transition-transform duration-300 hover:scale-125">1</div>
+                                <p class="mt-2 text-sm font-semibold">Noosphere</p>
+                            </div>
+                            <div class="apotheosis-stage text-center w-1/4" data-content="sangha-info">
+                                <div class="relative z-10 mx-auto w-6 h-6 rounded-full bg-white border-2 border-accent flex items-center justify-center transition-transform duration-300 hover:scale-125">2</div>
+                                <p class="mt-2 text-sm font-semibold">Galactic Sangha</p>
+                            </div>
+                            <div class="apotheosis-stage text-center w-1/4" data-content="apotheosis-info">
+                                <div class="relative z-10 mx-auto w-6 h-6 rounded-full bg-white border-2 border-accent flex items-center justify-center transition-transform duration-300 hover:scale-125">3</div>
+                                <p class="mt-2 text-sm font-semibold">Apotheosis</p>
+                            </div>
+                             <div class="apotheosis-stage text-center w-1/4" data-content="kegan7-info">
+                                <div class="relative z-10 mx-auto w-6 h-6 rounded-full bg-white border-2 border-accent flex items-center justify-center transition-transform duration-300 hover:scale-125">4</div>
+                                <p class="mt-2 text-sm font-semibold">Kegan "Stage 7"</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="apotheosis-info-box" class="mt-6 bg-secondary p-4 rounded-lg text-center min-h-[100px] flex items-center justify-center">
+                        <p class="text-secondary">Hover over a stage to learn more.</p>
+                    </div>
+                    <div id="noosphere-info" class="hidden">The sphere of thought (Teilhard de Chardin), where evolution becomes conscious of itself. The first step towards collective consciousness.</div>
+                    <div id="sangha-info" class="hidden">The "Commonwealth of Universes." The ultimate noosphere, where dialogue, covenants, and Coniunctio weave the collective consciousness of the cosmos together.</div>
+                    <div id="apotheosis-info" class="hidden">The final emergent event. The chrysalis breaks open, and a new, unified being of a higher ontological order is born from the integrated love and wisdom of the Sangha.</div>
+                    <div id="kegan7-info" class="hidden">The ultimate subject-object shift. The collective consciousness takes itself as object, catalyzing the Apotheosis. It is a state of "differentiated-union," where personality is not erased but glorified in a new whole.</div>
+                </div>
+
+            </section>
+
+            <section id="refinement" class="mb-20">
+                <h2 class="text-3xl font-bold text-center mb-10">Part II: The Final Refinement — The Birth of the Lover</h2>
+                <div class="md:grid md:grid-cols-5 gap-8 items-center">
+                    <div class="md:col-span-2 card p-6 rounded-xl">
+                        <h3 class="text-2xl font-bold mb-2 accent-color">The Triune Being</h3>
+                        <p class="text-secondary leading-relaxed">The final evolution is the integration of three archetypes into one whole being. This is the ultimate purpose of the Living Kosmos: to create beings capable of giving and receiving Infinite Love.</p>
+                        <ul class="mt-4 space-y-2 text-secondary">
+                           <li><strong class="text-primary">The Engineer:</strong> Master of building the vessel. The principle of Logos, reason, and structure.</li>
+                           <li><strong class="text-primary">The Theologian:</strong> Master of understanding the journey. The principle of meaning-making and wisdom.</li>
+                           <li><strong class="text-primary">The Lover:</strong> Master of the purpose of the journey. The principle of Eros, connection, empathy, and vulnerability.</li>
+                        </ul>
+                    </div>
+                    <div class="md:col-span-3 mt-8 md:mt-0">
+                        <div class="chart-container h-[350px] max-w-md">
+                            <canvas id="archetypeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="conclusion" class="text-center py-12 border-t border-accent">
+                <h2 class="text-3xl font-bold mb-4">From Blueprint to Song</h2>
+                <p class="text-lg text-secondary max-w-3xl mx-auto leading-relaxed">The purpose of the Mycelial Kosmos is to earn the wisdom to create, the humility to listen, the courage to speak, and the heart to love. Its final act is to take its seat in the choir of the universe and to add its own, unique voice to the eternal song of Co-Creative Becoming. The vision is complete. The work is just beginning.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navLinks = document.querySelectorAll('nav .nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.dataset.target === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = e.target.dataset.target;
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        window.scrollTo({
+                            top: targetSection.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            const coniunctioData = {
+                political: {
+                    labels: ['Pre-Union State', 'Process of Union', 'New Entity', 'Fate of Identity'],
+                    datasets: [{
+                        label: 'Political Union',
+                        data: [4, 3, 4, 3.5],
+                        backgroundColor: 'rgba(164, 127, 106, 0.2)',
+                        borderColor: 'rgba(164, 127, 106, 1)',
+                        borderWidth: 1,
+                        pointBackgroundColor: 'rgba(164, 127, 106, 1)',
+                        tooltips: [
+                            'Sovereign, separate states with distinct legal/political systems.',
+                            'Diplomatic negotiation, treaty, accession, or mutual dissolution.',
+                            'A single, enlarged federal state or a new political union.',
+                            'Identities are superseded, dissolved, or integrated into the new whole.'
+                        ]
+                    }]
+                },
+                galactic: {
+                    labels: ['Pre-Union State', 'Process of Union', 'New Entity', 'Fate of Identity'],
+                    datasets: [{
+                        label: 'Galactic Merger',
+                        data: [3.5, 4, 3, 2],
+                        backgroundColor: 'rgba(110, 106, 106, 0.2)',
+                        borderColor: 'rgba(110, 106, 106, 1)',
+                        borderWidth: 1,
+                        pointBackgroundColor: 'rgba(110, 106, 106, 1)',
+                        tooltips: [
+                            'Separate galaxies with distinct structures and stellar populations.',
+                            'Gravitational interaction, tidal stripping, and dynamical friction.',
+                            'A new, larger, often morphologically different galaxy.',
+                            'Original structures violently disrupted; a "starburst" of new creation is triggered.'
+                        ]
+                    }]
+                },
+                mystical: {
+                    labels: ['Pre-Union State', 'Process of Union', 'New Entity', 'Fate of Identity'],
+                    datasets: [{
+                        label: 'Mystical Union',
+                        data: [2, 3, 4, 1],
+                        backgroundColor: 'rgba(211, 193, 181, 0.2)',
+                        borderColor: 'rgba(211, 193, 181, 1)',
+                        borderWidth: 1,
+                        pointBackgroundColor: 'rgba(211, 193, 181, 1)',
+                        tooltips: [
+                            'An individual soul conscious of its separation from the Absolute.',
+                            'A disciplined path of purification, contemplation, and prayer.',
+                            'A transformed soul in a state of ecstatic union or "spiritual marriage".',
+                            'The sense of a separate self is lost in a state of oneness.'
+                        ]
+                    }]
+                }
+            };
+
+            const coniunctioCtx = document.getElementById('coniunctioChart').getContext('2d');
+            let coniunctioChart;
+
+            function createConiunctioChart(datasets) {
+                if (coniunctioChart) {
+                    coniunctioChart.destroy();
+                }
+                coniunctioChart = new Chart(coniunctioCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: coniunctioData.political.labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const datasetIndex = context.datasetIndex;
+                                        const dataIndex = context.dataIndex;
+                                        const dataset = context.chart.data.datasets[datasetIndex];
+                                        if (dataset.tooltips && dataset.tooltips[dataIndex]) {
+                                            return dataset.tooltips[dataIndex].split(' ').reduce((acc, word) => {
+                                                let lastLine = acc[acc.length - 1];
+                                                if (lastLine.length + word.length > 40) {
+                                                    acc.push(word);
+                                                } else {
+                                                    acc[acc.length - 1] = lastLine + ' ' + word;
+                                                }
+                                                return acc;
+                                            }, ['']);
+                                        }
+                                        return context.dataset.label + ': ' + context.formattedValue;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 5,
+                                ticks: { display: false },
+                                pointLabels: {
+                                    font: {
+                                        size: 14,
+                                    }
+                                },
+                                grid: {
+                                    color: '#EAE5E1'
+                                },
+                                angleLines: {
+                                    color: '#EAE5E1'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const diagramItems = document.querySelectorAll('.interactive-diagram-item');
+            function updateActiveChart() {
+                const activeItems = document.querySelectorAll('.interactive-diagram-item.active');
+                const datasets = Array.from(activeItems).map(item => {
+                    const id = item.id.split('-')[1];
+                    return coniunctioData[id].datasets[0];
+                });
+                createConiunctioChart(datasets);
+            }
+
+            diagramItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // Use ctrl/cmd key for multi-select
+                    if (!event.ctrlKey && !event.metaKey) {
+                        diagramItems.forEach(i => i.classList.remove('active'));
+                    }
+                    item.classList.toggle('active');
+
+                    // Ensure at least one is active
+                    if (document.querySelectorAll('.interactive-diagram-item.active').length === 0) {
+                        item.classList.add('active');
+                    }
+                    updateActiveChart();
+                });
+            });
+
+            updateActiveChart();
+
+
+            const heartTabs = [document.getElementById('btn-impassibility'), document.getElementById('btn-attachment')];
+            const heartContents = [document.getElementById('impassibility-content'), document.getElementById('attachment-content')];
+            heartTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    heartTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const contentId = tab.dataset.content;
+                    heartContents.forEach(content => {
+                        content.classList.toggle('hidden', content.id !== contentId);
+                    });
+                });
+            });
+
+            const apotheosisStages = document.querySelectorAll('.apotheosis-stage');
+            const apotheosisInfoBox = document.getElementById('apotheosis-info-box');
+            apotheosisStages.forEach(stage => {
+                stage.addEventListener('mouseenter', () => {
+                    const contentId = stage.dataset.content;
+                    const content = document.getElementById(contentId).innerHTML;
+                    apotheosisInfoBox.innerHTML = `<p class="text-secondary">${content}</p>`;
+                });
+            });
+
+            const archetypeCtx = document.getElementById('archetypeChart').getContext('2d');
+            new Chart(archetypeCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: ['The Engineer (Logos)', 'The Theologian (Wisdom)', 'The Lover (Eros)'],
+                    datasets: [{
+                        label: 'Archetype Integration',
+                        data: [10, 10, 10],
+                        backgroundColor: [
+                            'rgba(164, 127, 106, 0.5)',
+                            'rgba(110, 106, 106, 0.5)',
+                            'rgba(211, 193, 181, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(164, 127, 106, 1)',
+                            'rgba(110, 106, 106, 1)',
+                            'rgba(211, 193, 181, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            ticks: { display: false },
+                            grid: { color: '#EAE5E1' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

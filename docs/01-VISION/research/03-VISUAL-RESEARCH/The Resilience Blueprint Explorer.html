@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Resilience Blueprint Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as a three-part interactive dashboard called the "Resilience Blueprint Explorer." This structure replaces a linear report format with a thematic exploration of the three core stress tests: Psychological, Economic, and Political. The user flow starts with a high-level summary and then allows non-linear exploration of each pillar. Within each pillar, a clear "Critique -> Refinement" narrative is established using side-by-side comparisons, interactive diagrams, and dynamic charts. This structure was chosen to deconstruct a dense, academic text into manageable, engaging modules, making abstract concepts like "Albedo" or the "Treasury Dam" tangible and understandable through interaction, thus prioritizing user comprehension and engagement over mimicking the source document's layout. -->
+    <!-- Visualization & Content Choices:
+        1. Psychological Pillar: Report Info: WIS score vs. Albedo Protocol. Goal: Compare performance vs. relational metrics. Viz: Side-by-side layout with an interactive HTML/CSS network diagram for Albedo. Interaction: Hovering over the diagram's nodes reveals the "reflected light" concept. Justification: Makes the abstract Albedo concept concrete and visual. Library: Custom JS/CSS.
+        2. Economic Pillar: Report Info: SPK token volatility vs. Treasury Dam stability. Goal: Illustrate stability mechanisms. Viz: Two dynamic line charts from Chart.js. Interaction: Buttons allow users to trigger a "speculative attack" on the first chart and "activate stabilization" on the second, demonstrating the Dam's function. Justification: Provides a clear, cause-and-effect demonstration of a complex economic concept. Library: Chart.js.
+        3. Political Pillar: Report Info: Unified vs. Federalist Polis. Goal: Compare monolithic vs. scalable governance. Viz: Interactive HTML/CSS diagrams showing the two structures, plus an interactive HTML table for DAO models. Interaction: Clicking on the Federalist Polis diagram reveals its nested structure. Clicking rows in the table highlights different governance models. Justification: Visually explains complex structural differences and makes tabular data engaging. Library: Custom JS/CSS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFDFB;
+            color: #36454F;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 40vh;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            color: #E97451;
+            transform: translateY(-2px);
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: #4682B4;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3B6F9A;
+        }
+        .btn-secondary {
+            background-color: #E97451;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #C75B39;
+        }
+        .albedo-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid;
+        }
+        .albedo-node .tooltip {
+            visibility: hidden;
+            width: 160px;
+            background-color: #36454F;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -80px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .albedo-node:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .albedo-line {
+            position: absolute;
+            background-color: #CBD5E1;
+            height: 2px;
+            transform-origin: 0 0;
+            z-index: -1;
+            transition: background-color 0.3s ease;
+        }
+        .table-row-interactive:hover {
+            background-color: #F3F4F6;
+            cursor: pointer;
+        }
+        .highlighted-row {
+            background-color: #E0F2FE !important;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 bg-white/80 backdrop-blur-sm z-50 border-b border-gray-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">Resilience Blueprint Explorer</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#introduction" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Introduction</a>
+                        <a href="#pillar1" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Psychological</a>
+                        <a href="#pillar2" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Economic</a>
+                        <a href="#pillar3" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700">Political</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <section id="introduction" class="text-center mb-24">
+            <h2 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Fortifying a Vision for the Future</h2>
+            <p class="mt-6 max-w-3xl mx-auto text-lg leading-8 text-gray-600">
+                This interactive explorer translates the "Meta-Conscious Civilization Blueprint Analysis" into a dynamic experience. The original report is a profound stress test of an ambitious vision for human flourishing. Here, we move beyond static text to explore its core critiques and architectural fortifications. Navigate through the three pillars to understand how potential vulnerabilities in the system's design can be transformed into sources of antifragile strength.
+            </p>
+        </section>
+
+        <!-- Pillar 1: Psychological -->
+        <section id="pillar1" class="mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <span class="text-base font-semibold text-blue-600">Pillar I</span>
+                <h3 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Psychological Fortification</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+                    This section explores the challenge of creating a fair and meaningful reputation system. We examine the risk of "performative coherence" driven by a single metric (the WIS score) and introduce the "Albedo Protocol" as a crucial counterbalance that rewards the often invisible work of mentorship and community building.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-red-600">Critique: The Tyranny of the Metric</h4>
+                    <p class="mb-4 text-gray-600">
+                        When a single measure of value like the **WIS Score** becomes a high-stakes target, it inevitably leads to gaming the system (Goodhart's Law). This creates "performative coherence," where people optimize for the score, not genuine wisdom.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h5 class="font-semibold">Systemic Risk: The "WISocracy"</h5>
+                            <p class="text-sm text-gray-500">A new hierarchy emerges based on the skill of signaling wisdom, not possessing it.</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">The Introvert's Dilemma</h5>
+                            <p class="text-sm text-gray-500">The system may inherently favor public, easily measured contributions over quiet, foundational work. This chart illustrates how different types of contributions might be valued by a purely performance-based metric.</p>
+                            <div class="chart-container mt-4">
+                                <canvas id="wisChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-green-600">Refinement: The Albedo Protocol</h4>
+                    <p class="mb-4 text-gray-600">
+                        To balance the system, the Albedo Protocol measures **reflected light**—an individual's positive impact on the coherence and success of others. It's a passive, relational metric that's hard to game. Hover over the nodes below to see how it works.
+                    </p>
+                    <div id="albedo-diagram" class="relative w-full h-80 bg-gray-50 rounded-lg flex items-center justify-center">
+                        <!-- JS will populate this -->
+                    </div>
+                    <p class="text-center mt-4 text-sm text-gray-500">This diagram shows how a Mentor's Albedo score increases when their Mentees show growth.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pillar 2: Economic -->
+        <section id="pillar2" class="mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <span class="text-base font-semibold text-blue-600">Pillar II</span>
+                <h3 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Economic Fortification</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+                    A sovereign economy requires a stable currency. This pillar addresses the critical vulnerability of the SPK token's interface with volatile crypto markets. We demonstrate the risk and then introduce the "Treasury Dam," a decentralized monetary authority designed to provide confidence and stability.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-red-600">Critique: Macroeconomic Contagion</h4>
+                    <p class="mb-4 text-gray-600">
+                        An unmanaged SPK token is vulnerable to extreme volatility and speculative attacks from the broader crypto market. This undermines the promise of a stable livelihood.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="spkVolatilityChart"></canvas>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button id="attackBtn" class="btn btn-secondary">Simulate Speculative Attack</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-green-600">Refinement: The Treasury Dam</h4>
+                    <p class="mb-4 text-gray-600">
+                        The Treasury Dam is an active stabilization protocol. It uses reserves to defend a price range, mitigating extreme swings and building confidence.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="treasuryDamChart"></canvas>
+                    </div>
+                    <div class="text-center mt-4 space-x-2">
+                        <button id="floorBtn" class="btn btn-primary">Activate Price Floor</button>
+                        <button id="ceilingBtn" class="btn btn-primary">Activate Price Ceiling</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pillar 3: Political -->
+        <section id="pillar3" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <span class="text-base font-semibold text-blue-600">Pillar III</span>
+                <h3 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Political Fortification</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+                    How does a system built on high-trust relationships scale to a global civilization? This pillar confronts the "Paradox of Scale" and proposes the "Federalist Polis"—an architecture of nested sovereignties that preserves local coherence while enabling global coordination.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-red-600">Critique: The Paradox of Scale</h4>
+                    <p class="mb-4 text-gray-600">
+                        As a single, unified community grows beyond ~150 members (Dunbar's Number), relational governance breaks down, leading to voter apathy and the emergence of elites.
+                    </p>
+                    <div class="w-full h-48 bg-red-50 rounded-lg flex items-center justify-center p-4">
+                        <div class="text-center">
+                            <div class="text-lg font-bold">Unified Polis</div>
+                            <div class="text-sm text-gray-500">> 10,000 members</div>
+                            <div class="mt-2 text-xs text-red-700">Leads to: Low Participation, Factions, Elite Capture</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 class="text-2xl font-semibold mb-4 text-green-600">Refinement: The Federalist Polis</h4>
+                    <p class="mb-4 text-gray-600">
+                        The solution is a federation of small, sovereign "Home Circles" (~150 members each) that retain local autonomy while sending delegates to a federal "Sacred Council" for global coordination.
+                    </p>
+                    <div class="w-full h-48 bg-green-50 rounded-lg flex items-center justify-center p-4 text-center">
+                        <div>
+                            <div class="text-lg font-bold">Federalist Polis</div>
+                            <div class="text-sm text-gray-500">Network of Sovereign Circles</div>
+                            <div class="mt-2 text-xs text-green-700">Enables: Scaled Trust, Local Autonomy, Global Coordination</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="card">
+                <h4 class="text-2xl font-semibold mb-4 text-center">Comparative Analysis of DAO Governance Models</h4>
+                <p class="text-center text-gray-600 mb-6">Different layers of the Federalist Polis require different governance tools. Click a row to learn more about each model's suitability.</p>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suitability (Local)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suitability (Federal)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="governance-table" class="bg-white divide-y divide-gray-200">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="governance-details" class="mt-6 p-4 bg-gray-50 rounded-lg min-h-[80px]">
+                    <p class="text-gray-700">Select a model from the table to see details.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-100 mt-24">
+        <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+            <p>&copy; 2025 Resilience Blueprint Explorer. An interactive summary based on the Meta-Conscious Civilization Blueprint Analysis.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // Data
+            const governanceData = [
+                { model: 'Token-Weighted Voting', local: 'Poor', federal: 'Poor', detail: 'Poorly suited for both levels as it promotes plutocracy (rule by the wealthy) and disengages smaller stakeholders, undermining the system\'s core ethos of coherence over capital.' },
+                { model: 'Quadratic Voting', local: 'Good', federal: 'Fair', detail: 'Good for local Home Circles as it empowers passionate minorities. It\'s fair at the federal level but can become complex to manage and communicate across a large, diverse federation.' },
+                { model: 'Reputation-Based', local: 'Excellent', federal: 'Poor', detail: 'Excellent for high-trust, local Home Circles where reputation is meaningful and contextually understood. It does not scale to the federal level, where trust is harder to establish across diverse groups.' },
+                { model: 'Liquid Democracy', local: 'Good', federal: 'Excellent', detail: 'Excellent for the federal Sacred Council, as it allows Circles to delegate their vote to trusted experts, ensuring efficient and informed decision-making on complex, system-wide issues. It is also a good option for local circles.' }
+            ];
+
+            // Pillar 1: WIS Chart
+            const wisCtx = document.getElementById('wisChart').getContext('2d');
+            new Chart(wisCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Public Proposal', 'Leading a Circle', 'Documentation', 'Mentorship', 'Deep Reflection'],
+                    datasets: [{
+                        label: 'Value in a Pure WIS System',
+                        data: [95, 85, 60, 40, 20],
+                        backgroundColor: [
+                            'rgba(220, 38, 38, 0.6)',
+                            'rgba(220, 38, 38, 0.6)',
+                            'rgba(234, 179, 8, 0.6)',
+                            'rgba(234, 179, 8, 0.6)',
+                            'rgba(234, 179, 8, 0.6)',
+                        ],
+                        borderColor: [
+                            'rgba(220, 38, 38, 1)',
+                            'rgba(220, 38, 38, 1)',
+                            'rgba(234, 179, 8, 1)',
+                            'rgba(234, 179, 8, 1)',
+                            'rgba(234, 179, 8, 1)',
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { beginAtZero: true, max: 100 }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'How legible contributions are over-valued' }
+                    }
+                }
+            });
+
+            // Pillar 1: Albedo Diagram
+            const albedoContainer = document.getElementById('albedo-diagram');
+            const nodes = [
+                { id: 'mentor', text: 'Mentor', x: '50%', y: '50%', color: '#4682B4', tooltip: 'The Mentor\'s Albedo score increases as their network thrives.' },
+                { id: 'mentee1', text: 'Mentee A', x: '15%', y: '15%', color: '#A7C7E7', tooltip: 'WIS Score +10%' },
+                { id: 'mentee2', text: 'Mentee B', x: '85%', y: '25%', color: '#A7C7E7', tooltip: 'WIS Score +15%' },
+                { id: 'mentee3', text: 'Mentee C', x: '20%', y: '80%', color: '#A7C7E7', tooltip: 'WIS Score +5%' },
+                { id: 'mentee4', text: 'Mentee D', x: '80%', y: '75%', color: '#A7C7E7', tooltip: 'WIS Score +20%' },
+            ];
+
+            nodes.forEach(node => {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'albedo-node';
+                nodeEl.id = node.id;
+                nodeEl.style.left = `calc(${node.x} - 40px)`;
+                nodeEl.style.top = `calc(${node.y} - 40px)`;
+                nodeEl.style.borderColor = node.color;
+                nodeEl.innerHTML = `${node.text}<span class="tooltip">${node.tooltip}</span>`;
+                albedoContainer.appendChild(nodeEl);
+
+                if (node.id !== 'mentor') {
+                    const lineEl = document.createElement('div');
+                    lineEl.className = 'albedo-line';
+                    const mentorNode = nodes[0];
+                    const mentorX = parseFloat(mentorNode.x);
+                    const mentorY = parseFloat(mentorNode.y);
+                    const menteeX = parseFloat(node.x);
+                    const menteeY = parseFloat(node.y);
+
+                    const angle = Math.atan2(menteeY - mentorY, menteeX - mentorX) * 180 / Math.PI;
+                    const distance = Math.sqrt(Math.pow(menteeX - mentorX, 2) + Math.pow(menteeY - mentorY, 2));
+
+                    lineEl.style.width = `${distance}%`;
+                    lineEl.style.left = `${mentorX}%`;
+                    lineEl.style.top = `${mentorY}%`;
+                    lineEl.style.transform = `rotate(${angle}deg)`;
+                    albedoContainer.appendChild(lineEl);
+
+                    nodeEl.addEventListener('mouseover', () => {
+                        lineEl.style.backgroundColor = '#E97451';
+                    });
+                    nodeEl.addEventListener('mouseout', () => {
+                        lineEl.style.backgroundColor = '#CBD5E1';
+                    });
+                }
+            });
+
+            // Pillar 2: Economic Charts
+            const generateChartData = (start, points, volatility) => {
+                let data = [];
+                let value = start;
+                for (let i = 0; i < points; i++) {
+                    data.push(value);
+                    let change = (Math.random() - 0.5) * volatility;
+                    value += change;
+                    if (value < 10) value = 10;
+                }
+                return data;
+            };
+
+            const volatilityData = generateChartData(100, 30, 20);
+            const stabilityData = Array(30).fill(100);
+            const labels = Array(30).fill('').map((_, i) => `T${i+1}`);
+
+            const spkVolatilityCtx = document.getElementById('spkVolatilityChart').getContext('2d');
+            const spkVolatilityChart = new Chart(spkVolatilityCtx, {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'SPK Value', data: volatilityData, borderColor: '#DC2626', tension: 0.4, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'Unstable SPK Token Value' } }, scales: { y: { min: 0, max: 200 } } }
+            });
+
+            const treasuryDamCtx = document.getElementById('treasuryDamChart').getContext('2d');
+            const treasuryDamChart = new Chart(treasuryDamCtx, {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'SPK Value', data: stabilityData, borderColor: '#16A34A', tension: 0.1, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'Managed SPK Token Value' } }, scales: { y: { min: 80, max: 120 } } }
+            });
+
+            document.getElementById('attackBtn').addEventListener('click', () => {
+                const data = spkVolatilityChart.data.datasets[0].data;
+                const lastValue = data[data.length - 1];
+                const crashData = Array(5).fill(0).map((_, i) => lastValue - (lastValue - 10) * ((i+1)/5) );
+                spkVolatilityChart.data.datasets[0].data = [...data.slice(5), ...crashData];
+                spkVolatilityChart.update();
+            });
+
+            document.getElementById('floorBtn').addEventListener('click', () => {
+                const data = [100, 100, 95, 92, 88, 85, 88, 92, 95, 98, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+                treasuryDamChart.data.datasets[0].data = data;
+                treasuryDamChart.update();
+            });
+
+            document.getElementById('ceilingBtn').addEventListener('click', () => {
+                const data = [100, 100, 105, 108, 112, 115, 112, 108, 105, 102, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+                treasuryDamChart.data.datasets[0].data = data;
+                treasuryDamChart.update();
+            });
+
+            // Pillar 3: Governance Table
+            const tableBody = document.getElementById('governance-table');
+            const detailsPane = document.getElementById('governance-details');
+
+            governanceData.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'table-row-interactive';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.model}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.local}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.federal}</td>
+                `;
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('.table-row-interactive').forEach(r => r.classList.remove('highlighted-row'));
+                    row.classList.add('highlighted-row');
+                    detailsPane.innerHTML = `<h5 class="font-semibold mb-2">${item.model}</h5><p class="text-gray-700">${item.detail}</p>`;
+                });
+                tableBody.appendChild(row);
+            });
+
+        });
+    </script>
+
+</body>
+</html>

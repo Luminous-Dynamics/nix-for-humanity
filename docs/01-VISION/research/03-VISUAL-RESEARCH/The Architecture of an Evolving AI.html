@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Architecture of an Evolving AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #001219;
+            color: #E9D8A6;
+        }
+        .card {
+            background-color: rgba(0, 95, 115, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 210, 189, 0.2);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #94D2BD;
+            line-height: 1;
+        }
+        .flow-box {
+            border: 2px solid #0A9396;
+            background-color: rgba(10, 147, 150, 0.1);
+        }
+        .kpi-value {
+            font-weight: 900;
+            color: #EE9B00;
+            text-shadow: 0 0 15px rgba(238, 155, 0, 0.5);
+        }
+        .kpi-label {
+            color: #94D2BD;
+        }
+        .balance-scale::before {
+            content: '⚖️';
+            font-size: 4rem;
+            filter: drop-shadow(0 0 10px #EE9B00);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center my-12">
+            <h1 class="text-4xl md:text-6xl font-black text-white tracking-tight">The Architecture of an Evolving AI</h1>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-300">A framework for building an intelligent partner that learns, remembers, and evolves in a stable, aligned way.</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <section class="md:col-span-2 lg:col-span-3 card rounded-lg shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 1: The Engine of Co-Evolution (RLHF)</h2>
+                <p class="text-gray-300 mb-6">For an AI to genuinely evolve, it needs a mechanism to learn from its user. Reinforcement Learning from Human Feedback (RLHF) provides this engine, allowing the AI's behavior to be continuously shaped by the unique preferences and feedback of its individual user in a private, secure way.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">The Canonical 3-Stage RLHF Pipeline</h3>
+                        <p class="text-gray-400 mb-6">Standard RLHF aligns a model through a multi-stage process, transforming a general model into a specialized assistant.</p>
+                        <div class="flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
+                            <div class="text-center flow-box p-4 rounded-lg flex-1">
+                                <div class="text-4xl font-black text-white">1</div>
+                                <h4 class="font-bold mt-2 text-white">Supervised Fine-Tuning (SFT)</h4>
+                                <p class="text-sm text-gray-400">Adapt the model to a specific style.</p>
+                            </div>
+                            <div class="flow-arrow transform md:rotate-0 rotate-90">&rarr;</div>
+                            <div class="text-center flow-box p-4 rounded-lg flex-1">
+                                <div class="text-4xl font-black text-white">2</div>
+                                <h4 class="font-bold mt-2 text-white">Reward Model Training</h4>
+                                <p class="text-sm text-gray-400">Teach a model to judge responses.</p>
+                            </div>
+                            <div class="flow-arrow transform md:rotate-0 rotate-90">&rarr;</div>
+                            <div class="text-center flow-box p-4 rounded-lg flex-1">
+                                <div class="text-4xl font-black text-white">3</div>
+                                <h4 class="font-bold mt-2 text-white">RL Optimization (PPO)</h4>
+                                <p class="text-sm text-gray-400">Refine the policy using rewards.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">A More Efficient Path: PPO vs. DPO</h3>
+                        <p class="text-gray-400 mb-6">While PPO is the standard, Direct Preference Optimization (DPO) offers a more stable and efficient alternative for local systems by eliminating the separate Reward Model, making it the recommended approach.</p>
+                        <div class="chart-container h-64 md:h-auto">
+                            <canvas id="dpoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="md:col-span-2 lg:col-span-3 card rounded-lg shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 2: The Foundation of Relationship (Memory)</h2>
+                <p class="text-gray-300 mb-6">A true partner remembers. To recall context from minutes or months ago, the AI needs a long-term memory. The key is to decouple this memory from the AI's core personality, allowing it to learn new behaviors without overwriting the factual record of its past.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">The Evolution of AI Memory</h3>
+                        <p class="text-gray-400 mb-6">Memory architectures have evolved from integrated, volatile states to external, queryable knowledge bases.</p>
+                         <div class="relative pl-8">
+                            <div class="absolute left-2 h-full w-0.5 bg-cyan-800"></div>
+                            <div class="relative mb-8">
+                                <div class="absolute -left-[38px] top-1 h-6 w-6 rounded-full bg-cyan-500 border-4 border-cyan-900"></div>
+                                <h4 class="font-bold text-white">RNN/LSTM</h4>
+                                <p class="text-sm text-gray-400">Memory as a volatile hidden state, limited by vanishing gradients.</p>
+                            </div>
+                            <div class="relative mb-8">
+                                <div class="absolute -left-[38px] top-1 h-6 w-6 rounded-full bg-cyan-400 border-4 border-cyan-900"></div>
+                                <h4 class="font-bold text-white">Memory Networks</h4>
+                                <p class="text-sm text-gray-400">A conceptual leap: memory is separated into an external, addressable component.</p>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute -left-[38px] top-1 h-6 w-6 rounded-full bg-cyan-300 border-4 border-cyan-900"></div>
+                                <h4 class="font-bold text-white">Retrieval-Augmented Generation (RAG)</h4>
+                                <p class="text-sm text-gray-400">The modern standard. An external vector database provides knowledge at inference time.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Active Memory Curation</h3>
+                        <p class="text-gray-400 mb-6">An append-only memory becomes polluted. An active curation process is essential to keep the AI's knowledge accurate and relevant over time.</p>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="flow-box p-3 rounded-lg">
+                                <div class="text-2xl text-yellow-400">→</div>
+                                <h4 class="font-bold text-white">PASS</h4>
+                                <p class="text-xs text-gray-400">Discard redundant info.</p>
+                            </div>
+                            <div class="flow-box p-3 rounded-lg">
+                                <div class="text-2xl text-green-400">✓</div>
+                                <h4 class="font-bold text-white">REPLACE</h4>
+                                <p class="text-xs text-gray-400">Update outdated facts.</p>
+                            </div>
+                            <div class="flow-box p-3 rounded-lg">
+                                <div class="text-2xl text-blue-400">+</div>
+                                <h4 class="font-bold text-white">APPEND</h4>
+                                <p class="text-xs text-gray-400">Add new, unrelated info.</p>
+                            </div>
+                            <div class="flow-box p-3 rounded-lg">
+                                <div class="text-2xl text-red-400">✗</div>
+                                <h4 class="font-bold text-white">DELETE</h4>
+                                <p class="text-xs text-gray-400">Remove resolved info.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="md:col-span-2 lg:col-span-3 card rounded-lg shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 3: The Moral Compass (Constitutional AI)</h2>
+                <p class="text-gray-300 mb-6">To ensure evolution remains bounded by ethical principles, Constitutional AI (CAI) provides a moral compass. It hard-codes a set of "Sacred Boundaries" into the AI's reasoning, ensuring it remains helpful, harmless, and honest.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                     <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Hybrid Alignment Strategy</h3>
+                        <p class="text-gray-400 mb-6">CAI is not a replacement for RLHF but a powerful partner. CAI is used to align for universal principles like harmlessness, while user-driven RLHF aligns for subjective helpfulness and personalization.</p>
+                         <div class="chart-container h-72 md:h-auto">
+                            <canvas id="alignmentRadarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">The RLAIF Process</h3>
+                        <p class="text-gray-400 mb-6">Reinforcement Learning from AI Feedback (RLAIF) uses the AI itself to generate preference data based on its constitution, enabling scalable alignment.</p>
+                        <div class="flex flex-col space-y-4">
+                            <div class="flow-box p-4 rounded-lg text-center">
+                                <div class="text-4xl font-black text-white">1</div>
+                                <h4 class="font-bold mt-2 text-white">Self-Critique & Revision</h4>
+                                <p class="text-sm text-gray-400">Model generates a response, critiques it against a principle, and revises it.</p>
+                            </div>
+                            <div class="self-center flow-arrow">↓</div>
+                            <div class="flow-box p-4 rounded-lg text-center">
+                                <div class="text-4xl font-black text-white">2</div>
+                                <h4 class="font-bold mt-2 text-white">AI Preference Labeling</h4>
+                                <p class="text-sm text-gray-400">AI chooses the better of two responses based on the constitution, creating training data.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="md:col-span-2 lg:col-span-3 card rounded-lg shadow-2xl p-6">
+                <h2 class="text-3xl font-bold text-white mb-4">The Integrated Architecture: Stability & Long-Term Alignment</h2>
+                <p class="text-gray-300 mb-6">Synthesizing these pillars creates a coherent system designed for stability. It must learn continuously without succumbing to catastrophic forgetting or value drift. This is achieved through a multi-timescale architecture of checks and balances.</p>
+
+                <div class="card rounded-lg p-6 mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4 text-center">Simplified Cognitive Architecture Flow</h3>
+                    <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4 p-4 rounded-lg bg-black/20">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-white">User Input</div>
+                        </div>
+                        <div class="flow-arrow transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="text-center flow-box p-4 rounded-lg flex-grow">
+                            <h4 class="font-bold text-white">Contextualize & Retrieve</h4>
+                            <p class="text-sm text-gray-400">Combine with chat history & query RAG Memory</p>
+                        </div>
+                        <div class="flow-arrow transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="text-center flow-box p-4 rounded-lg flex-grow border-yellow-500">
+                            <h4 class="font-bold text-white">Constrained Generation</h4>
+                            <p class="text-sm text-gray-400">LLM Core generates response guided by Constitution</p>
+                        </div>
+                        <div class="flow-arrow transform md:rotate-0 rotate-90">&rarr;</div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-white">AI Response</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center my-2">
+                        <div class="flow-arrow transform rotate-90">↑</div>
+                    </div>
+                     <div class="flex justify-center">
+                         <div class="text-center flow-box p-4 rounded-lg border-red-500 w-full md:w-1/2">
+                            <h4 class="font-bold text-white">Feedback & Evolution</h4>
+                            <p class="text-sm text-gray-400">User feedback (👍/👎) updates the model via RLHF/DPO</p>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="card rounded-lg p-6 text-center">
+                        <h3 class="text-xl font-bold text-white mb-4">The Stability-Plasticity Dilemma</h3>
+                        <p class="text-gray-400 mb-6">An evolving system must balance acquiring new knowledge (plasticity) with retaining old knowledge (stability) to avoid catastrophic forgetting.</p>
+                        <div class="flex items-center justify-center space-x-8">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-cyan-400">Plasticity</div>
+                                <p class="text-sm text-gray-400">Learn New Skills</p>
+                            </div>
+                            <div class="balance-scale"></div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-amber-400">Stability</div>
+                                <p class="text-sm text-gray-400">Retain Knowledge</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Dual-Layered Alignment</h3>
+                        <p class="text-gray-400 mb-6">The architecture defends against value drift with two layers of alignment operating on different timescales.</p>
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-lg border-2 border-cyan-500 bg-cyan-500/10">
+                                <h4 class="font-bold text-white">Dynamic Layer: User-Centric Alignment</h4>
+                                <p class="text-sm text-gray-300">The RLHF loop provides short-term plasticity, adapting to the user's evolving needs for helpfulness and personalization.</p>
+                            </div>
+                            <div class="p-4 rounded-lg border-2 border-amber-500 bg-amber-500/10">
+                                <h4 class="font-bold text-white">Static Layer: Principle-Based Alignment</h4>
+                                <p class="text-sm text-gray-300">The Constitution provides long-term stability, acting as an immutable moral compass to ensure the AI remains safe and trustworthy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center my-12 text-gray-500">
+            <p>Infographic generated based on the research document "The Architecture of an Evolving Intelligent Partner".</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const FONT_COLOR = '#E9D8A6';
+            const GRID_COLOR = 'rgba(148, 210, 189, 0.2)';
+
+            function wrapLabels(label, maxLength) {
+                if (typeof label !== 'string') return label;
+                if (label.length <= maxLength) return label;
+                const words = label.split(' ');
+                let currentLine = '';
+                const lines = [];
+                for (const word of words) {
+                    if ((currentLine + word).length > maxLength) {
+                        lines.push(currentLine.trim());
+                        currentLine = '';
+                    }
+                    currentLine += word + ' ';
+                }
+                lines.push(currentLine.trim());
+                return lines;
+            }
+
+            const tooltipTitleCallback = (tooltipItems) => {
+                const item = tooltipItems[0];
+                let label = item.chart.data.labels[item.dataIndex];
+                if (Array.isArray(label)) {
+                  return label.join(' ');
+                } else {
+                  return label;
+                }
+            };
+
+            const sharedChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: FONT_COLOR,
+                            font: {
+                                family: "'Inter', sans-serif"
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: tooltipTitleCallback
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: FONT_COLOR },
+                        grid: { color: GRID_COLOR }
+                    },
+                    x: {
+                        ticks: { color: FONT_COLOR },
+                        grid: { color: GRID_COLOR }
+                    }
+                }
+            };
+
+            const dpoChartCtx = document.getElementById('dpoChart').getContext('2d');
+            new Chart(dpoChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Implementation Complexity', 'Training Stability'],
+                    datasets: [{
+                        label: 'RLHF (PPO)',
+                        data: [9, 4],
+                        backgroundColor: '#0A9396',
+                        borderColor: '#94D2BD',
+                        borderWidth: 1
+                    }, {
+                        label: 'DPO (Recommended)',
+                        data: [6, 9],
+                        backgroundColor: '#EE9B00',
+                        borderColor: '#E9D8A6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...sharedChartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                        y: {
+                            ticks: { color: FONT_COLOR },
+                            grid: { color: GRID_COLOR }
+                        },
+                        x: {
+                            ticks: { color: FONT_COLOR, callback: (v) => v + '/10' },
+                            grid: { color: GRID_COLOR },
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        ...sharedChartOptions.plugins,
+                        tooltip: {
+                            ...sharedChartOptions.plugins.tooltip,
+                            callbacks: {
+                                ...sharedChartOptions.plugins.tooltip.callbacks,
+                                label: (context) => `${context.dataset.label}: ${context.raw}/10`
+                            }
+                        }
+                    }
+                }
+            });
+
+            const alignmentRadarChartCtx = document.getElementById('alignmentRadarChart').getContext('2d');
+            const radarLabels = [
+                'Harmlessness', 'Honesty', 'Helpfulness',
+                ['User-Specific', 'Personalization'], 'Scalability'
+            ].map(l => wrapLabels(l, 16));
+
+            new Chart(alignmentRadarChartCtx, {
+                type: 'radar',
+                data: {
+                    labels: radarLabels,
+                    datasets: [{
+                        label: 'Constitutional AI',
+                        data: [9, 8, 5, 3, 9],
+                        fill: true,
+                        backgroundColor: 'rgba(238, 155, 0, 0.2)',
+                        borderColor: '#EE9B00',
+                        pointBackgroundColor: '#EE9B00',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#EE9B00'
+                    }, {
+                        label: 'User-Driven RLHF',
+                        data: [6, 7, 9, 9, 4],
+                        fill: true,
+                        backgroundColor: 'rgba(10, 147, 150, 0.2)',
+                        borderColor: '#0A9396',
+                        pointBackgroundColor: '#0A9396',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#0A9396'
+                    }]
+                },
+                options: {
+                    ...sharedChartOptions,
+                    scales: {
+                        r: {
+                            angleLines: { color: GRID_COLOR },
+                            grid: { color: GRID_COLOR },
+                            pointLabels: {
+                                color: FONT_COLOR,
+                                font: {
+                                    size: 12,
+                                    family: "'Inter', sans-serif"
+                                }
+                            },
+                            ticks: {
+                                color: FONT_COLOR,
+                                backdropColor: 'rgba(0,0,0,0.5)',
+                                stepSize: 2
+                            },
+                            min: 0,
+                            max: 10
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

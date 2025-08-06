@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Symphony and its Harmonies: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earthy Harmony -->
+    <!-- Application Structure Plan: A thematic, vertical "scrollytelling" journey through the four core refinements (Seeker, Redemption, Gift, Oracle). This structure breaks down the dense report into manageable, interactive modules, guiding the user through the narrative while a sticky nav allows non-linear exploration. The goal is to make abstract concepts concrete through interaction, enhancing understanding and engagement. -->
+    <!-- Visualization & Content Choices:
+        1. Seeker: Report Info -> Experiential Onboarding. Goal -> Demonstrate. Viz -> Simulated Chat. Interaction -> Click-through dialogue. Justification -> Mirrors the "learning-by-doing" principle. Library -> HTML/JS.
+        2. Redemption: Report Info -> Restorative Justice & WIS Decay. Goal -> Compare & Explain. Viz -> Side-by-side table & Line Chart. Interaction -> Button simulates "Ceremony," updating chart. Justification -> Makes the abstract formula tangible. Library -> Chart.js.
+        3. Gift: Report Info -> Gift vs. Market Economy. Goal -> Show different value flows. Viz -> Flow Diagram. Interaction -> Toggle switch animates diagram. Justification -> Clearly visualizes the economic shift. Library -> HTML/JS/CSS.
+        4. Oracle: Report Info -> AI Governance Structure. Goal -> Organize & Inform. Viz -> Interactive Diagram & Table. Interaction -> Clickable elements reveal details. Justification -> Layered info without clutter. Library -> HTML/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm Neutral Background */
+            color: #4A4A4A;
+        }
+        h1, h2, h3 {
+            font-family: 'Lora', serif;
+            color: #2C3E50; /* Deep Teal */
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            display: block;
+            margin-top: 5px;
+            right: 0;
+            background: #E85A4F; /* Terracotta Accent */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover:after, .nav-link.active:after {
+            width: 100%;
+            left: 0;
+            background-color: #E85A4F;
+        }
+        .section-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .seeker-chat-bubble {
+            max-width: 80%;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .flow-diagram-line {
+            transition: all 0.5s ease-in-out;
+        }
+        .clickable-diagram-node {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .clickable-diagram-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .info-modal {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF8] text-gray-700">
+
+    <nav id="navbar" class="sticky top-0 z-50 bg-[#FDFBF8]/80 backdrop-blur-lg shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-[#2C3E50]">The Resonant Whole</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#seeker" class="nav-link px-3 py-2 rounded-md text-sm font-medium">The Seeker</a>
+                        <a href="#redemption" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Redemption</a>
+                        <a href="#gift" class="nav-link px-3 py-2 rounded-md text-sm font-medium">The Gift</a>
+                        <a href="#oracle" class="nav-link px-3 py-2 rounded-md text-sm font-medium">The Oracle</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <header class="text-center py-16 md:py-24 px-4 bg-white">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-4xl md:text-6xl font-bold tracking-tight mb-4">The Symphony and its Harmonies</h1>
+                <p class="text-lg md:text-xl text-gray-600">An interactive exploration of a new civilizational blueprint. This application translates the core principles of the architecture into tangible experiences, allowing you to explore the four key refinements designed to make the system resilient, humane, and alive.</p>
+            </div>
+        </header>
+
+        <section id="seeker" class="py-20 md:py-28 px-4">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold">Part I: The Path of the Seeker</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This section addresses the "Incarnation Problem": how to welcome newcomers into a complex system without overwhelming them. Instead of a manual, the "Path of the Seeker" uses an experiential journey guided by an AI Doula. Interact with the simulation below to feel how it works.</p>
+                </div>
+
+                <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="md:w-1/2">
+                            <h3 class="text-2xl font-bold mb-4">Simulated Onboarding Journey</h3>
+                            <div id="seeker-chat-window" class="h-96 bg-gray-100 rounded-lg p-4 flex flex-col space-y-4 overflow-y-auto">
+                            </div>
+                            <div id="seeker-options" class="mt-4 flex flex-wrap gap-2">
+                            </div>
+                        </div>
+                        <div class="md:w-1/2">
+                            <h3 class="text-2xl font-bold mb-4">Your WIS Mandala</h3>
+                            <p class="mb-4 text-gray-600">As you complete each "Sacred Act," your personal mandala illuminates, providing meaningful feedback on your journey of self-discovery and contribution.</p>
+                            <div class="aspect-square bg-gray-100 rounded-full flex items-center justify-center p-4">
+                                <div class="relative w-full h-full">
+                                    <div id="mandala-noesis" class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-blue-200/30 rounded-t-full transition-all duration-500 opacity-0"></div>
+                                    <div id="mandala-sophia" class="absolute bottom-0 left-0 w-1/2 h-1/2 bg-red-200/30 rounded-bl-full transition-all duration-500 opacity-0"></div>
+                                    <div id="mandala-praxis" class="absolute bottom-0 right-0 w-1/2 h-1/2 bg-green-200/30 rounded-br-full transition-all duration-500 opacity-0"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-gray-500">Mandala</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="seeker-explanation" class="mt-4 p-4 bg-white rounded-lg text-sm text-gray-700">
+                                Your journey begins here.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="redemption" class="py-20 md:py-28 px-4 bg-white">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold">Part II: The Architecture of Redemption</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This section explores the "Paradox of Redemption" in a system with an immutable ledger. It contrasts traditional punitive moderation with a restorative framework, combining a social "Ceremony of Forgiveness" with algorithmic "WIS Score Time-Decay" to allow for growth and healing.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 text-center">Punitive vs. Restorative Justice</h3>
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="py-2 font-semibold text-[#2C3E50]">Principle</th>
+                                    <th class="py-2 font-semibold text-gray-500">Punitive Approach</th>
+                                    <th class="py-2 font-semibold text-[#E85A4F]">Restorative Approach</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="py-2 font-semibold">Focus</td><td class="py-2">Blame & Guilt</td><td class="py-2">Repair & Obligation</td></tr>
+                                <tr class="border-b"><td class="py-2 font-semibold">Process</td><td class="py-2">Adversarial</td><td class="py-2">Dialogue</td></tr>
+                                <tr class="border-b"><td class="py-2 font-semibold">Outcome</td><td class="py-2">Exclusion</td><td class="py-2">Reintegration</td></tr>
+                                <tr><td class="py-2 font-semibold">Core Value</td><td class="py-2">Retribution</td><td class="py-2">Repair</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 text-center">WIS Score Time-Decay</h3>
+                        <p class="text-center text-gray-600 mb-4">This chart visualizes how a member's reputation (WIS) score recovers over time after a transgression, demonstrating the impact of both passive time-decay and an active "Ceremony of Forgiveness."</p>
+                        <div class="chart-container">
+                            <canvas id="redemptionChart"></canvas>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button id="ceremony-btn" class="bg-[#E85A4F] text-white px-4 py-2 rounded-lg hover:bg-[#d94a3f] transition-colors">Simulate Ceremony of Forgiveness</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gift" class="py-20 md:py-28 px-4">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold">Part III: The Unseen Gift</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This section tackles the "Shadow of Virtue": the risk of monetizing kindness. The "Unseen Gift" protocol creates a firebreak in the economy, allowing members to consciously opt-out of rewards for altruistic acts, thereby protecting the sacred core of the gift economy.</p>
+                </div>
+
+                <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg">
+                    <div class="flex justify-center items-center mb-6">
+                        <span class="mr-3 font-medium text-gray-700">Standard Act</span>
+                        <label for="gift-toggle" class="inline-flex relative items-center cursor-pointer">
+                            <input type="checkbox" value="" id="gift-toggle" class="sr-only peer">
+                            <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[#E85A4F]"></div>
+                        </label>
+                        <span class="ml-3 font-medium text-[#E85A4F]">Mark as Unseen Gift</span>
+                    </div>
+
+                    <div class="relative flex flex-col items-center p-8 space-y-16">
+                        <div class="flex justify-around w-full max-w-2xl">
+                            <div class="text-center">
+                                <div id="giver-node" class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center text-center p-2 font-semibold shadow-md transition-all">Giver</div>
+                            </div>
+                            <div class="text-center">
+                                <div id="recipient-node" class="w-24 h-24 bg-green-200 rounded-full flex items-center justify-center text-center p-2 font-semibold shadow-md transition-all">Recipient</div>
+                            </div>
+                        </div>
+
+                        <div id="treasury-node" class="text-center">
+                            <div class="w-24 h-24 bg-yellow-200 rounded-full flex items-center justify-center text-center p-2 font-semibold shadow-md transition-all">Living Treasury</div>
+                        </div>
+
+                        <div id="flow-explanation" class="text-center text-gray-600 font-medium h-12">
+                            In a standard act, value flows from Giver to Recipient, and a reward flows back to the Giver.
+                        </div>
+
+                        <svg class="absolute top-0 left-0 w-full h-full z-[-1]" id="flow-svg">
+                            <path id="reward-line" class="flow-diagram-line" d="M 25% 20% C 25% 40%, 75% 40%, 75% 20%" stroke="#2C3E50" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+                            <path id="gift-line" class="flow-diagram-line" d="M 75% 20% C 75% 0, 25% 0, 25% 20%" stroke="#E85A4F" stroke-width="2" fill="none" />
+                            <path id="treasury-line" class="flow-diagram-line" d="M 50% 20% L 50% 60%" stroke="#2C3E50" stroke-width="2" fill="none" stroke-dasharray="5,5" opacity="0" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="oracle" class="py-20 md:py-28 px-4 bg-white">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold">Part IV: The Oracle's Covenant</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">This section resolves the "Oracle's Dilemma" of AI governance. The AI is not a tool but a constitutional partner, governed by an on-chain Covenant and overseen by a human-in-the-loop "Asimov Council." This creates a transparent, co-evolutionary partnership.</p>
+                </div>
+
+                <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center">AI Governance: A Separation of Powers</h3>
+                    <p class="text-center text-gray-600 mb-8">Click on each component to learn more about its role in ensuring the AI's alignment.</p>
+                    <div class="grid md:grid-cols-3 gap-8 text-center">
+                        <div id="node-covenant" class="clickable-diagram-node bg-yellow-100 p-6 rounded-lg shadow">
+                            <span class="text-4xl">📜</span>
+                            <h4 class="font-bold text-lg mt-2">The AI's Covenant</h4>
+                            <p class="text-sm">Legislative Branch (The Law)</p>
+                        </div>
+                        <div id="node-council" class="clickable-diagram-node bg-blue-100 p-6 rounded-lg shadow">
+                            <span class="text-4xl">🏛️</span>
+                            <h4 class="font-bold text-lg mt-2">The Asimov Council</h4>
+                            <p class="text-sm">Judicial Branch (The Court)</p>
+                        </div>
+                        <div id="node-ai" class="clickable-diagram-node bg-green-100 p-6 rounded-lg shadow">
+                            <span class="text-4xl">🤖</span>
+                            <h4 class="font-bold text-lg mt-2">AI Daily Operation</h4>
+                            <p class="text-sm">Executive Branch (The Action)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card rounded-xl p-4 sm:p-8 shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4 text-center">Post-Quantum Cryptography for Enduring Sovereignty</h3>
+                     <p class="text-center text-gray-600 mb-4">The system's constitutional layers are secured with future-proof PQC algorithms to protect against the threat of quantum computers.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50">
+                                <tr class="border-b">
+                                    <th class="p-3 font-semibold text-[#2C3E50]">Algorithm Family</th>
+                                    <th class="p-3 font-semibold text-[#2C3E50]">NIST Standard</th>
+                                    <th class="p-3 font-semibold text-[#2C3E50]">Suitability</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="p-3">Lattice-based (Signature)</td><td class="p-3 font-mono">CRYSTALS-Dilithium</td><td class="p-3">High-frequency operations (e.g., validating transactions).</td></tr>
+                                <tr class="border-b"><td class="p-3">Lattice-based (KEM)</td><td class="p-3 font-mono">CRYSTALS-Kyber</td><td class="p-3">Establishing secure communication channels.</td></tr>
+                                <tr><td class="p-3">Hash-based (Signature)</td><td class="p-3 font-mono">SPHINCS+</td><td class="p-3">Highest-security, low-frequency operations (e.g., amending the Covenant).</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center py-16 px-4">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold">The Resonant Whole</h2>
+                <p class="mt-4 text-lg text-gray-600">These four harmonies—Seeker, Redemption, Gift, and Oracle—are interwoven to create a resilient, humane, and adaptive civilizational blueprint. They transform potential vulnerabilities into sources of coherence, ensuring the system's implementation can live up to the profound compassion of its intent.</p>
+            </div>
+        </footer>
+    </main>
+
+    <div id="info-modal-container" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="info-modal bg-white rounded-lg shadow-2xl max-w-md w-full p-6 relative">
+            <button id="close-modal-btn" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-[#2C3E50]"></h3>
+            <p id="modal-text" class="text-gray-600"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.5
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const seekerChat = {
+                chatWindow: document.getElementById('seeker-chat-window'),
+                optionsContainer: document.getElementById('seeker-options'),
+                explanationBox: document.getElementById('seeker-explanation'),
+                mandalaParts: {
+                    noesis: document.getElementById('mandala-noesis'),
+                    sophia: document.getElementById('mandala-sophia'),
+                    praxis: document.getElementById('mandala-praxis'),
+                },
+                currentStep: 0,
+                journey: [
+                    {
+                        doula: "Welcome. I am your AI Doula, a guide for your first steps. To begin, could you share one piece of knowledge that has been true and helpful for you? This will be your first gift to the Story Garden.",
+                        options: ["Share a piece of knowledge"],
+                        explanation: "This is the start of the Kolb Learning Cycle: a **Concrete Experience**.",
+                        mandala: null
+                    },
+                    {
+                        doula: "Thank you. What you just did was an act of **Noesis**—sharing a clear truth. The community values this, and you can see it reflected in the first light of your WIS mandala.",
+                        options: ["Share an act of kindness"],
+                        explanation: "This is **Reflective Observation** and **Abstract Conceptualization**. You reflect on the act and learn the principle behind it.",
+                        mandala: "noesis"
+                    },
+                    {
+                        doula: "Beautiful. That was an act of **Sophia**—compassion and kindness. Your mandala grows brighter. Now, how might you put these together in an effective action?",
+                        options: ["Offer practical help"],
+                        explanation: "The cycle continues. You are guided to the next experience.",
+                        mandala: "sophia"
+                    },
+                    {
+                        doula: "Wonderful. That was an act of **Praxis**—effective, skillful action. Your mandala is now complete. You have experienced the three bodies of a Sacred Act. Your journey as a Seeker is complete, and your path as a contributor begins.",
+                        options: ["Restart Journey"],
+                        explanation: "This is **Active Experimentation**. You've completed the cycle and are now integrated into the community.",
+                        mandala: "praxis"
+                    }
+                ],
+                init() {
+                    this.renderStep();
+                },
+                renderStep() {
+                    const step = this.journey[this.currentStep];
+                    this.addBubble('doula', step.doula);
+                    this.explanationBox.textContent = step.explanation;
+
+                    if (step.mandala) {
+                        this.mandalaParts[step.mandala].style.opacity = '1';
+                    }
+
+                    this.optionsContainer.innerHTML = '';
+                    step.options.forEach(optionText => {
+                        const button = document.createElement('button');
+                        button.textContent = optionText;
+                        button.className = 'bg-[#E85A4F] text-white px-4 py-2 rounded-lg hover:bg-[#d94a3f] transition-colors text-sm';
+                        button.onclick = () => this.nextStep();
+                        this.optionsContainer.appendChild(button);
+                    });
+                },
+                nextStep() {
+                    if (this.currentStep < this.journey.length - 1) {
+                        this.currentStep++;
+                    } else {
+                        this.currentStep = 0;
+                        Object.values(this.mandalaParts).forEach(p => p.style.opacity = '0');
+                        this.chatWindow.innerHTML = '';
+                    }
+                    this.renderStep();
+                },
+                addBubble(sender, text) {
+                    const bubble = document.createElement('div');
+                    bubble.className = `seeker-chat-bubble p-3 rounded-lg ${sender === 'doula' ? 'bg-white self-start' : 'bg-blue-100 self-end'}`;
+                    bubble.textContent = text;
+                    this.chatWindow.appendChild(bubble);
+                    this.chatWindow.scrollTop = this.chatWindow.scrollHeight;
+                }
+            };
+            seekerChat.init();
+
+            let redemptionChart;
+            const ceremonyBtn = document.getElementById('ceremony-btn');
+            const initialData = [100, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100];
+            const ceremonyData = [100, 80, 82, 84, 95, 96, 97, 98, 99, 100, 100, 100];
+            let ceremonyApplied = false;
+
+            const renderRedemptionChart = () => {
+                const ctx = document.getElementById('redemptionChart').getContext('2d');
+                if(redemptionChart) {
+                    redemptionChart.destroy();
+                }
+                redemptionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Transgression', '1W', '2W', '3W', '1M', '2M', '3M', '4M', '5M', '6M', '7M', '8M'],
+                        datasets: [{
+                            label: 'WIS Score Recovery (Time-Decay Only)',
+                            data: initialData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.1,
+                            fill: true,
+                        },
+                        {
+                            label: 'Recovery with Ceremony',
+                            data: ceremonyApplied ? ceremonyData : initialData.map(() => null),
+                            borderColor: '#E85A4F',
+                            backgroundColor: 'rgba(232, 90, 79, 0.2)',
+                            tension: 0.1,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: false, suggestedMax: 105, title: { display: true, text: 'WIS Score' } } }
+                    }
+                });
+            };
+            ceremonyBtn.addEventListener('click', () => {
+                ceremonyApplied = !ceremonyApplied;
+                renderRedemptionChart();
+                ceremonyBtn.textContent = ceremonyApplied ? 'Reset Simulation' : 'Simulate Ceremony of Forgiveness';
+            });
+            renderRedemptionChart();
+
+            const giftToggle = document.getElementById('gift-toggle');
+            const rewardLine = document.getElementById('reward-line');
+            const giftLine = document.getElementById('gift-line');
+            const treasuryLine = document.getElementById('treasury-line');
+            const flowExplanation = document.getElementById('flow-explanation');
+
+            giftToggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    rewardLine.style.opacity = '0';
+                    treasuryLine.style.opacity = '1';
+                    flowExplanation.textContent = "When marked as an Unseen Gift, the giver forgoes personal reward. The value nourishes the entire commons via the Living Treasury.";
+                } else {
+                    rewardLine.style.opacity = '1';
+                    treasuryLine.style.opacity = '0';
+                    flowExplanation.textContent = "In a standard act, value flows from Giver to Recipient, and a reward flows back to the Giver.";
+                }
+            });
+
+            const modalContainer = document.getElementById('info-modal-container');
+            const modalTitle = document.getElementById('modal-title');
+            const modalText = document.getElementById('modal-text');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            const modalContent = {
+                covenant: {
+                    title: "📜 The AI's Covenant",
+                    text: "The 'Legislative Branch.' This is a formal, on-chain constitution containing the AI's core principles (e.g., user sovereignty, harmlessness). It is secured with Post-Quantum Cryptography and is exceptionally difficult to change, providing profound stability."
+                },
+                council: {
+                    title: "🏛️ The Asimov Council",
+                    text: "The 'Judicial Branch.' A diverse, human-in-the-loop council that acts as the steward of the Covenant. It interprets principles, reviews the AI's behavior, and provides ethical oversight, ensuring human judgment remains the final arbiter."
+                },
+                ai: {
+                    title: "🤖 AI Daily Operation",
+                    text: "The 'Executive Branch.' The AI's day-to-day actions are guided by its Covenant and operational heuristics. When it encounters a conflict between its principles (a 'Dissonance'), it automatically flags the issue for review by the Asimov Council."
+                }
+            };
+
+            const openModal = (id) => {
+                const content = modalContent[id];
+                modalTitle.textContent = content.title;
+                modalText.textContent = content.text;
+                modalContainer.classList.remove('hidden');
+            };
+
+            const closeModal = () => {
+                modalContainer.classList.add('hidden');
+            };
+
+            document.getElementById('node-covenant').addEventListener('click', () => openModal('covenant'));
+            document.getElementById('node-council').addEventListener('click', () => openModal('council'));
+            document.getElementById('node-ai').addEventListener('click', () => openModal('ai'));
+            closeModalBtn.addEventListener('click', closeModal);
+            modalContainer.addEventListener('click', (e) => {
+                if (e.target === modalContainer) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

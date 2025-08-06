@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The AI Brain: A Local AI Infographic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #011627;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #94d2bd;
+            line-height: 1;
+        }
+        .flow-box {
+            border-color: #0a9396;
+            background-color: #012a4a;
+        }
+        .kpi-card {
+             background-color: #012a4a;
+             border: 1px solid #0a9396;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl font-black text-white mb-2">The Local AI Brain</h1>
+            <p class="text-xl md:text-2xl text-[#94d2bd] max-w-4xl mx-auto">An Engineering Blueprint for a Private, Powerful, and Personal AI Partner</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div class="kpi-card rounded-xl shadow-2xl p-6 text-center">
+                <div class="text-6xl mb-2">🧠</div>
+                <h3 class="text-2xl font-bold text-white">Long-Term Memory</h3>
+                <p class="text-[#94d2bd]">Fast, local recall via an optimized RAG pipeline.</p>
+            </div>
+            <div class="kpi-card rounded-xl shadow-2xl p-6 text-center">
+                <div class="text-6xl mb-2">⚙️</div>
+                <h3 class="text-2xl font-bold text-white">Co-Evolving Learner</h3>
+                <p class="text-[#94d2bd]">Adapts to you with lightweight, on-device fine-tuning.</p>
+            </div>
+            <div class="kpi-card rounded-xl shadow-2xl p-6 text-center">
+                <div class="text-6xl mb-2">🔍</div>
+                <h3 class="text-2xl font-bold text-white">Causal Explanations</h3>
+                <p class="text-[#94d2bd]">Understands 'why' things happen, not just 'what'.</p>
+            </div>
+        </div>
+
+        <main class="space-y-12">
+
+            <section id="memory" class="bg-[#012a4a]/50 rounded-2xl p-6 md:p-8 shadow-lg backdrop-blur-sm border border-white/10">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 1: Architecting Long-Term Memory</h2>
+                <p class="mb-8 text-lg text-gray-300">An AI's intelligence depends on its memory. For a local partner, this memory must be fast, efficient, and reliable without consuming all your device's resources. We use a Retrieval-Augmented Generation (RAG) system, and choosing the right components is critical.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">Vector Database Showdown</h3>
+                        <p class="text-gray-400 mb-4">The vector database is the core of our RAG memory. We need one that's built for on-device deployment. Our analysis shows a clear winner based on stability and low memory usage.</p>
+                        <div class="chart-container">
+                            <canvas id="vectorDbChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">CPU-Optimized Embedding Model</h3>
+                        <p class="text-gray-400 mb-6">To turn text into vectors on a standard CPU, we use a multi-stage optimization process to create a model that is both small and incredibly fast.</p>
+                        <div class="flex flex-col items-center justify-center space-y-4 h-full">
+                            <div class="flow-box border-2 rounded-lg p-4 text-center w-full max-w-sm">
+                                <p class="font-semibold text-white">Base Model</p>
+                                <p class="text-sm text-[#94d2bd]">all-MiniLM-L6-v2</p>
+                            </div>
+                            <div class="flow-arrow">⬇️</div>
+                            <div class="flow-box border-2 rounded-lg p-4 text-center w-full max-w-sm">
+                                <p class="font-semibold text-white">ONNX Conversion</p>
+                                <p class="text-sm text-[#94d2bd]">For cross-platform speed</p>
+                            </div>
+                            <div class="flow-arrow">⬇️</div>
+                            <div class="flow-box border-2 rounded-lg p-4 text-center w-full max-w-sm">
+                                <p class="font-semibold text-white">INT8 Quantization</p>
+                                <p class="text-sm text-[#ee9b00] font-bold">Optimized CPU Model</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <section id="learning" class="bg-[#012a4a]/50 rounded-2xl p-6 md:p-8 shadow-lg backdrop-blur-sm border border-white/10">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 2: Enabling Co-Evolution</h2>
+                <p class="mb-8 text-lg text-gray-300">A true partner learns and adapts. We enable this with a revolutionary fine-tuning technique that is efficient enough to run locally, allowing the AI to personalize itself based on your feedback without sending data to the cloud.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">The DPO Advantage</h3>
+                        <p class="text-gray-400 mb-4">Traditional RLHF is too complex for local training. Direct Preference Optimization (DPO) is a stable, lightweight alternative that makes on-device learning possible.</p>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="border-2 border-red-500/50 bg-red-900/20 rounded-lg p-4 w-full">
+                                <h4 class="font-bold text-white text-lg">❌ Traditional RLHF</h4>
+                                <ul class="list-disc list-inside text-gray-300 mt-2">
+                                    <li>Complex multi-model process</li>
+                                    <li>Computationally expensive</li>
+                                    <li>Unstable training dynamics</li>
+                                </ul>
+                            </div>
+                            <div class="border-2 border-green-500/50 bg-green-900/20 rounded-lg p-4 w-full">
+                                <h4 class="font-bold text-white text-lg">✅ Direct Preference Optimization (DPO)</h4>
+                                <ul class="list-disc list-inside text-gray-300 mt-2">
+                                    <li>Simple classification objective</li>
+                                    <li>Lightweight and performant</li>
+                                    <li>Stable and reliable</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">How LoRA Makes it Possible</h3>
+                        <p class="text-gray-400 mb-4">We use Low-Rank Adaptation (LoRA) to fine-tune. Instead of retraining the entire model, we only update a tiny fraction of its parameters, drastically reducing memory requirements.</p>
+                        <div class="chart-container">
+                            <canvas id="loraChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="xai" class="bg-[#012a4a]/50 rounded-2xl p-6 md:p-8 shadow-lg backdrop-blur-sm border border-white/10">
+                <h2 class="text-3xl font-bold text-white mb-4">Pillar 3: The Causal XAI Engine</h2>
+                <p class="mb-8 text-lg text-gray-300">To provide true explanations, we must go beyond correlation and understand causation. Our Causal XAI engine uses a hybrid strategy to analyze your command history and uncover the 'why' behind your workflows.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">A Hybrid Causal Strategy</h3>
+                        <p class="text-gray-400 mb-4">No single tool answers all causal questions for time-series data. We combine two specialized libraries for a complete solution.</p>
+                        <div class="space-y-6">
+                            <div class="flow-box border-2 rounded-lg p-4">
+                                <h4 class="text-lg font-bold text-[#94d2bd]">Causal Discovery: Tigramite</h4>
+                                <p>Continuously runs in the background to answer: <strong class="text-white">"What causes what?"</strong> It maps the hidden structure of your workflow.</p>
+                            </div>
+                            <div class="flow-box border-2 rounded-lg p-4">
+                                <h4 class="text-lg font-bold text-[#ee9b00]">Causal Estimation: CausalPy</h4>
+                                <p>Runs on-demand to answer: <strong class="text-white">"What was the impact of X?"</strong> It precisely measures the effect of a specific event.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">Example: Measuring an Intervention's Impact</h3>
+                        <p class="text-gray-400 mb-4">CausalPy can quantify the effect of an event, like installing a new plugin, on your command usage, separating the true effect from random noise.</p>
+                         <div class="chart-container">
+                            <canvas id="causalImpactChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="conclusion" class="bg-[#012a4a]/50 rounded-2xl p-6 md:p-8 shadow-lg backdrop-blur-sm border border-white/10">
+                <h2 class="text-3xl font-bold text-white mb-4 text-center">The Unified Architecture</h2>
+                <p class="mb-8 text-lg text-gray-300 max-w-4xl mx-auto text-center">These three pillars—Memory, Learning, and Explainability—combine to form a cohesive, powerful, and private AI system that runs entirely on your device, putting you in control.</p>
+                 <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="flow-box border-2 rounded-lg p-3 text-center">
+                        <p class="font-bold text-white">Local RAG</p>
+                        <p class="text-sm text-[#94d2bd]">LanceDB</p>
+                    </div>
+                    <div class="flow-arrow transform md:-translate-y-2">➡️</div>
+                     <div class="flow-box border-2 rounded-lg p-3 text-center">
+                        <p class="font-bold text-white">LLM Response</p>
+                        <p class="text-sm text-[#94d2bd]">On-Device</p>
+                    </div>
+                    <div class="flow-arrow transform md:-translate-y-2">➡️</div>
+                    <div class="flow-box border-2 rounded-lg p-3 text-center">
+                        <p class="font-bold text-white">Local Learning</p>
+                        <p class="text-sm text-[#94d2bd]">DPO + LoRA</p>
+                    </div>
+                    <div class="flow-arrow transform md:-translate-y-2">➡️</div>
+                    <div class="flow-box border-2 rounded-lg p-3 text-center">
+                        <p class="font-bold text-white">Causal Insights</p>
+                        <p class="text-sm text-[#94d2bd]">Tigramite + CausalPy</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <script>
+        const wrapLabel = (label, maxLength = 16) => {
+            if (typeof label !== 'string' || label.length <= maxLength) {
+                return label;
+            }
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + word).length > maxLength) {
+                    lines.push(currentLine.trim());
+                    currentLine = '';
+                }
+                currentLine += word + ' ';
+            }
+            lines.push(currentLine.trim());
+            return lines.filter(line => line.length > 0);
+        };
+
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            if (!item) return '';
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+                return label.join(' ');
+            }
+            return label;
+        };
+
+        const commonChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#94d2bd',
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: tooltipTitleCallback
+                    },
+                    backgroundColor: '#011627',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#94d2bd',
+                    borderColor: '#0a9396',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#94d2bd' },
+                    grid: { color: 'rgba(148, 210, 189, 0.1)' }
+                },
+                y: {
+                    ticks: { color: '#94d2bd' },
+                    grid: { color: 'rgba(148, 210, 189, 0.1)' },
+                    beginAtZero: true
+                }
+            }
+        };
+
+        const vectorDbData = {
+            labels: ['LanceDB', 'Qdrant', 'ChromaDB', 'FAISS'],
+            datasets: [{
+                label: 'On-Device Suitability Score',
+                data: [95, 80, 40, 30],
+                backgroundColor: ['#0a9396', '#94d2bd', '#ca6702', '#ae2012'],
+                borderColor: '#011627',
+                borderWidth: 2
+            }]
+        };
+
+        new Chart(document.getElementById('vectorDbChart'), {
+            type: 'bar',
+            data: vectorDbData,
+            options: {
+                ...commonChartOptions,
+                indexAxis: 'y',
+                scales: {
+                    x: { ...commonChartOptions.scales.x, max: 100 },
+                    y: { ...commonChartOptions.scales.y }
+                }
+            }
+        });
+
+        const loraData = {
+            labels: ['Frozen Base Model', 'Trainable LoRA Adapters'],
+            datasets: [{
+                data: [99.9, 0.1],
+                backgroundColor: ['#005f73', '#ee9b00'],
+                borderColor: '#012a4a',
+                borderWidth: 4,
+                hoverOffset: 4
+            }]
+        };
+
+        new Chart(document.getElementById('loraChart'), {
+            type: 'doughnut',
+            data: loraData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#94d2bd',
+                            font: { size: 14 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed + '% of Parameters';
+                                }
+                                return label;
+                            }
+                        },
+                        backgroundColor: '#011627',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#94d2bd',
+                        borderColor: '#0a9396',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+
+        const causalImpactData = {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'],
+            datasets: [{
+                label: 'Command Usage',
+                data: [20, 22, 19, 21, 23, 15, 12, 14, 11, 10],
+                borderColor: '#0a9396',
+                backgroundColor: 'rgba(10, 147, 150, 0.2)',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Projected Trend',
+                data: [20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5],
+                borderColor: '#ca6702',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3
+            }]
+        };
+
+        const interventionPlugin = {
+            id: 'interventionLine',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+                const interventionX = x.getPixelForValue(4.5);
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(interventionX, top);
+                ctx.lineTo(interventionX, bottom);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ee9b00';
+                ctx.stroke();
+                ctx.fillStyle = '#ee9b00';
+                ctx.textAlign = 'center';
+                ctx.fillText('Plugin Installed', interventionX, top - 5);
+                ctx.restore();
+            }
+        };
+
+        new Chart(document.getElementById('causalImpactChart'), {
+            type: 'line',
+            data: causalImpactData,
+            options: commonChartOptions,
+            plugins: [interventionPlugin]
+        });
+
+    </script>
+
+</body>
+</html>

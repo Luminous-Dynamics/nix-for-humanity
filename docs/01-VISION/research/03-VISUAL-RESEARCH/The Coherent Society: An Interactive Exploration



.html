@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Coherent Society: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Subtle Accents -->
+    <!-- Application Structure Plan: The application is structured into three main thematic sections corresponding to the report's parts: Food, Culture, and Governance. This is managed by a top-level tab navigation. This structure was chosen to break down the dense, complex report into manageable, user-selectable topics, preventing cognitive overload. Within each section, content is organized using a "Problem vs. Solution" narrative, interactive diagrams, and key concept cards. This transforms passive text into an active exploration, guiding the user through the core arguments of the report in a logical, intuitive flow rather than a simple linear reading. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Comparative Tables (Food, Culture) -> Goal: Compare -> Viz: Interactive HTML Tables -> Interaction: Row highlight on hover -> Justification: Makes data comparison more engaging and focused. -> Method: HTML/JS.
+        - Report Info: Polycentric WIS, Bio-Commons Trust, DAO-as-Studio, Curation Model, Tempered Democracy -> Goal: Organize/Explain Process -> Viz: Custom diagrams built with HTML/CSS Flexbox/Grid -> Interaction: Click/hover on components to reveal detailed text -> Justification: Visually unpacks complex systems and flows, making them far more intuitive than descriptive text alone. Progressive disclosure of information keeps the UI clean. -> Method: HTML/CSS/JS.
+        - Report Info: DAO Treasury Stats -> Goal: Inform -> Viz: Bar Chart -> Interaction: Tooltips on hover -> Justification: Standard, clear way to present key quantitative data. -> Library: Chart.js.
+        - Report Info: Constitutional Safeguards -> Goal: Organize/Inform -> Viz: Icon-based cards -> Interaction: Click to expand -> Justification: More visually appealing and metaphorical than a simple list. -> Method: HTML/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9FAFB;
+            color: #1F2937;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            border-bottom-width: 2px;
+            font-weight: 600;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .interactive-diagram-item {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .interactive-diagram-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .details-panel {
+            display: none;
+            max-height: 0px;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .details-panel.show {
+            display: block;
+            max-height: 1000px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .comparison-table tr:hover {
+            background-color: #F3F4F6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800">The Coherent Society</h1>
+                <p class="mt-1 text-md text-gray-600">An Interactive Analysis of the Nix Stack for Foundational Sector Transformation</p>
+            </div>
+            <nav class="mt-4 border-b border-gray-200">
+                <ul class="flex justify-center -mb-px space-x-4 sm:space-x-8">
+                    <li><button data-target="food" class="nav-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none active" style="border-color: #3B82F6; color: #1E40AF;">🍎 Regenerative Food Web</button></li>
+                    <li><button data-target="culture" class="nav-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">🎨 Cultural Commons</button></li>
+                    <li><button data-target="governance" class="nav-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">🏛️ Coherent Polis</button></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <!-- Food Section -->
+        <section id="food" class="content-section active">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-blue-800">The Regenerative Food Web</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">This section explores how the Nix Stack can address the immense logistical and trust-based challenges of transitioning from a brittle industrial food system to a resilient, decentralized, and regenerative one. We will examine how to coordinate a network of small farms, integrate diverse knowledge systems, and protect shared genetic resources.</p>
+            </div>
+
+            <div class="space-y-16">
+                <!-- Logistics -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 1: The Logistical Imperative</h3>
+                    <p class="text-gray-700 mb-6">Industrial food systems are efficient but fragile. A decentralized network of regenerative farms has the potential for resilience but faces a massive coordination problem: the "last hundred-mile problem." How can thousands of small producers efficiently supply a dense urban center? The solution lies in creating a decentralized logistical hub.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The Nix-Native Regenerative Food Web</h4>
+                        <div class="grid md:grid-cols-3 gap-6 text-center">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <div class="text-4xl mb-2">🤝</div>
+                                <h5 class="font-semibold text-lg">Farmer Cooperative</h5>
+                                <p class="text-sm text-gray-600">A Resonant Cooperative acts as a decentralized logistical hub, not just a purchasing group.</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <div class="text-4xl mb-2">💰</div>
+                                <h5 class="font-semibold text-lg">Living Treasury</h5>
+                                <p class="text-sm text-gray-600">Pools capital to fund shared infrastructure like refrigerated transport, warehouses, and processing facilities.</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <div class="text-4xl mb-2">🔗</div>
+                                <h5 class="font-semibold text-lg">Decentralized Coordination</h5>
+                                <p class="text-sm text-gray-600">Holochain and tokenomics (WIS/HEART/SPK) create a trusted marketplace for logistics, solving the information problem that hobbles current systems.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 2: The Terroir of Trust</h3>
+                    <p class="text-gray-700 mb-6">How can we create a reputation system that values both traditional, place-based knowledge (TEK) and modern scientific metrics (MAP) without one dominating the other? A monolithic reputation score risks becoming a new form of colonialism. The solution requires a federated, multi-layered approach to validation.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The Polycentric WIS Score</h4>
+                        <p class="text-center text-gray-600 mb-6">Click on each component to learn more. A farmer's reputation is a composite of attestations from different, legitimate sources of authority, creating a rich "terroir of trust."</p>
+                        <div class="flex flex-col items-center">
+                            <div class="relative w-full max-w-2xl">
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-blue-600 text-white rounded-full flex items-center justify-center text-center font-bold p-2 z-10">Farmer's Reputation</div>
+                                <div id="polycentric-wis-diagram" class="relative w-full" style="padding-top: 100%;">
+                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -mt-6">
+                                        <button data-target="details-tek" class="interactive-diagram-item w-32 h-32 bg-green-200 text-green-800 rounded-full flex items-center justify-center text-center font-semibold p-2 shadow-md">Local Coherence (TEK)</button>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0">
+                                        <button data-target="details-map" class="interactive-diagram-item w-32 h-32 bg-purple-200 text-purple-800 rounded-full flex items-center justify-center text-center font-semibold p-2 shadow-md">Scientific Coherence (MAP)</button>
+                                    </div>
+                                    <div class="absolute bottom-0 right-0">
+                                        <button data-target="details-consumer" class="interactive-diagram-item w-32 h-32 bg-yellow-200 text-yellow-800 rounded-full flex items-center justify-center text-center font-semibold p-2 shadow-md">Consumer Coherence</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="details-tek" class="details-panel w-full max-w-2xl mt-4 bg-green-50 p-4 rounded-lg border border-green-200">
+                                <h5 class="font-bold text-green-800">Local Coherence (TEK)</h5>
+                                <p class="text-green-700">Validation through peer review among trusted farmers within the local cooperative. This layer values Traditional Ecological Knowledge, stewardship, and place-based wisdom, creating a web of localized, expert trust.</p>
+                            </div>
+                            <div id="details-map" class="details-panel w-full max-w-2xl mt-4 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                <h5 class="font-bold text-purple-800">Scientific Coherence (MAP)</h5>
+                                <p class="text-purple-700">Attestations from trusted third parties (universities, agronomists) based on standardized metrics like soil carbon, water retention, and biodiversity counts. This provides objective, verifiable data for a wider audience.</p>
+                            </div>
+                            <div id="details-consumer" class="details-panel w-full max-w-2xl mt-4 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <h5 class="font-bold text-yellow-800">Consumer Coherence</h5>
+                                <p class="text-yellow-700">Direct feedback from consumers on qualitative aspects like taste, freshness, and perceived health benefits. The Resonant Signature on produce provides the cryptographic link for this feedback.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Genetic Commons -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 3: The Genetic Commons</h3>
+                    <p class="text-gray-700 mb-6">How can a cooperative develop and share open-source, climate-resilient seeds without them being privatized by corporate interests? A simple public domain release is not enough. The solution requires a multi-layered governance framework to protect and nurture this living asset.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The Bio-Commons Trust</h4>
+                        <p class="text-center text-gray-600 mb-6">A dynamic, self-improving institution that integrates legal defense, internal governance, and a generative economic engine. Click each layer to see details.</p>
+                        <div id="biocommons-diagram" class="relative p-4 border-2 border-blue-600 rounded-lg">
+                            <h5 class="absolute -top-4 left-4 bg-white px-2 font-bold text-blue-700">Bio-Commons Trust</h5>
+                            <div data-target="details-legal" class="interactive-diagram-item relative mt-4 p-4 border-2 border-blue-500 rounded-lg bg-blue-50">
+                                <h6 class="absolute -top-3.5 left-4 bg-blue-50 px-2 font-semibold text-blue-600">Layer 1: Legal Shield</h6>
+                                <p class="mt-2 text-sm text-blue-800">The Trust acts as the legal custodian, distributing all seeds under an Open-Source Seed License (OSSL) that prevents patenting and privatization.</p>
+                            </div>
+                            <div id="details-legal" class="details-panel bg-blue-100 p-4 rounded-md"></div>
+
+                            <div data-target="details-coherence" class="interactive-diagram-item relative mt-4 p-4 border-2 border-blue-400 rounded-lg bg-blue-50">
+                                <h6 class="absolute -top-3.5 left-4 bg-blue-50 px-2 font-semibold text-blue-600">Layer 2: Coherence Gate</h6>
+                                <p class="mt-2 text-sm text-blue-800">Internal governance via Holochain. Access to the seed bank is governed by the co-op's rules, such as requiring a minimum WIS score in regenerative practices.</p>
+                            </div>
+                            <div id="details-coherence" class="details-panel bg-blue-100 p-4 rounded-md"></div>
+
+                            <div data-target="details-economic" class="interactive-diagram-item relative mt-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
+                                <h6 class="absolute -top-3.5 left-4 bg-blue-50 px-2 font-semibold text-blue-600">Layer 3: Economic Engine</h6>
+                                <p class="mt-2 text-sm text-blue-800">The Living Treasury funds R&D, rewards contributors, and is sustained by a "commons tithe"—a small percentage of revenue from produce grown with commons seeds.</p>
+                            </div>
+                            <div id="details-economic" class="details-panel bg-blue-100 p-4 rounded-md"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Culture Section -->
+        <section id="culture" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-purple-800">The Regenerative Cultural Commons</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">This section evaluates how the Nix Stack can reshape the creative economy. It addresses the challenges of funding large-scale art, balancing democratic taste with expert curation, and ensuring the long-term preservation of our digital cultural heritage against technological obsolescence.</p>
+            </div>
+
+            <div class="space-y-16">
+                <!-- Scaling Patronage -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 1: From Niche to Cathedral</h3>
+                    <p class="text-gray-700 mb-6">Can decentralized patronage fund massive, multi-year cultural projects like films or symphonies? While capital aggregation is possible (DAOs hold billions), the key challenges are long-term risk management and temporal coordination. Simple crowdfunding is not enough.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The "DAO-as-Studio" Model</h4>
+                        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                            <div class="p-4 bg-purple-50 rounded-lg w-full md:w-1/4">
+                                <div class="text-3xl">🏛️</div>
+                                <h5 class="font-semibold">Patronage DAO</h5>
+                                <p class="text-sm">Aggregates capital and provides democratic legitimacy.</p>
+                            </div>
+                            <div class="text-2xl font-bold text-purple-500">&rarr;</div>
+                            <div class="p-4 bg-purple-50 rounded-lg w-full md:w-1/4">
+                                <div class="text-3xl">📝</div>
+                                <h5 class="font-semibold">Production Guild</h5>
+                                <p class="text-sm">An expert team submits a proposal with budget and milestones.</p>
+                            </div>
+                            <div class="text-2xl font-bold text-purple-500">&rarr;</div>
+                            <div class="p-4 bg-purple-50 rounded-lg w-full md:w-1/4">
+                                <div class="text-3xl">🏦</div>
+                                <h5 class="font-semibold">Escrow & Tranches</h5>
+                                <p class="text-sm">DAO approves, funds are escrowed, and released upon milestone completion.</p>
+                            </div>
+                        </div>
+                         <div class="mt-6">
+                            <h4 class="font-semibold text-lg text-center mb-4">DAO Financial Power</h4>
+                            <div class="chart-container">
+                                <canvas id="daoTreasuryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Curation -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 2: The Curator's Dilemma</h3>
+                    <p class="text-gray-700 mb-6">How do we avoid the extremes of unaccountable elite gatekeepers on one hand, and a "populist" mob rule that only funds the safe and familiar on the other? The solution is to reframe the curator's role from a gatekeeper to an accountable, community-serving synthesizer.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: Coherence-Based Curation</h4>
+                        <p class="text-center text-gray-600 mb-6">A dynamic, transparent market for "taste-shaping as a service" that balances broad community signals with expert vision.</p>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="border border-purple-200 bg-purple-50 p-4 rounded-lg">
+                                <h5 class="font-bold text-purple-800">1. The Broad Signal</h5>
+                                <p class="text-sm text-purple-700">The flow of HEART/SPK from the community provides a high-fidelity signal of what is resonating with the audience—the raw data of community taste.</p>
+                            </div>
+                            <div class="border border-purple-200 bg-purple-50 p-4 rounded-lg">
+                                <h5 class="font-bold text-purple-800">2. Expert Synthesis</h5>
+                                <p class="text-sm text-purple-700">High-WIS curators analyze these signal flows to identify emergent themes and unmet desires. Their role is to sense and synthesize, not dictate.</p>
+                            </div>
+                            <div class="border border-purple-200 bg-purple-50 p-4 rounded-lg">
+                                <h5 class="font-bold text-purple-800">3. Accountable Vision</h5>
+                                <p class="text-sm text-purple-700">Curators formulate ambitious proposals based on their synthesis, which are then submitted to the Patronage DAO for a community funding vote. Their power is delegated and checked by the community.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preservation -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 3: The Digital Scriptorium</h3>
+                    <p class="text-gray-700 mb-6">Digital art is uniquely fragile, threatened by the rapid obsolescence of file formats, software, and hardware. How do we ensure our cultural heritage survives for 100+ years? Preservation requires a continuous, funded, and institutional approach.</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: A Strategy for Cultural Immortality</h4>
+                         <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 comparison-table">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Challenge</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ad-Hoc Decentralized (NFT on IPFS)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-bold text-purple-700">Nix-Native "Stewardship Guild" Model</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Media Obsolescence</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-500">Relies on individual collectors to solve.</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-semibold">Proactive migration/emulation by a dedicated, expert Guild.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Long-Term Storage Costs</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-500">Unfunded; relies on altruism.</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-semibold">Covered in perpetuity by a mandatory "Perpetuity Endowment."</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Loss of Context/Metadata</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-500">Minimal metadata, vulnerable to link rot.</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-semibold">Rich metadata cryptographically linked and actively managed.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Posthumous Rights</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-500">Unclear and fragmented authority.</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-semibold">Artist's wishes encoded in a "Posthumous Intent" smart contract, executed by the Guild.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Governance Section -->
+        <section id="governance" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-indigo-800">The Coherence-Weighted Polis</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">This final section analyzes the application of the Nix Stack to governance itself. It confronts the profound risks of weighting votes by expertise (epistocracy), including technocratic elitism, political polarization, and the instability of overly-responsive systems.</p>
+            </div>
+            <div class="space-y-16">
+                <!-- Epistocracy -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 1: The Epistocracy Paradox</h3>
+                    <p class="text-gray-700 mb-6">Weighting votes by a WIS score (rule of the knowledgeable) could lead to better outcomes, but it risks creating an unaccountable technocratic elite. How can we benefit from expertise without sacrificing the foundational democratic principle of political equality?</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The Digital Constitution</h4>
+                        <p class="text-center text-gray-600 mb-6">A set of hard-coded, inviolable safeguards that constrain the WIS-weighted system, ensuring it remains fundamentally democratic. Click a safeguard to learn more.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div data-target="details-floor" class="interactive-diagram-item text-center p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                                <div class="text-4xl mb-2">🏛️</div>
+                                <h5 class="font-semibold text-indigo-800">The Democratic Floor</h5>
+                            </div>
+                             <div data-target="details-override" class="interactive-diagram-item text-center p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                                <div class="text-4xl mb-2">📢</div>
+                                <h5 class="font-semibold text-indigo-800">Right of Popular Override</h5>
+                            </div>
+                             <div data-target="details-domain" class="interactive-diagram-item text-center p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                                <div class="text-4xl mb-2">🎯</div>
+                                <h5 class="font-semibold text-indigo-800">Strict Domain-Specificity</h5>
+                            </div>
+                             <div data-target="details-transparency" class="interactive-diagram-item text-center p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                                <div class="text-4xl mb-2">🔍</div>
+                                <h5 class="font-semibold text-indigo-800">Algorithmic Transparency</h5>
+                            </div>
+                        </div>
+                        <div id="details-floor" class="details-panel w-full mt-4 bg-indigo-100 p-4 rounded-lg border border-indigo-200">
+                            <h5 class="font-bold text-indigo-800">The Democratic Floor</h5>
+                            <p class="text-indigo-700">"One Person, One Vote" is preserved as an inviolable baseline. WIS-weighting is a *bonus* applied on top of an equal share of power, not a prerequisite for participation.</p>
+                        </div>
+                        <div id="details-override" class="details-panel w-full mt-4 bg-indigo-100 p-4 rounded-lg border border-indigo-200">
+                            <h5 class="font-bold text-indigo-800">Right of Popular Override</h5>
+                            <p class="text-indigo-700">A high supermajority (e.g., 75%) of the raw, unweighted popular vote can override any decision made by the weighted system, serving as a democratic emergency brake.</p>
+                        </div>
+                        <div id="details-domain" class="details-panel w-full mt-4 bg-indigo-100 p-4 rounded-lg border border-indigo-200">
+                            <h5 class="font-bold text-indigo-800">Strict Domain-Specificity & Decay</h5>
+                            <p class="text-indigo-700">A high WIS in one domain (e.g., climate science) confers zero extra influence in another (e.g., monetary policy). All WIS scores decay over time, preventing a permanent ruling class.</p>
+                        </div>
+                        <div id="details-transparency" class="details-panel w-full mt-4 bg-indigo-100 p-4 rounded-lg border border-indigo-200">
+                            <h5 class="font-bold text-indigo-800">Algorithmic Transparency</h5>
+                            <p class="text-indigo-700">The code governing WIS scores is fully open-source and auditable by any citizen, preventing a "black box" technocracy.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Polarization -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 2: The Coherence Bubble</h3>
+                    <p class="text-gray-700 mb-6">A reputation system where peers confer status is highly vulnerable to creating ideological "echo chambers," exacerbating polarization. How do we prevent the system from simply calcifying existing political divisions?</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: The "Albedo-Bridge" Score</h4>
+                        <p class="text-center text-gray-600 mb-6">A mechanism designed to make bridge-building and cross-ideological synthesis the most valuable and reputation-enhancing activity in the political sphere. It fundamentally alters the incentive structure of political discourse.</p>
+                        <div class="flex flex-col md:flex-row items-center justify-around text-center p-6 bg-indigo-50 rounded-lg">
+                            <div class="w-24 h-24 rounded-full bg-red-200 flex items-center justify-center font-bold text-red-800">Cluster A</div>
+                            <div class="flex flex-col items-center mx-4">
+                                <div class="text-lg font-semibold">Contribution</div>
+                                <div class="text-4xl text-indigo-500 my-2">🌉</div>
+                                <div class="font-bold text-xl text-green-600">Exponential Albedo-Bridge Score Boost</div>
+                                <p class="text-sm">When a contribution from one cluster is validated by another.</p>
+                            </div>
+                            <div class="w-24 h-24 rounded-full bg-blue-200 flex items-center justify-center font-bold text-blue-800">Cluster B</div>
+                        </div>
+                        <p class="text-center text-gray-700 mt-4">This inverts the logic of social media. The highest status flows not to the most effective partisan warrior, but to the most effective diplomat, translator, and synthesizer—the "Coherence Weaver."</p>
+                    </div>
+                </div>
+
+                <!-- Stability -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Challenge 3: The Governor's Dilemma</h3>
+                    <p class="text-gray-700 mb-6">Pure liquid democracy, where citizens can delegate and revoke votes instantly, risks being dangerously volatile and prone to "flash mob" governance. How do we balance responsiveness with the need for stability, deliberation, and minority rights?</p>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h4 class="font-bold text-xl text-center mb-4">Solution: Tempered Liquid Democracy</h4>
+                        <p class="text-center text-gray-600 mb-6">The system is endowed with governmental "biorhythms" by introducing structured friction, with the amount of friction proportional to the gravity of the decision.</p>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="border-2 border-green-300 bg-green-50 p-4 rounded-lg text-center">
+                                <h5 class="font-bold text-green-800">Tier 1: High Liquidity</h5>
+                                <div class="text-3xl my-2">⚡</div>
+                                <p class="text-sm text-green-700"><strong>Instant.</strong> Applies to delegation/revocation of votes. Preserves the core accountability mechanism—the ability to fire your representative at any time.</p>
+                            </div>
+                            <div class="border-2 border-yellow-400 bg-yellow-50 p-4 rounded-lg text-center">
+                                <h5 class="font-bold text-yellow-800">Tier 2: Medium Liquidity</h5>
+                                <div class="text-3xl my-2">⏳</div>
+                                <p class="text-sm text-yellow-700"><strong>Time-Locked.</strong> Applies to ordinary legislation. A mandatory "deliberation period" (e.g., 7-14 days) prevents knee-jerk lawmaking.</p>
+                            </div>
+                            <div class="border-2 border-red-400 bg-red-50 p-4 rounded-lg text-center">
+                                <h5 class="font-bold text-red-800">Tier 3: Low Liquidity</h5>
+                                <div class="text-3xl my-2">🛡️</div>
+                                <p class="text-sm text-red-700"><strong>High Friction.</strong> Applies to constitutional amendments. Requires a high supermajority and a very long deliberation period (e.g., 90 days).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+            <p>&copy; 2025 Interactive Analysis. All content derived from "The Coherent Society" report.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const accentColors = {
+                food: '#3B82F6',
+                culture: '#A855F7',
+                governance: '#4F46E5'
+            };
+            const textColors = {
+                food: '#1E40AF',
+                culture: '#6B21A8',
+                governance: '#3730A3'
+            }
+
+            function activateTab(targetId) {
+                navButtons.forEach(button => {
+                    if (button.dataset.target === targetId) {
+                        button.classList.add('active');
+                        button.style.borderColor = accentColors[targetId];
+                        button.style.color = textColors[targetId];
+                    } else {
+                        button.classList.remove('active');
+                        button.style.borderColor = 'transparent';
+                        button.style.color = '#6B7280';
+                    }
+                });
+
+                contentSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    activateTab(targetId);
+                     if (targetId === 'culture') {
+                        renderDaoChart();
+                    }
+                });
+            });
+
+            const interactiveItems = document.querySelectorAll('.interactive-diagram-item');
+            interactiveItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const targetId = item.dataset.target;
+                    const detailsPanel = document.getElementById(targetId);
+
+                    const isVisible = detailsPanel.classList.contains('show');
+
+                    document.querySelectorAll('.details-panel').forEach(panel => {
+                        panel.classList.remove('show');
+                    });
+
+                    if (!isVisible) {
+                        detailsPanel.classList.add('show');
+                    }
+                });
+            });
+
+            let daoChart = null;
+            function renderDaoChart() {
+                if (daoChart) {
+                    return;
+                }
+                const ctx = document.getElementById('daoTreasuryChart').getContext('2d');
+                const daoData = {
+                    labels: ['Total Treasury Value (USD)', 'Number of Organizations'],
+                    datasets: [{
+                        label: 'DAO Ecosystem Stats (2024)',
+                        data: [24500000000, 13000],
+                        backgroundColor: [
+                            'rgba(168, 85, 247, 0.6)',
+                            'rgba(129, 140, 248, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(168, 85, 247, 1)',
+                            'rgba(129, 140, 248, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+
+                daoChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: daoData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                type: 'logarithmic',
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        if (value === 10000000000) return '$10B';
+                                        if (value === 1000000000) return '$1B';
+                                        if (value === 100000000) return '$100M';
+                                        if (value === 10000000) return '$10M';
+                                        if (value === 1000000) return '$1M';
+                                        if (value === 100000) return '100k';
+                                        if (value === 10000) return '10k';
+                                        if (value === 1000) return '1k';
+                                        return null;
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.dataIndex === 0) {
+                                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(context.parsed.y);
+                                            } else {
+                                                label += new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architectural Blueprint: A Python-Centric NixOS-Powered System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #202124;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #4285F4;
+            line-height: 1;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-[#00449E] text-white text-center py-12 px-4">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Architectural Blueprint</h1>
+        <p class="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-blue-200">A Technology Deep Dive into a Python-Centric, NixOS-Powered System</p>
+    </header>
+
+    <main class="container mx-auto px-4 py-12">
+
+        <section id="core-engine" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#00449E]">⚙️ Part 1: The Core Engine</h2>
+            <p class="text-center max-w-3xl mx-auto text-gray-600 mb-12">Building a robust, performant, and idiomatic bridge between the Python backend and the NixOS ecosystem.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                <div class="card lg:col-span-1">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Native API Integration</h3>
+                    <p class="text-gray-600 mb-4">The recommended approach is to treat <code class="tag bg-blue-100 text-blue-800">nixos-rebuild-ng</code> as a native Python library, not a subprocess. This provides superior error handling, data access, and maintainability.</p>
+                    <div class="text-center p-6 bg-blue-50 rounded-lg">
+                        <div class="text-5xl font-black text-[#4285F4]">10x</div>
+                        <div class="mt-2 font-semibold text-[#005CB9]">More Robust Error Handling</div>
+                    </div>
+                </div>
+
+                <div class="card lg:col-span-2">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Tiered Communication Strategy</h3>
+                    <p class="text-gray-600 mb-4">A hybrid strategy for Nix Inter-Process Communication (IPC) balances performance and stability by using the right tool for each task.</p>
+                    <div class="flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg w-full">
+                            <h4 class="font-bold text-lg text-[#00449E]">Tier 1: Safe Operations</h4>
+                            <p class="text-sm text-gray-500">For state-changing commands like <code class="font-mono">switch</code> or <code class="font-mono">build</code>.</p>
+                            <div class="mt-2 tag bg-blue-100 text-blue-800">nixos-rebuild-ng (Library)</div>
+                        </div>
+                        <div class="flow-arrow hidden md:block">&rarr;</div>
+                        <div class="flow-arrow block md:hidden">&darr;</div>
+                        <div class="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg w-full">
+                            <h4 class="font-bold text-lg text-[#00449E]">Tier 2: Fast Queries</h4>
+                            <p class="text-sm text-gray-500">For read-only UI queries like package status checks.</p>
+                            <div class="mt-2 tag bg-green-100 text-green-800">tweag/python-nix (FFI)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card lg:col-span-3">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Atomic Configuration Management</h3>
+                    <p class="text-gray-600 mb-4">Directly manipulating user <code class="font-mono">.nix</code> files is fragile. The recommended "Managed Configuration" pattern is safer and more idiomatic, generating Nix code from a structured data source.</p>
+                    <div class="flex flex-col md:flex-row items-stretch justify-center space-y-6 md:space-y-0 md:space-x-6">
+                        <div class="flex-1 p-4 rounded-lg bg-red-50 border border-red-200">
+                            <h4 class="font-bold text-lg text-red-800 mb-2">Anti-Pattern 👎</h4>
+                            <p class="text-red-700">Python Script &rarr; Parse AST &rarr; Modify <code class="font-mono">configuration.nix</code></p>
+                            <p class="mt-2 text-sm text-red-600">High risk of breaking user config and losing formatting.</p>
+                        </div>
+                        <div class="flex-1 p-4 rounded-lg bg-green-50 border border-green-200">
+                            <h4 class="font-bold text-lg text-green-800 mb-2">Recommended Pattern 👍</h4>
+                            <p class="text-green-700">User Action &rarr; Update JSON/DB &rarr; Generate <code class="font-mono">_managed.nix</code></p>
+                            <p class="mt-2 text-sm text-green-600">Safe, atomic, and respects the user's handwritten files.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="ai-brain" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#00449E]">🧠 Part 2: The AI Brain</h2>
+            <p class="text-center max-w-3xl mx-auto text-gray-600 mb-12">Architecting a powerful, private, and efficient local intelligence using state-of-the-art open-source Python libraries.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card md:col-span-2">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">AI Long-Term Memory: Local RAG Pipeline</h3>
+                    <p class="text-gray-600 mb-6">The foundation of the AI's memory is a Retrieval-Augmented Generation (RAG) system. The analysis compares local vector databases to find the optimal choice for performance and features on CPU-bound hardware.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div class="chart-container">
+                            <canvas id="vectorDbChart"></canvas>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-[#00449E]">Recommendation: LanceDB</h4>
+                            <p class="text-gray-600 mt-2">LanceDB emerges as the strongest candidate, providing the necessary database features that FAISS lacks while being more performant and stable than ChromaDB. It is optimized for low-latency queries and efficient data management.</p>
+                             <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                                <h5 class="font-semibold text-[#005CB9]">Optimal RAG Stack:</h5>
+                                <p class="text-sm text-gray-700 mt-1"><span class="tag bg-blue-100 text-blue-800">LanceDB</span> + <span class="tag bg-blue-100 text-blue-800">all-MiniLM-L6-v2</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Co-Evolving AI Partner</h3>
+                    <p class="text-gray-600 mb-4">A concrete plan enables the AI to learn from user feedback locally using Direct Preference Optimization (DPO) and Parameter-Efficient Fine-Tuning (PEFT).</p>
+                     <div class="space-y-3">
+                        <div class="flex items-center"><span class="tag bg-gray-200 text-gray-800 mr-3">1</span><span>Capture Feedback (Chosen vs. Rejected)</span></div>
+                        <div class="flex items-center"><span class="tag bg-gray-200 text-gray-800 mr-3">2</span><span>Load Quantized LLM (4-bit)</span></div>
+                        <div class="flex items-center"><span class="tag bg-gray-200 text-gray-800 mr-3">3</span><span>Configure LoRA Adapters via <code class="font-mono">peft</code></span></div>
+                        <div class="flex items-center"><span class="tag bg-gray-200 text-gray-800 mr-3">4</span><span>Train with <code class="font-mono">DPOTrainer</code> from <code class="font-mono">trl</code></span></div>
+                        <div class="flex items-center"><span class="tag bg-gray-200 text-gray-800 mr-3">5</span><span>Save lightweight adapter (~5MB)</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Causal Explainability Engine</h3>
+                    <p class="text-gray-600 mb-4">To provide true causal explanations, a hybrid architecture combines the rigor of a causal framework with specialized time-series models.</p>
+                    <div class="chart-container h-64 max-h-64">
+                         <canvas id="causalXaiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="user-experience">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#00449E]">👤 Part 3: The User's Experience</h2>
+            <p class="text-center max-w-3xl mx-auto text-gray-600 mb-12">Crafting premium, responsive, and multi-modal interfaces with modern Python libraries.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Best-in-Class TUI</h3>
+                    <p class="text-gray-600 mb-4">The <code class="font-mono">ask-nix</code> CLI will be elevated to a full TUI application using <span class="font-bold">Textual</span>, a state-of-the-art framework with CSS-like styling and a modern component model.</p>
+                    <div class="p-4 bg-gray-800 text-white rounded-lg font-mono text-sm">
+                        <p><span class="text-blue-400">from</span> textual.app <span class="text-blue-400">import</span> App</p>
+                        <p><span class="text-blue-400">from</span> textual.widgets <span class="text-blue-400">import</span> Button</p>
+                        <p class="mt-2"><span class="text-green-400"># Build beautiful, app-like TUIs</span></p>
+                        <p><span class="text-green-400"># with Python and CSS.</span></p>
+                    </div>
+                </div>
+
+                <div class="card lg:col-span-2">
+                     <h3 class="text-xl font-bold text-[#005CB9] mb-3">Low-Latency Voice Pipeline</h3>
+                    <p class="text-gray-600 mb-4">A concurrent, multi-threaded architecture is essential for a natural, real-time conversational experience.</p>
+                    <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 text-center text-sm font-semibold">
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-800">PyAudio</div>
+                        <div class="flow-arrow">&rarr;</div>
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-800">webrtcvad</div>
+                        <div class="flow-arrow">&rarr;</div>
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-800">faster-whisper</div>
+                        <div class="flow-arrow">&rarr;</div>
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-800">LLM+Piper</div>
+                        <div class="flow-arrow">&rarr;</div>
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-800">PyAudio</div>
+                    </div>
+                </div>
+
+                <div class="card lg:col-span-3">
+                    <h3 class="text-xl font-bold text-[#005CB9] mb-3">Embodied AI Vision: Proof of Concept</h3>
+                    <p class="text-gray-600 mb-4">The long-term vision of a visual, embodied AI is de-risked with a proof-of-concept plan combining `pygame` for windowing and `Taichi` for GPU-accelerated graphics.</p>
+                    <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 p-6 bg-gray-100 rounded-lg">
+                        <div class="text-center">
+                            <div class="text-4xl">🖼️</div>
+                            <div class="font-bold mt-1">Pygame</div>
+                            <p class="text-sm text-gray-600">Windowing & Event Loop</p>
+                        </div>
+                        <div class="text-5xl font-thin text-gray-400">+</div>
+                        <div class="text-center">
+                            <div class="text-4xl">⚡</div>
+                            <div class="font-bold mt-1">Taichi</div>
+                            <p class="text-sm text-gray-600">GPU-Accelerated Kernels</p>
+                        </div>
+                        <div class="text-5xl font-thin text-gray-400">=</div>
+                        <div class="text-center">
+                            <div class="text-4xl">🤖</div>
+                            <div class="font-bold mt-1">Real-time Visuals</div>
+                            <p class="text-sm text-gray-600">Controlled by Python Backend</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#005CB9] text-white py-8 px-4">
+        <div class="container mx-auto text-center">
+            <p class="font-bold">A Pragmatic & Focused Technological Roadmap</p>
+            <p class="text-sm mt-2 text-blue-200">Built on a foundation of the best available Python technologies to realize an ambitious vision.</p>
+        </div>
+    </footer>
+
+    <script>
+        const brilliantBlues = {
+            dark: '#00449E',
+            medium: '#005CB9',
+            primary: '#4285F4',
+            light: '#AECBFA',
+            textDark: '#202124',
+            textLight: '#5F6368',
+        };
+
+        function wrapLabel(str, maxWidth) {
+            if (str.length <= maxWidth) {
+                return str;
+            }
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + word).length > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine.trim());
+                    currentLine = '';
+                }
+                currentLine += word + ' ';
+            }
+            lines.push(currentLine.trim());
+            return lines;
+        }
+
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+                return label.join(' ');
+            }
+            return label;
+        };
+
+        const defaultChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: brilliantBlues.textDark,
+                        font: {
+                            family: "'Inter', sans-serif",
+                            weight: '500'
+                        }
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: { family: "'Inter', sans-serif", weight: 'bold' },
+                    bodyFont: { family: "'Inter', sans-serif" },
+                    callbacks: {
+                        title: tooltipTitleCallback
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: brilliantBlues.textLight,
+                        font: { family: "'Inter', sans-serif" }
+                    },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: {
+                        color: brilliantBlues.textLight,
+                        font: { family: "'Inter', sans-serif" }
+                    },
+                    grid: { color: '#E0E0E0', borderDash: [2, 4] }
+                }
+            }
+        };
+
+        const vectorDbData = {
+            labels: ['FAISS', 'ChromaDB', 'LanceDB'],
+            datasets: [{
+                label: 'Performance & Stability Score (Qualitative)',
+                data: [80, 40, 95],
+                backgroundColor: [brilliantBlues.light, '#FFCDD2', brilliantBlues.primary],
+                borderColor: [brilliantBlues.primary, '#E57373', brilliantBlues.dark],
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('vectorDbChart'), {
+            type: 'bar',
+            data: vectorDbData,
+            options: { ...defaultChartOptions, indexAxis: 'y' }
+        });
+
+        const causalXaiData = {
+            labels: ['Causal Framework Rigor', 'Specialized Time-Series Modeling'],
+            datasets: [{
+                label: 'Hybrid Causal XAI Engine',
+                data: [50, 50],
+                backgroundColor: [brilliantBlues.primary, brilliantBlues.light],
+                hoverOffset: 4
+            }]
+        };
+
+        new Chart(document.getElementById('causalXaiChart'), {
+            type: 'doughnut',
+            data: causalXaiData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: brilliantBlues.textDark,
+                            font: { family: "'Inter', sans-serif", weight: '500' },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map(function(label, i) {
+                                        const meta = chart.getDatasetMeta(0);
+                                        const style = meta.controller.getStyle(i);
+                                        return {
+                                            text: (i === 0 ? "DoWhy: " : "CImpact: ") + label,
+                                            fillStyle: style.backgroundColor,
+                                            strokeStyle: style.borderColor,
+                                            lineWidth: style.borderWidth,
+                                            hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                           title: tooltipTitleCallback,
+                           label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'percent' }).format(context.parsed / 100);
+                                }
+                                return (context.label.includes("DoWhy") ? "DoWhy provides the " : "CImpact provides the ") + label;
+                           }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

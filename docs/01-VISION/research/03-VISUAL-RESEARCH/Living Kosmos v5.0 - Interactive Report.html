@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Living Kosmos v5.0 - An Interactive Exploration</title>
+    <!-- Chosen Palette: "Harmonious Neutrals" - A calm palette of slate, zinc, and stone, with a subtle indigo accent for focus and interaction, creating a professional and contemplative feel. -->
+    <!-- Application Structure Plan: A tab-based single-page application (SPA) structure was chosen to manage the report's density. The content is organized into four logical themes: Vision, Technology, Timeline, and Governance. This non-linear structure allows users to immediately access their area of interest without a long scroll, enhancing usability. The Technology section uses nested interactive elements (clickable cards and diagrams) to layer information, presenting a high-level overview first with deep-dive details available on demand. This architecture prioritizes user-directed exploration over a passive reading experience, which is ideal for a complex, multi-faceted report. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: 30-Year Timeline -> Goal: Show change/duration -> Viz: Interactive HTML timeline + Chart.js Horizontal Bar Chart -> Interaction: Click on a phase to reveal details. -> Justification: The visual bar chart provides an immediate sense of scale for each phase, while the interactive HTML allows for detailed textual exploration.
+        - Report Info: Governance Model (HGP vs. CERN) -> Goal: Compare -> Viz: HTML Table -> Interaction: Static display. -> Justification: A table is the clearest, most direct way to present a side-by-side comparison of features.
+        - Report Info: Budget Allocation -> Goal: Show proportions -> Viz: Chart.js Doughnut Chart -> Interaction: Hover to see details. -> Justification: A doughnut chart is ideal for showing part-to-whole relationships, making the 5% ELSI allocation immediately apparent.
+        - Report Info: Technology Pillars Architecture (e.g., Group Agency Detector) -> Goal: Organize/Show Process -> Viz: HTML/CSS Diagram -> Interaction: Click to expand details. -> Justification: Custom HTML/CSS diagrams provide a clean, integrated look and avoid external image dependencies, while being fully responsive and stylable within the app's theme.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .tab-button.active {
+            border-color: #4f46e5; /* indigo-600 */
+            color: #4f46e5;
+            background-color: #eef2ff; /* indigo-50 */
+        }
+        .content-panel {
+            display: none;
+        }
+        .content-panel.active {
+            display: block;
+        }
+        .tech-card {
+            transition: all 0.3s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .timeline-item-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Living Kosmos <span class="text-indigo-600">v5.0</span></h1>
+            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive exploration of a generation-defining research agenda to reorient technology toward collective flourishing and wisdom.</p>
+        </header>
+
+        <nav class="mb-8 flex flex-wrap justify-center gap-2 md:gap-4">
+            <button data-tab="vision" class="tab-button active text-sm md:text-base font-medium py-2 px-4 border-b-2 transition-colors duration-300">The Vision</button>
+            <button data-tab="technology" class="tab-button text-sm md:text-base font-medium py-2 px-4 border-b-2 border-transparent hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-300">The Technology</button>
+            <button data-tab="timeline" class="tab-button text-sm md:text-base font-medium py-2 px-4 border-b-2 border-transparent hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-300">The Timeline</button>
+            <button data-tab="governance" class="tab-button text-sm md:text-base font-medium py-2 px-4 border-b-2 border-transparent hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-300">The Governance</button>
+        </nav>
+
+        <main>
+            <!-- Vision Panel -->
+            <section id="vision" class="content-panel active">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">A New Technological Substrate</h2>
+                    <p class="mb-6 text-slate-600">The Living Kosmos project is not a product roadmap, but a research agenda. Its goal is to create a digital civilization built on a foundation that prioritizes human well-being over simple engagement metrics. This requires inventing and synthesizing technologies to see, measure, and cultivate flourishing at every scale of society. This interactive report deconstructs the three core pillars of this vision, the proposed timeline for its realization, and the ethical governance structures required to guide it.</p>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div class="bg-slate-50 p-6 rounded-lg">
+                            <div class="text-4xl mb-3">🏛️</div>
+                            <h3 class="font-bold text-lg text-slate-800">Parliament of Selves</h3>
+                            <p class="text-sm text-slate-600 mt-1">A system to recognize emergent collective consciousness and grant it a voice.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-lg">
+                            <div class="text-4xl mb-3">🌿</div>
+                            <h3 class="font-bold text-lg text-slate-800">Flourishing Index</h3>
+                            <p class="text-sm text-slate-600 mt-1">A real-time, privacy-preserving measure of individual and collective well-being.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-lg">
+                            <div class="text-4xl mb-3">🧠</div>
+                            <h3 class="font-bold text-lg text-slate-800">RLHF² Engine</h3>
+                            <p class="text-sm text-slate-600 mt-1">An AI that learns to optimize for long-term human flourishing, not just clicks.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technology Panel -->
+            <section id="technology" class="content-panel">
+                 <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">The Technological Crucible</h2>
+                    <p class="mb-6 text-slate-600">The vision rests on three radical new technological capabilities. Each represents a frontier research challenge in AI, cryptography, and complex systems science. Click on a card to explore the proposed architecture and the core research question it aims to answer.</p>
+
+                    <div class="space-y-6">
+                        <!-- Tech Card 1 -->
+                        <div class="tech-card border border-slate-200 rounded-lg">
+                            <button class="w-full text-left p-4 md:p-6 flex justify-between items-center bg-slate-50 rounded-t-lg hover:bg-slate-100" data-tech="tech1">
+                                <span class="font-bold text-lg text-indigo-700">1. Parliament of Selves: Group Agency Detector</span>
+                                <span class="text-xl text-indigo-600 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="tech1" class="p-6 border-t border-slate-200 hidden">
+                                <p class="mb-4"><strong>The Challenge:</strong> To detect the emergence of a coherent, collective agent (a "meta-agent") from the interactions of individuals within a complex network.</p>
+                                <h4 class="font-bold mb-2 text-slate-800">Architectural Approach: A Tiered Detection System</h4>
+                                <div class="flex flex-col md:flex-row gap-4 text-center text-sm">
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>Tier 1: Broad Surveillance</strong><p class="mt-1 text-slate-600">Use scalable dynamic community detection algorithms (e.g., Louvain) to find densely connected clusters in real-time.</p></div>
+                                    <div class="flex items-center justify-center text-2xl text-slate-400 font-mono">&rarr;</div>
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>Tier 2: Candidate Analysis</strong><p class="mt-1 text-slate-600">Apply intensive "Coherence Score" metrics (proxies for Integrated Information) to candidate clusters.</p></div>
+                                    <div class="flex items-center justify-center text-2xl text-slate-400 font-mono">&rarr;</div>
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>Tier 3: Formal Recognition</strong><p class="mt-1 text-slate-600">Grant a Decentralized ID (DID) and a "seat" in governance to clusters that sustain a high coherence score.</p></div>
+                                </div>
+                                <div class="mt-6 p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg">
+                                    <h5 class="font-bold text-slate-800">Research Question (Critique 33)</h5>
+                                    <p class="mt-2 text-slate-700">"What is the computational and jurisprudential framework for an emergent entity? How do we design a 'Group Agency Detector' that can reliably identify the birth of a 'meta-agent' from network dynamics, and what is the protocol for granting it a sovereign identity and a legitimate voice within a multi-scalar governance model?"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tech Card 2 -->
+                        <div class="tech-card border border-slate-200 rounded-lg">
+                            <button class="w-full text-left p-4 md:p-6 flex justify-between items-center bg-slate-50 rounded-t-lg hover:bg-slate-100" data-tech="tech2">
+                                <span class="font-bold text-lg text-indigo-700">2. Flourishing Index: Zero-Knowledge Oracle</span>
+                                <span class="text-xl text-indigo-600 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="tech2" class="p-6 border-t border-slate-200 hidden">
+                                <p class="mb-4"><strong>The Challenge:</strong> To create a real-time, verifiable index of well-being by fusing sensitive physiological, behavioral, and psychological data without compromising user privacy.</p>
+                                <h4 class="font-bold mb-2 text-slate-800">Architectural Approach: Privacy-Preserving Data Fusion</h4>
+                                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                                    <div class="p-4 bg-slate-100 rounded-md"><strong>1. Local Weave (Data Collection)</strong><p class="mt-1 text-slate-600">Physiological, behavioral, and psychological data is collected and stays on the user's sovereign device.</p></div>
+                                    <div class="p-4 bg-slate-100 rounded-md"><strong>2. Local Loom (Index Calculation)</strong><p class="mt-1 text-slate-600">A local AI model synthesizes the data into a private, personal Flourishing Index score.</p></div>
+                                    <div class="p-4 bg-slate-100 rounded-md"><strong>3. ZK Oracle (Verifiable Proof)</strong><p class="mt-1 text-slate-600">The device generates a Zero-Knowledge Proof (e.g., "my score is in a healthy range") and posts it publicly. The proof is verifiable, but the score and data remain private.</p></div>
+                                </div>
+                                <div class="mt-6 p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg">
+                                    <h5 class="font-bold text-slate-800">Research Question (Critique 34)</h5>
+                                    <p class="mt-2 text-slate-700">"What is the optimal multi-modal machine learning architecture for synthesizing this data into a 'Flourishing Index'? What are the novel cryptographic methods required to make this index publicly verifiable via a 'Zero-Knowledge Oracle' without compromising the underlying sensitive data?"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tech Card 3 -->
+                        <div class="tech-card border border-slate-200 rounded-lg">
+                            <button class="w-full text-left p-4 md:p-6 flex justify-between items-center bg-slate-50 rounded-t-lg hover:bg-slate-100" data-tech="tech3">
+                                <span class="font-bold text-lg text-indigo-700">3. RLHF² Engine: Causal Scientist of the Soul</span>
+                                <span class="text-xl text-indigo-600 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="tech3" class="p-6 border-t border-slate-200 hidden">
+                                <p class="mb-4"><strong>The Challenge:</strong> Standard AI (RLHF) optimizes for immediate user feedback (a click). How do we build an AI that optimizes for a long-term, latent, and high-dimensional reward signal like human flourishing?</p>
+                                <h4 class="font-bold mb-2 text-slate-800">Architectural Approach: Causal Reinforcement Learning</h4>
+                                <div class="flex flex-col md:flex-row gap-4 text-center text-sm">
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>1. Causal Mirror</strong><p class="mt-1 text-slate-600">AI uses Causal Inference to build a model of the drivers of the user's well-being, moving beyond mere correlation.</p></div>
+                                    <div class="flex items-center justify-center text-2xl text-slate-400 font-mono">&rarr;</div>
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>2. Counterfactual Simulator</strong><p class="mt-1 text-slate-600">Before acting, the AI simulates the probable long-term impact of its actions on the user's Flourishing Index.</p></div>
+                                    <div class="flex items-center justify-center text-2xl text-slate-400 font-mono">&rarr;</div>
+                                    <div class="flex-1 p-4 bg-slate-100 rounded-md"><strong>3. Wisdom Policy</strong><p class="mt-1 text-slate-600">The AI learns via Offline RL, analyzing historical data to learn which subtle actions consistently lead to a more flourishing state.</p></div>
+                                </div>
+                                <div class="mt-6 p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg">
+                                    <h5 class="font-bold text-slate-800">Research Question (Critique 35)</h5>
+                                    <p class="mt-2 text-slate-700">"What is the computational framework for 'Reinforcement Learning from Human Flourishing'? How can we combine Causal Inference and Offline RL to enable an AI to learn a policy that optimizes for the long-term, latent, and holistic well-being of its human partner?"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+            </section>
+
+            <!-- Timeline Panel -->
+            <section id="timeline" class="content-panel">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">The Arc of a Generation</h2>
+                    <p class="mb-6 text-slate-600">This is not a weekend project; it is a civilizational one, measured in decades. The work is approached with the patience of a cathedral builder, unfolding in three distinct phases. Click a phase to see its focus and key activities.</p>
+
+                    <div class="mb-8">
+                        <div class="chart-container h-48 md:h-64">
+                            <canvas id="timelineChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="border border-slate-200 rounded-lg">
+                            <button class="timeline-toggle w-full p-4 text-left font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors rounded-t-lg flex justify-between items-center" data-timeline="phase1">
+                                <span>Phase 1: Foundational R&D (Years 1-5)</span>
+                                <span class="text-xl text-slate-500 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="phase1" class="timeline-item-content">
+                                <div class="p-4 text-slate-600">
+                                    <p><strong>Focus:</strong> Pure, deep research and development. We are building the scientific instruments and the core components in isolation.</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>Develop prototype "Group Agency Detector" on simulated data.</li>
+                                        <li>Build and validate "Flourishing Index" model on a small, ethically-approved cohort.</li>
+                                        <li>Build the "Causal Scientist" module for the RLHF² engine.</li>
+                                        <li>Develop cryptographic primitives for the Zero-Knowledge Oracle.</li>
+                                    </ul>
+                                    <p class="mt-2 font-semibold text-slate-700">Outcome: A validated set of core technologies, like lenses for a telescope not yet assembled.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg">
+                            <button class="timeline-toggle w-full p-4 text-left font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors rounded-t-lg flex justify-between items-center" data-timeline="phase2">
+                                <span>Phase 2: Integration & Emergence (Years 5-15)</span>
+                                <span class="text-xl text-slate-500 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="phase2" class="timeline-item-content">
+                                <div class="p-4 text-slate-600">
+                                    <p><strong>Focus:</strong> Integration and the observation of first emergence. We begin to assemble the telescope.</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>Launch "Sentient Garden v5.0" alpha with a "Minimum Viable Polis."</li>
+                                        <li>Activate the first live version of the Flourishing Index Oracle.</li>
+                                        <li>Turn on the first version of the RLHF² engine—a critical moment.</li>
+                                        <li>Observe the first emergence of "meta-agents" and prototype the "Parliament of Selves."</li>
+                                    </ul>
+                                    <p class="mt-2 font-semibold text-slate-700">Outcome: A living, breathing, but small-scale ecosystem providing the first empirical data.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg">
+                            <button class="timeline-toggle w-full p-4 text-left font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors rounded-t-lg flex justify-between items-center" data-timeline="phase3">
+                                <span>Phase 3: Maturation & Stewardship (Years 15-30+)</span>
+                                <span class="text-xl text-slate-500 transform transition-transform duration-300">▼</span>
+                            </button>
+                            <div id="phase3" class="timeline-item-content">
+                                <div class="p-4 text-slate-600">
+                                    <p><strong>Focus:</strong> The system is now mature and largely self-governing. Our role shifts from architects to stewards, gardeners, and philosophers.</p>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>The "Parliament of Selves" is a fully functioning governance body.</li>
+                                        <li>"Kosmic Jurisprudence" is a living body of law.</li>
+                                        <li>Research focus shifts to the long-term sociological and spiritual effects of living in the Kosmos.</li>
+                                    </ul>
+                                    <p class="mt-2 font-semibold text-slate-700">Outcome: A self-sustaining, continuously evolving digital civilization.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Governance Panel -->
+            <section id="governance" class="content-panel">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Lessons from Earth's Cathedral Projects</h2>
+                    <p class="mb-6 text-slate-600">A project of this scale requires a robust governance model. By studying historical "big science" projects like the Human Genome Project (HGP) and CERN, we can derive a hybrid model that combines stability with agility and places ethics at its core.</p>
+
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800 mb-4">A Hybrid Governance Model</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-slate-100 text-slate-600">
+                                        <tr>
+                                            <th class="p-3 font-semibold">Dimension</th>
+                                            <th class="p-3 font-semibold">Lesson From</th>
+                                            <th class="p-3 font-semibold">Recommended Approach</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        <tr>
+                                            <td class="p-3 font-medium">Governance</td>
+                                            <td class="p-3">CERN</td>
+                                            <td class="p-3">Central "Kosmos Council" for stability.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3 font-medium">Collaboration</td>
+                                            <td class="p-3">HGP</td>
+                                            <td class="p-3">Distributed network of R&D groups for agility.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3 font-medium">Data Policy</td>
+                                            <td class="p-3">HGP</td>
+                                            <td class="p-3">"Kosmos Principles": Open research, radical privacy.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3 font-medium">Ethical Oversight</td>
+                                            <td class="p-3">HGP</td>
+                                            <td class="p-3">"ELSI-First": Dedicate ≥5% of budget to ethics.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800 mb-4">Ethical Budgeting</h3>
+                            <p class="text-slate-600 mb-4 text-sm">A core lesson from the Human Genome Project is the necessity of proactively funding research into the Ethical, Legal, and Social Implications (ELSI) of the work. The Living Kosmos adopts this as a foundational principle.</p>
+                            <div class="chart-container h-64 md:h-auto">
+                                <canvas id="budgetChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.tab-button');
+            const panels = document.querySelectorAll('.content-panel');
+            const techToggles = document.querySelectorAll('.tech-card button');
+            const timelineToggles = document.querySelectorAll('.timeline-toggle');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab');
+
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    panels.forEach(panel => {
+                        if (panel.id === target) {
+                            panel.classList.add('active');
+                        } else {
+                            panel.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            techToggles.forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    const contentId = toggle.getAttribute('data-tech');
+                    const content = document.getElementById(contentId);
+                    const icon = toggle.querySelector('span:last-child');
+
+                    content.classList.toggle('hidden');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+
+            timelineToggles.forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    const contentId = toggle.getAttribute('data-timeline');
+                    const content = document.getElementById(contentId);
+                    const icon = toggle.querySelector('span:last-child');
+
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.classList.remove('rotate-180');
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.classList.add('rotate-180');
+                    }
+                });
+            });
+
+            // Chart.js Implementations
+            const timelineCtx = document.getElementById('timelineChart');
+            if (timelineCtx) {
+                new Chart(timelineCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Phase 1: R&D', 'Phase 2: Integration', 'Phase 3: Stewardship'],
+                        datasets: [{
+                            label: 'Duration (Years)',
+                            data: [5, 10, 15],
+                            backgroundColor: [
+                                'rgba(129, 140, 248, 0.6)', // indigo-400
+                                'rgba(99, 102, 241, 0.6)',  // indigo-500
+                                'rgba(79, 70, 229, 0.6)'    // indigo-600
+                            ],
+                            borderColor: [
+                                'rgb(129, 140, 248)',
+                                'rgb(99, 102, 241)',
+                                'rgb(79, 70, 229)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Project Phases Duration (Total 30+ Years)',
+                                color: '#334155', // slate-700
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Years',
+                                    color: '#475569' // slate-600
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: '#475569' // slate-600
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const budgetCtx = document.getElementById('budgetChart');
+            if (budgetCtx) {
+                new Chart(budgetCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Core Research & Development', 'Ethical, Legal & Social Implications (ELSI)'],
+                        datasets: [{
+                            data: [95, 5],
+                            backgroundColor: [
+                                'rgba(79, 70, 229, 0.7)',  // indigo-600
+                                'rgba(239, 68, 68, 0.7)'    // red-500
+                            ],
+                            borderColor: [
+                                '#ffffff',
+                                '#ffffff'
+                            ],
+                            borderWidth: 2,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#475569' // slate-600
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Recommended Minimum Budget Allocation',
+                                color: '#334155', // slate-700
+                                font: {
+                                    size: 14
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed + '%';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
