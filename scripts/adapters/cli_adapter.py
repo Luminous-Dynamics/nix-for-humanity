@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict
 CLI Adapter for Headless Engine
 Demonstrates how the CLI frontend can use the headless engine
 """

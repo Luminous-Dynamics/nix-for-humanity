@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.bayesian_knowledge_tracer import (
+from nix_humanity.core.bayesian_knowledge_tracer import (
     BayesianKnowledgeTracer,
     NixOSSkillGraph,
     BKTParameters,
@@ -105,10 +105,10 @@ class TestBayesianKnowledgeTracer(unittest.TestCase):
         skill_graph = self.bkt.skill_graph
         
         # Test command mapping
-        assert skill_graph.identify_skill_from_command("nix-env -iA firefox", "install") == "nix_env"
+        assert skill_graph.identify_skill_from_command("nix-env -iA firefox", "install_package") == "nix_env"
         assert skill_graph.identify_skill_from_command("nixos-rebuild switch", "rebuild") == "nixos_rebuild"
         assert skill_graph.identify_skill_from_command("nix-shell -p python", "shell") == "nix_shell"
-        assert skill_graph.identify_skill_from_command("edit configuration.nix", "config") == "nixos_configuration"
+        assert skill_graph.identify_skill_from_command("edit configuration.nix", "configure") == "nixos_configuration"
         assert skill_graph.identify_skill_from_command("nix flake init", "flake") == "flakes"
 
     # ========================================
@@ -439,7 +439,7 @@ class TestBayesianKnowledgeTracer(unittest.TestCase):
         result = self.bkt.record_interaction_with_bkt(
             user_id=user_id,
             command="nix-env -iA nixpkgs.firefox",
-            intent="install",
+            intent="install_package",
             success=True,
             context={"response_time_ms": 2000}
         )
@@ -781,17 +781,17 @@ class TestBayesianKnowledgeTracer(unittest.TestCase):
         # Simulate learning sequence: nix_basics → nix_env → nixos_configuration
         learning_sequence = [
             # Start with nix_basics
-            ("nix-env --version", "info", True, {"response_time_ms": 2000}),
-            ("nix search firefox", "search", True, {"response_time_ms": 1500}),
-            ("nix-env -iA nixpkgs.hello", "install", True, {"response_time_ms": 3000}),
+            ("nix-env --version", "explain", True, {"response_time_ms": 2000}),
+            ("nix search firefox", "search_package", True, {"response_time_ms": 1500}),
+            ("nix-env -iA nixpkgs.hello", "install_package", True, {"response_time_ms": 3000}),
             
             # Move to nix_env (should show improved mastery)
-            ("nix-env -iA nixpkgs.firefox", "install", True, {"response_time_ms": 1000}),
+            ("nix-env -iA nixpkgs.firefox", "install_package", True, {"response_time_ms": 1000}),
             ("nix-env --rollback", "rollback", True, {"response_time_ms": 800}),
             
             # Try configuration (should fail initially due to low mastery)
             ("nixos-rebuild switch", "rebuild", False, {"error_type": "conceptual", "response_time_ms": 10000}),
-            ("edit /etc/nixos/configuration.nix", "config", False, {"error_type": "conceptual"}),
+            ("edit /etc/nixos/configuration.nix", "configure", False, {"error_type": "conceptual"}),
             
             # Learn configuration with help
             ("nixos-rebuild switch", "rebuild", True, {"help_received": True, "response_time_ms": 5000}),
@@ -862,10 +862,10 @@ class TestBayesianKnowledgeTracer(unittest.TestCase):
         
         for i in range(500):  # Reduced for CI performance
             skill_commands = [
-                ("nix-env -iA nixpkgs.package", "install"),
+                ("nix-env -iA nixpkgs.package", "install_package"),
                 ("nix-shell -p python", "shell"),
                 ("nixos-rebuild switch", "rebuild"),
-                ("nix search keyword", "search"),
+                ("nix search keyword", "search_package"),
                 ("nix-collect-garbage", "cleanup")
             ]
             

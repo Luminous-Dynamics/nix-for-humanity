@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Sacred Trinity RAG-Enhanced Trainer
 Uses Retrieval Augmented Generation to give models actual NixOS knowledge
 """

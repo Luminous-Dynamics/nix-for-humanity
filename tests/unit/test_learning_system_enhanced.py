@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced unit tests for the LearningSystem component
+Enhanced unit tests for the PreferenceManager component
 Tests preference learning, error solutions, pattern detection, and feedback
 """
 
@@ -16,16 +16,16 @@ from datetime import datetime, timedelta
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.learning_system import LearningSystem, Interaction, Preference
+from nix_humanity.learning.preferences import PreferenceManager, Interaction, Preference
 
 
-class TestLearningSystemEnhanced(unittest.TestCase):
-    """Enhanced tests for the LearningSystem component"""
+class TestPreferenceManagerEnhanced(unittest.TestCase):
+    """Enhanced tests for the PreferenceManager component"""
     
     def setUp(self):
         """Create temporary database for testing"""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        self.ls = LearningSystem(self.temp_db.name)
+        self.ls = PreferenceManager(self.temp_db.name)
         
     def tearDown(self):
         """Clean up temporary database"""
@@ -59,7 +59,7 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         """Test basic interaction recording"""
         interaction = Interaction(
             query="install firefox",
-            intent="install",
+            intent="install_package",
             response="Installing firefox...",
             success=True,
             helpful=True,
@@ -80,7 +80,7 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         cursor.execute("SELECT query, intent, success FROM interactions")
         row = cursor.fetchone()
         self.assertEqual(row[0], "install firefox")
-        self.assertEqual(row[1], "install")
+        self.assertEqual(row[1], "install_package")
         self.assertEqual(row[2], 1)  # SQLite stores boolean as 0/1
         
         conn.close()
@@ -88,9 +88,9 @@ class TestLearningSystemEnhanced(unittest.TestCase):
     def test_record_multiple_interactions(self):
         """Test recording multiple interactions"""
         interactions = [
-            Interaction("install vim", "install", "Installing vim...", True, True),
-            Interaction("update system", "update", "Updating...", True, None),
-            Interaction("search python", "search", "Searching...", False, False)
+            Interaction("install vim", "install_package", "Installing vim...", True, True),
+            Interaction("update system", "update_system", "Updating...", True, None),
+            Interaction("search python", "search_package", "Searching...", False, False)
         ]
         
         for interaction in interactions:
@@ -217,20 +217,20 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         """Test calculating success rate for intents"""
         # Record some interactions
         interactions = [
-            Interaction("install firefox", "install", "Done", True),
-            Interaction("install vim", "install", "Done", True),
-            Interaction("install unknown", "install", "Failed", False),
-            Interaction("update system", "update", "Done", True),
+            Interaction("install firefox", "install_package", "Done", True),
+            Interaction("install vim", "install_package", "Done", True),
+            Interaction("install unknown", "install_package", "Failed", False),
+            Interaction("update system", "update_system", "Done", True),
         ]
         
         for interaction in interactions:
             self.ls.record_interaction(interaction)
             
         # Check success rates
-        install_rate = self.ls.get_success_rate("install")
+        install_rate = self.ls.get_success_rate("install_package")
         self.assertAlmostEqual(install_rate, 2/3)  # 2 out of 3 succeeded
         
-        update_rate = self.ls.get_success_rate("update")
+        update_rate = self.ls.get_success_rate("update_system")
         self.assertEqual(update_rate, 1.0)  # 1 out of 1 succeeded
         
         unknown_rate = self.ls.get_success_rate("unknown_intent")
@@ -240,7 +240,7 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         """Test that success rate only considers recent interactions"""
         # This test would need to mock time or insert old data directly
         # For now, just verify the query works
-        rate = self.ls.get_success_rate("install")
+        rate = self.ls.get_success_rate("install_package")
         self.assertIsInstance(rate, float)
         self.assertTrue(0 <= rate <= 1)
         
@@ -257,7 +257,7 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         ]
         
         for query in queries:
-            interaction = Interaction(query, "install", "Done", True)
+            interaction = Interaction(query, "install_package", "Done", True)
             self.ls.record_interaction(interaction)
             
         patterns = self.ls.get_common_patterns(limit=2)
@@ -420,7 +420,7 @@ class TestLearningSystemEnhanced(unittest.TestCase):
         self.ls.record_interaction(Interaction("test", "test", "test", True))
         
         # Create new instance with same database
-        ls2 = LearningSystem(self.temp_db.name)
+        ls2 = PreferenceManager(self.temp_db.name)
         
         # Verify data is accessible
         prefs = ls2.get_user_preferences("user1")

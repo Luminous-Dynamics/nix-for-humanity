@@ -19,7 +19,7 @@ from contextlib import redirect_stdout, redirect_stderr
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 # Import the CLI adapter that needs coverage (the one under src/)
-from nix_for_humanity.adapters.cli_adapter import CLIAdapter
+from nix_humanity.adapters.cli_adapter import CLIAdapter
 
 
 # Mock classes to avoid core dependencies
@@ -63,7 +63,7 @@ class TestCLIAdapter(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures with mocked dependencies"""
         # Mock all the core dependencies
-        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore')
+        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend')
         self.mock_query_patcher = patch('nix_for_humanity.adapters.cli_adapter.Query', MockQuery)
         self.mock_execution_mode_patcher = patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode', MockExecutionMode)
         self.mock_personality_style_patcher = patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle', MockPersonalityStyle)
@@ -188,7 +188,7 @@ class TestCLIAdapter(unittest.TestCase):
     
     def test_process_query_with_show_intent(self):
         """Test processing query with show_intent=True"""
-        mock_intent = MockIntent("install", "firefox")
+        mock_intent = MockIntent("install_package", "firefox")
         self.mock_core.intent_engine.recognize.return_value = mock_intent
         mock_response = MockResponse("Install response")
         self.mock_core.process.return_value = mock_response
@@ -522,7 +522,7 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
     
     def setUp(self):
         """Set up with minimal mocking for edge case testing"""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query', MockQuery):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode', MockExecutionMode):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle', MockPersonalityStyle):

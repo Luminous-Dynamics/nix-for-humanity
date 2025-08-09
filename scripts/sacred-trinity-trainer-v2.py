@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Optional
 Sacred Trinity Model Training System v2
 Continuous learning with multiple specialized models
 """
@@ -110,7 +111,7 @@ class SacredTrinityTrainer:
                                     'timestamp': file_time,
                                     'category': self.categorize_question(qf.read())
                                 })
-                except:
+                except Exception:
                     continue
         
         # Also collect from tracking database

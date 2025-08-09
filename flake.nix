@@ -5,14 +5,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    ollama-nix.url = "github:abyssal/ollama-nix";
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, ollama-nix, poetry2nix }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, poetry2nix }:
     let
       # Supported systems
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -32,18 +31,47 @@
         poetry2nix-lib = poetry2nix.lib.mkPoetry2Nix { inherit pkgs; };
         
         # Create Python environment from pyproject.toml
-        poetryEnv = poetry2nix-lib.mkPoetryEnv {
-          projectDir = ./.;
-          python = pkgs.python312;
-          # Include all optional dependencies for development
-          groups = [ "dev" ];  # Note: mkPoetryEnv doesn't support "test" group
-          extras = [ "tui" "voice" "web" "ml" "advanced" ];
-          preferWheels = true;
-          overrides = poetry2nix-lib.overrides.withDefaults (self: super: {
-            # Fix for packages that might need compilation
-            # Add overrides here if needed for specific packages
-          });
-        };
+        # Create Python environment with TUI dependencies manually
+        # This avoids poetry2nix complexity for now
+        poetryEnv = pkgs.python311.withPackages (ps: with ps; [
+          # Core dependencies from pyproject.toml
+          requests
+          click
+          colorama
+          python-dotenv
+          
+          # TUI dependencies (from extras.tui)
+          textual
+          rich
+          blessed
+          pyperclip
+          
+          # Other useful packages for development
+          pyyaml
+          pytest
+          pytest-asyncio
+          pytest-cov
+          pytest-mock
+          ipython
+        ]);
+        
+        # Also create a Python 3.13 environment for main app (without heavy research deps)
+        pythonMainEnv = pkgs.python313.withPackages (ps: with ps; [
+          pip
+          virtualenv
+          flask
+          gunicorn
+          requests
+          pytest
+          pytest-asyncio
+          pytest-cov
+          pytest-mock
+          pyyaml
+          rich
+          click
+          colorama
+          python-dotenv
+        ]);
         
         # Create TUI runner script
         runTuiApp = pkgs.writeShellScriptBin "run-tui-app" ''
@@ -55,10 +83,10 @@
           echo
           
           cd ${toString ./.}
-          export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
+          export PYTHONPATH="${toString ./.}:$PYTHONPATH"
           
           # Launch the TUI with poetry2nix-managed Python
-          exec ${poetryEnv}/bin/python src/tui/app.py "$@"
+          exec ${poetryEnv}/bin/python -m nix_humanity.interfaces.tui "$@"
         '';
         
         # Create our custom ask-nix-guru command
@@ -78,7 +106,7 @@
           # Check if ollama is running
           if ! ${pkgs.curl}/bin/curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
             echo "⚠️  Starting Ollama service..."
-            ${ollama-nix.packages.${system}.ollama}/bin/ollama serve &
+            ${pkgs.ollama}/bin/ollama serve &
             sleep 5
           fi
           
@@ -101,9 +129,9 @@
           echo "📊 Using model: $MODEL"
           
           # Check if model exists, pull if not
-          if ! ${ollama-nix.packages.${system}.ollama}/bin/ollama list | grep -q "$MODEL"; then
+          if ! ${pkgs.ollama}/bin/ollama list | grep -q "$MODEL"; then
             echo "📥 Downloading $MODEL (this happens once)..."
-            ${ollama-nix.packages.${system}.ollama}/bin/ollama pull $MODEL
+            ${pkgs.ollama}/bin/ollama pull $MODEL
           fi
           
           # Craft a NixOS-specific prompt
@@ -120,7 +148,7 @@
           echo
           
           # Query the model
-          ${ollama-nix.packages.${system}.ollama}/bin/ollama run $MODEL "$PROMPT" 2>/dev/null
+          ${pkgs.ollama}/bin/ollama run $MODEL "$PROMPT" 2>/dev/null
           
           echo
           echo "💡 Tip: Save useful answers to docs/nix-knowledge/ for training data!"
@@ -135,9 +163,8 @@
             pkg-config
             
             # Tauri dependencies
-            webkitgtk_4_0
+            webkitgtk_4_1  # Uses libsoup3 (secure)
             librsvg
-            libsoup
             
             # Node.js for frontend
             nodejs_20
@@ -149,23 +176,34 @@
             
             # Development tools
             nodePackages.typescript
-            nodePackages.tsx
-            nodePackages.vite
             nodePackages.pnpm
+            # vite and tsx are installed via npm/pnpm
             
             # System tools for testing
             curl
             jq
             
-            # Python with all dependencies from pyproject.toml
-            poetryEnv
+            # Python environments
+            poetryEnv          # Python 3.11 with all research dependencies
+            pythonMainEnv      # Python 3.13 for main application
             
             # Voice interface dependencies
-            whisper-cpp     # Speech-to-text
+            (python311.withPackages (ps: with ps; [
+              openai-whisper
+              sounddevice
+              numpy
+              pyaudio
+              torch
+              torchaudio
+            ]))
             piper-tts       # Text-to-speech
             portaudio       # Audio I/O
             espeak-ng       # TTS fallback
             ffmpeg          # Audio processing
+            sox             # Sound processing
+            
+            # ActivityWatch for user behavior monitoring
+            activitywatch   # Privacy-first activity tracking
             
             # Documentation tools
             mdbook
@@ -177,7 +215,7 @@
             nil # Nix LSP
             
             # Local LLM integration
-            ollama-nix.packages.${system}.ollama
+            ollama
             askNixGuru
             
             # TUI launcher
@@ -193,6 +231,14 @@
             # Quality tools
             shellcheck
             hadolint
+            
+            # Demo creation tools
+            vhs              # Terminal GIF recorder (Charm)
+            asciinema        # Terminal session recorder
+            imagemagick      # Image conversion (SVG to PNG)
+            ffmpeg-full      # Video processing
+            gifsicle         # GIF optimization
+            termtosvg        # Terminal to SVG converter
           ];
 
           shellHook = ''
@@ -203,6 +249,11 @@
             echo "npm: $(npm --version)"
             echo "TypeScript: $(tsc --version)"
             echo ""
+            echo "🐍 Python Environments:"
+            echo "  Python 3.11 (research): Available via poetry environment"
+            echo "  Python 3.13 (main app): Available as python3.13"
+            echo "  Use poetry environment for full feature set including DoWhy"
+            echo ""
             echo "📚 Available commands:"
             echo "  run-tui-app       - Launch the beautiful TUI (no pip install needed!)"
             echo "  ask-nix-guru      - Query local LLM for NixOS expertise"
@@ -210,6 +261,16 @@
             echo "  npm run build     - Build all packages"
             echo "  npm run tauri:dev - Start Tauri development"
             echo "  npm run tauri:build - Build Tauri app"
+            echo ""
+            echo "🎬 Demo creation tools:"
+            echo "  vhs demo-tui.tape - Create high-quality terminal GIFs"
+            echo "  asciinema rec    - Record terminal sessions"
+            echo "  ./create-demo-nixos.sh - Guided demo creation"
+            echo ""
+            echo "📊 ActivityWatch Integration:"
+            echo "  aw-qt             - Start ActivityWatch GUI"
+            echo "  aw-server         - Start headless server"
+            echo "  Web UI: http://localhost:5600"
             echo ""
             echo "🤖 Sacred Trinity Workflow:"
             echo "  1. Human (you) provides vision and requirements"
@@ -241,7 +302,7 @@
           default = self.packages.${system}.nix-for-humanity;
           ask-nix-guru = askNixGuru;
           run-tui-app = runTuiApp;
-          inherit (ollama-nix.packages.${system}) ollama;
+          ollama = pkgs.ollama;
           
           nix-for-humanity = pkgs.stdenv.mkDerivation rec {
             pname = "nix-for-humanity";
@@ -257,9 +318,8 @@
               makeWrapper
               
               # Tauri build dependencies
-              webkitgtk_4_0
+              webkitgtk_4_1  # Uses libsoup3 (secure)
               librsvg
-              libsoup
               openssl
             ];
             
@@ -325,7 +385,7 @@
         };
       }
     ) // {
-      # NixOS module
+      # NixOS modules
       nixosModules = {
         default = { config, lib, pkgs, ... }: with lib; {
           options.programs.nix-for-humanity = {
@@ -336,6 +396,9 @@
             environment.systemPackages = [ self.packages.${pkgs.system}.nix-for-humanity ];
           };
         };
+        
+        # Voice interface module
+        voice = import ./modules/voice.nix;
       };
       
       # Overlay

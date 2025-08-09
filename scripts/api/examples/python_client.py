@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Python Client Example for Nix for Humanity API
 Simple client library for integrating with the REST API
 """

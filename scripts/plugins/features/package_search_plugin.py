@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict
 Package Search Plugin
 Handles package searching functionality with caching
 """

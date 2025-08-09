@@ -1,0 +1,224 @@
+# GitHub Actions workflow for automated coverage reporting
+# Part of the consciousness-first testing infrastructure
+
+name: Coverage Report
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run weekly coverage analysis
+    - cron: '0 0 * * 0'
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for coverage trends
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install coverage pytest pytest-cov
+    
+    - name: Run tests with coverage
+      run: |
+        # Run tests with coverage collection
+        coverage run -m pytest tests/ -v --tb=short
+        
+        # Generate coverage report
+        coverage report -m
+        coverage xml
+        coverage html
+    
+    - name: Check coverage thresholds
+      run: |
+        # Run our custom coverage monitoring script
+        python scripts/monitor_coverage.py --check-thresholds
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-${{ matrix.python-version }}
+        fail_ci_if_error: false
+    
+    - name: Archive coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports-${{ matrix.python-version }}
+        path: |
+          htmlcov/
+          coverage.xml
+          .coverage
+    
+    - name: Generate coverage badge
+      if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
+      run: |
+        # Extract coverage percentage
+        COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//')
+        
+        # Create badge JSON
+        echo "{\"schemaVersion\": 1, \"label\": \"coverage\", \"message\": \"${COVERAGE}%\", \"color\": \"brightgreen\"}" > coverage-badge.json
+    
+    - name: Persona-specific test coverage
+      run: |
+        # Run persona-specific test coverage analysis
+        echo "=== Persona Test Coverage Analysis ==="
+        
+        # Check each persona has adequate test coverage
+        for persona in grandma_rose maya_adhd alex_blind dr_sarah david carlos priya jamie viktor luna; do
+          echo "Checking coverage for persona: $persona"
+          coverage run -a -m pytest tests/ -k "$persona" -v
+        done
+        
+        # Generate combined report
+        coverage report -m --include="*persona*"
+    
+    - name: Critical path coverage check
+      run: |
+        # Ensure critical paths meet 95% threshold
+        echo "=== Critical Path Coverage Check ==="
+        
+        MODULES="nix_humanity/nlp/intent_engine.py nix_humanity/executor/command_executor.py nix_humanity/safety/validator.py"
+        
+        for module in $MODULES; do
+          if [ -f "$module" ]; then
+            coverage report -m --include="$module"
+          fi
+        done
+    
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: py-cov-action/python-coverage-comment-action@v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MINIMUM_GREEN: 90
+        MINIMUM_ORANGE: 80
+        ANNOTATE_MISSING_LINES: true
+        ANNOTATION_TYPE: warning
+    
+    - name: Fail if coverage drops
+      run: |
+        # Check if coverage has dropped compared to main branch
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # Get coverage from main branch
+          git checkout main
+          coverage run -m pytest tests/ -q
+          MAIN_COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//' | cut -d. -f1)
+          
+          # Get coverage from PR branch
+          git checkout ${{ github.head_ref }}
+          coverage run -m pytest tests/ -q
+          PR_COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//' | cut -d. -f1)
+          
+          # Compare
+          if [ "$PR_COVERAGE" -lt "$MAIN_COVERAGE" ]; then
+            echo "❌ Coverage dropped from ${MAIN_COVERAGE}% to ${PR_COVERAGE}%"
+            exit 1
+          else
+            echo "✅ Coverage maintained or improved: ${PR_COVERAGE}% (was ${MAIN_COVERAGE}%)"
+          fi
+        fi
+
+  consciousness-first-validation:
+    runs-on: ubuntu-latest
+    needs: coverage
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate no mocks in tests
+      run: |
+        # Run our no-mocks checker
+        bash scripts/check-no-mocks.sh
+    
+    - name: Check test implementation usage
+      run: |
+        # Ensure tests use consciousness-first implementations
+        echo "=== Consciousness-First Test Validation ==="
+        
+        # Count test files using test implementations
+        TOTAL_TEST_FILES=$(find tests/ -name "test_*.py" | wc -l)
+        USING_IMPLEMENTATIONS=$(grep -r "from tests.test_utils import" tests/ | grep -v __pycache__ | cut -d: -f1 | sort -u | wc -l)
+        
+        echo "Total test files: $TOTAL_TEST_FILES"
+        echo "Using test implementations: $USING_IMPLEMENTATIONS"
+        
+        # Calculate percentage
+        if [ "$TOTAL_TEST_FILES" -gt 0 ]; then
+          PERCENTAGE=$((USING_IMPLEMENTATIONS * 100 / TOTAL_TEST_FILES))
+          echo "Implementation usage: ${PERCENTAGE}%"
+          
+          if [ "$PERCENTAGE" -lt 80 ]; then
+            echo "❌ Less than 80% of tests use consciousness-first implementations"
+            exit 1
+          fi
+        fi
+    
+    - name: Validate persona coverage
+      run: |
+        # Ensure all personas are tested
+        PERSONAS=("grandma_rose" "maya_adhd" "alex_blind" "dr_sarah" "david" "carlos" "priya" "jamie" "viktor" "luna")
+        
+        for persona in "${PERSONAS[@]}"; do
+          if ! grep -r "$persona" tests/ > /dev/null; then
+            echo "❌ Missing tests for persona: $persona"
+            exit 1
+          fi
+        done
+        
+        echo "✅ All personas have test coverage"
+
+  coverage-trends:
+    runs-on: ubuntu-latest
+    needs: coverage
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install matplotlib pandas
+    
+    - name: Generate coverage trend report
+      run: |
+        # This would normally pull historical data from a database
+        # For now, we'll create a placeholder
+        python scripts/monitor_coverage.py --generate-report
+    
+    - name: Upload trend report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-trends
+        path: coverage_report_*.html

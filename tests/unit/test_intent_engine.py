@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for the IntentEngine component
+Unit tests for the IntentRecognizer component
 """
 
 import unittest
@@ -11,15 +11,15 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 
-from nix_for_humanity.core.types import Intent, IntentType
-from nix_for_humanity.core.intent_engine import IntentEngine
+from nix_humanity.core.intents import Intent, IntentType
+from nix_humanity.core.intents import IntentRecognizer
 
-class TestIntentEngine(unittest.TestCase):
-    """Test the IntentEngine component"""
+class TestIntentRecognizer(unittest.TestCase):
+    """Test the IntentRecognizer component"""
     
     def setUp(self):
         """Create intent engine for testing"""
-        self.engine = IntentEngine()
+        self.engine = IntentRecognizer()
         
     def test_recognize_install_patterns(self):
         """Test recognition of install intent patterns"""
@@ -39,8 +39,8 @@ class TestIntentEngine(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL, f"Failed to recognize install intent in: '{text}'")
-                self.assertIsNotNone(intent.target)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE, f"Failed to recognize install intent in: '{text}'")
+                self.assertIsNotNone(intent.entities.get("package"))
                 self.assertGreater(intent.confidence, 0.9)
                 
     def test_recognize_remove_patterns(self):
@@ -56,12 +56,12 @@ class TestIntentEngine(unittest.TestCase):
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
                 self.assertEqual(intent.type, IntentType.REMOVE)
-                self.assertIsNotNone(intent.target)
+                self.assertIsNotNone(intent.entities.get("package"))
                 
     def test_recognize_update_patterns(self):
         """Test recognition of update intent patterns"""
         test_cases = [
-            "update",
+            "update_system",
             "upgrade",
             "update system",
             "upgrade everything",
@@ -75,7 +75,7 @@ class TestIntentEngine(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.UPDATE, f"Failed to recognize update intent in: '{text}'")
+                self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM, f"Failed to recognize update intent in: '{text}'")
                 
     def test_recognize_search_patterns(self):
         """Test recognition of search intent patterns"""
@@ -91,8 +91,8 @@ class TestIntentEngine(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.SEARCH)
-                self.assertIsNotNone(intent.target)
+                self.assertEqual(intent.type, IntentType.SEARCH_PACKAGE)
+                self.assertIsNotNone(intent.entities.get("package"))
                 
     def test_recognize_rollback_patterns(self):
         """Test recognition of rollback intent patterns"""
@@ -119,7 +119,7 @@ class TestIntentEngine(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INFO)
+                self.assertEqual(intent.type, IntentType.EXPLAIN)
                 
     def test_recognize_help_patterns(self):
         """Test recognition of help intent patterns"""
@@ -172,7 +172,7 @@ class TestIntentEngine(unittest.TestCase):
         for text, expected_target in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_case_insensitivity(self):
         """Test that recognition is case insensitive"""
@@ -184,8 +184,8 @@ class TestIntentEngine(unittest.TestCase):
         
         for text in test_cases:
             intent = self.engine.recognize(text)
-            self.assertEqual(intent.type, IntentType.INSTALL)
-            self.assertEqual(intent.target, "firefox")
+            self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+            self.assertEqual(intent.entities.get("package"), "firefox")
             
     def test_extract_package_name(self):
         """Test package name extraction from text"""
@@ -240,17 +240,17 @@ class TestIntentEngine(unittest.TestCase):
         """Test that package update patterns work correctly"""
         # Package updates should be treated as install intents (installing newer version)
         test_cases = [
-            ("update firefox", IntentType.INSTALL, "firefox"),
-            ("upgrade vim", IntentType.INSTALL, "vim"),
-            ("update python3", IntentType.INSTALL, "python3"),
-            ("upgrade nodejs", IntentType.INSTALL, "nodejs"),
+            ("update firefox", IntentType.INSTALL_PACKAGE, "firefox"),
+            ("upgrade vim", IntentType.INSTALL_PACKAGE, "vim"),
+            ("update python3", IntentType.INSTALL_PACKAGE, "python3"),
+            ("upgrade nodejs", IntentType.INSTALL_PACKAGE, "nodejs"),
         ]
         
         for text, expected_type, expected_target in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
                 self.assertEqual(intent.type, expected_type)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_system_vs_package_update_distinction(self):
         """Test that system updates are distinguished from package updates"""
@@ -267,8 +267,8 @@ class TestIntentEngine(unittest.TestCase):
         for text in system_updates:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.UPDATE)
-                self.assertIsNone(intent.target)
+                self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM)
+                self.assertIsNone(intent.entities.get("package"))
                 
         # These should be package installs (INSTALL intent)
         package_updates = [
@@ -280,8 +280,8 @@ class TestIntentEngine(unittest.TestCase):
         for text in package_updates:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertIsNotNone(intent.target)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertIsNotNone(intent.entities.get("package"))
                 
     def test_info_patterns_extended(self):
         """Test extended info patterns including new additions"""
@@ -296,7 +296,7 @@ class TestIntentEngine(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INFO)
+                self.assertEqual(intent.type, IntentType.EXPLAIN)
 
 
 if __name__ == '__main__':

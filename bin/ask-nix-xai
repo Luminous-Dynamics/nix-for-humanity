@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""
+ask-nix with Causal XAI enabled
+This wrapper adds causal explanations to the standard ask-nix command
+"""
+
+import sys
+import os
+
+# Add scripts directory to path
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+sys.path.insert(0, script_dir)
+
+# Import XAI integration
+from causal_xai_integration import create_xai_enhanced_engine
+
+# Import the standard ask-nix components
+bin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+sys.path.insert(0, bin_dir)
+
+# Patch the ModernNixOSKnowledgeEngine to include XAI
+import importlib.util
+spec = importlib.util.spec_from_file_location("nix_knowledge_engine_modern", 
+    os.path.join(script_dir, "nix-knowledge-engine-modern.py"))
+nix_knowledge_engine_modern = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(nix_knowledge_engine_modern)
+
+# Create XAI-enhanced version
+XAIModernNixOSKnowledgeEngine = create_xai_enhanced_engine(
+    nix_knowledge_engine_modern.ModernNixOSKnowledgeEngine,
+    enable_xai=True
+)
+
+# Monkey-patch the module
+nix_knowledge_engine_modern.ModernNixOSKnowledgeEngine = XAIModernNixOSKnowledgeEngine
+
+# Now run the standard ask-nix with XAI enhancements
+if __name__ == "__main__":
+    # Add command line flag for XAI features
+    if '--explain' in sys.argv:
+        sys.argv.remove('--explain')
+        os.environ['NIX_HUMANITY_XAI_EXPLAIN'] = 'detailed'
+    elif '--why' in sys.argv:
+        sys.argv.remove('--why')
+        os.environ['NIX_HUMANITY_XAI_EXPLAIN'] = 'simple'
+    
+    # Import and run ask-nix
+    ask_nix_path = os.path.join(bin_dir, "ask-nix")
+    if os.path.exists(ask_nix_path):
+        # Execute ask-nix directly
+        with open(ask_nix_path, 'r') as f:
+            code = f.read()
+        exec(compile(code, ask_nix_path, 'exec'))
+    else:
+        print("Error: ask-nix not found!")
+        sys.exit(1)

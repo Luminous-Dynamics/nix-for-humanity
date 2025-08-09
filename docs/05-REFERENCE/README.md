@@ -25,9 +25,11 @@ This section contains reference documentation including API specifications, conf
 ## Documents
 
 ### API Documentation
-1. **[REST API Reference](./01-REST-API.md)** - HTTP endpoints and examples
-2. **[Python API Reference](./02-PYTHON-API.md)** - Backend Python modules
-3. **[Plugin API Reference](./03-PLUGIN-API.md)** - Extension development
+1. **[REST API Reference](./02-API-REFERENCE.md)** 🆕 - Complete REST API documentation with examples
+2. **[OpenAPI Specification](./openapi.yaml)** 🆕 - Machine-readable API specification
+3. **[Python SDK](./03-PYTHON-SDK.md)** 🆕 - Python client library documentation
+4. **[JavaScript SDK](./04-JAVASCRIPT-SDK.md)** 🆕 - JavaScript/TypeScript client library
+5. **[Plugin API Reference](./03-PLUGIN-API.md)** - Extension development
 
 ### Configuration
 4. **[Configuration Reference](./04-CONFIGURATION.md)** - All configuration options

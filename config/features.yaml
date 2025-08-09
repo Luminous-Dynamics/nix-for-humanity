@@ -1,0 +1,130 @@
+# Nix for Humanity Feature Configuration
+# This file defines which features are active for each version
+# All features are preserved and documented, ready for future activation
+
+version: "1.0.0"
+
+# Core features for v1.0 - The Foundation of Trust
+v1_0:
+  enabled:
+    - basic_nlp:
+        description: "Natural language understanding for common NixOS tasks"
+        status: "active"
+        priority: "critical"
+    
+    - cli_interface:
+        description: "Command-line interface with ask-nix"
+        status: "active"
+        priority: "critical"
+    
+    - basic_intents:
+        description: "Install, remove, update, search, help commands"
+        status: "active"
+        priority: "critical"
+    
+    - error_handling:
+        description: "Clear, helpful error messages"
+        status: "active"
+        priority: "critical"
+    
+    - basic_feedback:
+        description: "Simple feedback collection for improvement"
+        status: "active"
+        priority: "high"
+
+  deferred:
+    - native_python_api:
+        description: "Direct Python-Nix integration for 10x performance"
+        target: "v1.1"
+        reason: "Requires extensive testing with NixOS 25.11"
+        preservation: "backend/native/"
+    
+    - tui_interface:
+        description: "Beautiful Textual-based terminal UI"
+        target: "v1.1"
+        reason: "Focus on CLI reliability first"
+        preservation: "frontends/tui/"
+    
+    - voice_interface:
+        description: "Pipecat-based voice interaction"
+        target: "v1.2"
+        reason: "Requires solid foundation"
+        preservation: "frontends/voice/"
+    
+    - learning_system:
+        description: "AI that learns from user patterns"
+        target: "v1.2"
+        reason: "Need usage data from v1.0"
+        preservation: "backend/learning/"
+    
+    - ten_personas:
+        description: "Full adaptive personality system"
+        target: "v1.1"
+        reason: "Start with 3 core personas"
+        preservation: "backend/personas/"
+    
+    - symbiotic_knowledge_graph:
+        description: "4-layer consciousness architecture"
+        target: "v2.0"
+        reason: "Research feature for future"
+        preservation: "backend/research/skg/"
+    
+    - trust_engine:
+        description: "Theory of Mind trust building"
+        target: "v2.0"
+        reason: "Research feature for future"
+        preservation: "backend/research/trust/"
+    
+    - federated_learning:
+        description: "Privacy-preserving collective intelligence"
+        target: "v3.0"
+        reason: "Requires established user base"
+        preservation: "backend/research/federated/"
+
+# Feature flag system
+flags:
+  # Production flags (for v1.0)
+  USE_BASIC_NLP: true
+  USE_CLI_ONLY: true
+  LIMIT_PERSONAS: true  # Use only 3 core personas
+  SIMPLE_FEEDBACK: true
+  
+  # Development flags (for testing future features)
+  ENABLE_NATIVE_API: false
+  ENABLE_TUI: false
+  ENABLE_VOICE: false
+  ENABLE_LEARNING: false
+  ENABLE_ALL_PERSONAS: false
+  ENABLE_RESEARCH_FEATURES: false
+  
+  # Debug flags
+  VERBOSE_LOGGING: false
+  SHOW_DEFERRED_FEATURES: false
+  DEVELOPMENT_MODE: false
+
+# Version milestones
+milestones:
+  v1_0:
+    name: "Foundation of Trust"
+    goal: "Reliable, helpful NixOS assistant that just works"
+    target_date: "Q1 2025"
+    
+  v1_1:
+    name: "Enhanced Experience"
+    goal: "Faster performance, beautiful TUI, all personas"
+    target_date: "Q2 2025"
+    
+  v1_2:
+    name: "Intelligent Partner"
+    goal: "Voice interface, learning system, personalization"
+    target_date: "Q3 2025"
+    
+  v2_0:
+    name: "Consciousness Evolution"
+    goal: "Research features, deep AI integration"
+    target_date: "Q4 2025"
+    
+  v3_0:
+    name: "Collective Wisdom"
+    goal: "Federated learning, community intelligence"
+    target_date: "2026"

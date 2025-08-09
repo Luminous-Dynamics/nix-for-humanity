@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+import subprocess
 Security-focused integration tests for command execution.
 Ensures all user inputs are properly sanitized and validated.
 """
@@ -11,8 +12,8 @@ from unittest.mock import patch, MagicMock, call
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from nix_for_humanity.core.execution_engine import ExecutionEngine
-from nix_for_humanity.core.intent_engine import IntentEngine
+from nix_humanity.core.executor import ExecutionEngine
+from nix_humanity.core.intents import IntentEngine
 
 class TestSecurityExecution(unittest.TestCase):
     """Test security measures in command execution."""

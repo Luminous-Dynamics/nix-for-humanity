@@ -1,0 +1,94 @@
+# Nix for Humanity v1.0 Configuration
+# Focused on simplicity, reliability, and core functionality
+
+version: "1.0"
+name: "Nix for Humanity v1.0"
+
+# Core Features (all enabled by default in v1.0)
+features:
+  natural_language: true
+  native_python_api: true
+  basic_learning: true
+  simple_feedback: true
+  security_validation: true
+  progress_indicators: true
+  educational_errors: true
+
+# Disabled v2.0+ Features
+advanced_features:
+  voice_interface: false
+  multi_modal: false
+  advanced_personas: false
+  xai_explanations: false
+  theory_of_mind: false
+  consciousness_metrics: false
+  federated_learning: false
+
+# Personas (only 2 for v1.0)
+personas:
+  beginner:
+    name: "Friendly Guide"
+    style: "warm, encouraging, step-by-step"
+    verbosity: "detailed"
+    examples: true
+    emoji: true
+    
+  expert:
+    name: "Efficient Assistant"
+    style: "concise, technical, direct"
+    verbosity: "minimal"
+    examples: false
+    emoji: false
+
+# Core Commands (v1.0 essentials)
+supported_commands:
+  - install
+  - remove
+  - update
+  - search
+  - list
+  - rollback
+  - help
+  - status
+  - clean
+
+# Performance Settings
+performance:
+  use_native_api: true
+  cache_enabled: true
+  timeout_seconds: 30
+  max_retries: 3
+
+# Security Settings
+security:
+  validate_commands: true
+  allow_sudo: false
+  sandbox_mode: true
+  audit_log: true
+
+# Learning Settings (basic for v1.0)
+learning:
+  track_preferences: true
+  learn_patterns: true
+  max_history: 100
+  anonymous_only: true
+
+# User Experience
+ui:
+  colors: true
+  unicode: true
+  progress_bars: true
+  clear_errors: true
+  helpful_hints: true
+
+# Paths
+paths:
+  cache: "~/.cache/nix-humanity/v1.0"
+  data: "~/.local/share/nix-humanity/v1.0"
+  logs: "~/.local/share/nix-humanity/logs"
+
+# Development
+debug:
+  enabled: false
+  verbose_errors: false
+  trace_commands: false

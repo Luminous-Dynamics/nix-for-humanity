@@ -15,7 +15,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
 
-from nix_for_humanity.monitoring.performance_monitor import (
+from nix_humanity.monitoring.performance_monitor import (
     PerformanceMonitor, 
     PerformanceMetric, 
     PerformanceThreshold,

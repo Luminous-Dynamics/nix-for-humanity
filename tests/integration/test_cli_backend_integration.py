@@ -20,9 +20,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend/python'))
 
 try:
-    from native_nix_backend import NativeNixBackend, NixOperation, OperationType, NixResult
-    from nix_for_humanity.adapters.cli_adapter import CLIAdapter
-    from nix_for_humanity.core.interface import Query, ExecutionMode
+    from nix_humanity.core.native_operations import NativeNixBackend, NixOperation, OperationType, NixResult
+    from nix_humanity.adapters.cli_adapter import CLIAdapter
+    from nix_humanity.core.interface import Query
 except ImportError as e:
     print(f"Import error: {e}")
     # Create mock classes if imports fail

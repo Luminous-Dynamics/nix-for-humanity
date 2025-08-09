@@ -1,0 +1,159 @@
+# Nix for Humanity Security Configuration
+# This file allows administrators to adjust security levels and policies
+
+security:
+  # Global security level: strict, balanced, or permissive
+  level: balanced
+  
+  # Rate limiting configuration
+  rate_limiting:
+    enabled: true
+    # Maximum requests per minute per user
+    requests_per_minute: 60
+    # Maximum requests per hour per user
+    requests_per_hour: 600
+    # Burst size for temporary spikes
+    burst_size: 10
+    # Whitelist for trusted IPs (no rate limiting)
+    whitelist:
+      - "127.0.0.1"
+      - "::1"
+  
+  # Input validation settings
+  validation:
+    # Maximum input length (characters)
+    max_input_length: 1000
+    # Enable enhanced threat detection
+    enhanced_detection: true
+    # Behavioral analysis settings
+    behavioral_analysis:
+      enabled: true
+      # Number of commands to analyze for patterns
+      history_window: 20
+      # Anomaly detection threshold (0.0-1.0)
+      anomaly_threshold: 0.7
+    
+  # Command execution policies
+  execution:
+    # Require confirmation for privileged commands
+    require_confirmation: true
+    # Commands that always require confirmation
+    always_confirm:
+      - "remove"
+      - "update_system"
+      - "rollback_system"
+    # Maximum command execution time (seconds)
+    max_execution_time: 300
+    # Enable dry-run by default for new users
+    default_dry_run: true
+    
+  # Trust levels and progression
+  trust:
+    # Initial trust level for new users (0.0-1.0)
+    initial_level: 0.3
+    # Trust increase per successful command
+    increase_per_success: 0.01
+    # Trust decrease per security violation
+    decrease_per_violation: 0.1
+    # Minimum commands before trust increase
+    min_commands_for_increase: 5
+    # Trust level thresholds
+    thresholds:
+      # Below this level, extra confirmations required
+      low_trust: 0.3
+      # Above this level, some restrictions lifted
+      high_trust: 0.7
+      # Above this level, minimal restrictions
+      trusted: 0.9
+      
+  # Threat detection patterns
+  threats:
+    # Enable pattern-based threat detection
+    pattern_detection: true
+    # Log all detected threats
+    log_threats: true
+    # Block execution on threat detection
+    block_on_threat: true
+    # Custom threat patterns (regex)
+    custom_patterns:
+      - pattern: "rm\\s+-rf\\s+/"
+        threat_type: "system_destruction"
+        severity: "critical"
+      - pattern: "curl.*\\|.*sh"
+        threat_type: "remote_execution"
+        severity: "high"
+      - pattern: "base64.*decode"
+        threat_type: "obfuscation"
+        severity: "medium"
+        
+  # Privacy settings
+  privacy:
+    # Anonymize user data in logs
+    anonymize_logs: true
+    # Data retention period (days)
+    retention_days: 30
+    # Enable learning from user interactions
+    enable_learning: true
+    # Share anonymous usage statistics
+    share_statistics: false
+    
+  # Session security
+  session:
+    # Session timeout (minutes)
+    timeout_minutes: 30
+    # Maximum concurrent sessions per user
+    max_concurrent: 3
+    # Require re-authentication for privileged commands
+    reauth_privileged: true
+    
+  # Logging and monitoring
+  monitoring:
+    # Log all commands
+    log_all_commands: true
+    # Log failed attempts
+    log_failures: true
+    # Alert on suspicious activity
+    alert_suspicious: true
+    # Alert destinations
+    alert_channels:
+      - type: "log"
+        path: "/var/log/nix-humanity/security.log"
+      - type: "email"
+        enabled: false
+        to: "admin@example.com"
+        
+  # Persona-specific settings
+  personas:
+    # Grandma Rose - Maximum safety
+    grandma_rose:
+      security_level: "strict"
+      require_confirmation: true
+      max_complexity: "simple"
+    # Maya (ADHD) - Balance speed and safety
+    maya_adhd:
+      security_level: "balanced"
+      require_confirmation: false
+      allow_shortcuts: true
+    # Dr. Sarah - Power user
+    dr_sarah:
+      security_level: "balanced"
+      advanced_features: true
+      batch_operations: true
+    # Jamie (Privacy Advocate) - Maximum privacy
+    jamie_privacy:
+      security_level: "strict"
+      anonymize_everything: true
+      no_logging: true
+      
+# Feature flags for security features
+features:
+  # Enable new enhanced validator
+  use_enhanced_validator: true
+  # Enable behavioral analysis
+  behavioral_analysis: true
+  # Enable causal XAI for security decisions
+  explain_security_decisions: true
+  # Enable voice authentication
+  voice_auth: false
+  # Enable biometric monitoring
+  biometric_monitoring: false

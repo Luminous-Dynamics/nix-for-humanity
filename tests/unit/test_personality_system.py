@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for the PersonalitySystem component
+Unit tests for the ResponseGenerator component
 """
 
 import unittest
@@ -10,15 +10,15 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.personality_system import PersonalitySystem, PersonalityStyle
+from nix_humanity.core.responses import ResponseGenerator, PersonalityStyle
 
 
-class TestPersonalitySystem(unittest.TestCase):
-    """Test the PersonalitySystem component"""
+class TestResponseGenerator(unittest.TestCase):
+    """Test the ResponseGenerator component"""
     
     def setUp(self):
         """Create personality system for testing"""
-        self.system = PersonalitySystem()
+        self.system = ResponseGenerator()
         
     def test_initialization(self):
         """Test personality system initialization"""
@@ -75,7 +75,7 @@ class TestPersonalitySystem(unittest.TestCase):
         self.system.set_style(PersonalityStyle.TECHNICAL)
         
         response = "Updating system."
-        adapted = self.system.adapt_response(response, "update")
+        adapted = self.system.adapt_response(response, "update_system")
         
         # Technical style just returns the response as-is based on the actual implementation
         self.assertEqual(adapted, response)

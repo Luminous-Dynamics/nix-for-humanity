@@ -11,15 +11,15 @@ print("Starting debug test...")
 
 try:
     print("Importing Query and ExecutionMode...")
-    from nix_for_humanity.core.interface import Query, ExecutionMode
+    from nix_humanity.core.interface import Query
     print("✓ Imports successful")
     
     print("\nCreating Query object...")
-    query = Query(text="install vim", mode=ExecutionMode.DRY_RUN)
+    query = {"query": text="install vim", mode="dry_run"}
     print(f"✓ Query created: {query}")
     
     print("\nImporting Engine...")
-    from nix_for_humanity.core.engine import NixForHumanityCore as Engine
+    from nix_humanity.core.engine import NixForHumanityBackend as Engine
     print("✓ Engine imported")
     
     print("\nCreating Engine instance...")

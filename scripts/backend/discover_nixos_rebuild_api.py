@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 Discover and test nixos-rebuild-ng Python API
 This is the first step in our Native Python-Nix Interface implementation
 """

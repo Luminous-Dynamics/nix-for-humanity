@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Lightweight Performance Benchmarking - Nix for Humanity
 
 Tests core operations with focus on Native Python-Nix API performance gains.

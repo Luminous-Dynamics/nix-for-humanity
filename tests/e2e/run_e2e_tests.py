@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, List, Optional
 End-to-End Test Runner for Nix for Humanity
 
 Runs comprehensive persona-based E2E tests to validate that all 10 core personas

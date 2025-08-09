@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Grandma Mode Formatter - Makes NixOS accessible to everyone
 
 Removes technical jargon, simplifies responses to 3 sentences max,

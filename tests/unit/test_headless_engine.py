@@ -16,9 +16,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.engine import NixForHumanityCore as Engine
-from nix_for_humanity.core.interface import ExecutionMode, Intent, Response
-from nix_for_humanity.core.types import Context
+from nix_humanity.core.engine import NixForHumanityBackend as Engine
+from nix_humanity.core.interface import  Intent, Response
+from nix_humanity.core.intents import Context
 
 
 class TestEngine(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestEngine(unittest.TestCase):
         with patch('core.headless_engine.NixOSKnowledgeEngine', return_value=self.mock_knowledge):
             with patch('core.headless_engine.FeedbackCollector', return_value=self.mock_feedback):
                 with patch('core.headless_engine.get_plugin_manager', return_value=self.mock_plugin_manager):
-                    with patch('core.headless_engine.CommandLearningSystem', return_value=self.mock_learning):
+                    with patch('core.headless_engine.CommandPreferenceManager', return_value=self.mock_learning):
                         with patch('core.headless_engine.IntelligentPackageCache', return_value=self.mock_cache):
                             self.engine = Engine()
     
@@ -304,7 +304,7 @@ class TestEngine(unittest.TestCase):
     def test_execution_modes(self):
         """Test different execution modes"""
         # Test DRY_RUN mode
-        context_dry = Context(execution_mode=ExecutionMode.DRY_RUN)
+        context_dry = Context(execution_mode="dry_run")
         self.mock_knowledge.extract_intent.return_value = {'action': 'install', 'package': 'firefox'}
         
         response = self.engine.process("install firefox", context_dry)
@@ -359,10 +359,10 @@ class TestExecutionMode(unittest.TestCase):
     
     def test_execution_mode_values(self):
         """Test that ExecutionMode has expected values"""
-        self.assertEqual(ExecutionMode.DRY_RUN.value, 'dry_run')
-        self.assertEqual(ExecutionMode.SAFE.value, 'safe')
-        self.assertEqual(ExecutionMode.FULL.value, 'full')
-        self.assertEqual(ExecutionMode.LEARNING.value, 'learning')
+        self.assertEqual("dry_run".value, 'dry_run')
+        self.assertEqual("normal".value, 'safe')
+        self.assertEqual("normal".value, 'full')
+        self.assertEqual("normal".value, 'learning')
 
 
 class TestDataClasses(unittest.TestCase):
@@ -390,7 +390,7 @@ class TestDataClasses(unittest.TestCase):
         self.assertIsNotNone(context.session_id)
         self.assertEqual(context.personality, 'friendly')
         self.assertEqual(context.capabilities, ['text'])
-        self.assertEqual(context.execution_mode, ExecutionMode.DRY_RUN)
+        self.assertEqual(context.execution_mode.DRY_RUN)
         self.assertTrue(context.collect_feedback)
         
         # Test with custom values
@@ -398,7 +398,7 @@ class TestDataClasses(unittest.TestCase):
             user_id='test_user',
             personality='minimal',
             capabilities=['text', 'voice', 'visual'],
-            execution_mode=ExecutionMode.FULL
+            execution_mode="normal"
         )
         self.assertEqual(context2.user_id, 'test_user')
         self.assertEqual(context2.personality, 'minimal')
@@ -481,7 +481,7 @@ class TestIntegration(unittest.TestCase):
                         user_id='test_user',
                         personality='symbiotic',
                         capabilities=['text', 'visual'],
-                        execution_mode=ExecutionMode.DRY_RUN,
+                        execution_mode="dry_run",
                         collect_feedback=True
                     )
                     

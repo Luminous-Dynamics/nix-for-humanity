@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-08-08T20:32:43.457661",
+  "version": "1.0.0",
+  "features": {
+    "natural_language": {
+      "success": false,
+      "tests_passed": "4/5",
+      "avg_time": 0.004538297653198242
+    },
+    "smart_discovery": {
+      "success": false,
+      "tests_passed": "1/4"
+    },
+    "native_api": {
+      "success": true,
+      "avg_time": 0.0002942085266113281,
+      "all_under_100ms": true
+    },
+    "tui": {
+      "success": false
+    },
+    "config_management": {
+      "success": false,
+      "tests_passed": "2/3"
+    },
+    "home_manager": {
+      "success": false,
+      "awareness_count": "1/3"
+    },
+    "flake_support": {
+      "success": false,
+      "tests_passed": "0/3"
+    },
+    "generation_management": {
+      "success": true
+    },
+    "error_handling": {
+      "success": false,
+      "educational_errors": "0/3"
+    },
+    "settings_profiles": {
+      "success": true,
+      "personalities_working": "4/4"
+    }
+  },
+  "performance": {},
+  "overall_success": true,
+  "user_journey": {
+    "success": false,
+    "total_time": 0.003488779067993164,
+    "avg_step_time": 0.0004983970097133092
+  },
+  "summary": {
+    "features_passed": "3/10",
+    "user_journey_passed": false,
+    "overall_success": false
+  }
+}

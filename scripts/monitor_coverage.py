@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional, Tuple
 monitor_coverage.py - Automated coverage monitoring for consciousness-first testing
 Part of the Nix for Humanity project's commitment to quality
 
@@ -188,7 +189,7 @@ class CoverageMonitor:
                 text=True
             )
             return result.stdout.strip()
-        except:
+        except Exception:
             return None
     
     def save_results(self, results: Dict):

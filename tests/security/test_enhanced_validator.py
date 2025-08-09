@@ -14,7 +14,7 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from nix_for_humanity.security.enhanced_validator import (
+from nix_humanity.security.enhanced_validator import (
     EnhancedInputValidator,
     ValidationContext,
     ThreatIndicator,
@@ -209,7 +209,8 @@ class TestEnhancedInputValidator(unittest.TestCase):
         try:
             self.validator.validate_enhanced("rm -rf / --no-preserve-root", self.context)
         except ValidationError:
-            pass
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
             
         final_trust = self.validator.behavior_patterns["test_user"]['trust_score']
         self.assertLess(final_trust, current_trust)
@@ -335,7 +336,8 @@ class TestEnhancedInputValidator(unittest.TestCase):
             try:
                 self.validator.validate_enhanced(cmd, self.context)
             except ValidationError:
-                pass
+                # TODO: Add proper error handling
+                pass  # Silent for now, should log error
                 
         # Check threat summary
         summary = self.validator.get_threat_summary()
@@ -442,7 +444,7 @@ class TestValidationIntegration(unittest.TestCase):
     
     def test_backwards_compatibility(self):
         """Test that enhanced validator is backwards compatible."""
-        from nix_for_humanity.security.input_validator import InputValidator
+        from nix_humanity.security.input_validator import InputValidator
         
         # Should be able to use as regular InputValidator
         validator = EnhancedInputValidator()

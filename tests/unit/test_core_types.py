@@ -4,7 +4,7 @@ Unit tests for core type definitions
 
 import unittest
 from datetime import datetime
-from nix_for_humanity.core.types import (
+from nix_humanity.core.intents import (
     Request,
     Response,
     Context,
@@ -93,11 +93,11 @@ class TestCoreTypes(unittest.TestCase):
     def test_intent_creation(self):
         """Test Intent creation"""
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={"package": "firefox"},
             confidence=0.95
         )
-        self.assertEqual(intent.type, IntentType.INSTALL)
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
         self.assertEqual(intent.entities["package"], "firefox")
         self.assertEqual(intent.confidence, 0.95)
     
@@ -140,7 +140,7 @@ class TestCoreTypes(unittest.TestCase):
         self.assertEqual(resp.suggestions, [])
         
         # Complex response with all fields
-        intent = Intent(type=IntentType.INSTALL, entities={"package": "firefox"})
+        intent = Intent(type=IntentType.INSTALL_PACKAGE, entities={"package": "firefox"})
         plan = Plan(steps=["Install firefox"])
         result = ExecutionResult(success=True, output="Done")
         
@@ -153,14 +153,14 @@ class TestCoreTypes(unittest.TestCase):
             suggestions=["You can launch Firefox with 'firefox' command"],
             explanation="Firefox is a popular web browser"
         )
-        self.assertEqual(resp.intent.type, IntentType.INSTALL)
+        self.assertEqual(resp.intent.type, IntentType.INSTALL_PACKAGE)
         self.assertEqual(resp.plan.steps[0], "Install firefox")
         self.assertTrue(resp.result.success is True)
         self.assertEqual(len(resp.suggestions), 1)
     
     def test_response_serialization(self):
         """Test Response to/from dict"""
-        intent = Intent(type=IntentType.INSTALL, entities={"package": "firefox"})
+        intent = Intent(type=IntentType.INSTALL_PACKAGE, entities={"package": "firefox"})
         plan = Plan(steps=["Install firefox"], requires_sudo=False)
         result = ExecutionResult(success=True, output="Done", exit_code=0)
         
@@ -178,7 +178,7 @@ class TestCoreTypes(unittest.TestCase):
         data = resp.to_dict()
         self.assertTrue(data["success"] is True)
         self.assertEqual(data["text"], "Firefox installed")
-        self.assertEqual(data["intent"]["type"], "install")
+        self.assertEqual(data["intent"]["type"], "install_package")
         self.assertEqual(data["plan"]["steps"][0], "Install firefox")
         self.assertTrue(data["result"]["success"] is True)
         self.assertEqual(len(data["suggestions"]), 1)

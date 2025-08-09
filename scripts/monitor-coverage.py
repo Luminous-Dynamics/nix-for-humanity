@@ -17,9 +17,15 @@ import os
 def run_command(cmd, capture_output=True):
     """Run a command and return the result."""
     try:
+        # Convert string command to list for safety
+        if isinstance(cmd, str):
+            import shlex
+            cmd_list = shlex.split(cmd)
+        else:
+            cmd_list = cmd
+            
         result = subprocess.run(
-            cmd, 
-            shell=True, 
+            cmd_list, 
             capture_output=capture_output, 
             text=True, 
             check=True

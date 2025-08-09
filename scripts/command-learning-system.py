@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Command Learning System for Nix for Humanity
 Learns from successful commands to improve future suggestions
 Building toward AI partner through continuous improvement

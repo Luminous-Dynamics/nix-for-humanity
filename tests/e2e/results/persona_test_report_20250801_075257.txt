@@ -1,0 +1,63 @@
+🧪 Nix for Humanity - Persona E2E Test Report
+Generated: Fri Aug  1 07:52:57 AM CDT 2025
+================================================
+
+✅ grandma_rose - PASSED
+   Command: "I need that Firefox thing"
+   Duration: .001380468s
+   Reason: Simple, natural language - perfect for Grandma Rose
+
+✅ jamie - PASSED
+   Command: "install tor browser securely"
+   Duration: .001404078s
+   Reason: Persona requirements met
+
+✅ david - PASSED
+   Command: "install zoom for work"
+   Duration: .001424439s
+   Reason: Persona requirements met
+
+✅ maya - PASSED
+   Command: "firefox now"
+   Duration: .001579659s
+   Reason: Fast, minimal command - great for ADHD
+
+✅ carlos - PASSED
+   Command: "I'm learning programming, what do I need?"
+   Duration: .001439217s
+   Reason: Persona requirements met
+
+✅ alex - PASSED
+   Command: "install neovim with accessibility"
+   Duration: .001571707s
+   Reason: Accessible command structure
+
+✅ luna - PASSED
+   Command: "install exactly the same version as last time"
+   Duration: .001495597s
+   Reason: Persona requirements met
+
+✅ dr_sarah - PASSED
+   Command: "install latex with scientific packages"
+   Duration: .001480334s
+   Reason: Persona requirements met
+
+✅ priya - PASSED
+   Command: "quick install of office software"
+   Duration: .001455812s
+   Reason: Persona requirements met
+
+✅ viktor - PASSED
+   Command: "please install program for documents"
+   Duration: .001357014s
+   Reason: Persona requirements met
+
+======================================
+SUMMARY
+======================================
+Total Personas: 10
+Passed: 10
+Failed: 0
+Success Rate: 100.0%
+
+Overall Status: SUCCESS

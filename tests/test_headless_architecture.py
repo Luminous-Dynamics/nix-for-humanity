@@ -15,7 +15,7 @@ from pathlib import Path
 scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
 sys.path.insert(0, scripts_dir)
 
-from core.headless_engine import HeadlessEngine, Context, ExecutionMode
+from core.headless_engine import HeadlessEngine, Context
 from core.jsonrpc_server import JSONRPCServer, JSONRPCClient
 from adapters.cli_adapter import CLIAdapter
 

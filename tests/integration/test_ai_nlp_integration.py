@@ -19,8 +19,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from nix_for_humanity.ai.xai_engine import XAIEngine, CausalFactor, ExplanationLevel
-from nix_for_humanity.ai.advanced_learning import AdvancedLearningSystem, PreferencePair, LearningMode
+# v2.0+ feature: from nix_humanity.ai.xai_engine import XAIEngine, CausalFactor, ExplanationLevel
+# v2.0+ feature: from nix_humanity.ai.advanced_learning import AdvancedLearningSystem, PreferencePair, LearningMode
 
 # Mock the backend NLP module since we're testing integration
 class MockNLPPipeline:

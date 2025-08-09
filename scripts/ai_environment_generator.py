@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, Optional
 AI Environment Generator - Actually creates the flake.nix files
 Handles file creation, validation, and user interaction
 """

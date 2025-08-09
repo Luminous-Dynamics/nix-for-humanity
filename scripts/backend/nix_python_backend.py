@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional
 🐍 Nix Python Backend - Direct NixOS API Integration
 The foundation of speed and reliability for Nix for Humanity
 """
@@ -113,8 +114,9 @@ class NixPythonBackend:
         if self.api_available:
             try:
                 return Profile.from_arg("system")
-            except:
-                pass
+            except Exception:
+                # TODO: Add proper error handling
+                pass  # Silent for now, should log error
         return None
     
     def rebuild_system(self, 

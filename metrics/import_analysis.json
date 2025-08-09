@@ -1,0 +1,11 @@
+{
+  "total_files": 79,
+  "undefined_imports": [],
+  "circular_risks": [],
+  "problem_files": [],
+  "statistics": {
+    "total_imports": 1035,
+    "relative_imports": 0,
+    "undefined_count": 0
+  }
+}

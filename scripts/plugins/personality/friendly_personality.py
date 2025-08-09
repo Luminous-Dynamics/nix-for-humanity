@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict
 Friendly Personality Plugin
 Provides warm, helpful responses with encouragement
 """

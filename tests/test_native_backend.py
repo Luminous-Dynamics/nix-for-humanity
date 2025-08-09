@@ -13,7 +13,7 @@ from pathlib import Path
 backend_path = Path(__file__).parent / "backend"
 sys.path.insert(0, str(backend_path))
 
-from core.backend import NixForHumanityBackend, create_backend
+from nix_humanity.core.engine import NixForHumanityBackend, create_backend
 from api.schema import Request, Response
 
 
@@ -90,7 +90,7 @@ async def test_native_backend():
     
     # Test 5: Check native API availability
     print("\n\n🔍 Checking Native API Status:")
-    from backend.core.nix_integration import NixOSIntegration
+    from nix_humanity.core.nix_integration import NixOSIntegration
     integration = NixOSIntegration()
     status = integration.get_status()
     
@@ -135,7 +135,7 @@ async def main():
         print("🔍 Checking for nixos-rebuild-ng API...\n")
         
         try:
-            from backend.python.native_nix_backend import NATIVE_API_AVAILABLE
+            from nix_humanity.core.native_operations import NATIVE_API_AVAILABLE
             print(f"Native API Available: {NATIVE_API_AVAILABLE}")
             
             if not NATIVE_API_AVAILABLE:

@@ -1,0 +1,264 @@
+name: 🧪 Coverage Monitoring
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily at 6 AM UTC to track coverage trends
+    - cron: '0 6 * * *'
+
+jobs:
+  coverage-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for coverage comparison
+    
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pytest pytest-cov
+    
+    - name: 🧪 Run Tests with Coverage
+      run: |
+        # Run tests with comprehensive coverage reporting
+        python -m pytest \
+          --cov=nix_humanity \
+          --cov-report=xml \
+          --cov-report=json \
+          --cov-report=html:htmlcov \
+          --cov-report=term \
+          tests/
+    
+    - name: 📊 Run Enhanced Coverage Analysis
+      run: |
+        # Use our comprehensive coverage monitoring system
+        python scripts/coverage_monitor.py \
+          --dashboard \
+          --save-report
+        
+        # Extract coverage for legacy compatibility
+        COVERAGE=$(python -c "
+        import json
+        with open('coverage.json', 'r') as f:
+            data = json.load(f)
+            print(f\"{data['totals']['percent_covered']:.1f}\")
+        ")
+        
+        echo "$COVERAGE" > coverage-summary.txt
+        echo "Coverage: $COVERAGE%"
+        
+        # Generate badge data
+        python -c "
+        import json
+        
+        coverage_percent = float('$COVERAGE')
+        
+        # Determine badge color
+        if coverage_percent >= 95:
+            color = 'brightgreen'
+        elif coverage_percent >= 80:
+            color = 'green'
+        elif coverage_percent >= 70:
+            color = 'yellow'
+        elif coverage_percent >= 50:
+            color = 'orange'
+        else:
+            color = 'red'
+        
+        # Create badge JSON
+        badge_data = {
+            'schemaVersion': 1,
+            'label': 'coverage',
+            'message': f'{coverage_percent}%',
+            'color': color
+        }
+        
+        # Save badge data
+        with open('coverage-badge.json', 'w') as f:
+            json.dump(badge_data, f)
+        "
+    
+    - name: 📊 Coverage Report Analysis
+      run: |
+        echo "## 📊 Coverage Analysis Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Get current coverage
+        COVERAGE=$(cat coverage-summary.txt)
+        echo "**Current Coverage**: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
+        echo "**Target Coverage**: 95%" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Coverage status
+        if (( $(echo "$COVERAGE >= 95" | bc -l) )); then
+          echo "✅ **Status**: Coverage target achieved!" >> $GITHUB_STEP_SUMMARY
+        elif (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+          echo "⚠️ **Status**: Good coverage, working toward 95%" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status**: Coverage below acceptable threshold" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Show detailed breakdown
+        echo "### 📋 Coverage Breakdown" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        python -c "
+        import json
+        with open('coverage.json', 'r') as f:
+            data = json.load(f)
+        
+        print('File Coverage Summary:')
+        files = data['files']
+        for filename, file_data in sorted(files.items()):
+            coverage = round(file_data['summary']['percent_covered'], 1)
+            missing = file_data['summary']['missing_lines']
+            if coverage < 80:
+                status = '❌'
+            elif coverage < 95:
+                status = '⚠️'
+            else:
+                status = '✅'
+            print(f'{status} {filename}: {coverage}% (missing: {missing} lines)')
+        "
+        echo '```' >> $GITHUB_STEP_SUMMARY
+    
+    - name: 🔍 Coverage Regression Check
+      if: github.event_name == 'pull_request'
+      run: |
+        # Get base branch coverage for comparison
+        git checkout ${{ github.base_ref }}
+        python -m pytest tests/ --cov=. --cov-report=json > /dev/null 2>&1 || true
+        
+        if [ -f coverage.json ]; then
+          BASE_COVERAGE=$(python -c "
+          import json
+          try:
+              with open('coverage.json', 'r') as f:
+                  data = json.load(f)
+              print(round(data['totals']['percent_covered'], 1))
+          except:
+              print('0')
+          ")
+        else
+          BASE_COVERAGE=0
+        fi
+        
+        git checkout ${{ github.sha }}
+        CURRENT_COVERAGE=$(cat coverage-summary.txt)
+        
+        echo "Base coverage: $BASE_COVERAGE%" 
+        echo "Current coverage: $CURRENT_COVERAGE%"
+        
+        # Check for regression
+        DIFF=$(python -c "print($CURRENT_COVERAGE - $BASE_COVERAGE)")
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📈 Coverage Comparison" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Base Branch**: $BASE_COVERAGE%" >> $GITHUB_STEP_SUMMARY
+        echo "- **Current PR**: $CURRENT_COVERAGE%" >> $GITHUB_STEP_SUMMARY
+        echo "- **Difference**: $DIFF%" >> $GITHUB_STEP_SUMMARY
+        
+        # Fail if significant regression
+        if (( $(echo "$DIFF < -2" | bc -l) )); then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Coverage Regression Detected**: Coverage dropped by more than 2%" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        elif (( $(echo "$DIFF < 0" | bc -l) )); then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Minor Coverage Decrease**: Please consider adding tests" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Coverage Maintained or Improved**: Good work!" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: 📄 Generate Coverage Report
+      run: |
+        # Create comprehensive coverage report
+        cat > COVERAGE_REPORT.md << 'EOF'
+        # 📊 Test Coverage Report
+        
+        *Generated: $(date)*
+        
+        ## Overall Coverage
+        
+        - **Current Coverage**: $(cat coverage-summary.txt)%
+        - **Target Coverage**: 95%
+        - **Status**: $(if (( $(echo "$(cat coverage-summary.txt) >= 95" | bc -l) )); then echo "✅ Target Achieved"; elif (( $(echo "$(cat coverage-summary.txt) >= 80" | bc -l) )); then echo "⚠️ Good Progress"; else echo "❌ Needs Improvement"; fi)
+        
+        ## Testing Foundation Milestones
+        
+        - ✅ Unit Tests: Implemented
+        - ✅ Integration Tests: Implemented
+        - ✅ Performance Tests: Implemented
+        - ✅ E2E Persona Tests: Implemented
+        - ✅ Security Boundary Tests: Implemented
+        - ✅ Coverage Monitoring: Automated
+        
+        ## Recommendations
+        
+        EOF
+        
+        # Add specific recommendations based on coverage
+        COVERAGE=$(cat coverage-summary.txt)
+        if (( $(echo "$COVERAGE < 95" | bc -l) )); then
+          cat >> COVERAGE_REPORT.md << 'EOF'
+        ### Priority Actions
+        1. Focus on files with <80% coverage
+        2. Add integration tests for component boundaries
+        3. Expand persona test scenarios
+        4. Increase security test coverage
+        
+        EOF
+        fi
+        
+        cat >> COVERAGE_REPORT.md << 'EOF'
+        ## Continuous Improvement
+        
+        This coverage report is automatically generated and monitored. The goal is to maintain >95% coverage while ensuring meaningful, high-quality tests that validate both behavior and implementation where appropriate.
+        
+        ---
+        
+        *Testing is an act of love - for users, for maintainers, and for the future.* 🌊
+        EOF
+    
+    - name: 📤 Upload Coverage Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          htmlcov/
+          coverage.json
+          coverage-badge.json
+          COVERAGE_REPORT.md
+          .coverage_monitor/reports/coverage_dashboard.html
+          .coverage_monitor/reports/*.json
+          .coverage_monitor/coverage_history.db
+        retention-days: 30
+    
+    - name: 📋 Coverage Status Check
+      run: |
+        COVERAGE=$(cat coverage-summary.txt)
+        if (( $(echo "$COVERAGE >= 95" | bc -l) )); then
+          echo "✅ Coverage target of 95% achieved: $COVERAGE%"
+          exit 0
+        elif (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+          echo "⚠️ Coverage at $COVERAGE% - working toward 95% target"
+          exit 0
+        else
+          echo "❌ Coverage at $COVERAGE% - below 80% threshold"
+          exit 1
+        fi

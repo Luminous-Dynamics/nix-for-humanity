@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 System Capabilities Detector
 ============================
 
@@ -129,7 +130,7 @@ class CapabilityDetector:
                     self.capabilities['nixos_version'] = result.stdout.strip()
                 else:
                     self.capabilities['nixos_version'] = "Unknown"
-            except:
+            except Exception:
                 self.capabilities['nixos_version'] = None
         else:
             self.capabilities['nixos_version'] = None
@@ -158,7 +159,7 @@ class CapabilityDetector:
             else:
                 self.capabilities['has_gpu'] = False
                 self.capabilities['gpu_info'] = None
-        except:
+        except Exception:
             self.capabilities['has_gpu'] = False
             self.capabilities['gpu_info'] = None
     
@@ -229,7 +230,7 @@ class CapabilityDetector:
                     self.capabilities['piper_voices'] = voices[:5]  # First 5 voices
                 else:
                     self.capabilities['piper_voices'] = []
-            except:
+            except Exception:
                 self.capabilities['piper_voices'] = []
         else:
             self.capabilities['has_piper'] = False
@@ -262,7 +263,7 @@ class CapabilityDetector:
             print("✨", end='', flush=True)
             print("\r  ", end='', flush=True)
             self.capabilities['terminal_supports_unicode'] = True
-        except:
+        except Exception:
             self.capabilities['terminal_supports_unicode'] = False
         
         # Color support
@@ -286,7 +287,7 @@ class CapabilityDetector:
             import socket
             socket.create_connection(("8.8.8.8", 53), timeout=3)
             self.capabilities['internet_available'] = True
-        except:
+        except Exception:
             self.capabilities['internet_available'] = False
     
     def _detect_audio(self):
@@ -320,7 +321,7 @@ class CapabilityDetector:
             else:
                 self.capabilities['audio_system'] = None
                 
-        except:
+        except Exception:
             self.capabilities['has_audio_input'] = False
             self.capabilities['has_audio_output'] = False
             self.capabilities['audio_system'] = None
@@ -334,7 +335,7 @@ class CapabilityDetector:
                 text=True
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def _check_command_with_args(self, command: str, args: list) -> bool:
@@ -346,7 +347,7 @@ class CapabilityDetector:
                 text=True
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def _check_python_module(self, module: str) -> bool:
@@ -359,7 +360,7 @@ class CapabilityDetector:
                 text=True
             )
             return result.returncode == 0 and module in result.stdout
-        except:
+        except Exception:
             return False
     
     def _log_summary(self, caps: SystemCapabilities):

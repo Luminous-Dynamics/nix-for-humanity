@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 Feedback Collector for Nix for Humanity
 Phase 0 implementation of the Symbiotic Intelligence architecture
 """

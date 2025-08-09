@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, Optional
 Performance Test Runner for Nix for Humanity
 
 Comprehensive performance test runner that validates:

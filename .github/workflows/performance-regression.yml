@@ -1,0 +1,186 @@
+name: Performance Regression Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'tests/**'
+      - '.github/workflows/performance-regression.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'tests/**'
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    name: Performance Regression Tests
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio psutil
+        
+    - name: Set up test environment
+      run: |
+        # Create necessary directories
+        mkdir -p ~/.nix-humanity/cache
+        mkdir -p ~/.nix-humanity/logs
+        mkdir -p performance_reports
+        
+        # Set environment variables
+        echo "NIX_HUMANITY_ENHANCED=true" >> $GITHUB_ENV
+        echo "NIX_HUMANITY_PYTHON_BACKEND=true" >> $GITHUB_ENV
+        echo "NIX_HUMANITY_ALLOW_UNPRIVILEGED=true" >> $GITHUB_ENV
+        
+    - name: Run performance regression tests
+      run: |
+        cd tests
+        python -m pytest test_performance_regression.py -v --tb=short
+        
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-report-${{ github.run_id }}
+        path: performance_reports/*.json
+        
+    - name: Check for regressions
+      run: |
+        # Parse the latest report
+        REPORT=$(ls -t performance_reports/*.json | head -1)
+        if [ -f "$REPORT" ]; then
+          PASSED=$(python -c "import json; data=json.load(open('$REPORT')); print(data['overall_pass'])")
+          if [ "$PASSED" != "True" ]; then
+            echo "❌ Performance regression detected!"
+            python -c "
+import json
+data = json.load(open('$REPORT'))
+for op, results in data['results'].items():
+    if not results['passed']:
+        print(f'  - {op}: {results[\"p95\"]*1000:.2f}ms (threshold: {results[\"threshold\"]*1000:.0f}ms)')
+"
+            exit 1
+          else
+            echo "✅ All performance tests passed!"
+          fi
+        fi
+        
+    - name: Comment on PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const reports = fs.readdirSync('performance_reports').filter(f => f.endsWith('.json'));
+          if (reports.length > 0) {
+            const report = JSON.parse(fs.readFileSync(`performance_reports/${reports[0]}`));
+            
+            let comment = '## 📊 Performance Test Results\n\n';
+            comment += '| Operation | Mean | P95 | Threshold | Status |\n';
+            comment += '|-----------|------|-----|-----------|--------|\n';
+            
+            for (const [op, data] of Object.entries(report.results)) {
+              const status = data.passed ? '✅' : '❌';
+              comment += `| ${op} | ${(data.mean * 1000).toFixed(2)}ms | ${(data.p95 * 1000).toFixed(2)}ms | ${(data.threshold * 1000).toFixed(0)}ms | ${status} |\n`;
+            }
+            
+            comment += `\n**Overall Result**: ${report.overall_pass ? '✅ PASS' : '❌ FAIL'}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+          
+  benchmark-comparison:
+    runs-on: ubuntu-latest
+    name: Benchmark Comparison
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: Checkout base branch
+      run: |
+        git checkout ${{ github.base_ref }}
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio psutil
+        
+    - name: Run base branch benchmarks
+      run: |
+        cd tests
+        python -m pytest test_performance_regression.py -v --tb=short
+        mv ../performance_reports ../performance_reports_base
+        
+    - name: Checkout PR branch
+      run: |
+        git checkout ${{ github.head_ref }}
+        
+    - name: Run PR branch benchmarks
+      run: |
+        cd tests
+        python -m pytest test_performance_regression.py -v --tb=short
+        
+    - name: Compare results
+      run: |
+        python - << 'EOF'
+        import json
+        import os
+        
+        # Load reports
+        base_reports = [f for f in os.listdir('performance_reports_base') if f.endswith('.json')]
+        pr_reports = [f for f in os.listdir('performance_reports') if f.endswith('.json')]
+        
+        if base_reports and pr_reports:
+            base_data = json.load(open(f'performance_reports_base/{base_reports[0]}'))
+            pr_data = json.load(open(f'performance_reports/{pr_reports[0]}'))
+            
+            print("## Performance Comparison\n")
+            print("| Operation | Base (ms) | PR (ms) | Change |")
+            print("|-----------|-----------|---------|---------|")
+            
+            for op in base_data['results']:
+                if op in pr_data['results']:
+                    base_p95 = base_data['results'][op]['p95'] * 1000
+                    pr_p95 = pr_data['results'][op]['p95'] * 1000
+                    change = ((pr_p95 - base_p95) / base_p95) * 100
+                    
+                    emoji = "🟢" if change <= 0 else ("🔴" if change > 10 else "🟡")
+                    print(f"| {op} | {base_p95:.2f} | {pr_p95:.2f} | {emoji} {change:+.1f}% |")
+        EOF

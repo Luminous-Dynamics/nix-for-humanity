@@ -36,8 +36,9 @@ class AsyncTestCase(TestCase):
         try:
             self.loop.run_until_complete(asyncio.sleep(0))
             self.loop.close()
-        except:
-            pass
+        except Exception:
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
     
     def __getattribute__(self, name):
         """Wrap async test methods to run in the event loop."""
@@ -70,8 +71,9 @@ class AsyncTestRunner(unittest.TextTestRunner):
         try:
             loop.run_until_complete(asyncio.sleep(0))
             loop.close()
-        except:
-            pass
+        except Exception:
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
         
         return result
 

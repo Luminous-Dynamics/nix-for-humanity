@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict
 JSON-RPC 2.0 Server for Headless Engine
 Provides a standard interface for all frontends to communicate with the engine
 """

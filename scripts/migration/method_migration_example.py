@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Example: Method-by-Method Migration Pattern
 Shows how to migrate individual methods in ask-nix to use headless engine
 """

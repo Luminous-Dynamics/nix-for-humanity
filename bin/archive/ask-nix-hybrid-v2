@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""
+Hybrid NixOS Assistant v2 - With ACTUAL Command Execution
+Combines Knowledge Engine with Personality System AND real execution
+"""
+
+import sys
+import os
+import argparse
+from pathlib import Path
+
+# Add scripts directory to path for imports
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+sys.path.insert(0, script_dir)
+
+# Import our modules
+from nix_knowledge_engine import NixOSKnowledgeEngine
+
+# Import nix-do executor (handle hyphenated filename)
+sys.path.insert(0, os.path.dirname(__file__))
+# Import module with hyphen in name
+import importlib.util
+spec = importlib.util.spec_from_file_location("nix_do", 
+    os.path.join(os.path.dirname(__file__), "nix-do"))
+nix_do = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(nix_do)
+NixDoExecutor = nix_do.NixDoExecutor
+
+class HybridNixAssistant:
+    def __init__(self, execute=False, dry_run=True):
+        self.knowledge = NixOSKnowledgeEngine()
+        self.executor = NixDoExecutor(dry_run=dry_run)
+        self.personality = 'friendly'  # Default
+        self.should_execute = execute
+        self.dry_run = dry_run
+        
+    def enhance_response(self, response: str, query: str, personality: str) -> str:
+        """Add personality to the factual response"""
+        
+        if personality == 'minimal':
+            # Just return the facts
+            return response
+            
+        elif personality == 'friendly':
+            # Add warm greeting and closing
+            enhanced = f"Hi there! {response}\n\nLet me know if you need any clarification! 😊"
+            return enhanced
+            
+        elif personality == 'encouraging':
+            # Add encouragement
+            enhanced = f"Great question! {response}\n\nYou're doing awesome learning NixOS! Keep it up! 🌟"
+            return enhanced
+            
+        elif personality == 'technical':
+            # Add technical depth
+            enhanced = f"{response}\n\nNote: This follows NixOS's declarative configuration paradigm."
+            return enhanced
+            
+        return response
+        
+    def answer(self, query: str):
+        """Process query through knowledge engine with optional execution"""
+        
+        # Step 1: Extract intent
+        intent = self.knowledge.extract_intent(query)
+        
+        # Step 2: Get accurate solution
+        solution = self.knowledge.get_solution(intent)
+        
+        # Step 3: Format response
+        response = self.knowledge.format_response(intent, solution)
+        
+        # Step 4: Add personality
+        final_response = self.enhance_response(response, query, self.personality)
+        
+        # Step 5: ACTUAL EXECUTION (if enabled)
+        if self.should_execute and intent.get('action') in ['install_package', 'update_system', 'search_package']:
+            print(final_response)
+            print("\n" + "="*50)
+            
+            if intent['action'] == 'install_package':
+                package = intent.get('package')
+                if package:
+                    print(f"\n🚀 {'DRY RUN: Would execute' if self.dry_run else 'Executing'}: Installing {package}...")
+                    result = self.executor.install_package(package)
+                    
+                    if result['success']:
+                        print(f"✅ {result['message']}")
+                        if 'command' in result:
+                            print(f"   Command: {' '.join(result['command'])}")
+                    else:
+                        print(f"❌ {result['message']}")
+                        if 'error' in result:
+                            print(f"   Error: {result['error']}")
+                else:
+                    print("❌ Could not determine which package to install")
+                    
+            elif intent['action'] == 'update_system':
+                print(f"\n🚀 {'DRY RUN: Would execute' if self.dry_run else 'Executing'}: System update...")
+                result = self.executor.update_system()
+                
+                if result['success']:
+                    print(f"✅ {result['message']}")
+                else:
+                    print(f"❌ {result['message']}")
+                    
+            elif intent['action'] == 'search_package':
+                query_text = intent.get('query', query)
+                print(f"\n🔍 Searching for packages matching '{query_text}'...")
+                result = self.executor.search_packages(query_text)
+                
+                if result['success'] and result.get('packages'):
+                    print(f"Found {len(result['packages'])} packages:")
+                    for pkg in result['packages'][:5]:  # Show first 5
+                        print(f"  - {pkg}")
+                else:
+                    print("No packages found")
+                    
+            return None  # Response already printed
+            
+        return final_response
+        
+    def set_personality(self, style: str):
+        """Change response personality"""
+        if style in ['minimal', 'friendly', 'encouraging', 'technical']:
+            self.personality = style
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Hybrid NixOS Assistant - Natural language NixOS help with real execution'
+    )
+    
+    # Query argument
+    parser.add_argument('query', nargs='*', help='Your question or command')
+    
+    # Personality options
+    parser.add_argument('--minimal', action='store_true', help='Just the facts')
+    parser.add_argument('--friendly', action='store_true', help='Warm and helpful (default)')
+    parser.add_argument('--encouraging', action='store_true', help='Supportive for beginners')
+    parser.add_argument('--technical', action='store_true', help='Detailed explanations')
+    
+    # Execution options
+    parser.add_argument('--execute', '-e', action='store_true', 
+                       help='Actually execute commands (with --no-dry-run for real execution)')
+    parser.add_argument('--no-dry-run', action='store_true',
+                       help='Execute for real (default is dry-run)')
+    
+    args = parser.parse_args()
+    
+    if not args.query:
+        print("Usage: ask-nix-hybrid 'your question'")
+        print("\nExamples:")
+        print("  ask-nix-hybrid 'How do I install Firefox?'")
+        print("  ask-nix-hybrid --execute 'install firefox'")
+        print("  ask-nix-hybrid --execute --no-dry-run 'install firefox'  # Real installation")
+        print("\nOptions:")
+        print("  --minimal     Just the facts")
+        print("  --friendly    Warm and helpful (default)")
+        print("  --encouraging Supportive for beginners")
+        print("  --technical   Detailed explanations")
+        print("  --execute     Execute the command (dry-run by default)")
+        print("  --no-dry-run  Execute for real (use with --execute)")
+        sys.exit(1)
+    
+    # Create assistant
+    dry_run = not args.no_dry_run
+    assistant = HybridNixAssistant(execute=args.execute, dry_run=dry_run)
+    
+    # Set personality
+    if args.minimal:
+        assistant.set_personality('minimal')
+    elif args.encouraging:
+        assistant.set_personality('encouraging')
+    elif args.technical:
+        assistant.set_personality('technical')
+    # Default is friendly
+    
+    # Process query
+    query = ' '.join(args.query)
+    response = assistant.answer(query)
+    
+    if response:  # Only print if not already printed during execution
+        print(response)
+
+if __name__ == "__main__":
+    main()

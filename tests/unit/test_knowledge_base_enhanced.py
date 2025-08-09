@@ -16,8 +16,8 @@ from unittest.mock import Mock, patch
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.knowledge_base import KnowledgeBase
-from nix_for_humanity.core.types import IntentType
+from nix_humanity.core.knowledge import KnowledgeBase
+from nix_humanity.core.intents import IntentType
 
 
 class TestKnowledgeBaseEnhanced(unittest.TestCase):
@@ -55,15 +55,15 @@ class TestKnowledgeBaseEnhanced(unittest.TestCase):
         self._seed_solution_data()
         
         # Test install intent
-        solution = self.kb.get_solution(IntentType.INSTALL)
+        solution = self.kb.get_solution(IntentType.INSTALL_PACKAGE)
         self.assertIsNotNone(solution)
-        self.assertIn("install", solution.lower())
+        self.assertIn("install_package", solution.lower())
         self.assertIn("nix", solution.lower())
         
         # Test update intent
-        solution = self.kb.get_solution(IntentType.UPDATE)
+        solution = self.kb.get_solution(IntentType.UPDATE_SYSTEM)
         self.assertIsNotNone(solution)
-        self.assertIn("update", solution.lower())
+        self.assertIn("update_system", solution.lower())
         self.assertIn("nixos-rebuild", solution.lower())
         
         # Test unknown intent
@@ -117,14 +117,14 @@ class TestKnowledgeBaseEnhanced(unittest.TestCase):
         self._seed_solution_data()
         
         # Test with package context for install
-        solution = self.kb.get_solution(IntentType.INSTALL, {'package': 'firefox'})
+        solution = self.kb.get_solution(IntentType.INSTALL_PACKAGE, {'package': 'firefox'})
         self.assertIsNotNone(solution)
-        self.assertIn("install", solution.lower())
+        self.assertIn("install_package", solution.lower())
         
         # Test search with query context
-        solution = self.kb.get_solution(IntentType.SEARCH, {'query': 'editor'})
+        solution = self.kb.get_solution(IntentType.SEARCH_PACKAGE, {'query': 'editor'})
         self.assertIsNotNone(solution)
-        self.assertIn("search", solution.lower())
+        self.assertIn("search_package", solution.lower())
         
     def test_check_package_cache(self):
         """Test package cache functionality"""
@@ -247,7 +247,7 @@ class TestKnowledgeBaseEnhanced(unittest.TestCase):
         # Don't seed any data
         
         # Test getting solution
-        solution = self.kb.get_solution(IntentType.INSTALL)
+        solution = self.kb.get_solution(IntentType.INSTALL_PACKAGE)
         self.assertIsNotNone(solution)  # Should have default
         
         # Test getting install methods
@@ -351,14 +351,14 @@ class TestKnowledgeBaseEnhanced(unittest.TestCase):
         self._seed_solution_data()
         
         # Get a solution
-        solution = self.kb.get_solution(IntentType.INSTALL)
+        solution = self.kb.get_solution(IntentType.INSTALL_PACKAGE)
         
         # Check it's not empty
         self.assertIsNotNone(solution)
         self.assertGreater(len(str(solution)), 5)  # Should be substantial
         
         # Check it contains expected keywords
-        self.assertIn("install", solution.lower())
+        self.assertIn("install_package", solution.lower())
         self.assertIn("nix", solution.lower())
         
     def test_install_methods_structure(self):

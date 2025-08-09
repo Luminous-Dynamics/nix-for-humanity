@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Python version selector for Nix for Humanity
+
+set -e
+
+show_help() {
+    cat << EOF
+🐍 Python Version Selector for Nix for Humanity
+
+Usage: python-select <command> [args...]
+
+Commands:
+    main        Use Python 3.13 for main application development
+    research    Use Python 3.11 for research components (DoWhy, etc.)
+    check       Show available Python versions and their packages
+    help        Show this help message
+
+Examples:
+    python-select main app.py          # Run app.py with Python 3.13
+    python-select research test_skg.py # Run test with Python 3.11
+    python-select check               # Show available versions
+
+Environment Variables:
+    NIX_HUMANITY_PYTHON_RESEARCH=true  # Force research Python for all operations
+
+EOF
+}
+
+check_versions() {
+    echo "🐍 Available Python Versions:"
+    echo ""
+    echo "📦 Python 3.13 (Main Application):"
+    python3.13 --version 2>/dev/null || echo "  ❌ Not available"
+    echo "  Primary development environment"
+    echo "  Fast startup, lightweight dependencies"
+    echo ""
+    echo "🧬 Python 3.11 (Research Components):"
+    python3.11 --version 2>/dev/null || python3 --version 2>/dev/null || echo "  ❌ Not available"
+    echo "  Full poetry2nix environment"
+    echo "  Includes: numpy, networkx, DoWhy, SHAP, LanceDB"
+    echo "  Required for: SKG, Trust Engine, Consciousness Metrics"
+}
+
+# Check if we should force research Python
+if [[ "$NIX_HUMANITY_PYTHON_RESEARCH" == "true" ]]; then
+    echo "🧬 Using research Python (3.11) - NIX_HUMANITY_PYTHON_RESEARCH=true"
+    exec python3.11 "$@"
+fi
+
+case "$1" in
+    main)
+        shift
+        echo "📦 Using Python 3.13 for main application..."
+        exec python3.13 "$@"
+        ;;
+    research)
+        shift
+        echo "🧬 Using Python 3.11 for research components..."
+        exec python3.11 "$@"
+        ;;
+    check)
+        check_versions
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        # Default behavior: auto-detect based on imports
+        if [[ -f "$1" ]]; then
+            # Check if file imports research components
+            if grep -qE "(dowhy|shap|lancedb|networkx|from backend\.(knowledge_graph|trust|metrics|perception|sacred))" "$1" 2>/dev/null; then
+                echo "🧬 Auto-detected research components, using Python 3.11..."
+                exec python3.11 "$@"
+            else
+                echo "📦 Using default Python 3.13..."
+                exec python3.13 "$@"
+            fi
+        else
+            show_help
+            exit 1
+        fi
+        ;;
+esac

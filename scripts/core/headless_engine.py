@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional
 Headless Core Engine for Nix for Humanity
 The intelligent brain that can serve multiple frontends
 """

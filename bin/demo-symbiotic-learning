@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+echo "🧬 Nix for Humanity - Symbiotic Learning Demo"
+echo "============================================="
+echo
+echo "This demonstrates our Phase 0 feedback collection system."
+echo "The AI learns from your feedback to improve over time."
+echo
+echo "Try these example queries:"
+echo "  1. 'How do I install Firefox?'"
+echo "  2. 'My WiFi isn't working'"
+echo "  3. 'What's a NixOS generation?'"
+echo
+echo "After each response, you'll be asked if it was helpful."
+echo "Your feedback helps the AI learn and improve!"
+echo
+echo "Let's start with symbiotic personality mode..."
+echo
+
+# Run with symbiotic mode
+/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity/bin/ask-nix-hybrid --symbiotic "$@"

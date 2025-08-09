@@ -1,0 +1,90 @@
+name: Flake CI
+
+on:
+  pull_request:
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/flake-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+
+jobs:
+  check:
+    name: Check Flake
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        system: [x86_64-linux]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v12
+        with:
+          logger: pretty
+          
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Check Flake Health
+        uses: DeterminateSystems/flake-checker-action@main
+        with:
+          fail-mode: true
+
+      - name: Run flake check
+        run: |
+          echo "🔍 Running flake check for ${{ matrix.system }}..."
+          nix flake check --system ${{ matrix.system }}
+
+      - name: Show flake info
+        run: |
+          echo "📊 Flake metadata:"
+          nix flake metadata
+          echo ""
+          echo "🌳 Flake structure:"
+          nix flake show
+
+      - name: Build key packages
+        run: |
+          echo "🏗️ Building core packages..."
+          nix build .#ask-nix-guru --system ${{ matrix.system }} --no-link
+          nix build .#run-tui-app --system ${{ matrix.system }} --no-link
+
+      - name: Check development shell
+        run: |
+          echo "🐚 Checking development shell..."
+          nix develop --system ${{ matrix.system }} --command echo "Dev shell works!"
+
+      - name: Run basic tests
+        run: |
+          echo "🧪 Running basic validation..."
+          nix develop --system ${{ matrix.system }} --command bash -c "
+            which ask-nix-guru && echo '✅ ask-nix-guru found'
+            which run-tui-app && echo '✅ run-tui-app found'
+            python --version && echo '✅ Python available'
+            which ollama && echo '✅ Ollama available'
+          "
+
+      - name: Security scan
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔒 Checking for known vulnerabilities..."
+          # Add vulnerability scanning here if needed
+          
+  reproducibility:
+    name: Check Reproducibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v12
+      - name: Check eval reproducibility
+        run: |
+          echo "🔄 Verifying reproducible evaluation..."
+          nix flake metadata --json > metadata1.json
+          sleep 1
+          nix flake metadata --json > metadata2.json
+          diff metadata1.json metadata2.json || echo "⚠️ Metadata differs"

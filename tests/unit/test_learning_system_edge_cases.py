@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Edge case and security tests for LearningSystem - complete coverage
+Edge case and security tests for PreferenceManager - complete coverage
 Focus on error conditions, boundary cases, and security scenarios
 """
 
@@ -17,16 +17,16 @@ from unittest.mock import patch, MagicMock, Mock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.learning_system import LearningSystem, Interaction, Preference
+from nix_humanity.learning.preferences import PreferenceManager, Interaction, Preference
 
 
-class TestLearningSystemEdgeCases(unittest.TestCase):
-    """Edge case tests for complete LearningSystem coverage"""
+class TestPreferenceManagerEdgeCases(unittest.TestCase):
+    """Edge case tests for complete PreferenceManager coverage"""
     
     def setUp(self):
         """Create temporary database for testing"""
         self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        self.ls = LearningSystem(self.temp_db.name)
+        self.ls = PreferenceManager(self.temp_db.name)
         
     def tearDown(self):
         """Clean up temporary database"""
@@ -46,7 +46,7 @@ class TestLearningSystemEdgeCases(unittest.TestCase):
                 mock_home.return_value = Path(temp_dir)
                 
                 # Create learning system with default path
-                ls = LearningSystem()
+                ls = PreferenceManager()
                 
                 # Verify path was created
                 expected_path = Path(temp_dir) / ".config" / "nix-for-humanity" / "learning.db"
@@ -58,7 +58,7 @@ class TestLearningSystemEdgeCases(unittest.TestCase):
         with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
             temp_db.close()
             
-            ls = LearningSystem(temp_db.name)  # String instead of Path
+            ls = PreferenceManager(temp_db.name)  # String instead of Path
             self.assertEqual(str(ls.db_path), temp_db.name)
             
             # Should work normally
@@ -73,7 +73,7 @@ class TestLearningSystemEdgeCases(unittest.TestCase):
             db_path = Path(temp_dir) / "readonly.db"
             
             # Create the database first
-            ls = LearningSystem(db_path)
+            ls = PreferenceManager(db_path)
             ls.record_interaction(Interaction("test", "test", "test", True))
             
             # Make directory read-only
@@ -87,7 +87,7 @@ class TestLearningSystemEdgeCases(unittest.TestCase):
                 # Writing might fail (depending on OS)
                 try:
                     ls.record_interaction(Interaction("test2", "test", "test", True))
-                except:
+                except Exception:
                     pass  # Expected to fail
                     
             finally:

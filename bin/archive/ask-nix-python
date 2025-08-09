@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+ask-nix with Python backend integration
+Drop-in replacement with enhanced capabilities
+"""
+
+import sys
+import os
+import argparse
+import asyncio
+
+# Add backend path
+sys.path.insert(0, "/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity/backend/python")
+from nixos_integration import NixForHumanityBackend
+
+async def main():
+    parser = argparse.ArgumentParser(
+        description='Natural language NixOS assistant with Python backend',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''Examples:
+  ask-nix-python "install firefox"       # Explain how to install
+  ask-nix-python -e "install firefox"    # Actually install
+  ask-nix-python "search python"         # Search for python packages
+  ask-nix-python "update my system"      # Show update command
+  ask-nix-python -e "update my system"   # Actually update
+  
+Personality styles:
+  --minimal      Just the facts
+  --friendly     Warm and helpful (default)
+  --encouraging  Supportive for beginners
+  --technical    Detailed explanations'''
+    )
+    
+    parser.add_argument('query', nargs='*', help='Your question or command')
+    parser.add_argument('--execute', '-e', action='store_true',
+                       help='Execute commands instead of just explaining')
+    parser.add_argument('--minimal', action='store_true',
+                       help='Minimal response style')
+    parser.add_argument('--friendly', action='store_true',
+                       help='Friendly response style (default)')
+    parser.add_argument('--encouraging', action='store_true',
+                       help='Encouraging response style')
+    parser.add_argument('--technical', action='store_true',
+                       help='Technical response style')
+    parser.add_argument('--status', action='store_true',
+                       help='Show system status')
+    
+    args = parser.parse_args()
+    
+    # Determine personality
+    personality = 'friendly'
+    if args.minimal:
+        personality = 'minimal'
+    elif args.encouraging:
+        personality = 'encouraging'
+    elif args.technical:
+        personality = 'technical'
+        
+    # Create backend
+    backend = NixForHumanityBackend(personality)
+    
+    # Progress callback for visual feedback
+    def show_progress(msg, pct):
+        if pct >= 0:
+            bar = '█' * int(pct/5)
+            print(f"\r[{bar:20}] {pct:3.0f}% {msg}", end='', flush=True)
+        else:
+            print(f"\n{msg}")
+    
+    # Handle status request
+    if args.status:
+        print("📊 System Status:")
+        status = await backend.get_system_status()
+        
+        print(f"\nNixOS Version: {status.get('nixos_version', 'unknown')}")
+        print(f"Current Generation: {status.get('current_generation', 'unknown')}")
+        print(f"Channels: {status.get('channels', 'none')}")
+        
+        print(f"\nBackend Status:")
+        backend_info = status.get('backend', {})
+        print(f"  Python API: {'✅ Available' if backend_info.get('has_python_api') else '❌ Not Available'}")
+        print(f"  Personality: {backend_info.get('personality', 'unknown')}")
+        print(f"  Learning: {'✅ Enabled' if backend_info.get('learning_enabled') else '❌ Disabled'}")
+        print(f"  Cache: {'✅ Enabled' if backend_info.get('cache_enabled') else '❌ Disabled'}")
+        
+        return
+    
+    # Process query
+    if args.query:
+        query = ' '.join(args.query)
+        
+        # Process with backend
+        result = await backend.process_natural_language(
+            query,
+            execute=args.execute,
+            progress_callback=show_progress if args.execute else None
+        )
+        
+        # Clear progress line if needed
+        if args.execute:
+            print()
+        
+        # Display results
+        if 'message' in result:
+            print(result['message'])
+            
+        if 'explanation' in result:
+            print(result['explanation'])
+            
+        if 'packages' in result and result['packages']:
+            print(f"\nFound {result['count']} packages:")
+            for i, pkg in enumerate(result['packages'][:10], 1):
+                print(f"{i:2}. {pkg['name']} ({pkg['version']})")
+                if pkg.get('description'):
+                    print(f"    {pkg['description'][:70]}...")
+                    
+        if result.get('error'):
+            print(f"\n❌ Error: {result['error']}")
+            if result.get('suggestion'):
+                print(f"💡 {result['suggestion']}")
+                
+        if result.get('hint'):
+            print(f"\n💡 {result['hint']}")
+            
+        if result.get('duration'):
+            print(f"\n⏱️  Completed in {result['duration']:.1f} seconds")
+            
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    asyncio.run(main())

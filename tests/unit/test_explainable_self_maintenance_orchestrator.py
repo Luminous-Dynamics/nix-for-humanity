@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 from dataclasses import asdict
 
 # Import the orchestrator and related components
-from nix_for_humanity.infrastructure.explainable_self_maintenance_orchestrator import (
+from nix_humanity.infrastructure.explainable_self_maintenance_orchestrator import (
     ExplainableSelfMaintenanceOrchestrator,
     ExplainableMaintenanceExecution,
     MaintenanceOrchestratorConfig,
@@ -35,14 +35,14 @@ from nix_for_humanity.infrastructure.explainable_self_maintenance_orchestrator i
     AutomationBoundary
 )
 
-from nix_for_humanity.infrastructure.self_maintenance_system import (
+from nix_humanity.infrastructure.self_maintenance_system import (
     MaintenanceAction,
     MaintenancePhase,
     SystemHealthStatus,
     DeploymentStrategy
 )
 
-from nix_for_humanity.infrastructure.causal_maintenance_integration_complete import (
+from nix_humanity.infrastructure.causal_maintenance_integration_complete import (
     ExplainableMaintenanceDecision,
     MaintenanceDecisionContext,
     MaintenanceDecisionType,
@@ -582,7 +582,7 @@ class TestExplainableSelfMaintenanceOrchestrator:
         }
         
         # Validate action (should fail)
-        from nix_for_humanity.infrastructure import validate_consciousness_first_action
+        from nix_humanity.infrastructure import validate_consciousness_first_action
         
         validation_result = validate_consciousness_first_action(bad_action, flow_context)
         

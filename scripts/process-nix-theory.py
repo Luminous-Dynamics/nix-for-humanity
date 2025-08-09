@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List
 Process Nix theoretical documents (thesis, papers) into training data
 Extracts key concepts, principles, and best practices
 """

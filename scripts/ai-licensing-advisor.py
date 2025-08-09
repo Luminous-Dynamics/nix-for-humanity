@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Optional
 AI Licensing Advisor for Nix for Humanity
 Provides comprehensive licensing guidance for AI models and datasets
 """

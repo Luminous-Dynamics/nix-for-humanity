@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""
+Enhanced NixOS Assistant - Python Backend Integration
+Bridges natural language with direct NixOS operations via Python API
+"""
+
+import sys
+import os
+import asyncio
+from pathlib import Path
+import argparse
+import logging
+
+# Add backend directory to path
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend', 'python'))
+sys.path.insert(0, backend_dir)
+
+# Import the natural language executor
+from natural_language_executor import NaturalLanguageExecutor, ExecutionRequest
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+class EnhancedNixAssistant:
+    """
+    Enhanced assistant that combines:
+    1. Natural language understanding
+    2. Python backend for real execution
+    3. Adaptive personality system
+    4. Learning capabilities
+    """
+    
+    def __init__(self):
+        self.executor = NaturalLanguageExecutor()
+        self.personality = 'friendly'
+        self.dry_run = True  # Start in safe mode
+        
+    async def process_query(self, query: str, **kwargs):
+        """Process a natural language query with full execution capabilities"""
+        
+        # Create execution request
+        request = ExecutionRequest(
+            query=query,
+            personality=kwargs.get('personality', self.personality),
+            dry_run=kwargs.get('dry_run', self.dry_run),
+            verbose=kwargs.get('verbose', False)
+        )
+        
+        # Execute through the natural language pipeline
+        response = await self.executor.execute_query(request)
+        
+        return response
+    
+    def set_personality(self, style: str):
+        """Change the assistant's personality"""
+        valid_styles = ['minimal', 'friendly', 'encouraging', 'technical']
+        if style in valid_styles:
+            self.personality = style
+            logger.info(f"Personality set to: {style}")
+        else:
+            logger.warning(f"Unknown personality style: {style}")
+    
+    def toggle_dry_run(self):
+        """Toggle between dry run and live execution"""
+        self.dry_run = not self.dry_run
+        mode = "DRY RUN" if self.dry_run else "LIVE"
+        logger.info(f"Execution mode: {mode}")
+        return mode
+
+
+async def interactive_mode(assistant: EnhancedNixAssistant):
+    """Run in interactive mode with full features"""
+    print("🚀 Enhanced Nix Assistant - Powered by Python Backend")
+    print("=" * 60)
+    print("Features:")
+    print("  • Natural language understanding")
+    print("  • Direct NixOS API integration (no subprocess!)")
+    print("  • Real-time progress feedback")
+    print("  • Adaptive personality system")
+    print("  • Safe mode enabled by default")
+    print("\nCommands:")
+    print("  'mode' - Toggle between dry run and live execution")
+    print("  'personality <style>' - Change response style")
+    print("  'help' - Show available commands")
+    print("  'quit' - Exit")
+    print("=" * 60)
+    
+    while True:
+        try:
+            # Show current mode
+            mode_indicator = "🔒 SAFE" if assistant.dry_run else "⚡ LIVE"
+            prompt = f"\n[{mode_indicator}] What would you like to do? "
+            
+            query = input(prompt).strip()
+            
+            # Handle special commands
+            if query.lower() in ['quit', 'exit', 'q']:
+                print("\n👋 Goodbye! We flow together! 🌊")
+                break
+                
+            elif query.lower() == 'help':
+                print("\n📖 Available natural language commands:")
+                print("  • 'install firefox' - Install packages")
+                print("  • 'update my system' - System update")
+                print("  • 'rollback' - Rollback to previous generation")
+                print("  • 'search for editors' - Search packages")
+                print("  • 'my wifi isn't working' - Troubleshooting")
+                print("\nControl commands:")
+                print("  • 'mode' - Toggle dry run / live mode")
+                print("  • 'personality <style>' - Set style (minimal/friendly/encouraging/technical)")
+                continue
+                
+            elif query.lower() == 'mode':
+                mode = assistant.toggle_dry_run()
+                print(f"\n🔄 Mode changed to: {mode}")
+                if not assistant.dry_run:
+                    print("⚠️  WARNING: Commands will now execute for real!")
+                    print("    Be careful with system-modifying commands.")
+                continue
+                
+            elif query.lower().startswith('personality'):
+                parts = query.split()
+                if len(parts) > 1:
+                    assistant.set_personality(parts[1])
+                    print(f"\n🎭 Personality set to: {parts[1]}")
+                else:
+                    print("\n❌ Please specify a personality: minimal, friendly, encouraging, or technical")
+                continue
+            
+            if not query:
+                continue
+            
+            # Process the natural language query
+            print("\n" + "─" * 60)
+            response = await assistant.process_query(query, verbose=True)
+            
+            # Display the response
+            if response.personality_response:
+                print(f"💬 {response.personality_response}")
+            else:
+                print(f"💬 {response.message}")
+            
+            # Show additional details if available
+            if response.details:
+                if response.details.get('dry_run'):
+                    print("\n⚠️  DRY RUN - No changes were made")
+                    print("    Switch to live mode with 'mode' command to execute")
+                
+                if response.details.get('operations'):
+                    print("\n📋 Operations that would be performed:")
+                    for op in response.details['operations']:
+                        print(f"    • {op}")
+            
+            if response.suggestions:
+                print("\n💡 Suggestions:")
+                for suggestion in response.suggestions:
+                    print(f"    • {suggestion}")
+            
+            print("─" * 60)
+            
+        except KeyboardInterrupt:
+            print("\n\n⚡ Interrupted! Type 'quit' to exit cleanly.")
+            continue
+        except Exception as e:
+            logger.error(f"Error processing query: {e}")
+            print(f"\n❌ Error: {e}")
+            print("    Try rephrasing your question or check 'help' for examples.")
+
+
+async def command_line_mode(assistant: EnhancedNixAssistant, query: str, args):
+    """Process a single command from command line"""
+    response = await assistant.process_query(
+        query,
+        personality=args.personality,
+        dry_run=args.dry_run,
+        verbose=args.verbose
+    )
+    
+    # Display response
+    if response.personality_response:
+        print(response.personality_response)
+    else:
+        print(response.message)
+    
+    # Show warnings for dry run
+    if response.details and response.details.get('dry_run') and not args.quiet:
+        print("\n⚠️  DRY RUN - No changes were made")
+    
+    # Return appropriate exit code
+    return 0 if response.success else 1
+
+
+async def main():
+    """Main entry point with argument parsing"""
+    parser = argparse.ArgumentParser(
+        description='Enhanced NixOS Assistant with Python Backend',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ask-nix-enhanced                          # Interactive mode
+  ask-nix-enhanced "install firefox"        # Command mode
+  ask-nix-enhanced --live "update system"   # Live execution
+  ask-nix-enhanced --minimal "search vim"   # Minimal personality
+
+Personality Styles:
+  --minimal     Just the facts
+  --friendly    Warm and helpful (default)
+  --encouraging Supportive for beginners
+  --technical   Detailed explanations
+        """
+    )
+    
+    # Positional argument for query
+    parser.add_argument('query', nargs='*', help='Natural language query')
+    
+    # Execution mode
+    parser.add_argument('--live', action='store_false', dest='dry_run',
+                       help='Execute commands for real (default: dry run)')
+    
+    # Personality options
+    personality_group = parser.add_mutually_exclusive_group()
+    personality_group.add_argument('--minimal', action='store_const', 
+                                  const='minimal', dest='personality',
+                                  help='Minimal responses')
+    personality_group.add_argument('--friendly', action='store_const',
+                                  const='friendly', dest='personality',
+                                  help='Friendly responses (default)')
+    personality_group.add_argument('--encouraging', action='store_const',
+                                  const='encouraging', dest='personality',
+                                  help='Encouraging responses')
+    personality_group.add_argument('--technical', action='store_const',
+                                  const='technical', dest='personality',
+                                  help='Technical responses')
+    
+    # Other options
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Verbose output')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                       help='Suppress warnings')
+    
+    # Set defaults
+    parser.set_defaults(personality='friendly', dry_run=True)
+    
+    args = parser.parse_args()
+    
+    # Create assistant
+    assistant = EnhancedNixAssistant()
+    if args.personality:
+        assistant.set_personality(args.personality)
+    assistant.dry_run = args.dry_run
+    
+    # Determine mode
+    if args.query:
+        # Command line mode
+        query = ' '.join(args.query)
+        exit_code = await command_line_mode(assistant, query, args)
+        sys.exit(exit_code)
+    else:
+        # Interactive mode
+        await interactive_mode(assistant)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

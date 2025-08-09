@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Plugin Loader for Nix for Humanity
 Dynamically discovers, loads, and manages plugins
 """

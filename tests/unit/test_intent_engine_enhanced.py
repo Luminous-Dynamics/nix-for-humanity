@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced unit tests for the IntentEngine
+Enhanced unit tests for the IntentRecognizer
 Tests intent recognition from natural language input
 """
 
@@ -12,29 +12,29 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 
-from nix_for_humanity.core.types import Intent, IntentType
-from nix_for_humanity.core.intent_engine import IntentEngine
-from nix_for_humanity.core.interface import Intent, IntentType
+from nix_humanity.core.intents import Intent, IntentType
+from nix_humanity.core.intents import IntentRecognizer
+from nix_humanity.core.interface import Intent, IntentType
 
-from nix_for_humanity.core.intent_engine import IntentEngine as IntentRecognizer
+from nix_humanity.core.intents import IntentRecognizer as IntentRecognizer
 
-class TestIntentEngineEnhanced(unittest.TestCase):
-    """Enhanced tests for the IntentEngine"""
+class TestIntentRecognizerEnhanced(unittest.TestCase):
+    """Enhanced tests for the IntentRecognizer"""
     
     def setUp(self):
-        """Create IntentEngine instance"""
-        self.engine = IntentEngine()
+        """Create IntentRecognizer instance"""
+        self.engine = IntentRecognizer()
         
     def test_initialization(self):
-        """Test IntentEngine initializes properly"""
+        """Test IntentRecognizer initializes properly"""
         # Check patterns are loaded
         self.assertIsNotNone(self.engine.patterns)
-        self.assertIn(IntentType.INSTALL, self.engine.patterns)
+        self.assertIn(IntentType.INSTALL_PACKAGE, self.engine.patterns)
         self.assertIn(IntentType.REMOVE, self.engine.patterns)
-        self.assertIn(IntentType.UPDATE, self.engine.patterns)
-        self.assertIn(IntentType.SEARCH, self.engine.patterns)
+        self.assertIn(IntentType.UPDATE_SYSTEM, self.engine.patterns)
+        self.assertIn(IntentType.SEARCH_PACKAGE, self.engine.patterns)
         self.assertIn(IntentType.ROLLBACK, self.engine.patterns)
-        self.assertIn(IntentType.INFO, self.engine.patterns)
+        self.assertIn(IntentType.EXPLAIN, self.engine.patterns)
         self.assertIn(IntentType.HELP, self.engine.patterns)
         
         # Check package aliases are loaded
@@ -54,8 +54,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text, expected_target in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 self.assertGreater(intent.confidence, 0.9)
                 
     def test_install_intent_conversational(self):
@@ -72,8 +72,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text, expected_target in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_install_intent_with_aliases(self):
         """Test install with package aliases"""
@@ -90,8 +90,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text, expected_target in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_remove_intent(self):
         """Test remove intent recognition"""
@@ -107,12 +107,12 @@ class TestIntentEngineEnhanced(unittest.TestCase):
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
                 self.assertEqual(intent.type, IntentType.REMOVE)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_update_intent(self):
         """Test update intent recognition"""
         test_cases = [
-            "update",
+            "update_system",
             "upgrade",
             "update system",
             "upgrade everything",
@@ -125,8 +125,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.UPDATE)
-                self.assertIsNone(intent.target)  # Update typically has no target
+                self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM)
+                self.assertIsNone(intent.entities.get("package"))  # Update typically has no target
                 
     def test_search_intent(self):
         """Test search intent recognition"""
@@ -142,8 +142,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text, expected_target in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.SEARCH)
-                self.assertEqual(intent.target, expected_target)
+                self.assertEqual(intent.type, IntentType.SEARCH_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_target)
                 
     def test_rollback_intent(self):
         """Test rollback intent recognition"""
@@ -172,7 +172,7 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         for input_text in test_cases:
             with self.subTest(input=input_text):
                 intent = self.engine.recognize(input_text)
-                self.assertEqual(intent.type, IntentType.INFO)
+                self.assertEqual(intent.type, IntentType.EXPLAIN)
                 
     def test_help_intent(self):
         """Test help intent recognition"""
@@ -207,11 +207,11 @@ class TestIntentEngineEnhanced(unittest.TestCase):
     def test_case_insensitivity(self):
         """Test that recognition is case-insensitive"""
         test_cases = [
-            ("INSTALL FIREFOX", IntentType.INSTALL, "firefox"),
-            ("Install Firefox", IntentType.INSTALL, "firefox"),
-            ("InStAlL fIrEfOx", IntentType.INSTALL, "firefox"),
+            ("INSTALL FIREFOX", IntentType.INSTALL_PACKAGE, "firefox"),
+            ("Install Firefox", IntentType.INSTALL_PACKAGE, "firefox"),
+            ("InStAlL fIrEfOx", IntentType.INSTALL_PACKAGE, "firefox"),
             ("REMOVE vim", IntentType.REMOVE, "vim"),
-            ("UPDATE", IntentType.UPDATE, None),
+            ("UPDATE", IntentType.UPDATE_SYSTEM, None),
         ]
         
         for input_text, expected_type, expected_target in test_cases:
@@ -219,14 +219,14 @@ class TestIntentEngineEnhanced(unittest.TestCase):
                 intent = self.engine.recognize(input_text)
                 self.assertEqual(intent.type, expected_type)
                 if expected_target:
-                    self.assertEqual(intent.target, expected_target)
+                    self.assertEqual(intent.entities.get("package"), expected_target)
                     
     def test_extra_whitespace_handling(self):
         """Test handling of extra whitespace"""
         test_cases = [
-            ("  install   firefox  ", IntentType.INSTALL, "firefox"),
+            ("  install   firefox  ", IntentType.INSTALL_PACKAGE, "firefox"),
             ("\tremove\tvim\t", IntentType.REMOVE, "vim"),
-            ("   update   ", IntentType.UPDATE, None),
+            ("   update   ", IntentType.UPDATE_SYSTEM, None),
         ]
         
         for input_text, expected_type, expected_target in test_cases:
@@ -234,7 +234,7 @@ class TestIntentEngineEnhanced(unittest.TestCase):
                 intent = self.engine.recognize(input_text)
                 self.assertEqual(intent.type, expected_type)
                 if expected_target:
-                    self.assertEqual(intent.target, expected_target)
+                    self.assertEqual(intent.entities.get("package"), expected_target)
                     
     def test_metadata_preservation(self):
         """Test that original input is preserved in metadata"""
@@ -311,10 +311,10 @@ class TestIntentEngineEnhanced(unittest.TestCase):
     def test_complex_patterns(self):
         """Test complex real-world patterns"""
         test_cases = [
-            ("hey can you install that firefox thing for me", IntentType.INSTALL, "firefox"),
+            ("hey can you install that firefox thing for me", IntentType.INSTALL_PACKAGE, "firefox"),
             ("i think i need to remove python from my system", IntentType.REMOVE, "python3"),
-            ("could you search for text editors", IntentType.SEARCH, "text"),
-            ("please help me update everything", IntentType.UPDATE, None),
+            ("could you search for text editors", IntentType.SEARCH_PACKAGE, "text"),
+            ("please help me update everything", IntentType.UPDATE_SYSTEM, None),
         ]
         
         for input_text, expected_type, expected_target in test_cases:
@@ -329,8 +329,8 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         """Test that more specific patterns take priority"""
         # "get me X" should match before "get X"
         intent = self.engine.recognize("get me firefox")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, "firefox")
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), "firefox")
         
     def test_all_intent_types_covered(self):
         """Test that all IntentType enum values have patterns"""
@@ -345,15 +345,15 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         """Test correct group extraction from patterns"""
         # Test pattern with target in group 2
         intent = self.engine.recognize("install firefox")
-        self.assertEqual(intent.target, "firefox")
+        self.assertEqual(intent.entities.get("package"), "firefox")
         
         # Test pattern with target in group 1
         intent = self.engine.recognize("get me vim")
-        self.assertEqual(intent.target, "vim")
+        self.assertEqual(intent.entities.get("package"), "vim")
         
         # Test pattern with no target (group 0)
-        intent = self.engine.recognize("update")
-        self.assertIsNone(intent.target)
+        intent = self.engine.recognize("update_system")
+        self.assertIsNone(intent.entities.get("package"))
         
     def test_confidence_scores(self):
         """Test confidence scores are appropriate"""
@@ -370,7 +370,7 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         # Very long input
         long_input = "install " + "firefox " * 100
         intent = self.engine.recognize(long_input)
-        self.assertEqual(intent.type, IntentType.INSTALL)
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
         
         # Unicode characters
         intent = self.engine.recognize("install café")
@@ -378,12 +378,12 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         
         # Numbers in package names
         intent = self.engine.recognize("install python3")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, "python3")
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), "python3")
         
         # Special characters that should work
         intent = self.engine.recognize("install node-js")
-        self.assertEqual(intent.type, IntentType.INSTALL)
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
         
     def test_concurrent_recognition(self):
         """Test thread safety of intent recognition"""
@@ -416,9 +416,9 @@ class TestIntentEngineEnhanced(unittest.TestCase):
         
         # Verify specific results
         result_dict = dict(results)
-        self.assertEqual(result_dict["install firefox"], IntentType.INSTALL)
+        self.assertEqual(result_dict["install firefox"], IntentType.INSTALL_PACKAGE)
         self.assertEqual(result_dict["remove vim"], IntentType.REMOVE)
-        self.assertEqual(result_dict["update system"], IntentType.UPDATE)
+        self.assertEqual(result_dict["update system"], IntentType.UPDATE_SYSTEM)
 
 
 if __name__ == '__main__':

@@ -16,12 +16,12 @@ unprecedented performance.
 import asyncio
 import sys
 import os
-from unittest.mock import Mock, patch, MagicMock, AsyncMoc, AsyncMockk
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend/python'))
-from native_nix_backend import (
+from nix_humanity.core.native_operations import (
     NativeNixBackend, 
     NixOperation, 
     NixResult, 
@@ -34,20 +34,17 @@ from native_nix_backend import (
 class TestNativeNixBackend(unittest.TestCase):
     """Test the native Python-Nix backend that achieved the performance breakthrough"""
     
-        def backend(self):
-        """Create backend instance for testing"""
-        return NativeNixBackend()
+    def setUp(self):
+        """Set up test fixtures"""
+        self.backend = NativeNixBackend()
+        self.mock_progress_callback = Mock()
     
-        def mock_progress_callback(self):
-        """Mock progress callback for testing"""
-        return Mock()
-    
-    def test_backend_initialization(self, backend):
+    def test_backend_initialization(self):
         """Test backend initializes correctly"""
-        self.assertIsNotNone(backend)
-        self.assertTrue(hasattr(backend, 'progress'))
-        self.assertTrue(hasattr(backend, 'use_flakes'))
-        self.assertTrue(isinstance(backend.use_flakes, bool))
+        self.assertIsNotNone(self.backend)
+        self.assertTrue(hasattr(self.backend, 'progress'))
+        self.assertTrue(hasattr(self.backend, 'use_flakes'))
+        self.assertTrue(isinstance(self.backend.use_flakes, bool))
     
     def test_operation_types_enum(self):
         """Test all operation types are defined"""
@@ -90,15 +87,17 @@ class TestNativeNixBackend(unittest.TestCase):
         # Should not raise exception
         callback.update("Testing progress", 0.5)
     
-    def test_progress_callback_custom(self, mock_progress_callback):
+    def test_progress_callback_custom(self):
         """Test custom progress callback"""
+        mock_progress_callback = Mock()
         callback = ProgressCallback(mock_progress_callback)
         callback.update("Testing progress", 0.75)
         
         mock_progress_callback.assert_called_once_with("Testing progress", 0.75)
     
-    def test_check_flakes_detection(self, backend):
+    def test_check_flakes_detection(self):
         """Test flake detection works correctly"""
+        backend = self.backend
         with patch('os.path.exists') as mock_exists:
             # Test flakes detected
             mock_exists.return_value = True
@@ -113,13 +112,13 @@ class TestNativeNixBackend(unittest.TestCase):
 class TestNativeApiOperations(unittest.TestCase):
     """Test operations when native API is available"""
     
-        def backend_with_api(self):
+    def backend_with_api(self):
         """Create backend with mocked native API"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', True):
             backend = NativeNixBackend()
             return backend
     
-        def mock_nix_modules(self):
+    def mock_nix_modules(self):
         """Mock the nixos-rebuild modules"""
         with patch('native_nix_backend.nix') as mock_nix, \
              patch('native_nix_backend.models') as mock_models, \
@@ -130,7 +129,7 @@ class TestNativeApiOperations(unittest.TestCase):
                 'profile': mock_profile
             }
     
-        async def test_update_system_dry_run(self, backend_with_api, mock_nix_modules):
+    async def test_update_system_dry_run(self):
         """Test system update dry run with native API"""
         # Setup mocks
         mock_nix_modules['nix'].build = Mock(return_value="/nix/store/test-path")
@@ -151,7 +150,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertIsNotNone(result.data.get('would_activate'))
         self.assertIsNone(result.error)
     
-        async def test_update_system_flakes(self, backend_with_api, mock_nix_modules):
+    async def test_update_system_flakes(self):
         """Test system update with flakes"""
         # Setup mocks
         mock_nix_modules['nix'].build_flake = Mock(return_value="/nix/store/flake-path")
@@ -174,7 +173,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertIn("updated successfully", result.message)
         self.assertIsNotNone(result.data.get('new_generation'))
     
-        async def test_rollback_system(self, backend_with_api, mock_nix_modules):
+    async def test_rollback_system(self):
         """Test system rollback"""
         # Setup mocks
         mock_nix_modules['nix'].rollback = Mock()
@@ -190,7 +189,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertIn("rolled back to previous generation", result.message)
         mock_nix_modules['nix'].rollback.assert_called_once()
     
-        async def test_list_generations(self, backend_with_api, mock_nix_modules):
+    async def test_list_generations(self):
         """Test listing system generations"""
         # Setup mock generations
         mock_gen1 = Mock()
@@ -222,7 +221,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertEqual(result.data['generations'][1]['number'], 41)
         self.assertTrue(result.data['generations'][1]['current'] is False)
     
-        async def test_install_packages_instructions(self, backend_with_api):
+    async def test_install_packages_instructions(self):
         """Test package installation returns instructions"""
         operation = NixOperation(
             type=OperationType.INSTALL,
@@ -238,7 +237,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertEqual(result.data['packages'], ['firefox', 'vim'])
         self.assertIn(result.data['config_file'], ['/etc/nixos/configuration.nix', '/etc/nixos/flake.nix'])
     
-        async def test_search_packages(self, backend_with_api):
+    async def test_search_packages(self):
         """Test package search"""
         operation = NixOperation(
             type=OperationType.SEARCH,
@@ -251,7 +250,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertIn("nix search nixpkgs browser", result.message)
         self.assertEqual(result.data['query'], 'browser')
     
-        async def test_build_system(self, backend_with_api, mock_nix_modules):
+    async def test_build_system(self):
         """Test system build without switching"""
         mock_nix_modules['nix'].build = Mock(return_value="/nix/store/build-path")
         
@@ -264,7 +263,7 @@ class TestNativeApiOperations(unittest.TestCase):
         self.assertIn("built successfully", result.message)
         self.assertEqual(result.data['build_path'], "/nix/store/build-path")
     
-        async def test_test_configuration(self, backend_with_api, mock_nix_modules):
+    async def test_test_configuration(self):
         """Test configuration testing"""
         mock_nix_modules['nix'].build = Mock(return_value="/nix/store/test-path")
         mock_nix_modules['nix'].switch_to_configuration = Mock()
@@ -282,10 +281,10 @@ class TestNativeApiOperations(unittest.TestCase):
 class TestErrorHandling(unittest.TestCase):
     """Test error handling and edge cases"""
     
-        def backend(self):
+    def backend(self):
         return NativeNixBackend()
     
-        async def test_unknown_operation_type(self, backend):
+    async def test_unknown_operation_type(self):
         """Test handling of unknown operation types"""
         # Create invalid operation by direct assignment
         operation = NixOperation(type=OperationType.UPDATE)
@@ -297,7 +296,7 @@ class TestErrorHandling(unittest.TestCase):
         self.assertIn("Unknown operation type", result.message)
         self.assertEqual(result.error, "Invalid operation")
     
-        async def test_operation_exception_handling(self, backend):
+    async def test_operation_exception_handling(self):
         """Test exception handling during operations"""
         with patch.object(backend, '_update_system', side_effect=Exception("Test error")):
             operation = NixOperation(type=OperationType.UPDATE)
@@ -307,7 +306,7 @@ class TestErrorHandling(unittest.TestCase):
             self.assertEqual(result.message, "Operation failed")
             self.assertIn("Test error", result.error)
     
-        async def test_rollback_failure(self, backend):
+    async def test_rollback_failure(self):
         """Test rollback failure handling"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', True), \
              patch('native_nix_backend.nix.rollback', side_effect=Exception("Rollback failed")):
@@ -319,7 +318,7 @@ class TestErrorHandling(unittest.TestCase):
             self.assertEqual(result.message, "Rollback failed")
             self.assertIn("Rollback failed", result.error)
     
-        async def test_update_error_classification(self, backend):
+    async def test_update_error_classification(self):
         """Test error message classification for updates"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', True):
             # Test sudo error
@@ -350,12 +349,12 @@ class TestErrorHandling(unittest.TestCase):
 class TestFallbackMode(unittest.TestCase):
     """Test fallback behavior when native API is unavailable"""
     
-        def backend_no_api(self):
+    def backend_no_api(self):
         """Create backend without native API"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', False):
             return NativeNixBackend()
     
-        async def test_fallback_execute(self, backend_no_api):
+    async def test_fallback_execute(self):
         """Test fallback execution when API unavailable"""
         operation = NixOperation(type=OperationType.UPDATE)
         result = await backend_no_api.execute(operation)
@@ -368,10 +367,10 @@ class TestFallbackMode(unittest.TestCase):
 class TestPerformanceFeatures(unittest.TestCase):
     """Test performance-related features"""
     
-        def backend(self):
+    def backend(self):
         return NativeNixBackend()
     
-    def test_progress_callback_setting(self, backend):
+    def test_progress_callback_setting(self):
         """Test setting custom progress callback"""
         mock_callback = Mock()
         backend.set_progress_callback(mock_callback)
@@ -380,7 +379,7 @@ class TestPerformanceFeatures(unittest.TestCase):
         backend.progress.update("Test message", 0.5)
         mock_callback.assert_called_once_with("Test message", 0.5)
     
-        async def test_progress_updates_during_operation(self, backend):
+    async def test_progress_updates_during_operation(self):
         """Test that operations provide progress updates"""
         progress_calls = []
         
@@ -397,23 +396,23 @@ class TestPerformanceFeatures(unittest.TestCase):
             await backend.execute(operation)
         
         # Verify progress updates occurred
-        self.assertGreater(len(progress_calls), = 3  # Should have multiple progress updates)
-        self.assertEqual(progress_calls[0][1], 0.0  # First update at 0%)
-        self.assertEqual(progress_calls[-1][1], 1.0  # Last update at 100%)
+        self.assertGreaterEqual(len(progress_calls), 3)  # Should have multiple progress updates
+        self.assertEqual(progress_calls[0][1], 0.0)  # First update at 0%
+        self.assertEqual(progress_calls[-1][1], 1.0)  # Last update at 100%
         
         # Verify messages are descriptive
         messages = [call[0] for call in progress_calls]
-        self.assertIn(any("Starting", msg for msg in messages))
-        self.assertIn(any("complete", msg.lower() for msg in messages))
+        self.assertTrue(any("Starting" in msg for msg in messages))
+        self.assertTrue(any("complete" in msg.lower() for msg in messages))
 
 
 class TestAsyncIntegration(unittest.TestCase):
     """Test async/await integration with nixos-rebuild-ng"""
     
-        def backend(self):
+    def backend(self):
         return NativeNixBackend()
     
-        async def test_async_executor_integration(self, backend):
+    async def test_async_executor_integration(self):
         """Test that sync nixos-rebuild functions work with asyncio"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', True), \
              patch('asyncio.get_event_loop') as mock_loop:
@@ -429,7 +428,7 @@ class TestAsyncIntegration(unittest.TestCase):
             # Verify executor was used for sync function
             mock_loop.return_value.run_in_executor.assert_called()
     
-        async def test_concurrent_operations(self, backend):
+    async def test_concurrent_operations(self):
         """Test that multiple operations can be handled concurrently"""
         with patch('native_nix_backend.NATIVE_API_AVAILABLE', True), \
              patch('native_nix_backend.nix.get_generations', return_value=[]), \
@@ -447,7 +446,7 @@ class TestAsyncIntegration(unittest.TestCase):
             
             # All should succeed
             self.assertEqual(len(results), 3)
-            self.assertIn(all(result.success for result, results))
+            self.assertTrue(all(result.success for result in results))
 
 
 class TestDataIntegrity(unittest.TestCase):
@@ -485,7 +484,7 @@ class TestDataIntegrity(unittest.TestCase):
         def valid_callback(message: str, progress: float):
             self.assertTrue(isinstance(message, str))
             self.assertTrue(isinstance(progress, float))
-            self.assertLess(0.0, = progress <= 1.0)
+            self.assertTrue(0.0 <= progress <= 1.0)
         
         callback = ProgressCallback(valid_callback)
         callback.update("Test", 0.5)  # Should not raise

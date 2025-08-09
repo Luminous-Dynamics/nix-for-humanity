@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Optional
 Integration module for AI Environment Architect with ask-nix
 Handles natural language requests for AI/ML environment generation
 """

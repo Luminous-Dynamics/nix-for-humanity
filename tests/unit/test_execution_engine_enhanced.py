@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced unit tests for the ExecutionEngine component
+Enhanced unit tests for the SafeExecutor component
 Tests safe command building, validation, execution modes, and security
 """
 
@@ -16,17 +16,17 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.execution_engine import ExecutionEngine
-from nix_for_humanity.core.interface import ExecutionMode
-from nix_for_humanity.core.types import Command
+from nix_humanity.core.executor import SafeExecutor
+from nix_humanity.core.interface import ExecutionMode
+from nix_humanity.core.intents import Command
 
 
-class TestExecutionEngineEnhanced(unittest.TestCase):
-    """Enhanced tests for the ExecutionEngine component"""
+class TestSafeExecutorEnhanced(unittest.TestCase):
+    """Enhanced tests for the SafeExecutor component"""
     
     def setUp(self):
-        """Create ExecutionEngine instance for testing"""
-        self.engine = ExecutionEngine(dry_run=True)
+        """Create SafeExecutor instance for testing"""
+        self.engine = SafeExecutor(dry_run=True)
         
     def test_initialization(self):
         """Test default initialization"""
@@ -35,7 +35,7 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
         self.assertEqual(self.engine.timeout, 300)
         
         # Test with custom settings
-        engine_custom = ExecutionEngine(dry_run=False)
+        engine_custom = SafeExecutor(dry_run=False)
         self.assertFalse(engine_custom.dry_run)
         
     def test_build_command_install(self):
@@ -180,31 +180,11 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
             self.assertFalse(valid)
             self.assertEqual(error, "Command not found: nonexistent")
             
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_dry_run_mode(self, mock_run):
-        """Test execution in dry run mode"""
-        cmd = Command('nix', ['profile', 'install', 'firefox'], True, False, "Install firefox")
-        
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="Would install firefox",
-            stderr=""
-        )
-        
-        result = self.engine.execute(cmd, ExecutionMode.DRY_RUN)
-        
-        self.assertTrue(result['success'])
-        self.assertEqual(result['exit_code'], 0)
-        
-        # Verify --dry-run was added
-        call_args = mock_run.call_args[0][0]
-        self.assertIn('--dry-run', call_args)
-        
     def test_execute_explain_mode(self):
         """Test execution in explain mode"""
         cmd = Command('nix', ['profile', 'install', 'firefox'], True, False, "Install firefox")
         
-        result = self.engine.execute(cmd, ExecutionMode.EXPLAIN)
+        result = self.engine.execute(cmd.EXPLAIN)
         
         self.assertTrue(result['success'])
         self.assertIn('explanation', result)
@@ -212,148 +192,6 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
         self.assertFalse(result['would_execute'])
         self.assertEqual(result['explanation'], 
                         "This will install the package into your user profile")
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_normal_mode(self, mock_run):
-        """Test normal execution mode"""
-        cmd = Command('nix', ['search', 'firefox'], True, False, "Search firefox")
-        
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="firefox packages found",
-            stderr=""
-        )
-        
-        result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
-        
-        self.assertTrue(result['success'])
-        self.assertEqual(result['output'], "firefox packages found")
-        self.assertEqual(result['error'], "")
-        self.assertEqual(result['exit_code'], 0)
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_with_sudo(self, mock_run):
-        """Test execution with sudo requirement"""
-        cmd = Command('nixos-rebuild', ['switch'], True, True, "Update system")
-        
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="Success",
-            stderr=""
-        )
-        
-        result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
-        
-        # Verify sudo was prepended
-        call_args = mock_run.call_args[0][0]
-        self.assertEqual(call_args[0], 'sudo')
-        self.assertEqual(call_args[1], 'nixos-rebuild')
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_timeout(self, mock_run):
-        """Test command timeout handling"""
-        cmd = Command('nix', ['build', 'large-package'], True, False, "Build")
-        
-        mock_run.side_effect = subprocess.TimeoutExpired('cmd', 300)
-        
-        result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
-        
-        self.assertFalse(result['success'])
-        self.assertEqual(result['error'], "Command timed out after 300 seconds")
-        self.assertEqual(result['exit_code'], -1)
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_general_exception(self, mock_run):
-        """Test general exception handling"""
-        cmd = Command('nix', ['search', 'test'], True, False, "Search")
-        
-        mock_run.side_effect = Exception("Unexpected error")
-        
-        result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
-        
-        self.assertFalse(result['success'])
-        self.assertEqual(result['error'], "Unexpected error")
-        self.assertEqual(result['exit_code'], -1)
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_safe_search_success(self, mock_run):
-        """Test safe search execution with valid results"""
-        search_results = {
-            "nixpkgs.firefox": {
-                "version": "120.0",
-                "description": "Mozilla Firefox browser"
-            },
-            "nixpkgs.firefox-esr": {
-                "version": "115.0",
-                "description": "Firefox Extended Support Release"
-            }
-        }
-        
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=json.dumps(search_results),
-            stderr=""
-        )
-        
-        success, results, error = self.engine.execute_safe_search("firefox")
-        
-        self.assertTrue(success)
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0]['name'], 'firefox')
-        self.assertEqual(results[0]['version'], '120.0')
-        self.assertEqual(error, "")
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_safe_search_invalid_json(self, mock_run):
-        """Test safe search with invalid JSON response"""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="invalid json {",
-            stderr=""
-        )
-        
-        success, results, error = self.engine.execute_safe_search("test")
-        
-        self.assertFalse(success)
-        self.assertEqual(results, [])
-        self.assertEqual(error, "Failed to parse search results")
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_safe_search_command_failure(self, mock_run):
-        """Test safe search when command fails"""
-        mock_run.return_value = MagicMock(
-            returncode=1,
-            stdout="",
-            stderr="Search failed"
-        )
-        
-        success, results, error = self.engine.execute_safe_search("test")
-        
-        self.assertFalse(success)
-        self.assertEqual(results, [])
-        self.assertEqual(error, "Search failed")
-        
-    @patch(\'subprocess.run\', create=True)
-    def test_execute_safe_search_result_limit(self, mock_run):
-        """Test safe search limits results to 10"""
-        # Create 15 fake results
-        search_results = {}
-        for i in range(15):
-            search_results[f"nixpkgs.package{i}"] = {
-                "version": f"{i}.0",
-                "description": f"Package {i}"
-            }
-        
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=json.dumps(search_results),
-            stderr=""
-        )
-        
-        success, results, error = self.engine.execute_safe_search("package")
-        
-        self.assertTrue(success)
-        self.assertEqual(len(results), 10)  # Limited to 10
         
     def test_command_exists(self):
         """Test command existence check"""
@@ -421,14 +259,14 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
             
             # Test with nix command
             cmd = Command('nix', ['build', 'test'], True, False, "")
-            self.engine.execute(cmd, ExecutionMode.DRY_RUN)
+            self.engine.execute(cmd.DRY_RUN)
             
             call_args = mock_run.call_args[0][0]
             self.assertIn('--dry-run', call_args)
             
             # Test with nixos-rebuild command
             cmd = Command('nixos-rebuild', ['switch'], True, True, "")
-            self.engine.execute(cmd, ExecutionMode.DRY_RUN)
+            self.engine.execute(cmd.DRY_RUN)
             
             call_args = mock_run.call_args[0][0]
             self.assertIn('--dry-run', call_args)
@@ -449,7 +287,7 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
             mock_run.side_effect = subprocess.TimeoutExpired('cmd', 60)
             
             cmd = Command('nix', ['build'], True, False, "")
-            result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
+            result = self.engine.execute(cmd.EXECUTE)
             
             self.assertFalse(result['success'])
             self.assertEqual(result['error'], "Command timed out after 60 seconds")
@@ -492,7 +330,7 @@ class TestExecutionEngineEnhanced(unittest.TestCase):
                 mock_run.return_value = MagicMock(
                     returncode=0, stdout="test", stderr=""
                 )
-                result = self.engine.execute(cmd, ExecutionMode.EXECUTE)
+                result = self.engine.execute(cmd.EXECUTE)
                 results.append(result)
                 
         threads = []

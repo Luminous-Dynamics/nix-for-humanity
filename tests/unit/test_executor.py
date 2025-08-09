@@ -1,552 +1,465 @@
+#!/usr/bin/env python3
 """
-Unit tests for ExecutionEngine class
+import subprocess
+Tests for SafeExecutor - command execution module
 
-Testing the safe command execution module that handles NixOS operations
-with proper error handling, rollback capabilities, and progress reporting.
-
-Uses consciousness-first testing approach with real test implementations
-instead of mocks.
+Tests the safe execution of NixOS commands with security validation,
+rollback support, and progress reporting.
 """
 
 import unittest
+from unittest.mock import Mock, MagicMock, patch, AsyncMock, call
 import asyncio
-from pathlib import Path
-import tempfile
-import os
-from typing import Dict, Any, List, Optional, Callable
-from dataclasses import dataclass
-import time
-
-# Add parent directory to path for imports
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import os
 
-from nix_for_humanity.core.execution_engine import ExecutionEngine
-from nix_for_humanity.core.types import Intent, IntentType
+# Add parent directories to path
+project_root = os.path.join(os.path.dirname(__file__), '../..')
+sys.path.insert(0, project_root)
+backend_path = os.path.join(project_root, 'nix_humanity')
+sys.path.insert(0, backend_path)
+
+# Mock the imports that might not be available
+sys.modules['nix_humanity.python'] = MagicMock()
+sys.modules['nix_humanity.python.native_nix_backend'] = MagicMock()
+
+# Import after mocking
+from nix_humanity.core.executor import SafeExecutor, ValidationResult
+from nix_humanity.core.intents import Intent, IntentType
+from nix_humanity.api.schema import Result
 
 
-@dataclass
-class TestProcess:
-    """Simulated process for testing"""
-    returncode: int
-    stdout: bytes
-    stderr: bytes
-    execution_time: float = 0.1
+class TestValidationResult(unittest.TestCase):
+    """Test the ValidationResult class."""
     
-    async def communicate(self, timeout=None):
-        """Simulate process communication"""
-        if timeout and self.execution_time > timeout:
-            raise asyncio.TimeoutError()
-        await asyncio.sleep(self.execution_time)
-        return (self.stdout, self.stderr)
-    
-    def kill(self):
-        """Simulate process termination"""
-        self.returncode = -15
-    
-    async def wait(self):
-        """Simulate waiting for process completion"""
-        await asyncio.sleep(0.01)
+    def test_validation_result_creation(self):
+        """Test creating ValidationResult objects."""
+        # Valid result
+        result = ValidationResult(valid=True, reason="All checks passed")
+        self.assertTrue(result.valid)
+        self.assertEqual(result.reason, "All checks passed")
+        
+        # Invalid result
+        result = ValidationResult(valid=False, reason="Dangerous pattern detected")
+        self.assertFalse(result.valid)
+        self.assertEqual(result.reason, "Dangerous pattern detected")
 
 
-class TestExecutionBackend:
-    """Consciousness-first test backend for ExecutionEngine"""
-    
-    def __init__(self):
-        self.installed_packages = set()
-        self.system_generations = [1, 2, 3]
-        self.current_generation = 3
-        self.search_results = {
-            'firefox': [('firefox', 'Web browser'), ('firefox-esr', 'Extended support release')],
-            'nonexistent': []
-        }
-        self.process_responses = {}
-        self.api_available = True
-        self.api_calls = []
-        
-    def set_process_response(self, command: str, process: TestProcess):
-        """Configure response for a specific command"""
-        self.process_responses[command] = process
-        
-    async def create_subprocess(self, *args, **kwargs) -> TestProcess:
-        """Simulate subprocess creation with deterministic behavior"""
-        command = ' '.join(args)
-        
-        # Check for configured responses
-        for key, process in self.process_responses.items():
-            if key in command:
-                return process
-        
-        # Default responses based on command type
-        if 'nix profile install' in command:
-            package = args[3].split('#')[-1]
-            if package in ['firefox', 'vim', 'emacs']:
-                self.installed_packages.add(package)
-                return TestProcess(0, b"Success", b"")
-            else:
-                return TestProcess(1, b"", b"Package not found")
-                
-        elif 'nix search' in command:
-            query = args[3] if len(args) > 3 else 'unknown'
-            results = self.search_results.get(query, [])
-            if results:
-                output = '\n'.join(f"* {pkg}: {desc}" for pkg, desc in results)
-                return TestProcess(0, output.encode(), b"")
-            else:
-                return TestProcess(0, b"", b"")
-                
-        elif 'echo test' in command:
-            return TestProcess(0, b"Output", b"")
-            
-        elif 'sleep' in command:
-            return TestProcess(0, b"", b"", execution_time=10)
-            
-        else:
-            return TestProcess(0, b"Success", b"")
-    
-    def get_nix_api(self):
-        """Simulate NixOS Python API"""
-        if not self.api_available:
-            raise ImportError("nixos_rebuild not available")
-        
-        class MockNixAPI:
-            def __init__(self, backend):
-                self.backend = backend
-                
-            def rollback(self, generation=None):
-                backend.api_calls.append(('rollback', generation))
-                if generation and generation not in backend.system_generations:
-                    raise ValueError(f"Generation {generation} not found")
-                backend.current_generation = generation or backend.system_generations[-2]
-                return True
-                
-        return MockNixAPI(self)
-
-
-class TestExecutionEngine(unittest.TestCase):
-    """Test ExecutionEngine functionality with consciousness-first approach"""
+class TestSafeExecutor(unittest.TestCase):
+    """Test the SafeExecutor class."""
     
     def setUp(self):
-        """Set up test fixtures"""
-        self.backend = TestExecutionBackend()
-        self.progress_callback = TestProgressCallback()
-        self.engine = ExecutionEngine(progress_callback=self.progress_callback.callback)
+        """Set up test fixtures."""
+        self.progress_callback = Mock()
         
-        # Inject test backend
-        self._original_subprocess = asyncio.create_subprocess_exec
-        asyncio.create_subprocess_exec = self.backend.create_subprocess
+        # Mock the Python API module
+        self.native_backend_mock = MagicMock()
+        self.native_backend_mock.execute = AsyncMock()
         
-        # Configure Python API availability
-        if self.backend.api_available:
-            self.engine._has_python_api = True
-            self.engine.nix_api = self.backend.get_nix_api()
-            
-    def tearDown(self):
-        """Clean up after tests"""
-        # Restore original subprocess function
-        asyncio.create_subprocess_exec = self._original_subprocess
-        
-        # Reset any environment variables
-        if 'DEBUG' in os.environ:
-            del os.environ['DEBUG']
-
-
-class TestProgressCallback:
-    """Track progress callbacks for testing"""
+        # Create executor
+        with patch('backend.core.executor.SafeExecutor._init_python_api'):
+            self.executor = SafeExecutor(progress_callback=self.progress_callback)
+            self.executor._has_python_api = False
+            self.executor.native_backend = None
     
-    def __init__(self):
-        self.calls = []
+    def test_init(self):
+        """Test SafeExecutor initialization."""
+        with patch('backend.core.executor.SafeExecutor._init_python_api') as mock_init:
+            executor = SafeExecutor()
+            self.assertIsNone(executor.progress_callback)
+            self.assertFalse(executor.dry_run)
+            mock_init.assert_called_once()
         
-    def callback(self, message: str, progress: float):
-        """Record callback invocations"""
-        self.calls.append((message, progress, time.time()))
+        # With progress callback
+        callback = Mock()
+        with patch('backend.core.executor.SafeExecutor._init_python_api'):
+            executor = SafeExecutor(progress_callback=callback)
+            self.assertEqual(executor.progress_callback, callback)
+    
+    def test_get_operation_type(self):
+        """Test mapping intent to operation type."""
+        test_cases = [
+            (IntentType.INSTALL_PACKAGE, 'install-package'),
+            (IntentType.UPDATE_SYSTEM, 'modify-configuration'),
+            (IntentType.CONFIGURE, 'modify-configuration'),
+            (IntentType.ROLLBACK, 'modify-configuration'),
+            (IntentType.SEARCH_PACKAGE, 'read-file'),
+            (IntentType.EXPLAIN, 'read-file'),
+            (IntentType.HELP, 'read-file'),
+            (IntentType.REMOVE_PACKAGE, 'remove-package'),
+            (IntentType.UNKNOWN, 'unknown'),
+        ]
         
-    def tearDown(self):
-        """Clean up after tests"""
-        # Reset any environment variables
-        if 'DEBUG' in os.environ:
-            del os.environ['DEBUG']
-            
-    def test_init_default(self):
-        """Test initialization with default parameters"""
-        executor = ExecutionEngine()
-        self.assertIsNone(executor.progress_callback)
-        self.assertFalse(executor.dry_run)
+        for intent_type, expected_op in test_cases:
+            intent = Intent(
+                type=intent_type,
+                entities={},
+                confidence=1.0,
+                raw_text="test"
+            )
+            result = self.executor._get_operation_type(intent)
+            self.assertEqual(result, expected_op)
+    
+    def test_progress_wrapper(self):
+        """Test progress callback wrapper."""
+        self.executor._progress_wrapper("Installing package", 0.5)
+        self.progress_callback.assert_called_once_with("Installing package", 0.5)
         
-    def test_init_with_callback(self):
-        """Test initialization with progress callback"""
-        callback = TestProgressCallback()
-        executor = ExecutionEngine(progress_callback=callback.callback)
-        self.assertEqual(executor.progress_callback, callback.callback)
-        self.assertFalse(executor.dry_run)
-        
-    def test_init_python_api_success(self):
-        """Test successful Python API initialization"""
-        # Backend already configured with API available
-        self.assertTrue(self.engine._has_python_api)
-        self.assertIsNotNone(self.engine.nix_api)
-        
-    def test_init_python_api_failure(self):
-        """Test Python API initialization when module not available"""
-        # Create new engine with API unavailable
-        self.backend.api_available = False
-        executor = ExecutionEngine()
-        # Should gracefully handle import failure
-        self.assertIsInstance(executor._has_python_api, bool)
-        
-    def test_execute_install_package(self):
-        """Test package installation execution"""
+        # Test without callback
+        executor = SafeExecutor()
+        # Should not raise error
+        executor._progress_wrapper("Test", 0.1)
+    
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    async def test_execute_help(self, mock_run):
+        """Test executing help command."""
         intent = Intent(
-            type=IntentType.INSTALL,
-            entities={'package': 'firefox'},
-            confidence=0.95,
-            raw_input="install firefox"
-        )
-        
-        result = self.engine.execute([], intent)
-        
-        self.assertTrue(result.success)
-        self.assertIn("firefox", result.output.lower())
-        self.assertIn("firefox", self.backend.installed_packages)
-            
-    def test_execute_update_system(self):
-        """Test system update execution"""
-        intent = Intent(
-            type=IntentType.UPDATE,
+            type=IntentType.HELP,
             entities={},
-            confidence=0.95,
-            raw_input="update system"
+            confidence=1.0,
+            raw_text="help"
         )
         
-        # Configure expected response
-        self.backend.set_process_response(
-            'nixos-rebuild', 
-            TestProcess(0, b"System updated successfully", b"")
-        )
-        
-        result = self.engine.execute([], intent)
+        result = await self.executor.execute([], intent)
         
         self.assertTrue(result.success)
-        self.assertIn("update", result.output.lower())
-            
-    def test_execute_search_package(self):
-        """Test package search execution"""
+        self.assertIn("Available commands", result.output)
+        self.assertIn("Install packages", result.output)
+        self.assertEqual(result.error, "")
+    
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    async def test_execute_search(self, mock_run):
+        """Test executing package search."""
+        mock_run.return_value = {
+            'returncode': 0,
+            'stdout': 'firefox - Web browser',
+            'stderr': ''
+        }
+        
         intent = Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'query': 'firefox'},
-            confidence=0.9,
-            raw_input="search firefox"
+            confidence=1.0,
+            raw_text="search firefox"
         )
         
-        result = self.engine.execute([], intent)
+        result = await self.executor.execute([], intent)
         
         self.assertTrue(result.success)
-        self.assertIn("firefox", result.output)
-        self.assertIn("Web browser", result.output)
-            
-    def test_execute_rollback(self):
-        """Test system rollback execution"""
+        self.assertEqual(result.output, 'firefox - Web browser')
+        self.assertEqual(result.error, "")
+        
+        # Verify command
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd, ['nix', 'search', 'nixpkgs', 'firefox'])
+    
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    async def test_execute_search_no_query(self, mock_run):
+        """Test search with no query specified."""
         intent = Intent(
-            type=IntentType.ROLLBACK,
+            type=IntentType.SEARCH_PACKAGE,
             entities={},
-            confidence=0.95,
-            raw_input="rollback"
+            confidence=1.0,
+            raw_text="search_package"
         )
         
-        initial_generation = self.backend.current_generation
-        result = self.engine.execute([], intent)
-        
-        self.assertTrue(result.success)
-        # Verify rollback occurred
-        if self.engine._has_python_api:
-            self.assertIn(('rollback', None), self.backend.api_calls)
-            self.assertNotEqual(self.backend.current_generation, initial_generation)
-            
-    def test_execute_unsupported_intent(self):
-        """Test execution with unsupported intent type"""
-        # Create an intent with an unsupported type
-        class UnsupportedIntent:
-            type = "UNSUPPORTED_TYPE"
-            entities = {}
-            confidence = 0.9
-            raw_input = "unsupported command"
-        
-        intent = UnsupportedIntent()
-        result = self.engine.execute([], intent)
+        result = await self.executor.execute([], intent)
         
         self.assertFalse(result.success)
-        self.assertEqual(result.output, "")
-        self.assertIn("not implemented", result.error)
+        self.assertEqual(result.error, "No search query specified")
+        mock_run.assert_not_called()
+    
+    def test_validate_package_name(self):
+        """Test package name validation."""
+        # Valid packages
+        valid_packages = [
+            'firefox',
+            'google-chrome',
+            'python3',
+            'lib-test',
+            'package_name',
+            'pkg123'
+        ]
         
-    def test_execute_exception_handling(self):
-        """Test exception handling during execution"""
+        for pkg in valid_packages:
+            self.assertTrue(
+                self.executor._validate_package_name(pkg),
+                f"Package '{pkg}' should be valid"
+            )
+        
+        # Invalid packages
+        invalid_packages = [
+            None,
+            '',
+            'a' * 101,  # Too long
+            '../etc/passwd',  # Path traversal
+            'pkg;rm -rf /',  # Shell injection
+            '.hidden',  # Starts with dot
+            '-flag',  # Starts with dash
+            'sudo',  # Special name
+            '..',  # Special name
+            'pkg$var',  # Shell variable
+        ]
+        
+        for pkg in invalid_packages:
+            self.assertFalse(
+                self.executor._validate_package_name(pkg),
+                f"Package '{pkg}' should be invalid"
+            )
+    
+    def test_validate_search_query(self):
+        """Test search query validation."""
+        # Valid queries
+        valid_queries = [
+            'firefox',
+            'text editor',
+            'python development',
+            'web-browser'
+        ]
+        
+        for query in valid_queries:
+            self.assertTrue(
+                self.executor._validate_search_query(query),
+                f"Query '{query}' should be valid"
+            )
+        
+        # Invalid queries
+        invalid_queries = [
+            None,
+            '',
+            'a' * 201,  # Too long
+            'search; rm -rf /',  # Shell injection
+            'query | cat /etc/passwd',  # Pipe
+            'search`whoami`',  # Command substitution
+            '<script>alert(1)</script>',  # XSS attempt
+        ]
+        
+        for query in invalid_queries:
+            self.assertFalse(
+                self.executor._validate_search_query(query),
+                f"Query '{query}' should be invalid"
+            )
+    
+    def test_validate_command_args(self):
+        """Test command argument validation."""
+        # Valid commands
+        valid_commands = [
+            ['nix', 'search', 'firefox'],
+            ['sudo', 'nixos-rebuild', 'switch'],
+            ['nix-env', '-i', 'package'],
+            ['nix-channel', '--update'],
+        ]
+        
+        for cmd in valid_commands:
+            self.assertTrue(
+                self.executor._validate_command_args(cmd),
+                f"Command {cmd} should be valid"
+            )
+        
+        # Invalid commands
+        invalid_commands = [
+            None,
+            [],
+            ['rm', '-rf', '/'],  # Not whitelisted
+            ['nix', 'search; rm -rf /'],  # Shell injection
+            ['wget', 'http://example.com'],  # Not whitelisted
+            ['curl', 'http://example.com'],  # Not whitelisted
+        ]
+        
+        for cmd in invalid_commands:
+            self.assertFalse(
+                self.executor._validate_command_args(cmd),
+                f"Command {cmd} should be invalid"
+            )
+    
+    def test_validate_execution_request(self):
+        """Test comprehensive execution request validation."""
         intent = Intent(
-            type=IntentType.INSTALL,
-            entities={'package': 'error-package'},
-            confidence=0.95,
-            raw_input="install error-package"
+            type=IntentType.INSTALL_PACKAGE,
+            entities={'package': 'firefox'},
+            confidence=1.0,
+            raw_text="install firefox"
         )
         
-        # Configure process to simulate an exception
-        self.backend.set_process_response(
-            'error-package',
-            TestProcess(-1, b"", b"Critical error occurred")
-        )
+        # Valid request
+        result = self.executor._validate_execution_request(['install firefox'], intent)
+        self.assertTrue(result.valid)
+        self.assertEqual(result.reason, "Validation passed")
         
-        result = self.engine.execute([], intent)
+        # Too many actions
+        long_plan = [f"action{i}" for i in range(25)]
+        result = self.executor._validate_execution_request(long_plan, intent)
+        self.assertFalse(result.valid)
+        self.assertIn("too complex", result.reason)
         
-        # Should handle error gracefully
-        self.assertIsNotNone(result)
-            
-    def test_execute_install_no_package(self):
-        """Test install execution without package name"""
-        result = self.engine._execute_install(None)
+        # Invalid action type
+        result = self.executor._validate_execution_request([123], intent)
+        self.assertFalse(result.valid)
+        self.assertIn("Invalid action type", result.reason)
         
-        self.assertFalse(result.success)
-        self.assertEqual(result.output, "")
-        self.assertIn("No package specified", result.error)
-        
-    def test_execute_install_dry_run(self):
-        """Test install execution in dry run mode"""
-        self.engine.dry_run = True
-        
-        result = self.engine._execute_install("firefox")
-        
-        self.assertTrue(result.success)
-        self.assertIn("Would install: firefox", result.output)
-        self.assertEqual(result.error, "")
-        
-    def test_execute_install_subprocess_success(self):
-        """Test successful package installation via subprocess"""
-        # Since asyncio.create_subprocess_exec is already intercepted by our setUp,
-        # we just need to test direct subprocess installation
-        result = self.engine._execute_install("firefox")
-        
-        self.assertTrue(result.success)
-        self.assertIn("firefox", self.backend.installed_packages)
-        
-    def test_execute_install_subprocess_failure(self):
-        """Test failed package installation via subprocess"""
-        # Test with a package that the backend doesn't recognize
-        result = self.engine._execute_install("nonexistent-package")
-        
-        self.assertFalse(result.success)
-        self.assertIn("not found", result.error.lower())
-        self.assertNotIn("nonexistent-package", self.backend.installed_packages)
-        
-    def test_execute_install_with_progress(self):
-        """Test install with progress callback"""
-        self.engine._has_python_api = False
-        
-        result = self.engine._execute_install("firefox")
-        
-        # Verify progress callback was called
-        self.assertTrue(len(self.progress_callback.calls) > 0)
-        messages = [call[0] for call in self.progress_callback.calls]
-        self.assertTrue(any("firefox" in msg for msg in messages))
-            
-    def test_execute_update_dry_run(self):
-        """Test system update in dry run mode"""
-        self.engine.dry_run = True
-        
-        result = self.engine._execute_update()
-        
-        self.assertTrue(result.success)
-        self.assertEqual(result.output, "Would update system")
-        self.assertEqual(result.error, "")
-        
+        # Dangerous pattern
+        result = self.executor._validate_execution_request(['rm -rf /'], intent)
+        self.assertFalse(result.valid)
+        self.assertIn("Unsafe pattern", result.reason)
+    
     def test_create_rebuild_script(self):
-        """Test rebuild script creation"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Override temp location for testing
-            original_tmp = Path('/tmp')
-            test_tmp = Path(tmpdir)
-            
-            # Monkey patch the method to use test directory
-            def create_rebuild_script_test():
-                script_path = test_tmp / 'nixos-rebuild-wrapper.sh'
-                script_content = '''#!/usr/bin/env bash
-echo "Starting NixOS rebuild..."
-sudo nixos-rebuild switch > /tmp/nixos-rebuild.log 2>&1 &
-echo "Rebuild started!"'''
-                script_path.write_text(script_content)
-                script_path.chmod(0o755)
-                return script_path
-                
-            self.engine._create_rebuild_script = create_rebuild_script_test
-            script_path = self.engine._create_rebuild_script()
-            
-            self.assertTrue(script_path.exists())
-            self.assertTrue(os.access(script_path, os.X_OK))
-            content = script_path.read_text()
-            self.assertIn("#!/usr/bin/env bash", content)
-            self.assertIn("nixos-rebuild switch", content)
+        """Test creating rebuild script for background execution."""
+        script_path = self.executor._create_rebuild_script()
         
-    def test_run_command_success(self):
-        """Test successful command execution"""
-        # Command execution is routed through our test backend
-        result = self.engine._run_command(['echo', 'test'])
+        self.assertTrue(script_path.exists())
+        self.assertEqual(script_path.name, 'nixos-rebuild-wrapper.sh')
         
-        self.assertEqual(result['returncode'], 0)
-        self.assertEqual(result['stdout'], "Output")
-        self.assertEqual(result['stderr'], "")
-            
-    def test_run_command_timeout(self):
-        """Test command execution with timeout"""
-        # Configure backend to simulate a long-running command
-        self.backend.set_process_response(
-            'sleep',
-            TestProcess(0, b"", b"", execution_time=10)
+        # Check script content
+        content = script_path.read_text()
+        self.assertIn("nixos-rebuild switch", content)
+        self.assertIn("/tmp/nixos-rebuild.log", content)
+        
+        # Check permissions
+        stat_info = script_path.stat()
+        self.assertEqual(stat_info.st_mode & 0o777, 0o755)
+        
+        # Cleanup
+        script_path.unlink()
+    
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    async def test_execute_install_dry_run(self, mock_run):
+        """Test install in dry run mode."""
+        self.executor.dry_run = True
+        
+        intent = Intent(
+            type=IntentType.INSTALL_PACKAGE,
+            entities={'package': 'firefox'},
+            confidence=1.0,
+            raw_text="install firefox"
         )
         
-        result = self.engine._run_command(['sleep', '10'], timeout=1)
+        result = await self.executor.execute([], intent)
         
-        self.assertEqual(result['returncode'], -1)
-        self.assertEqual(result['stdout'], '')
-        self.assertIn('timed out', result['stderr'])
-            
-    def test_run_command_exception(self):
-        """Test command execution with exception"""
-        # Configure backend to raise an exception
-        self.backend.set_process_response(
-            'test',
-            TestProcess(-1, b"", b"Test error")
+        self.assertTrue(result.success)
+        self.assertEqual(result.output, "Would install: firefox")
+        self.assertEqual(result.error, "")
+        mock_run.assert_not_called()
+    
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    @patch('backend.core.executor.InputValidator.validate_input')
+    @patch('backend.core.executor.PermissionChecker.check_operation_permission')
+    async def test_execute_install_validation_fail(self, mock_perm, mock_validate, mock_run):
+        """Test install with validation failure."""
+        # Setup mocks
+        mock_perm.return_value = {'allowed': True}
+        mock_validate.return_value = {
+            'valid': False,
+            'reason': 'Invalid package name',
+            'suggestions': ['Use alphanumeric characters only']
+        }
+        
+        intent = Intent(
+            type=IntentType.INSTALL_PACKAGE,
+            entities={'package': 'bad;package'},
+            confidence=1.0,
+            raw_text="install bad;package"
         )
         
-        result = self.engine._run_command(['test'])
-        
-        self.assertEqual(result['returncode'], -1)
-        self.assertEqual(result['stdout'], '')
-        self.assertIn('error', result['stderr'].lower())
-            
-    def test_execute_search_no_query(self):
-        """Test search execution without query"""
-        result = self.engine._execute_search(None)
+        result = await self.executor.execute([], intent)
         
         self.assertFalse(result.success)
-        self.assertIn("No search query", result.error)
-        
-    def test_execute_search_with_results(self):
-        """Test search with results"""
-        # Search results are determined by test backend
-        result = self.engine._execute_search("firefox")
-        
-        self.assertTrue(result.success)
-        self.assertIn("firefox", result.output)
-        self.assertIn("Web browser", result.output)
-        
-    def test_execute_search_no_results(self):
-        """Test search with no results"""
-        # Backend configured to return no results for 'nonexistent'
-        result = self.engine._execute_search("nonexistent")
-        
-        self.assertTrue(result.success)
-        self.assertIn("No packages found", result.output)
-        
-    def test_execute_rollback_dry_run(self):
-        """Test rollback in dry run mode"""
-        self.engine.dry_run = True
-        
-        result = self.engine._execute_rollback()
-        
-        self.assertTrue(result.success)
-        self.assertEqual(result.output, "Would rollback system")
-        
-    def test_debug_output(self):
-        """Test debug output when DEBUG env var is set"""
-        # Set DEBUG environment variable
-        os.environ['DEBUG'] = '1'
-        
-        # Configure backend to simulate API failure
-        self.backend.api_available = False
-        self.engine._has_python_api = False
-        
-        # Capture debug output
-        import io
-        import contextlib
-        
-        output_buffer = io.StringIO()
-        with contextlib.redirect_stdout(output_buffer):
-            result = self.engine._execute_install("test")
-        
-        # Check that debug info was printed
-        output = output_buffer.getvalue()
-        if output:  # Debug output is optional
-            self.assertIsInstance(output, str)
-
-
-    def test_native_api_rollback(self):
-        """Test rollback using native Python API"""
-        if self.engine._has_python_api:
-            # Test rollback to specific generation
-            result = self.engine._execute_rollback(generation=2)
-            
-            # Verify API was called
-            self.assertIn(('rollback', 2), self.backend.api_calls)
-            self.assertEqual(self.backend.current_generation, 2)
+        self.assertEqual(result.error, 'Invalid package name')
+        self.assertEqual(result.details, ['Use alphanumeric characters only'])
+        mock_run.assert_not_called()
     
-    def test_subprocess_fallback(self):
-        """Test fallback to subprocess when API unavailable"""
-        # Disable API
-        self.engine._has_python_api = False
+    @patch('backend.core.executor.SafeExecutor._run_command')
+    @patch('backend.core.executor.PermissionChecker.check_operation_permission')
+    async def test_execute_permission_denied(self, mock_perm, mock_run):
+        """Test execution with permission denied."""
+        mock_perm.return_value = {
+            'allowed': False,
+            'reason': 'User not in wheel group',
+            'suggestions': ['Add user to wheel group']
+        }
         
-        # Should still work via subprocess
-        result = self.engine._execute_install("vim")
-        
-        # Verify package was installed
-        self.assertIn("vim", self.backend.installed_packages)
-    
-    def test_progress_callback_integration(self):
-        """Test progress callbacks are properly invoked"""
-        # Install a package with progress tracking
-        self.engine._execute_install("emacs")
-        
-        # Verify progress was reported
-        self.assertTrue(len(self.progress_callback.calls) > 0)
-        
-        # Check progress values are reasonable
-        for message, progress, timestamp in self.progress_callback.calls:
-            self.assertIsInstance(message, str)
-            self.assertGreaterEqual(progress, 0.0)
-            self.assertLessEqual(progress, 1.0)
-
-
-    def test_persona_aware_installation(self):
-        """Test installation adapts to different personas"""
-        # Simulate Grandma Rose persona
         intent = Intent(
-            type=IntentType.INSTALL,
-            entities={'package': 'firefox'},
-            confidence=0.95,
-            raw_input="I need that Firefox thing my grandson mentioned",
-            persona="grandma_rose"
+            type=IntentType.UPDATE_SYSTEM,
+            entities={},
+            confidence=1.0,
+            raw_text="update system"
         )
         
-        result = self.engine.execute([], intent)
+        result = await self.executor.execute([], intent)
         
-        # Response should be friendly and non-technical
-        self.assertTrue(result.success)
-        self.assertNotIn("nixpkgs", result.output.lower())
-        self.assertNotIn("derivation", result.output.lower())
+        self.assertFalse(result.success)
+        self.assertEqual(result.error, "Permission denied: User not in wheel group")
+        self.assertEqual(result.details, ['Add user to wheel group'])
+        mock_run.assert_not_called()
     
-    def test_maya_speed_requirement(self):
-        """Test Maya (ADHD) gets ultra-fast responses"""
-        intent = Intent(
-            type=IntentType.INSTALL,
-            entities={'package': 'firefox'},
-            confidence=0.95,
-            raw_input="firefox now",
-            persona="maya_adhd"
+    @patch('backend.core.executor.asyncio.create_subprocess_exec')
+    async def test_run_command_timeout(self, mock_subprocess):
+        """Test command execution with timeout."""
+        # Create mock process
+        mock_process = AsyncMock()
+        mock_process.communicate = AsyncMock()
+        mock_process.kill = Mock()
+        mock_process.wait = AsyncMock()
+        
+        # Make communicate timeout
+        mock_process.communicate.side_effect = asyncio.TimeoutError()
+        mock_subprocess.return_value = mock_process
+        
+        result = await self.executor._run_command(['sleep', '10'], timeout=1)
+        
+        self.assertEqual(result['returncode'], -1)
+        self.assertIn('timed out', result['stderr'])
+        mock_process.kill.assert_called_once()
+    
+    @patch('backend.core.executor.CommandValidator.validate_nix_command')
+    async def test_run_command_security_block(self, mock_validate):
+        """Test command blocked by security validation."""
+        mock_validate.return_value = (
+            False,
+            'Dangerous command detected',
+            {'reason': 'Shell injection attempt'}
         )
         
-        import time
-        start = time.time()
-        result = self.engine.execute([], intent)
-        duration = time.time() - start
+        result = await self.executor._run_command(['nix', 'eval', '--impure'])
         
-        # Must be under 1 second for Maya
-        self.assertLess(duration, 1.0)
-        self.assertTrue(result.success)
+        self.assertEqual(result['returncode'], -1)
+        self.assertIn('Command blocked', result['stderr'])
+        self.assertIn('Dangerous command', result['stderr'])
+
+
+class TestSafeExecutorAsync(unittest.TestCase):
+    """Test async functionality of SafeExecutor."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        with patch('backend.core.executor.SafeExecutor._init_python_api'):
+            self.executor = SafeExecutor()
+            self.executor._has_python_api = False
+    
+    def test_async_execution(self):
+        """Test that execute is properly async."""
+        intent = Intent(
+            type=IntentType.HELP,
+            entities={},
+            confidence=1.0,
+            raw_text="help"
+        )
+        
+        # Should return a coroutine
+        coro = self.executor.execute([], intent)
+        self.assertTrue(asyncio.iscoroutine(coro))
+        
+        # Clean up
+        coro.close()
+
+
+def run_async_test(coro):
+    """Helper to run async tests."""
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':

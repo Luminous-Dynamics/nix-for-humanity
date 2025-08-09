@@ -20,7 +20,7 @@ for name in dir(models.Profile):
         try:
             sig = inspect.signature(method)
             print(f"  {name}{sig}")
-        except:
+        except Exception:
             print(f"  {name}()")
 
 # Check Profile creation

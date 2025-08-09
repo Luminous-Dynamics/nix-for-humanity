@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Comprehensive training pipeline for Nix expert model
 Includes theory, documentation, best practices, and practical examples
 """
@@ -46,7 +47,7 @@ Always prefer declarative approaches and explain the 'why' behind recommendation
         try:
             subprocess.run(["ollama", "--version"], check=True, capture_output=True)
             print("✓ Ollama is installed")
-        except:
+        except Exception:
             print("❌ Ollama not found. Please install it first.")
             return False
         

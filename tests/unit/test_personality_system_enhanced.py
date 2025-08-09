@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced unit tests for the PersonalitySystem component
+Enhanced unit tests for the ResponseGenerator component
 Tests all personality styles, adaptation logic, and user preferences
 """
 
@@ -11,15 +11,15 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.personality_system import PersonalitySystem, PersonalityStyle
+from nix_humanity.core.responses import ResponseGenerator, PersonalityStyle
 
 
-class TestPersonalitySystemEnhanced(unittest.TestCase):
-    """Enhanced tests for the PersonalitySystem component"""
+class TestResponseGeneratorEnhanced(unittest.TestCase):
+    """Enhanced tests for the ResponseGenerator component"""
     
     def setUp(self):
-        """Create PersonalitySystem instance for testing"""
-        self.ps = PersonalitySystem()
+        """Create ResponseGenerator instance for testing"""
+        self.ps = ResponseGenerator()
         
     def test_initialization(self):
         """Test default initialization"""
@@ -27,7 +27,7 @@ class TestPersonalitySystemEnhanced(unittest.TestCase):
         self.assertEqual(self.ps.user_preferences, {})
         
         # Test with custom default
-        ps_minimal = PersonalitySystem(PersonalityStyle.MINIMAL)
+        ps_minimal = ResponseGenerator(PersonalityStyle.MINIMAL)
         self.assertEqual(ps_minimal.current_style, PersonalityStyle.MINIMAL)
         
     def test_minimal_style(self):

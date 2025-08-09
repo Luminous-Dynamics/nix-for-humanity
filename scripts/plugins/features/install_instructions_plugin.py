@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict
 Install Instructions Plugin
 Provides installation instructions for packages without actually executing
 """

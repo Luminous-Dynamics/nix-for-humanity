@@ -30,6 +30,16 @@ This architecture is also a direct descendant of modern Affective Tutoring Syste
 
 The convergence of these advanced modeling techniques—a structured skill graph, granular knowledge tracing, dynamic affective state inference, and value-aligned reinforcement learning—results in a system that transcends the traditional definition of a "user model." The architecture culminates in the creation of a comprehensive cognitive-affective digital twin of the user's learning and well-being processes. This reframing is not merely metaphorical; it is an accurate architectural description with profound implications for the project's scope and responsibilities.
 
+#### Research Enhancement: Symbiotic Knowledge Graph Foundation
+The Oracle research introduces a revolutionary four-layer Symbiotic Knowledge Graph (SKG) architecture that provides a concrete implementation framework for our digital twin concept:
+
+1. **Ontological Layer**: Provides the schema and constraints for NixOS domain knowledge
+2. **Episodic Layer**: Captures the temporal history of user-AI interactions  
+3. **Phenomenological Layer**: Models the user's subjective experience and internal states
+4. **Metacognitive Layer**: Enables AI self-awareness and transparent reasoning
+
+This SKG architecture directly enhances our digital twin by providing structured, queryable representations at multiple levels of abstraction.
+
 The construction of this digital twin can be understood through the synthesis of its constituent parts:
 
 - A traditional ITS Student Model tracks what a user knows.⁶ The proposed system elevates this by modeling skill mastery with high temporal resolution and probabilistic certainty using Bayesian Knowledge Tracing (BKT). This model, mapped onto the structured domain of the NixOS Skill Graph, forms the **cognitive twin**—a detailed, dynamic representation of the user's knowledge state.
@@ -172,12 +182,23 @@ The DBN will consist of three types of nodes:
 - **Cognitive_Load**: The amount of working memory resources being used.
 - **Fatigue**: Mental or physical tiredness affecting performance.
 
-**Observable Evidence Nodes**: These are the quantifiable data points that the system can collect directly from the user's interaction. These observations serve as evidence to update the beliefs about the hidden states. Examples include:
+**Observable Evidence Nodes**: These are the quantifiable data points that the system can collect directly from the user's interaction. These observations serve as evidence to update the beliefs about the hidden states. 
+
+#### Research Enhancement: ActivityWatch Integration
+The Oracle research recommends ActivityWatch as the ideal foundation for collecting these behavioral signals:
+- **Privacy-First**: All data processing happens locally, aligning with our consciousness-first principles
+- **Extensible**: Custom watchers can be developed for NixOS-specific activities
+- **REST API**: Clean integration at localhost:5600 for real-time data access
+
+Examples of observable evidence nodes:
 - **Time_to_Task_Completion**: Unusually long times may indicate struggle.
 - **Error_Frequency**: A high rate of errors is a strong indicator of difficulty or anxiety.
 - **Command_Usage_Velocity**: A steady, high rate of command execution may indicate flow.
 - **Context_Switch_Frequency**: Frequent switching to other applications (e.g., a web browser) can signal distraction or boredom.
 - **Keystroke_Latency** and **Backspace_Frequency**: Hesitation and frequent corrections can be proxies for uncertainty and cognitive load.
+- **Window_Focus_Patterns** (via ActivityWatch): Which applications are active and for how long
+- **AFK_Patterns** (via ActivityWatch): When the user steps away, potentially indicating frustration or need for reflection
+- **Web_Research_Behavior** (via ActivityWatch): Documentation lookups may indicate learning or confusion
 
 **Context Nodes**: These nodes provide additional context that influences the probability of being in a particular hidden state. They act as conditioning variables. Examples include:
 - **Time_of_Day** and **Day_of_Week**: Performance and mood can have cyclical patterns.

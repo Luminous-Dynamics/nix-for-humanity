@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional
 Automated Coverage Monitoring System - Nix for Humanity
 
 This script provides comprehensive coverage monitoring and reporting for the
@@ -430,7 +431,7 @@ class CoverageMonitor:
                 capture_output=True, text=True, cwd=self.project_root
             )
             return result.stdout.strip() if result.returncode == 0 else None
-        except:
+        except Exception:
             return None
     
     def _get_git_branch(self) -> Optional[str]:
@@ -441,7 +442,7 @@ class CoverageMonitor:
                 capture_output=True, text=True, cwd=self.project_root
             )
             return result.stdout.strip() if result.returncode == 0 else None
-        except:
+        except Exception:
             return None
     
     def print_report(self, report: CoverageReport):

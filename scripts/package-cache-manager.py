@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, List, Optional
 Intelligent Package Cache Manager for Nix for Humanity
 Builds toward the AI partner vision by learning from user behavior
 """

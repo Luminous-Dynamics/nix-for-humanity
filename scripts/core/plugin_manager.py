@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional
 Plugin Manager for Nix for Humanity
 Simplified plugin management for ask-nix command
 """

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict, Optional
 Performance Benchmarking System - Nix for Humanity
 
 This script provides comprehensive performance benchmarking for all core operations,
@@ -161,7 +162,7 @@ class PerformanceBenchmark:
         for i in range(warmup_runs):
             try:
                 subprocess.run(command, capture_output=True, cwd=self.project_root, timeout=10)
-            except:
+            except Exception:
                 pass  # Ignore warmup failures
         
         # Measurement runs

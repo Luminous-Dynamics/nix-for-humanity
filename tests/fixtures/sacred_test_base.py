@@ -1,4 +1,5 @@
 """
+from typing import Dict, List
 Sacred test base class for consciousness-first testing.
 
 This base class provides common fixtures and assertions that honor the
@@ -10,7 +11,7 @@ from typing import Dict, Any, List
 from dataclasses import dataclass
 
 from src.nix_for_humanity.core.interface import Response
-from tests.fixtures.consciousness_test_backend import ConsciousnessTestBackend
+from tests.fixtures.sacred_test_base import ConsciousnessTestBackend
 
 
 @dataclass
@@ -279,7 +280,7 @@ class SacredTestBase:
         responses = []
         
         for command in commands:
-            query = Query(text=command, user_id=persona.name)
+            query = {"query": command, "user_id": persona.name}
             response = backend.process_query(query)
             responses.append(response)
             

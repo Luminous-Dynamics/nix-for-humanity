@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Learning Mode Engine - Step-by-step guidance with examples for every command
 
 Designed for users like Carlos who need clear examples and explanations

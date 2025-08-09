@@ -11,16 +11,16 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.intent_engine import IntentEngine
-from nix_for_humanity.core.interface import Intent, IntentType
+from nix_humanity.core.intents import IntentRecognizer
+from nix_humanity.core.interface import Intent, IntentType
 
 
 class TestNLPComprehensive(unittest.TestCase):
     """Comprehensive NLP Engine tests"""
     
     def setUp(self):
-        """Create IntentEngine instance"""
-        self.engine = IntentEngine()
+        """Create IntentRecognizer instance"""
+        self.engine = IntentRecognizer()
         
     def test_typo_tolerance_firefox(self):
         """Test tolerance for common Firefox typos"""
@@ -36,18 +36,18 @@ class TestNLPComprehensive(unittest.TestCase):
             with self.subTest(typo=typo):
                 intent = self.engine.recognize(typo)
                 # Should still recognize as install intent
-                self.assertEqual(intent.type, IntentType.INSTALL)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
                 # Should extract some form of the package name
-                self.assertIsNotNone(intent.target)
+                self.assertIsNotNone(intent.entities.get("package"))
                 
     def test_conversational_patterns(self):
         """Test natural conversational patterns"""
         test_cases = [
-            ("can you please install firefox for me", IntentType.INSTALL, "firefox"),
-            ("would you mind adding vim", IntentType.INSTALL, "vim"),
-            ("could i get python please", IntentType.INSTALL, "python3"),
+            ("can you please install firefox for me", IntentType.INSTALL_PACKAGE, "firefox"),
+            ("would you mind adding vim", IntentType.INSTALL_PACKAGE, "vim"),
+            ("could i get python please", IntentType.INSTALL_PACKAGE, "python3"),
             ("is it possible to remove docker", IntentType.REMOVE, "docker"),
-            ("can you show me what's installed", IntentType.INFO, None),
+            ("can you show me what's installed", IntentType.EXPLAIN, None),
             ("help me understand updates", IntentType.HELP, None),
         ]
         
@@ -71,9 +71,9 @@ class TestNLPComprehensive(unittest.TestCase):
         for text, expected_package in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
                 # The target should be the canonical package name
-                self.assertEqual(intent.target, expected_package)
+                self.assertEqual(intent.entities.get("package"), expected_package)
                 
     def test_complex_remove_patterns(self):
         """Test complex removal patterns"""
@@ -89,7 +89,7 @@ class TestNLPComprehensive(unittest.TestCase):
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
                 self.assertEqual(intent.type, IntentType.REMOVE)
-                self.assertIsNotNone(intent.target)
+                self.assertIsNotNone(intent.entities.get("package"))
                 
     def test_update_variations(self):
         """Test different ways to ask for updates"""
@@ -105,16 +105,16 @@ class TestNLPComprehensive(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.UPDATE)
+                self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM)
                 
     def test_search_information_patterns(self):
         """Test search and information gathering patterns"""
         test_cases = [
-            ("search for text editors", IntentType.SEARCH, "text editors"),
-            ("find programming languages", IntentType.SEARCH, "programming languages"),
-            ("what is available for browsing", IntentType.SEARCH, "available browsing"),
-            ("show me all editors", IntentType.SEARCH, "editors"),
-            ("is there a good terminal emulator", IntentType.SEARCH, "good terminal emulator"),
+            ("search for text editors", IntentType.SEARCH_PACKAGE, "text editors"),
+            ("find programming languages", IntentType.SEARCH_PACKAGE, "programming languages"),
+            ("what is available for browsing", IntentType.SEARCH_PACKAGE, "available browsing"),
+            ("show me all editors", IntentType.SEARCH_PACKAGE, "editors"),
+            ("is there a good terminal emulator", IntentType.SEARCH_PACKAGE, "good terminal emulator"),
         ]
         
         for text, expected_type, expected_target in test_cases:
@@ -122,7 +122,7 @@ class TestNLPComprehensive(unittest.TestCase):
                 intent = self.engine.recognize(text)
                 self.assertEqual(intent.type, expected_type)
                 if expected_target:
-                    self.assertIsNotNone(intent.target)
+                    self.assertIsNotNone(intent.entities.get("package"))
                     
     def test_help_patterns(self):
         """Test help request patterns"""
@@ -158,7 +158,7 @@ class TestNLPComprehensive(unittest.TestCase):
     def test_ambiguous_inputs(self):
         """Test handling of ambiguous inputs"""
         ambiguous_cases = [
-            "install", # Missing package
+            "install_package", # Missing package
             "remove", # Missing package
             "update firefox", # Ambiguous - update firefox or system?
             "get", # Too vague
@@ -183,8 +183,8 @@ class TestNLPComprehensive(unittest.TestCase):
         for text, expected_package in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_package)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_package)
                 
     def test_package_alias_resolution(self):
         """Test comprehensive package alias resolution"""
@@ -201,8 +201,8 @@ class TestNLPComprehensive(unittest.TestCase):
         for text, expected_alias in alias_tests:
             with self.subTest(text=text, expected=expected_alias):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_alias)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_alias)
                 
     def test_metadata_preservation(self):
         """Test that metadata is properly preserved"""
@@ -218,15 +218,15 @@ class TestNLPComprehensive(unittest.TestCase):
         # "get rid of" should be REMOVE, not INSTALL
         intent = self.engine.recognize("get rid of firefox")
         self.assertEqual(intent.type, IntentType.REMOVE)
-        self.assertEqual(intent.target, "firefox")
+        self.assertEqual(intent.entities.get("package"), "firefox")
         
         # "what is installed" should be INFO, not SEARCH
         intent = self.engine.recognize("what is installed")
-        self.assertEqual(intent.type, IntentType.INFO)
+        self.assertEqual(intent.type, IntentType.EXPLAIN)
         
         # "show me installed" should be INFO, not SEARCH  
         intent = self.engine.recognize("show me installed")
-        self.assertEqual(intent.type, IntentType.INFO)
+        self.assertEqual(intent.type, IntentType.EXPLAIN)
         
     def test_error_recovery(self):
         """Test error recovery from malformed inputs"""
@@ -273,8 +273,8 @@ class TestNLPComprehensive(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, "firefox")
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), "firefox")
                 
     def test_whitespace_tolerance(self):
         """Test tolerance for various whitespace patterns"""
@@ -288,16 +288,16 @@ class TestNLPComprehensive(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=repr(text)):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, "firefox")
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), "firefox")
 
 
 class TestNLPEdgeCases(unittest.TestCase):
     """Test edge cases and boundary conditions"""
     
     def setUp(self):
-        """Create IntentEngine instance"""
-        self.engine = IntentEngine()
+        """Create IntentRecognizer instance"""
+        self.engine = IntentRecognizer()
         
     def test_extremely_long_input(self):
         """Test handling of very long inputs"""
@@ -306,7 +306,7 @@ class TestNLPEdgeCases(unittest.TestCase):
         
         # Should handle gracefully
         self.assertIsNotNone(intent)
-        self.assertEqual(intent.type, IntentType.INSTALL)
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
         
     def test_special_characters(self):
         """Test handling of special characters"""
@@ -321,7 +321,7 @@ class TestNLPEdgeCases(unittest.TestCase):
         for text in special_cases:
             with self.subTest(text=text):
                 intent = self.engine.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
                 
     def test_unicode_handling(self):
         """Test handling of unicode characters"""
@@ -350,7 +350,7 @@ class TestNLPEdgeCases(unittest.TestCase):
                 intent = self.engine.recognize(text)
                 # Should extract some reasonable intent
                 self.assertIsNotNone(intent)
-                self.assertEqual(intent.type, IntentType.INSTALL)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
                 
 
 if __name__ == '__main__':

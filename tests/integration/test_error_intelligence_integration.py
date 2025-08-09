@@ -8,7 +8,7 @@ including XAI explanations and persona adaptation.
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from src.nix_for_humanity.backend.enhanced_backend import EnhancedBackend
+from nix_humanity.core.backend import EnhancedBackend
 from src.nix_for_humanity.core.types import (
     Request, Response, PersonalityStyle, IntentType
 )
@@ -60,13 +60,13 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
             
             # Check educational error content
             edu_error = response.educational_error
-            self.assertTrue(edu_error.headline  # Has user-friendly headline)
-            self.assertTrue(edu_error.learning_point  # Has learning content)
-            self.assertGreater(len(edu_error.solutions), 0  # Has solutions)
+            self.assertTrue(edu_error.headline)  # Has user-friendly headline
+            self.assertTrue(edu_error.learning_point)  # Has learning content
+            self.assertGreater(len(edu_error.solutions), 0)  # Has solutions
             
             # Verify persona adaptation (Grandma Rose gets simple language)
-            self.assertIn('sudo' not, edu_error.explanation.lower()  # Avoids technical terms)
-            self.assertIn(any('administrator', s.lower() for s in edu_error.solutions))
+            self.assertNotIn('sudo', edu_error.explanation.lower())  # Avoids technical terms
+            self.assertTrue(any('administrator' in s.lower() for s in edu_error.solutions))
     
     def test_package_not_found_with_typo_correction(self, backend):
         """Test package not found error with typo detection"""
@@ -86,11 +86,11 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
         
         edu_error = response.educational_error
         self.assertIn('firefox', ' '.join(edu_error.solutions).lower())
-        self.assertIn(edu_error.confidence_message  # Shows confidence, suggestion)
+        self.assertTrue(edu_error.confidence_message)  # Shows confidence, suggestion
         
         # Maya gets minimal, action-focused content
-        self.assertLess(len(edu_error.explanation.split()), 50  # Brief explanation)
-        self.assertTrue(edu_error.solutions[0].startswith('install firefox')  # Direct action)
+        self.assertLess(len(edu_error.explanation.split()), 50)  # Brief explanation
+        self.assertTrue(edu_error.solutions[0].startswith('install firefox'))  # Direct action
     
     def test_preventive_suggestions_before_error(self, backend):
         """Test preventive suggestions are generated"""
@@ -121,8 +121,8 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
             self.assertGreater(len(response.preventive_suggestions), 0)
             
             suggestion = response.preventive_suggestions[0]
-            self.assertGreater(suggestion.urgency, 0.7  # High urgency)
-            self.assertIn('garbage', suggestion.action  # Actionable advice)
+            self.assertGreater(suggestion.urgency, 0.7)  # High urgency
+            self.assertIn('garbage', suggestion.action)  # Actionable advice
     
     def test_xai_error_explanation_integration(self, backend):
         """Test XAI explains why errors occurred"""
@@ -151,9 +151,9 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
             
             # Dr. Sarah gets technical details
             edu_error = response.educational_error
-            self.assertIn('attribute', edu_error.explanation  # Technical terms preserved)
-            self.assertTrue(edu_error.diagram  # May include visual diagram)
-            self.assertIn(any('overlay', s or 'override' in s for s in edu_error.solutions))
+            self.assertIn('attribute', edu_error.explanation)  # Technical terms preserved
+            self.assertTrue(edu_error.diagram)  # May include visual diagram
+            self.assertTrue(any('overlay' in s or 'override' in s for s in edu_error.solutions))
     
     def test_error_learning_and_improvement(self, backend):
         """Test system learns from error resolutions"""
@@ -280,8 +280,8 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
         
         complex_error = """
         error: The option `services.xserver.displayManager.plasma5' does not exist.
-        Definition `/etc/nixos/configuration.nix:42' 
-        """
+        Definition `/etc/nixos/configuration.nix:42',
+    """
         
         with patch.object(backend.executor, 'execute') as mock_execute:
             mock_execute.return_value = Mock(
@@ -293,13 +293,13 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
             response = backend.process(request)
             
             edu_error = response.educational_error
-            self.assertGreater(len(edu_error.solutions), = 2  # Multiple solutions)
-            self.assertTrue(edu_error.learning_point  # Educational content)
-            self.assertTrue(edu_error.examples  # Concrete examples for Carlos)
+            self.assertGreater(len(edu_error.solutions), 2)  # Multiple solutions
+            self.assertTrue(edu_error.learning_point)  # Educational content
+            self.assertTrue(edu_error.examples)  # Concrete examples for Carlos
             
             # Solutions should be ranked by confidence
-            self.assertIn(any('plasma6', s for s in edu_error.solutions)  # Suggest upgrade)
-            self.assertIn(any('remove', s for s in edu_error.solutions)  # Or removal)
+            self.assertTrue(any('plasma6' in s for s in edu_error.solutions))  # Suggest upgrade
+            self.assertTrue(any('remove' in s for s in edu_error.solutions))  # Or removal
 
 
 @pytest.mark.asyncio

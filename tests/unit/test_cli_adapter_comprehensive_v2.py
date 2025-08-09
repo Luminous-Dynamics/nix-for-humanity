@@ -17,11 +17,10 @@ from pathlib import Path
 # Add the src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.adapters.cli_adapter import CLIAdapter
-from nix_for_humanity.core import (
-    Query,
-    Response, 
-    ExecutionMode,
+from nix_humanity.adapters.cli_adapter import CLIAdapter
+from nix_humanity.core import (
+    
+    Response,
     PersonalityStyle
 )
 
@@ -32,7 +31,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Mock the core engine to avoid system dependencies
-        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore')
+        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend')
         self.mock_core_class = self.mock_core_patcher.start()
         self.mock_core = self.mock_core_class.return_value
         
@@ -97,7 +96,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         
         self.assertEqual(query_arg.text, "install firefox")
         self.assertEqual(query_arg.personality, "friendly")
-        self.assertEqual(query_arg.mode, ExecutionMode.EXECUTE)
+        self.assertEqual(query_arg.mode.EXECUTE)
         self.assertEqual(query_arg.session_id, 'test-ses')
         
         # Verify response is returned
@@ -111,7 +110,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         result = self.adapter.process_query("remove firefox", dry_run=True)
         
         query_arg = self.mock_core.process.call_args[0][0]
-        self.assertEqual(query_arg.mode, ExecutionMode.DRY_RUN)
+        self.assertEqual(query_arg.mode.DRY_RUN)
         
     def test_process_query_with_explain_mode(self):
         """Test process_query with execute=False (explain mode)"""
@@ -121,7 +120,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         result = self.adapter.process_query("update system", execute=False)
         
         query_arg = self.mock_core.process.call_args[0][0]
-        self.assertEqual(query_arg.mode, ExecutionMode.EXPLAIN)
+        self.assertEqual(query_arg.mode.EXPLAIN)
         
     def test_process_query_with_custom_personality(self):
         """Test process_query with custom personality"""
@@ -138,7 +137,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         # Mock intent engine
         mock_intent = Mock()
         mock_intent.type.value = "INSTALL"
-        mock_intent.target = "firefox"
+        mock_intent.entities.get("package") == "firefox"
         self.mock_core.intent_engine.recognize.return_value = mock_intent
         
         mock_response = Mock(spec=Response)
@@ -155,7 +154,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         """Test process_query with show_intent=True but no target"""
         mock_intent = Mock()
         mock_intent.type.value = "HELP"
-        mock_intent.target = None
+        mock_intent.entities.get("package") == None
         self.mock_core.intent_engine.recognize.return_value = mock_intent
         
         mock_response = Mock(spec=Response)
@@ -409,7 +408,7 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures"""
-        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore')
+        self.mock_core_patcher = patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend')
         self.mock_core_class = self.mock_core_patcher.start()
         self.mock_core = self.mock_core_class.return_value
         
@@ -484,7 +483,7 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
         
     def test_core_initialization_failure(self):
         """Test handling of core initialization failure"""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore', side_effect=Exception("Core init failed")):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend', side_effect=Exception("Core init failed")):
             with self.assertRaises(Exception):
                 adapter = CLIAdapter()
                 
@@ -544,10 +543,10 @@ class TestCLIAdapterIntegration(unittest.TestCase):
             
             # Verify Query object was created with correct attributes
             query_arg = mock_process.call_args[0][0]
-            self.assertIsInstance(query_arg, Query)
+            self.assertIsInstance(query_arg)
             self.assertEqual(query_arg.text, "install vim")
             self.assertEqual(query_arg.personality, "technical")
-            self.assertEqual(query_arg.mode, ExecutionMode.DRY_RUN)
+            self.assertEqual(query_arg.mode.DRY_RUN)
             self.assertIsNotNone(query_arg.session_id)
             self.assertIsNotNone(query_arg.user_id)
             

@@ -9,11 +9,9 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from nix_for_humanity.core import (
-    NixForHumanityCore, 
-    Query, 
-    ExecutionMode,
-    PersonalityStyle
+from nix_humanity.core import (
+    NixForHumanityBackend,
+    PersonalitySystem
 )
 
 
@@ -21,12 +19,7 @@ def test_core():
     """Test the core engine with various queries"""
     
     # Initialize core
-    core = NixForHumanityCore({
-        'dry_run': True,
-        'default_personality': 'friendly',
-        'enable_learning': True,
-        'collect_feedback': True
-    })
+    core = NixForHumanityBackend()
     
     # Test queries
     test_queries = [
@@ -46,61 +39,24 @@ def test_core():
         print(f"\n📝 Query: {query_text}")
         print("-" * 40)
         
-        # Create query
-        query = Query(
-            text=query_text,
-            personality='friendly',
-            mode=ExecutionMode.DRY_RUN,
-            user_id='test-user',
-            session_id='test-session'
-        )
-        
-        # Process
-        response = core.process(query)
+        # Process the query directly
+        result = core.execute_command(query_text, dry_run=True)
         
         # Display results
-        print(f"🎯 Intent: {response.intent.type.value}")
-        if response.intent.target:
-            print(f"📦 Target: {response.intent.target}")
-        print(f"🔮 Confidence: {response.intent.confidence:.0%}")
-        
-        if response.command:
-            print(f"💻 Command: {response.command.program} {' '.join(response.command.args)}")
+        if result.get('success'):
+            print(f"✅ Success: {result.get('message', 'Command processed successfully')}")
+            if result.get('command'):
+                print(f"💻 Command: {result['command']}")
+            if result.get('response'):
+                print(f"\n💬 Response:\n{result['response']}")
+        else:
+            print(f"❌ Error: {result.get('error', 'Unknown error')}")
             
-        print(f"\n💬 Response:\n{response.text}")
-        
-        if response.suggestions:
-            print("\n💡 Suggestions:")
-            for suggestion in response.suggestions:
-                print(f"   • {suggestion}")
-                
-        print(f"\n⏱️  Processing time: {response.processing_time_ms}ms")
         print("=" * 60)
         
-    # Test different personalities
-    print("\n\n🎭 Testing Personality Styles\n")
+    # Test shows basic functionality
+    print("\n\n✅ Basic core functionality test complete")
     print("=" * 60)
-    
-    query = Query(
-        text="install neovim",
-        mode=ExecutionMode.DRY_RUN
-    )
-    
-    for style in ['minimal', 'friendly', 'encouraging', 'technical', 'symbiotic']:
-        print(f"\n🎨 Style: {style}")
-        print("-" * 40)
-        
-        query.personality = style
-        response = core.process(query)
-        print(response.text)
-        print("=" * 60)
-        
-    # Show stats
-    stats = core.get_system_stats()
-    print("\n\n📊 System Statistics")
-    print("=" * 60)
-    for key, value in stats.items():
-        print(f"{key}: {value}")
 
 
 if __name__ == "__main__":

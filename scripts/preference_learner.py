@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, List, Optional
 Preference Learner for Nix for Humanity
 Phase 1 implementation of local preference learning
 """

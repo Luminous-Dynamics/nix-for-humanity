@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Format processed NixOS documentation for different training approaches
 Supports multiple formats: Alpaca, ShareGPT, completion, and Ollama modelfile
 """

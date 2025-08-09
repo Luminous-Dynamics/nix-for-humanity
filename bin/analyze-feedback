@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+Analyze feedback session results and generate summary
+"""
+
+import json
+import sys
+from pathlib import Path
+from collections import defaultdict, Counter
+import statistics
+
+class FeedbackAnalyzer:
+    def __init__(self):
+        self.project_root = Path(__file__).parent.parent
+        self.feedback_files = list(self.project_root.glob("feedback_*.json"))
+        self.results = []
+        
+    def load_feedback(self):
+        """Load all feedback JSON files"""
+        for file in self.feedback_files:
+            try:
+                with open(file, 'r') as f:
+                    data = json.load(f)
+                    self.results.append(data)
+            except Exception as e:
+                print(f"Error loading {file}: {e}")
+                
+        print(f"Loaded {len(self.results)} feedback sessions")
+        
+    def calculate_averages(self):
+        """Calculate average ratings"""
+        ratings = defaultdict(list)
+        
+        # Collect all ratings
+        for session in self.results:
+            # Final feedback ratings
+            for key in ['overall_experience', 'ease_of_use', 'clarity', 'trust', 'speed']:
+                if key in session.get('final_feedback', {}):
+                    ratings[key].append(session['final_feedback'][key])
+                    
+            # Scenario ratings
+            for scenario_key, scenario_data in session.get('scenarios', {}).items():
+                for response_key, response_data in scenario_data.get('responses', {}).items():
+                    if 'rating' in response_data:
+                        scenario_name = f"{scenario_key}_{response_key}"
+                        ratings[scenario_name].append(response_data['rating'])
+                        
+        # Calculate averages
+        averages = {}
+        for key, values in ratings.items():
+            if values:
+                averages[key] = statistics.mean(values)
+                
+        return averages
+        
+    def analyze_text_responses(self):
+        """Analyze open-ended responses"""
+        frustrations = []
+        favorites = []
+        missing = []
+        changes = []
+        
+        for session in self.results:
+            feedback = session.get('final_feedback', {})
+            
+            if 'biggest_frustration' in feedback:
+                frustrations.append(feedback['biggest_frustration'])
+            if 'favorite_feature' in feedback:
+                favorites.append(feedback['favorite_feature'])
+            if 'missing_features' in feedback:
+                missing.append(feedback['missing_features'])
+            if 'one_change' in feedback:
+                changes.append(feedback['one_change'])
+                
+        return {
+            'frustrations': frustrations,
+            'favorites': favorites,
+            'missing': missing,
+            'changes': changes
+        }
+        
+    def analyze_recommendations(self):
+        """Analyze recommendation rates"""
+        recommendations = defaultdict(int)
+        totals = defaultdict(int)
+        
+        for session in self.results:
+            recs = session.get('final_feedback', {}).get('recommendations', {})
+            for key, value in recs.items():
+                totals[key] += 1
+                if value:
+                    recommendations[key] += 1
+                    
+        # Calculate percentages
+        percentages = {}
+        for key, count in recommendations.items():
+            if totals[key] > 0:
+                percentages[key] = (count / totals[key]) * 100
+                
+        return percentages
+        
+    def generate_summary(self):
+        """Generate summary report"""
+        self.load_feedback()
+        
+        if not self.results:
+            print("No feedback sessions found!")
+            return
+            
+        averages = self.calculate_averages()
+        text_analysis = self.analyze_text_responses()
+        recommendations = self.analyze_recommendations()
+        
+        print("\n" + "=" * 60)
+        print("NIX FOR HUMANITY - FEEDBACK ANALYSIS SUMMARY")
+        print("=" * 60)
+        
+        print(f"\nTotal Sessions: {len(self.results)}")
+        
+        print("\n📊 AVERAGE RATINGS:")
+        for key in ['overall_experience', 'ease_of_use', 'clarity', 'trust', 'speed']:
+            if key in averages:
+                rating = averages[key]
+                stars = "⭐" * int(rating)
+                print(f"  {key.replace('_', ' ').title()}: {rating:.1f}/5 {stars}")
+                
+        print("\n👥 RECOMMENDATION RATES:")
+        for key, percentage in recommendations.items():
+            print(f"  {key.replace('_', ' ').title()}: {percentage:.0f}%")
+            
+        print("\n😤 TOP FRUSTRATIONS:")
+        frustration_counter = Counter(text_analysis['frustrations'])
+        for frustration, count in frustration_counter.most_common(3):
+            if frustration:
+                print(f"  - {frustration} ({count} mentions)")
+                
+        print("\n💚 TOP FAVORITE FEATURES:")
+        favorite_counter = Counter(text_analysis['favorites'])
+        for favorite, count in favorite_counter.most_common(3):
+            if favorite:
+                print(f"  - {favorite} ({count} mentions)")
+                
+        print("\n🔧 MOST REQUESTED CHANGES:")
+        change_counter = Counter(text_analysis['changes'])
+        for change, count in change_counter.most_common(3):
+            if change:
+                print(f"  - {change} ({count} mentions)")
+                
+        print("\n" + "=" * 60)
+        print("Full results saved to: FEEDBACK_ANALYSIS.md")
+        
+        # Save detailed analysis
+        self.save_detailed_analysis(averages, text_analysis, recommendations)
+        
+    def save_detailed_analysis(self, averages, text_analysis, recommendations):
+        """Save detailed analysis to file"""
+        output_file = self.project_root / "FEEDBACK_ANALYSIS.md"
+        
+        with open(output_file, 'w') as f:
+            f.write("# Nix for Humanity - Feedback Analysis\n\n")
+            f.write(f"**Sessions Analyzed**: {len(self.results)}\n")
+            f.write(f"**Analysis Date**: {datetime.datetime.now().strftime('%Y-%m-%d')}\n\n")
+            
+            f.write("## Average Ratings\n\n")
+            for key, value in averages.items():
+                f.write(f"- **{key.replace('_', ' ').title()}**: {value:.2f}/5\n")
+                
+            f.write("\n## Recommendations\n\n")
+            for key, value in recommendations.items():
+                f.write(f"- **{key.replace('_', ' ').title()}**: {value:.0f}%\n")
+                
+            f.write("\n## Text Responses\n\n")
+            
+            f.write("### Frustrations\n")
+            for item in text_analysis['frustrations']:
+                if item:
+                    f.write(f"- {item}\n")
+                    
+            f.write("\n### Favorite Features\n")
+            for item in text_analysis['favorites']:
+                if item:
+                    f.write(f"- {item}\n")
+                    
+            f.write("\n### Requested Changes\n")
+            for item in text_analysis['changes']:
+                if item:
+                    f.write(f"- {item}\n")
+
+
+if __name__ == "__main__":
+    import datetime
+    analyzer = FeedbackAnalyzer()
+    analyzer.generate_summary()

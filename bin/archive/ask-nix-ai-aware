@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""
+AI-Aware NixOS Assistant - Includes AI Licensing Advisor
+Combines NixOS knowledge with AI model licensing guidance
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+import os
+
+# Add scripts directory to path
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+sys.path.insert(0, script_dir)
+
+# Import the enhanced engine
+from nix_knowledge_engine_enhanced_wrapper import EnhancedNixOSKnowledgeEngine
+
+class AIAwareNixAssistant:
+    def __init__(self):
+        self.knowledge = EnhancedNixOSKnowledgeEngine()
+        self.personality = 'friendly'  # Can be: minimal, friendly, encouraging, technical
+        
+    def enhance_response(self, response: str, query: str, personality: str) -> str:
+        """Add personality to the factual response"""
+        
+        if personality == 'minimal':
+            # Just return the facts
+            return response
+            
+        elif personality == 'friendly':
+            # Add warm greeting and closing
+            if 'license' in query.lower() or 'ai' in query.lower():
+                enhanced = f"Hi! Great question about AI licensing. {response}\n\nFeel free to ask about other models or use cases! 🚀"
+            else:
+                enhanced = f"Hi there! {response}\n\nLet me know if you need any clarification! 😊"
+            return enhanced
+            
+        elif personality == 'encouraging':
+            # Add encouragement
+            if 'license' in query.lower():
+                enhanced = f"Smart thinking to check licenses first! {response}\n\nYou're being responsible about AI usage - keep it up! 🌟"
+            else:
+                enhanced = f"Great question! {response}\n\nYou're doing awesome learning NixOS! Keep it up! 🌟"
+            return enhanced
+            
+        elif personality == 'technical':
+            # Add technical depth
+            if 'license' in query.lower():
+                enhanced = f"{response}\n\nNote: License compliance is critical for production deployments. Always review the full license text."
+            else:
+                enhanced = f"{response}\n\nNote: This follows NixOS's declarative configuration paradigm."
+            return enhanced
+            
+        return response
+        
+    def answer(self, query: str):
+        """Process query through enhanced knowledge engine with personality"""
+        
+        # Step 1: Extract intent
+        intent = self.knowledge.extract_intent(query)
+        
+        # Step 2: Get accurate solution
+        solution = self.knowledge.get_solution(intent)
+        
+        # Step 3: Format response
+        response = self.knowledge.format_response(intent, solution)
+        
+        # Step 4: Add personality
+        final_response = self.enhance_response(response, query, self.personality)
+        
+        return final_response
+        
+    def set_personality(self, style: str):
+        """Change response personality"""
+        if style in ['minimal', 'friendly', 'encouraging', 'technical']:
+            self.personality = style
+
+def print_usage():
+    """Print usage information"""
+    print("""🤖 AI-Aware NixOS Assistant
+
+Usage: ask-nix-ai-aware [options] 'your question'
+
+Examples:
+  ask-nix-ai-aware 'How do I install Firefox?'
+  ask-nix-ai-aware 'Can I use Llama 2 commercially?'
+  ask-nix-ai-aware 'Which AI model for my startup?'
+  ask-nix-ai-aware 'Is MIT compatible with GPL?'
+
+Options:
+  --minimal     Just the facts
+  --friendly    Warm and helpful (default)
+  --encouraging Supportive for beginners
+  --technical   Detailed explanations
+
+AI Licensing Examples:
+  'What's the license for Mistral-7B?'
+  'Can I use Stable Diffusion in a SaaS?'
+  'Which models are safe for commercial use?'
+  'Tell me about YOLO licensing'
+  'Recommend AI models for business use'
+""")
+
+def main():
+    if len(sys.argv) < 2:
+        print_usage()
+        sys.exit(1)
+    
+    assistant = AIAwareNixAssistant()
+    
+    # Check for personality flags
+    args = sys.argv[1:]
+    if args[0].startswith('--'):
+        if args[0] == '--help':
+            print_usage()
+            sys.exit(0)
+        personality = args[0][2:]
+        assistant.set_personality(personality)
+        args = args[1:]
+    
+    if not args:
+        print("Error: No question provided")
+        sys.exit(1)
+        
+    query = ' '.join(args)
+    response = assistant.answer(query)
+    print(response)
+
+if __name__ == "__main__":
+    main()

@@ -12,6 +12,7 @@ This guide organizes all specialized research by **implementation priority** and
 - **[Voice Interface Research](01-VISION/00-WHITEPAPER-SYMBIOTIC-INTELLIGENCE/03-THE-FLUID-INTERFACE.md#voice-first-interaction)** - pipecat integration for low-latency conversation
 - **[Flow State Protection](01-VISION/00-WHITEPAPER-SYMBIOTIC-INTELLIGENCE/03-THE-FLUID-INTERFACE.md#calculus-of-interruption)** - Calculus of Interruption implementation
 - **[Advanced XAI Integration](02-ARCHITECTURE/09-LEARNING-SYSTEM.md#causal-xai-engine)** - DoWhy framework for transparent reasoning
+- **[ActivityWatch Integration](01-VISION/research/ORACLE_RESEARCH_SYNTHESIS.md#activitywatch-integration)** - Privacy-first activity monitoring for real-time user state
 
 ### 🎨 Core Feature Development (Next 2-4 weeks)
 - **[Multi-Modal Coherence](02-ARCHITECTURE/02-BACKEND-ARCHITECTURE.md#multi-modal-protocol-adaptation)** - Seamless interface switching
@@ -25,11 +26,14 @@ This guide organizes all specialized research by **implementation priority** and
 - **[Dynamic User Modeling](02-ARCHITECTURE/03-DYNAMIC-USER-MODELING.md)** - "Persona of One" architecture
 - **[Hybrid Memory System](02-ARCHITECTURE/09-LEARNING-SYSTEM.md#hybrid-memory-system)** - LanceDB + NetworkX integration
 - **[DPO/LoRA Pipeline](02-ARCHITECTURE/09-LEARNING-SYSTEM.md#rlhf-model-updates)** - Local learning infrastructure
+- **[Symbiotic Knowledge Graph](01-VISION/research/ORACLE_RESEARCH_SYNTHESIS.md#core-innovation-the-symbiotic-knowledge-graph-skg)** - Four-layer architecture for comprehensive knowledge representation
 
 ### 🔬 Advanced AI Research
 - **[Bayesian Knowledge Tracing](02-ARCHITECTURE/03-DYNAMIC-USER-MODELING.md#bayesian-knowledge-tracing)** - Skill mastery modeling
 - **[Dynamic Bayesian Networks](02-ARCHITECTURE/03-DYNAMIC-USER-MODELING.md#dynamic-bayesian-networks)** - Affective state inference
 - **[Educational Data Mining](02-ARCHITECTURE/09-LEARNING-SYSTEM.md#edm-interaction-collector)** - Privacy-preserving learning
+- **[Computational Phenomenology](01-VISION/research/ORACLE_RESEARCH_SYNTHESIS.md#computational-phenomenology)** - First-person subjective experience modeling
+- **[Mamba Architecture](01-VISION/research/ORACLE_RESEARCH_SYNTHESIS.md#mamba-architecture)** - Linear-scaling for long-sequence processing
 
 ## 🌟 Phase 4: Living System (FUTURE RESEARCH)
 

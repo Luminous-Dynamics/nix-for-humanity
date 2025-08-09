@@ -6,7 +6,25 @@
 
 This section contains hands-on tutorials that walk you through specific tasks and features. Each tutorial is designed to be completed in 15-30 minutes.
 
-## Tutorials
+## 📚 Essential Guides
+
+### 🚀 Getting Started
+- **[User Guide](./USER_GUIDE.md)** - Complete guide for all users
+- **[Quick Start](./01-QUICK-START.md)** - Get up and running in 5 minutes
+- **[First Commands](./02-FIRST-COMMANDS.md)** - Essential NixOS operations
+
+### 🎯 Core Features
+- **[Advanced Features Guide](./ADVANCED_FEATURES.md)** - Master all power features ⭐
+- **[TUI Guide](./TUI_GUIDE.md)** - Beautiful terminal interface
+- **[Voice Guide](./VOICE_GUIDE.md)** - Voice control setup and usage
+- **[Accessibility Guide](./ACCESSIBILITY_GUIDE.md)** - Features for all users
+
+### 📖 Reference Documents
+- **[Quick Reference](../QUICK_REFERENCE.md)** - All commands at a glance
+- **[Feature Comparison](../FEATURE_COMPARISON.md)** - Nix for Humanity vs Traditional
+- **[Migration Guide](../MIGRATION_GUIDE.md)** - For existing NixOS users
+
+## Detailed Tutorials
 
 ### Getting Started
 1. **[Quick Start](./01-QUICK-START.md)** - Get up and running in 5 minutes

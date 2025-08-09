@@ -60,6 +60,12 @@ Nix for Humanity implements a revolutionary architecture that transforms NixOS f
   - Dynamic Bayesian Networks for affective modeling
   - Ethical framework for cognitive-affective digital twins
 
+- **[10-DATABASE-STRATEGY.md](./10-DATABASE-STRATEGY.md)** - **Database Architecture & Strategy**
+  - DuckDB + LanceDB + TileDB recommended stack
+  - Local-first privacy with optimal performance
+  - Vector search, analytics, and tensor storage
+  - Migration path from current SQLite implementation
+
 ## 🚀 Revolutionary Breakthroughs
 
 ### Native Python-Nix Integration (COMPLETED! 🎉)

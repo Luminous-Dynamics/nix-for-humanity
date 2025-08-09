@@ -1,4 +1,5 @@
 """
+from typing import Dict, List, Optional
 Core test implementations for consciousness-first testing.
 
 This module provides deterministic, real implementations to replace

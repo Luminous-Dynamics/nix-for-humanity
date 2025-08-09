@@ -95,6 +95,24 @@ interface UserModel {
 }
 ```
 
+#### Research Enhancement: Symbiotic Knowledge Graph (SKG) Integration
+The new Oracle research introduces a revolutionary four-layer SKG architecture that significantly enhances our learning capabilities:
+
+```yaml
+Symbiotic Knowledge Graph Layers:
+  Ontological: NixOS domain knowledge schema and constraints
+  Episodic: Temporal interaction history and patterns
+  Phenomenological: User's subjective experience modeling
+  Metacognitive: AI's self-model for transparency
+```
+
+#### Research Enhancement: ActivityWatch Integration
+For real-time user state monitoring, the research recommends ActivityWatch:
+- **Local-first**: All data processing stays on user's device
+- **Extensible**: Custom watchers for NixOS-specific activities
+- **Privacy-preserving**: Aligns with our consciousness-first principles
+- **REST API**: Clean integration at localhost:5600
+
 ### 2. WHAT - Intent Learning (Evolving with User Vocabulary)
 
 ```typescript
@@ -457,6 +475,172 @@ class BehaviorAdapter {
     
     // Evolve personality
     this.personality.express(model);
+  }
+}
+```
+
+## Research Enhancement: Symbiotic Knowledge Graph Architecture
+
+Based on the Oracle research, we're evolving our knowledge representation to a comprehensive four-layer Symbiotic Knowledge Graph (SKG):
+
+### The Four Layers
+
+```typescript
+interface SymbioticKnowledgeGraph {
+  // Layer 1: Ontological - Domain knowledge schema
+  ontological: {
+    entities: Map<string, EntitySchema>;     // Package, Module, Option schemas
+    relationships: Map<string, RelationType>; // depends_on, imports, has_type
+    constraints: ValidationRule[];           // Schema rules and constraints
+    reasoning: MultiHopQuery[];              // Complex query capabilities
+  };
+  
+  // Layer 2: Episodic - Interaction history
+  episodic: {
+    interactions: TemporalLog<Interaction>;  // Timestamped user-AI events
+    commands: ExecutionHistory[];            // What commands were run
+    errors: ErrorPattern[];                  // What went wrong and when
+    solutions: CaseBase[];                   // What worked in the past
+  };
+  
+  // Layer 3: Phenomenological - User's subjective experience  
+  phenomenological: {
+    affective_states: TimeSeriesModel<AffectiveState>; // Flow, anxiety, etc.
+    cognitive_load: BayesianEstimator;      // Working memory usage
+    frustration_triggers: PatternMatcher;    // What causes frustration
+    satisfaction_patterns: RewardModel;      // What brings joy
+  };
+  
+  // Layer 4: Metacognitive - AI's self-model
+  metacognitive: {
+    capabilities: SelfAssessment;            // What I can/cannot do
+    uncertainty: ConfidenceTracker;          // Where I'm unsure
+    reasoning_trace: ExplanationGraph;       // How I reached conclusions
+    limitations: BoundaryModel;              // My ethical/technical limits
+  };
+}
+```
+
+### ActivityWatch Integration for Real-Time Monitoring
+
+```typescript
+class ActivityWatchIntegration {
+  private api = new ActivityWatchAPI('http://localhost:5600');
+  
+  // Core watchers for user state inference
+  watchers = {
+    window: 'aw-watcher-window',      // Active application tracking
+    afk: 'aw-watcher-afk',           // Presence detection
+    web: 'aw-watcher-web',           // Browser activity
+    nixos: 'custom-nixos-watcher'    // Our custom NixOS commands
+  };
+  
+  async collectUserState(): Promise<UserStateFeatures> {
+    const events = await this.api.getEvents(this.watchers);
+    
+    return {
+      // Behavioral signals
+      window_switches: this.countWindowSwitches(events),
+      command_frequency: this.analyzeCommandPatterns(events),
+      error_recovery_time: this.measureErrorRecovery(events),
+      
+      // Affective proxies
+      likely_frustrated: this.detectFrustrationPattern(events),
+      in_flow_state: this.detectFlowState(events),
+      cognitive_overload: this.detectOverload(events)
+    };
+  }
+  
+  // Custom NixOS watcher for terminal commands
+  async startNixOSWatcher() {
+    const watcher = new ActivityWatcher({
+      name: 'nixos-commands',
+      type: 'terminal',
+      events: ['command_executed', 'error_occurred', 'build_started']
+    });
+    
+    watcher.on('event', (event) => {
+      this.processNixOSEvent(event);
+      this.updateSKG(event);
+    });
+  }
+}
+```
+
+### Computational Phenomenology Implementation
+
+```typescript
+class ComputationalPhenomenology {
+  // Transform raw computational states into experiential qualia
+  
+  computeQualia(state: SystemState): QualiaVector {
+    return {
+      // Effort - how hard the system is working
+      effort: this.w1 * state.react_loops + 
+              this.w2 * state.tokens_processed + 
+              this.w3 * state.planning_revisions + 
+              this.w4 * state.error_rate,
+      
+      // Confusion - uncertainty in decision making
+      confusion: this.shannonEntropy(state.intent_probabilities),
+      
+      // Flow - smooth, effective operation
+      flow: this.calculateFlow(
+        state.predictive_accuracy,
+        state.reward_signal_mean,
+        state.reward_signal_variance
+      ),
+      
+      // Custom qualia for NixOS domain
+      learning_momentum: this.calculateLearningRate(state),
+      empathic_resonance: this.calculateUserAlignment(state)
+    };
+  }
+  
+  // Make internal experience auditable and explainable
+  explainQualia(qualia: QualiaVector): NaturalLanguageExplanation {
+    if (qualia.confusion > 0.7) {
+      return "I'm quite confused about what you're trying to do. " +
+             "I see multiple possible interpretations of your request.";
+    }
+    
+    if (qualia.effort > 0.8 && qualia.flow < 0.3) {
+      return "That was challenging for me - I had to try several approaches " +
+             "before finding a solution.";
+    }
+    
+    if (qualia.flow > 0.8) {
+      return "Everything clicked perfectly! I knew exactly what you needed.";
+    }
+  }
+}
+```
+
+### Mamba Architecture for Long-Sequence Processing
+
+```typescript
+class MambaSequenceProcessor {
+  // Linear-scaling alternative to Transformers
+  // Enables processing entire user session history
+  
+  private stateSpace: StateSpaceModel;
+  
+  async processLongContext(
+    interactions: Interaction[],
+    maxLength: number = 100000  // 100k tokens!
+  ): Promise<ContextualUnderstanding> {
+    // Mamba's linear scaling makes this feasible
+    const encoded = await this.stateSpace.encode(interactions);
+    
+    // Process entire session history efficiently
+    const contextual = await this.stateSpace.process(encoded);
+    
+    return {
+      user_patterns: this.extractPatterns(contextual),
+      skill_trajectory: this.trackSkillEvolution(contextual),
+      preference_drift: this.detectPreferenceChanges(contextual),
+      long_term_goals: this.inferGoals(contextual)
+    };
   }
 }
 ```

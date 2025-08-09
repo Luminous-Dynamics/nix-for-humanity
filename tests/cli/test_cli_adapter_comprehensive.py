@@ -31,7 +31,7 @@ from io import StringIO
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 # Import the CLI adapter under test
-from nix_for_humanity.adapters.cli_adapter import CLIAdapter
+from nix_humanity.adapters.cli_adapter import CLIAdapter
 
 
 class TestCLIAdapterCore:
@@ -40,7 +40,7 @@ class TestCLIAdapterCore:
     @pytest.fixture
     def mock_core(self):
         """Mock the headless core engine."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore') as mock_core_class:
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend') as mock_core_class:
             mock_core = Mock()
             mock_core_class.return_value = mock_core
             
@@ -180,7 +180,7 @@ class TestCLIPersonalityAdaptation:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter with personality system mocked."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle') as mock_style:
@@ -227,7 +227,7 @@ class TestCLIOutputFormatting:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for output testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -334,7 +334,7 @@ class TestCLIErrorHandling:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for error testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -385,7 +385,7 @@ class TestCLIStreaming:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for streaming tests."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -431,7 +431,7 @@ class TestCLIAccessibility:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for accessibility testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -515,7 +515,7 @@ class TestCLIPerformance:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for performance testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -613,7 +613,7 @@ class TestCLIFeedbackSystem:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for feedback testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -671,7 +671,7 @@ class TestCLISystemStats:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for stats testing."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):
@@ -770,7 +770,7 @@ class TestCLIAdapterCoverage:
 
     def test_initialization_parameters_covered(self):
         """Verify all initialization parameters and attributes are tested."""
-        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityCore'):
+        with patch('nix_for_humanity.adapters.cli_adapter.NixForHumanityBackend'):
             with patch('nix_for_humanity.adapters.cli_adapter.Query'):
                 with patch('nix_for_humanity.adapters.cli_adapter.ExecutionMode'):
                     with patch('nix_for_humanity.adapters.cli_adapter.PersonalityStyle'):

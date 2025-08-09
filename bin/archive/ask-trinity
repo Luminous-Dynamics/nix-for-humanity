@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""
+Sacred Trinity Model Selector
+Automatically selects the best model for each query
+"""
+
+import sys
+import json
+import subprocess
+from pathlib import Path
+
+class ModelSelector:
+    def __init__(self):
+        self.models_dir = Path("/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity/models")
+        self.current_models = {}
+        
+        # Load current models
+        for model_type in ['empathy', 'expert', 'coder', 'quick']:
+            current_file = self.models_dir / f"current_{model_type}.txt"
+            if current_file.exists():
+                self.current_models[model_type] = current_file.read_text().strip()
+    
+    def select_model(self, query: str) -> str:
+        """Select best model based on query"""
+        q_lower = query.lower()
+        
+        # Empathy model for beginners and help
+        if any(word in q_lower for word in ['grandma', 'simple', 'explain', 'afraid', 'help me understand', 'worried']):
+            return self.current_models.get('empathy', 'nix-trinity')
+        
+        # Coder model for code generation
+        elif any(word in q_lower for word in ['code', 'script', 'flake', 'configuration.nix', 'systemd', 'overlay']):
+            return self.current_models.get('coder', 'nix-trinity')
+        
+        # Expert model for deep technical questions
+        elif any(word in q_lower for word in ['architecture', 'theory', 'explain how', 'deep dive', 'derivation', 'stdenv']):
+            return self.current_models.get('expert', 'nix-trinity')
+        
+        # Quick model for simple queries
+        else:
+            return self.current_models.get('quick', 'nix-trinity')
+    
+    def query(self, question: str):
+        """Query the appropriate model"""
+        model = self.select_model(question)
+        print(f"🤖 Using {model.split('-')[1]} model...\n")
+        
+        try:
+            result = subprocess.run(
+                ["ollama", "run", model, question],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print(result.stdout)
+            else:
+                print(f"Error: {result.stderr}")
+                # Fallback to default
+                subprocess.run(["ollama", "run", "nix-trinity", question])
+                
+        except Exception as e:
+            print(f"Error: {e}")
+            print("Falling back to default model...")
+            subprocess.run(["ollama", "run", "mistral:7b", question])
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: ask-trinity 'your question'")
+        sys.exit(1)
+    
+    selector = ModelSelector()
+    selector.query(' '.join(sys.argv[1:]))

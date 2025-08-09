@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced unit tests for the NixForHumanityCore engine - Consciousness-First Testing
+Enhanced unit tests for the NixForHumanityBackend engine - Consciousness-First Testing
 Tests the central orchestrator using deterministic test implementations
 """
 
@@ -25,18 +25,18 @@ from tests.test_utils.test_implementations import (
     create_successful_process
 )
 
-from nix_for_humanity.core.engine import NixForHumanityCore
-from nix_for_humanity.core.interface import (
-    Query, Response, Intent, IntentType, ExecutionMode
+from nix_humanity.core.engine import NixForHumanityBackend
+from nix_humanity.core.interface import (
+     Response, Intent, IntentType
 )
-from nix_for_humanity.core.types import Command, ExecutionResult
-from nix_for_humanity.core.planning import Plan
-from nix_for_humanity.core.personality_system import PersonalityStyle
-from nix_for_humanity.core.learning_system import Interaction
+from nix_humanity.core.intents import Command, ExecutionResult
+from nix_humanity.core.planning import Plan
+from nix_humanity.core.responses import PersonalityStyle
+from nix_humanity.learning.preferences import Interaction
 
 
 class TestEngineEnhanced:
-    """Enhanced tests for the NixForHumanityCore engine - Consciousness-First Testing"""
+    """Enhanced tests for the NixForHumanityBackend engine - Consciousness-First Testing"""
     
     @pytest.fixture
     def test_database(self):
@@ -66,7 +66,7 @@ class TestEngineEnhanced:
     @pytest.fixture
     def engine(self, config, test_components):
         """Create engine with test components injected"""
-        engine = NixForHumanityCore(config)
+        engine = NixForHumanityBackend(config)
         
         # Inject test components
         engine.intent_engine = test_components['intent_engine']
@@ -78,7 +78,7 @@ class TestEngineEnhanced:
         
     def test_initialization_default(self):
         """Test default initialization"""
-        engine = NixForHumanityCore()
+        engine = NixForHumanityBackend()
         
         # Check subsystems are initialized
         assert engine.intent_engine is not None
@@ -103,9 +103,9 @@ class TestEngineEnhanced:
         }
         
         with patch('nix_for_humanity.core.knowledge_base.KnowledgeBase') as MockKB, \
-             patch('nix_for_humanity.core.learning_system.LearningSystem') as MockLS:
+             patch('nix_for_humanity.core.learning_system.PreferenceManager') as MockLS:
             
-            engine = NixForHumanityCore(config)
+            engine = NixForHumanityBackend(config)
             
             # Check config was passed through
             MockKB.assert_called_with('/tmp/test.db')
@@ -116,7 +116,7 @@ class TestEngineEnhanced:
     def test_plan_install_intent(self, engine, test_components):
         """Test planning for install intent with deterministic behavior"""
         # Use real test implementations
-        query = Query("install firefox", ExecutionMode.DRY_RUN)
+        query = {"query": "install firefox".DRY_RUN}
         
         # Test components provide deterministic responses
         # NLP engine will recognize install intent for firefox
@@ -128,7 +128,7 @@ class TestEngineEnhanced:
         
         # Verify deterministic behavior
         assert isinstance(plan, Plan)
-        assert plan.intent.type == IntentType.INSTALL
+        assert plan.intent.type == IntentType.INSTALL_PACKAGE
         assert plan.intent.entities.get('package') == 'firefox'
         assert plan.confidence >= 0.9  # High confidence for clear intent
         
@@ -146,7 +146,7 @@ class TestEngineEnhanced:
         
     def test_plan_remove_intent_requires_confirmation(self):
         """Test planning for remove intent requires confirmation"""
-        query = Query("remove firefox")
+        query = {"query": "remove firefox"}
         intent = Intent(
             type=IntentType.REMOVE,
             entities={'target': 'firefox', 'package': 'firefox'},
@@ -167,9 +167,9 @@ class TestEngineEnhanced:
         
     def test_plan_update_intent(self):
         """Test planning for update intent"""
-        query = Query("update system")
+        query = {"query": "update system"}
         intent = Intent(
-            type=IntentType.UPDATE,
+            type=IntentType.UPDATE_SYSTEM,
             entities={},
             confidence=0.85,
             raw_input='update'
@@ -189,9 +189,9 @@ class TestEngineEnhanced:
         
     def test_plan_search_intent_with_results(self):
         """Test planning for search intent with results"""
-        query = Query("search python")
+        query = {"query": "search python"}
         intent = Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'target': 'python', 'package': 'python'},
             confidence=0.9,
             raw_input='search python'
@@ -216,9 +216,9 @@ class TestEngineEnhanced:
         
     def test_plan_search_intent_no_results(self):
         """Test planning for search intent with no results"""
-        query = Query("search nonexistent")
+        query = {"query": "search nonexistent"}
         intent = Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'target': 'nonexistent', 'package': 'nonexistent'},
             confidence=0.9,
             raw_input='search nonexistent'
@@ -237,7 +237,7 @@ class TestEngineEnhanced:
         
     def test_plan_unknown_intent(self):
         """Test planning for unknown intent"""
-        query = Query("do something weird")
+        query = {"query": "do something weird"}
         intent = Intent(
             type=IntentType.UNKNOWN,
             entities={},
@@ -260,9 +260,9 @@ class TestEngineEnhanced:
         
     def test_plan_with_custom_personality(self):
         """Test planning with custom personality in query"""
-        query = Query("install vim", personality='minimal')
+        query = {"query": "install vim", personality='minimal'}
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'vim', 'package': 'vim'},
             confidence=0.9,
             raw_input='install vim'
@@ -290,7 +290,7 @@ class TestEngineEnhanced:
         plan = Plan(
             text="Searching for test",
             intent=Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'target': 'test', 'package': 'test'},
             confidence=0.9,
             raw_input='search test'
@@ -326,7 +326,7 @@ class TestEngineEnhanced:
         plan = Plan(
             text="Installing badpackage",
             intent=Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'badpackage', 'package': 'badpackage'},
             confidence=0.9,
             raw_input='install badpackage'
@@ -357,7 +357,7 @@ class TestEngineEnhanced:
         plan = Plan(
             text="No action needed",
             intent=Intent(
-            type=IntentType.INFO,
+            type=IntentType.EXPLAIN,
             entities={},
             confidence=0.9,
             raw_input='info'
@@ -381,7 +381,7 @@ class TestEngineEnhanced:
         plan = Plan(
             text="Searching",
             intent=Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'target': 'test', 'package': 'test'},
             confidence=0.9,
             raw_input='search test'
@@ -403,9 +403,9 @@ class TestEngineEnhanced:
         
     def test_process_dry_run_mode(self):
         """Test full process pipeline in dry run mode"""
-        query = Query("install firefox", ExecutionMode.DRY_RUN)
+        query = {"query": "install firefox".DRY_RUN}
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'firefox', 'package': 'firefox'},
             confidence=0.9,
             raw_input='install firefox'
@@ -431,9 +431,9 @@ class TestEngineEnhanced:
         
     def test_process_execute_mode(self):
         """Test full process pipeline in execute mode"""
-        query = Query("install vim", ExecutionMode.EXECUTE, user_id='test_user')
+        query = {"query": "install vim".EXECUTE, user_id='test_user'}
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'vim', 'package': 'vim'},
             confidence=0.9,
             raw_input='install vim'
@@ -458,9 +458,9 @@ class TestEngineEnhanced:
         
     def test_process_execute_mode_failure(self):
         """Test process with execution failure"""
-        query = Query("install badpackage", ExecutionMode.EXECUTE)
+        query = {"query": "install badpackage".EXECUTE}
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'badpackage', 'package': 'badpackage'},
             confidence=0.9,
             raw_input='install badpackage'
@@ -485,7 +485,7 @@ class TestEngineEnhanced:
         
     def test_process_symbiotic_feedback(self):
         """Test feedback requested for symbiotic personality"""
-        query = Query("help me", personality='symbiotic')
+        query = {"query": "help me", personality='symbiotic'}
         intent = Intent(
             type=IntentType.HELP,
             entities={},
@@ -526,7 +526,7 @@ class TestEngineEnhanced:
     def test_get_suggestions(self):
         """Test suggestion generation"""
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'firefox', 'package': 'firefox'},
             confidence=0.9,
             raw_input='install firefox'
@@ -592,7 +592,7 @@ class TestEngineEnhanced:
         
     def test_edge_case_empty_query(self):
         """Test handling empty query"""
-        query = Query("", ExecutionMode.DRY_RUN)
+        query = {"query": "".DRY_RUN}
         intent = Intent(
             type=IntentType.UNKNOWN,
             entities={},
@@ -612,17 +612,17 @@ class TestEngineEnhanced:
     def test_command_building_for_all_actions(self):
         """Test command building for all supported actions"""
         test_cases = [
-            (IntentType.INSTALL, 'firefox', True),
+            (IntentType.INSTALL_PACKAGE, 'firefox', True),
             (IntentType.REMOVE, 'firefox', True),
-            (IntentType.UPDATE, None, True),
-            (IntentType.SEARCH, 'python', True),
+            (IntentType.UPDATE_SYSTEM, None, True),
+            (IntentType.SEARCH_PACKAGE, 'python', True),
             (IntentType.ROLLBACK, None, True),
-            (IntentType.INFO, None, True),  # Maps to 'list'
+            (IntentType.EXPLAIN, None, True),  # Maps to 'list'
         ]
         
         for intent_type, target, should_have_command in test_cases:
             with self.subTest(intent_type=intent_type):
-                query = Query(f"test {intent_type.value}")
+                query = {"query": f"test {intent_type.value}"}
                 intent = Intent(intent_type, target, 0.9)
                 solution = {'found': True, 'solution': 'Test'}
                 
@@ -649,16 +649,16 @@ class TestEngineEnhanced:
         """Test which actions require confirmation"""
         requires_confirmation = {
             IntentType.REMOVE: True,
-            IntentType.UPDATE: True,
+            IntentType.UPDATE_SYSTEM: True,
             IntentType.ROLLBACK: True,
-            IntentType.INSTALL: False,
-            IntentType.SEARCH: False,
-            IntentType.INFO: False,
+            IntentType.INSTALL_PACKAGE: False,
+            IntentType.SEARCH_PACKAGE: False,
+            IntentType.EXPLAIN: False,
         }
         
         for intent_type, should_confirm in requires_confirmation.items():
             with self.subTest(intent_type=intent_type):
-                query = Query(f"test {intent_type.value}")
+                query = {"query": f"test {intent_type.value}"}
                 intent = Intent(intent_type, 'test', 0.9)
                 solution = {'found': True, 'solution': 'Test'}
                 command = Command('test', ['arg'], True, False, '')
@@ -679,9 +679,9 @@ class TestEngineEnhanced:
         results = []
         
         def process_query(query_text):
-            query = Query(query_text)
+            query = {"query": query_text}
             intent = Intent(
-            type=IntentType.INFO,
+            type=IntentType.EXPLAIN,
             entities={},
             confidence=0.9,
             raw_input='info'

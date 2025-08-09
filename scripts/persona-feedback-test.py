@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List
 Comprehensive Persona Testing Script for Nix for Humanity
 
 This script simulates feedback gathering from all 10 personas, testing real functionality
@@ -74,8 +75,9 @@ class PersonaFeedbackTester:
             result = subprocess.run(['which', 'ask-nix'], capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout.strip()
-        except:
-            pass
+        except Exception:
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
         
         # Default
         return "ask-nix"

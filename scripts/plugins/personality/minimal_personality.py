@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict
 Minimal Personality Plugin
 Provides just the facts with no extra decoration
 """

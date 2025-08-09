@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""
+Sacred Trinity RAG-Enhanced Query Interface
+Uses Retrieval Augmented Generation for accurate NixOS answers
+"""
+
+import sys
+import json
+import subprocess
+import sqlite3
+from pathlib import Path
+
+class RAGModelSelector:
+    def __init__(self):
+        self.base_dir = Path("/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity")
+        self.models_dir = self.base_dir / "models"
+        self.db_path = self.base_dir / "trinity_rag.db"
+        self.current_models = {}
+        
+        # Load current models
+        for model_type in ['empathy', 'expert', 'coder', 'quick']:
+            current_file = self.models_dir / f"current_{model_type}.txt"
+            if current_file.exists():
+                self.current_models[model_type] = current_file.read_text().strip()
+                
+        # Import RAG system
+        sys.path.insert(0, str(self.base_dir / "scripts"))
+        from sacred_trinity_trainer_rag import SacredTrinityRAG
+        self.rag = SacredTrinityRAG()
+    
+    def select_model(self, query: str) -> tuple:
+        """Select best model and type based on query"""
+        q_lower = query.lower()
+        
+        # Empathy model for beginners and help
+        if any(word in q_lower for word in ['grandma', 'simple', 'explain', 'afraid', 'help me understand', 'worried']):
+            return self.current_models.get('empathy', 'llama3.2:3b'), 'empathy'
+        
+        # Coder model for code generation
+        elif any(word in q_lower for word in ['code', 'script', 'flake', 'configuration.nix', 'systemd', 'overlay']):
+            return self.current_models.get('coder', 'qwen2.5:3b'), 'coder'
+        
+        # Expert model for deep technical questions
+        elif any(word in q_lower for word in ['architecture', 'theory', 'explain how', 'deep dive', 'derivation', 'stdenv']):
+            return self.current_models.get('expert', 'mistral:7b-instruct'), 'expert'
+        
+        # Quick model for simple queries
+        else:
+            return self.current_models.get('quick', 'tinyllama:1.1b'), 'quick'
+    
+    def query(self, question: str):
+        """Query the appropriate model with RAG enhancement"""
+        model, model_type = self.select_model(question)
+        print(f"🤖 Using {model_type} model with NixOS knowledge...\n")
+        
+        # Use RAG-enhanced query
+        answer = self.rag.query_with_rag(model, model_type, question)
+        print(answer)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: ask-trinity-rag 'your question'")
+        print("\nExamples:")
+        print("  ask-trinity-rag 'How do I install Firefox?'")
+        print("  ask-trinity-rag 'What is a NixOS generation?'")
+        print("  ask-trinity-rag 'Help me fix my WiFi'")
+        sys.exit(1)
+    
+    selector = RAGModelSelector()
+    selector.query(' '.join(sys.argv[1:]))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List, Dict
 Comprehensive Performance Benchmark Suite for Nix for Humanity
 Core Excellence Phase - Performance Mastery Component
 
@@ -157,14 +158,14 @@ class PerformanceBenchmark:
                 cwd=self.project_root,
                 text=True
             ).strip()
-        except:
+        except Exception:
             git_commit = "unknown"
             
         try:
             nixos_version = subprocess.check_output(
                 ["nixos-version"], text=True
             ).strip()
-        except:
+        except Exception:
             nixos_version = "unknown"
             
         return {

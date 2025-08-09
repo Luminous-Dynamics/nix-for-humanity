@@ -20,8 +20,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backend')))
 
 
-from nix_for_humanity.core.types import Intent, IntentType
-from nix_for_humanity.core.intent_engine import IntentEngine as IntentRecognizer
+from nix_humanity.core.intents import Intent, IntentType
+from nix_humanity.core.intents import IntentRecognizer as IntentRecognizer
 
 class TestIntentRecognizer(unittest.TestCase):
     """Test suite for IntentRecognizer"""
@@ -79,8 +79,8 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_package in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_package)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_package)
                 self.assertGreaterEqual(intent.confidence, 0.9)
                 
     def test_install_intent_polite(self):
@@ -94,8 +94,8 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_package in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_package)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_package)
                 
     def test_install_intent_conversational(self):
         """Test conversational install intent"""
@@ -108,8 +108,8 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_package in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected_package)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected_package)
                 
     def test_install_package_aliases(self):
         """Test package alias resolution"""
@@ -130,8 +130,8 @@ class TestIntentRecognizer(unittest.TestCase):
         for alias, expected in aliases:
             with self.subTest(alias=alias):
                 intent = self.recognizer.recognize(f"install {alias}")
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, expected)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), expected)
                 
     # Test Update Intent Recognition
     def test_update_intent(self):
@@ -155,7 +155,7 @@ class TestIntentRecognizer(unittest.TestCase):
         for text in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.UPDATE)
+                self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM)
                 self.assertEqual(intent.entities, {})
                 self.assertGreaterEqual(intent.confidence, 0.85)
                 
@@ -176,7 +176,7 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_query in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.SEARCH)
+                self.assertEqual(intent.type, IntentType.SEARCH_PACKAGE)
                 self.assertIn('query', intent.entities)
                 # Query extraction is flexible, just check it's not empty
                 self.assertIsNotNone(intent.entities['query'])
@@ -224,7 +224,7 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_config in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.CONFIG)
+                self.assertEqual(intent.type, IntentType.CONFIGURE)
                 self.assertEqual(intent.entities['config'], expected_config)
                 self.assertGreaterEqual(intent.confidence, 0.75)
                 
@@ -243,7 +243,7 @@ class TestIntentRecognizer(unittest.TestCase):
         for text, expected_topic in test_cases:
             with self.subTest(text=text):
                 intent = self.recognizer.recognize(text)
-                self.assertEqual(intent.type, IntentType.INFO)
+                self.assertEqual(intent.type, IntentType.EXPLAIN)
                 self.assertIn('topic', intent.entities)
                 self.assertIsNotNone(intent.entities['topic'])
                 self.assertGreaterEqual(intent.confidence, 0.7)
@@ -274,46 +274,46 @@ class TestIntentRecognizer(unittest.TestCase):
         """Test edge cases in intent recognition"""
         # Mixed case with punctuation
         intent = self.recognizer.recognize("INSTALL FIREFOX!!!")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, 'firefox')
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), 'firefox')
         
         # Multiple spaces
         intent = self.recognizer.recognize("install     firefox")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, 'firefox')
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), 'firefox')
         
         # Special characters in package name
         intent = self.recognizer.recognize("install firefox-esr")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, 'firefox-esr')
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), 'firefox-esr')
         
     def test_extract_entities(self):
         """Test entity extraction method"""
         # Test install package extraction
         entities = self.recognizer.extract_entities(
             "install firefox", 
-            IntentType.INSTALL
+            IntentType.INSTALL_PACKAGE
         )
         self.assertEqual(entities['package'], 'firefox')
         
         # Test with alias
         entities = self.recognizer.extract_entities(
             "install chrome", 
-            IntentType.INSTALL
+            IntentType.INSTALL_PACKAGE
         )
         self.assertEqual(entities['package'], 'google-chrome')
         
         # Test search query extraction
         entities = self.recognizer.extract_entities(
             "search for text editors", 
-            IntentType.SEARCH
+            IntentType.SEARCH_PACKAGE
         )
         self.assertIn('query', entities)
         
         # Test with no matching pattern
         entities = self.recognizer.extract_entities(
             "random text", 
-            IntentType.INSTALL
+            IntentType.INSTALL_PACKAGE
         )
         self.assertEqual(entities, {})
         
@@ -328,15 +328,15 @@ class TestIntentRecognizer(unittest.TestCase):
                 "install firefox", 
                 context
             )
-            self.assertEqual(intent.type, IntentType.INSTALL)
-            self.assertEqual(intent.target, 'firefox')
+            self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+            self.assertEqual(intent.entities.get("package"), 'firefox')
             
             # Test update intent
             intent = self.recognizer.recognize(
                 "update system", 
                 context
             )
-            self.assertEqual(intent.type, IntentType.UPDATE)
+            self.assertEqual(intent.type, IntentType.UPDATE_SYSTEM)
             
         # Run async test
         asyncio.run(run_test())
@@ -355,14 +355,14 @@ class TestIntentRecognizer(unittest.TestCase):
         """Test complex install patterns"""
         # Pattern with multiple groups
         intent = self.recognizer.recognize("can you please install firefox for me")
-        self.assertEqual(intent.type, IntentType.INSTALL)
-        self.assertEqual(intent.target, 'firefox')
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+        self.assertEqual(intent.entities.get("package"), 'firefox')
         
         # Pattern with 'I need/want' structure
         intent = self.recognizer.recognize("I really need that vim editor")
-        self.assertEqual(intent.type, IntentType.INSTALL)
+        self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
         # The pattern might extract 'that' as part of package, but alias should handle it
-        self.assertIn('vim', intent.raw_input)
+        self.assertIn('vim', intent.raw_text)
         
     def test_pattern_priority(self):
         """Test that patterns are matched in correct priority"""
@@ -370,7 +370,7 @@ class TestIntentRecognizer(unittest.TestCase):
         intent = self.recognizer.recognize("what is firefox and install it")
         # This is ambiguous, but install patterns are checked first
         # The actual behavior depends on pattern order
-        self.assertIn(intent.type, [IntentType.INSTALL, IntentType.INFO])
+        self.assertIn(intent.type, [IntentType.INSTALL_PACKAGE, IntentType.EXPLAIN])
         
     def test_confidence_levels(self):
         """Test confidence levels for different intent types"""
@@ -408,21 +408,21 @@ class TestIntentRecognizer(unittest.TestCase):
         intent = self.recognizer.recognize(original_text)
         
         # Raw text should be the normalized version
-        self.assertEqual(intent.raw_input, "install firefox now")
+        self.assertEqual(intent.raw_text, "install firefox now")
         
     def test_entity_extraction_edge_cases(self):
         """Test entity extraction edge cases"""
         # No words after install
         entities = self.recognizer.extract_entities(
-            "install", 
-            IntentType.INSTALL
+            "install_package", 
+            IntentType.INSTALL_PACKAGE
         )
         self.assertEqual(entities, {})
         
         # Multiple install words
         entities = self.recognizer.extract_entities(
             "install add get firefox", 
-            IntentType.INSTALL
+            IntentType.INSTALL_PACKAGE
         )
         # Should extract first occurrence
         self.assertIn('package', entities)
@@ -432,8 +432,8 @@ class TestIntentRecognizer(unittest.TestCase):
         for alias, canonical in self.recognizer.package_aliases.items():
             with self.subTest(alias=alias):
                 intent = self.recognizer.recognize(f"install {alias}")
-                self.assertEqual(intent.type, IntentType.INSTALL)
-                self.assertEqual(intent.target, canonical)
+                self.assertEqual(intent.type, IntentType.INSTALL_PACKAGE)
+                self.assertEqual(intent.entities.get("package"), canonical)
 
 
 if __name__ == '__main__':

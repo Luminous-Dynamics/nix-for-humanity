@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for the LearningSystem component - simplified to match actual implementation
+Unit tests for the PreferenceManager component - simplified to match actual implementation
 """
 
 import unittest
@@ -12,19 +12,19 @@ import sqlite3
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.learning_system import (
-    LearningSystem, Interaction, Preference
+from nix_humanity.learning.preferences import (
+    PreferenceManager, Interaction, Preference
 )
 
 
-class TestLearningSystem(unittest.TestCase):
-    """Test the LearningSystem component - actual implementation"""
+class TestPreferenceManager(unittest.TestCase):
+    """Test the PreferenceManager component - actual implementation"""
     
     def setUp(self):
         """Create learning system with temporary database"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_learning.db"
-        self.system = LearningSystem(self.db_path)
+        self.system = PreferenceManager(self.db_path)
         
     def tearDown(self):
         """Clean up temporary files"""
@@ -56,7 +56,7 @@ class TestLearningSystem(unittest.TestCase):
         """Test recording user interactions"""
         interaction = Interaction(
             query="install firefox",
-            intent="install",
+            intent="install_package",
             response="Installing firefox...",
             success=True,
             user_id="test_user"
@@ -73,7 +73,7 @@ class TestLearningSystem(unittest.TestCase):
         
         self.assertIsNotNone(result)
         self.assertEqual(result[1], "install firefox")  # query
-        self.assertEqual(result[2], "install")  # intent
+        self.assertEqual(result[2], "install_package")  # intent
         
     def test_learn_preference(self):
         """Test learning user preferences"""
@@ -117,14 +117,14 @@ class TestLearningSystem(unittest.TestCase):
         for i in range(10):
             interaction = Interaction(
                 query=f"install package{i}",
-                intent="install",
+                intent="install_package",
                 response="Result",
                 success=i < 7,  # 7 successful, 3 failed
                 user_id="test_user"
             )
             self.system.record_interaction(interaction)
             
-        success_rate = self.system.get_success_rate("install")
+        success_rate = self.system.get_success_rate("install_package")
         
         self.assertEqual(success_rate, 0.7)  # 70% success rate
         
@@ -147,7 +147,7 @@ class TestLearningSystem(unittest.TestCase):
         for query in queries:
             interaction = Interaction(
                 query=query,
-                intent="install" if "install" in query else "update",
+                intent="install_package" if "install_package" in query else "update_system",
                 response="Done",
                 success=True,
                 user_id="test_user"

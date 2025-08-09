@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, List
 Adaptive Response Formatter - Dynamic response adaptation based on user needs
 
 Instead of fixed personality styles, this system adapts response characteristics

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Process scraped NixOS documentation into training formats
 Creates Q&A pairs, instruction data, and other formats for model fine-tuning
 """

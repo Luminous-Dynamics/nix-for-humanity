@@ -1,0 +1,1 @@
+{"prompt": "How do I install VS Code?", "chosen": "The package name is 'vscode', not 'nixos.vscode'. Use: nix-env -iA nixos.vscode", "rejected": "Use nix-env -iA nixos.vscode"}

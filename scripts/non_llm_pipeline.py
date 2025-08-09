@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, Dict, List, Optional
 Non-LLM AI Pipeline for Nix for Humanity
 Demonstrates the power of specialized AI models without needing LLMs
 """

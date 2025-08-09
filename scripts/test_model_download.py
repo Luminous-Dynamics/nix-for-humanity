@@ -222,7 +222,7 @@ async def main():
     try:
         socket.create_connection(("huggingface.co", 443), timeout=5)
         print_success("Internet connection available")
-    except:
+    except Exception:
         print_error("No internet connection - tests will fail!")
         print_info("Run with --offline to test offline mode only")
         if "--offline" not in sys.argv:

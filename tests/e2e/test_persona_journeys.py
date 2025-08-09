@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+import subprocess
 End-to-End tests for persona-based user journeys.
 Tests complete workflows for each of our 10 core personas.
 """
@@ -14,11 +15,11 @@ from unittest.mock import patch, MagicMock
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from nix_for_humanity.core.engine import NixForHumanityCore as Engine
-from nix_for_humanity.core.intent_engine import IntentEngine
-from nix_for_humanity.core.knowledge_base import KnowledgeBase
-from nix_for_humanity.core.execution_engine import ExecutionEngine
-from nix_for_humanity.core.personality_system import PersonalitySystem
+from nix_humanity.core.engine import NixForHumanityBackend as Engine
+from nix_humanity.core.intents import IntentEngine
+from nix_humanity.core.knowledge import KnowledgeBase
+from nix_humanity.core.executor import ExecutionEngine
+from nix_humanity.core.personality import PersonalitySystem
 
 class PersonaJourney:
     """Base class for persona test journeys."""

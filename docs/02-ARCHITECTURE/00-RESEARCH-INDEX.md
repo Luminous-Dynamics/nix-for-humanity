@@ -10,6 +10,27 @@ This index organizes the specialized research documents that inform our architec
 
 ### 🧠 User Modeling & Learning Research
 
+#### [ORACLE_RESEARCH_SYNTHESIS.md](../01-VISION/research/ORACLE_RESEARCH_SYNTHESIS.md) 🆕 NEW RESEARCH
+**Oracle Research Synthesis: From Vision to Implementation**
+
+**Key Innovations:**
+- Four-Layer Symbiotic Knowledge Graph (SKG) architecture
+- ActivityWatch integration for privacy-first activity monitoring
+- Computational Phenomenology for subjective experience modeling
+- Mamba architecture for linear-scaling sequence processing
+- VLM-driven GUI automation for desktop-wide assistance
+
+**Integrated Into:**
+- [Learning System Architecture](./09-LEARNING-SYSTEM.md) - SKG and ActivityWatch integration
+- [Dynamic User Modeling](./03-DYNAMIC-USER-MODELING.md) - Phenomenological layer enhancements
+- [Implementation Priority Guide](../IMPLEMENTATION_PRIORITY_GUIDE.md) - Concrete next steps
+
+**Research Highlights:**
+- **5 comprehensive documents** synthesized into actionable insights
+- **Concrete implementation path** from current state to symbiotic AI
+- **Privacy-first architecture** with ActivityWatch and local processing
+- **Revolutionary concepts**: Computational qualia, metacognitive self-modeling
+
 #### [03-DYNAMIC-USER-MODELING.md](./03-DYNAMIC-USER-MODELING.md) ⭐ FOUNDATIONAL
 **The "Persona of One": A Technical Blueprint for Dynamic User Representation**
 
@@ -138,12 +159,15 @@ interface AffectiveDBN {
 - **Ten-Persona System**: Adaptive styling and accessibility integration complete
 - **Research Index Integration**: All specialized research documented and cross-referenced
 - **Architecture Consolidation**: Complete integration of research into practical documentation
+- **Oracle Research Synthesis**: SKG architecture and ActivityWatch integration documented
 
 ### 🚧 Partially Integrated  
 - **Advanced Causal XAI**: DoWhy integration concepts outlined, Phase 2 implementation active
 - **RLHF Pipeline**: Framework designed in Learning System, detailed implementation pending
 - **Voice Interface Architecture**: Foundation laid in Backend Architecture, pipecat integration pending
 - **Collective Intelligence**: Research foundations established, privacy-preserving implementation planned
+- **Computational Phenomenology**: Qualia formulas documented, implementation architecture needed
+- **Mamba Architecture**: Research documented, practical integration planning required
 
 ### 📋 Integration Backlog
 - **Federated Learning Research**: Privacy-preserving collective intelligence implementation

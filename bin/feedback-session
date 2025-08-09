@@ -1,0 +1,340 @@
+#!/usr/bin/env python3
+"""
+Interactive Feedback Session for Nix for Humanity
+Guides users through testing scenarios and collects feedback
+"""
+
+import os
+import sys
+import json
+import datetime
+from pathlib import Path
+import subprocess
+import time
+
+class FeedbackSession:
+    def __init__(self):
+        self.session_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.responses = {
+            "session_id": self.session_id,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "scenarios": {},
+            "final_feedback": {}
+        }
+        self.log_file = Path(__file__).parent.parent / f"feedback_{self.session_id}.log"
+        
+    def clear_screen(self):
+        os.system('clear' if os.name == 'posix' else 'cls')
+        
+    def print_banner(self):
+        print("=" * 60)
+        print("🎯 NIX FOR HUMANITY - INTERACTIVE FEEDBACK SESSION 🎯".center(60))
+        print("=" * 60)
+        print()
+        
+    def print_progress(self, current, total):
+        progress = "▓" * current + "░" * (total - current)
+        print(f"\nProgress: [{progress}] {current}/{total}")
+        print("-" * 60)
+        
+    def wait_for_enter(self):
+        input("\nPress Enter to continue...")
+        
+    def get_rating(self, prompt, max_rating=5):
+        while True:
+            try:
+                rating = input(f"{prompt} (1-{max_rating}): ")
+                rating = int(rating)
+                if 1 <= rating <= max_rating:
+                    return rating
+                else:
+                    print(f"Please enter a number between 1 and {max_rating}")
+            except ValueError:
+                print("Please enter a valid number")
+                
+    def get_yes_no(self, prompt):
+        while True:
+            answer = input(f"{prompt} (y/n): ").lower()
+            if answer in ['y', 'yes']:
+                return True
+            elif answer in ['n', 'no']:
+                return False
+            else:
+                print("Please answer 'y' or 'n'")
+                
+    def run_scenario(self, scenario_num, title, task, example_commands, questions):
+        self.clear_screen()
+        self.print_banner()
+        self.print_progress(scenario_num, 5)
+        
+        print(f"📋 SCENARIO {scenario_num}: {title}")
+        print(f"\nTask: {task}")
+        print("\nTry these example commands:")
+        for cmd in example_commands:
+            print(f"  $ {cmd}")
+            
+        print("\n💡 TIP: You can also try your own variations!")
+        print("\nWhen you're ready to continue, we'll ask you a few questions.")
+        self.wait_for_enter()
+        
+        # Collect responses for this scenario
+        scenario_key = f"scenario_{scenario_num}"
+        self.responses["scenarios"][scenario_key] = {
+            "title": title,
+            "task": task,
+            "responses": {}
+        }
+        
+        print("\n" + "=" * 40)
+        print("QUESTIONS:")
+        print("=" * 40)
+        
+        for q_num, question in enumerate(questions, 1):
+            if "⭐" in question:
+                # Rating question
+                rating = self.get_rating(question)
+                self.responses["scenarios"][scenario_key]["responses"][f"q{q_num}"] = {
+                    "question": question,
+                    "rating": rating
+                }
+            else:
+                # Open-ended question
+                answer = input(f"\n{question}\n> ")
+                self.responses["scenarios"][scenario_key]["responses"][f"q{q_num}"] = {
+                    "question": question,
+                    "answer": answer
+                }
+                
+        print("\n✅ Scenario complete! Great job!")
+        time.sleep(1)
+        
+    def run_final_feedback(self):
+        self.clear_screen()
+        self.print_banner()
+        print("🎊 FINAL FEEDBACK")
+        print("\nYou're almost done! Just a few more questions...")
+        print("-" * 60)
+        
+        # Quick ratings
+        print("\n📊 QUICK RATINGS (1-5 stars):")
+        ratings = {
+            "overall_experience": "Overall Experience - How was your overall experience?",
+            "ease_of_use": "Ease of Use - How easy was it compared to regular nix commands?",
+            "clarity": "Clarity - How clear were the responses?",
+            "trust": "Trust - How much do you trust the tool's suggestions?",
+            "speed": "Speed - How fast were the responses?"
+        }
+        
+        for key, prompt in ratings.items():
+            self.responses["final_feedback"][key] = self.get_rating(f"{prompt}")
+            
+        # Open feedback
+        print("\n📝 OPEN FEEDBACK:")
+        
+        open_questions = {
+            "biggest_frustration": "What frustrated you the most during this session?",
+            "favorite_feature": "What did you like best about the tool?",
+            "missing_features": "What do you wish the tool could do that it doesn't?",
+            "one_change": "If you could change ONE thing about this tool, what would it be?"
+        }
+        
+        for key, prompt in open_questions.items():
+            answer = input(f"\n{prompt}\n> ")
+            self.responses["final_feedback"][key] = answer
+            
+        # Personality preference
+        print("\n🎭 PERSONALITY PREFERENCE:")
+        tried_personalities = self.get_yes_no("Did you try different personalities (--minimal, --friendly, etc.)?")
+        if tried_personalities:
+            self.responses["final_feedback"]["tried_personalities"] = True
+            self.responses["final_feedback"]["personality_preference"] = input("Which did you prefer and why?\n> ")
+        else:
+            self.responses["final_feedback"]["tried_personalities"] = False
+            
+        # Recommendations
+        print("\n👥 WOULD YOU RECOMMEND?")
+        print("Would you recommend this to:")
+        recommendations = {
+            "developer_friend": "A developer friend",
+            "family_nontechnical": "A family member who's not technical",
+            "new_to_linux": "Someone new to Linux",
+            "experienced_nixos": "Someone experienced with NixOS"
+        }
+        
+        self.responses["final_feedback"]["recommendations"] = {}
+        for key, prompt in recommendations.items():
+            self.responses["final_feedback"]["recommendations"][key] = self.get_yes_no(f"  - {prompt}?")
+            
+        # Additional comments
+        additional = input("\n💭 Any other thoughts, suggestions, or feedback?\n> ")
+        if additional.strip():
+            self.responses["final_feedback"]["additional_comments"] = additional
+            
+    def save_responses(self):
+        # Save as JSON for analysis
+        json_file = self.log_file.with_suffix('.json')
+        with open(json_file, 'w') as f:
+            json.dump(self.responses, f, indent=2)
+            
+        # Save human-readable log
+        with open(self.log_file, 'w') as f:
+            f.write(f"Feedback Session: {self.session_id}\n")
+            f.write(f"Timestamp: {self.responses['timestamp']}\n")
+            f.write("=" * 60 + "\n\n")
+            
+            # Write scenario responses
+            for scenario_key, scenario_data in self.responses["scenarios"].items():
+                f.write(f"{scenario_data['title']}\n")
+                f.write("-" * 40 + "\n")
+                for q_key, q_data in scenario_data["responses"].items():
+                    f.write(f"Q: {q_data['question']}\n")
+                    if 'rating' in q_data:
+                        f.write(f"A: {'⭐' * q_data['rating']} ({q_data['rating']}/5)\n")
+                    else:
+                        f.write(f"A: {q_data['answer']}\n")
+                    f.write("\n")
+                f.write("\n")
+                
+            # Write final feedback
+            f.write("FINAL FEEDBACK\n")
+            f.write("=" * 60 + "\n")
+            for key, value in self.responses["final_feedback"].items():
+                if isinstance(value, dict):
+                    f.write(f"\n{key.upper()}:\n")
+                    for k, v in value.items():
+                        f.write(f"  {k}: {v}\n")
+                else:
+                    f.write(f"{key}: {value}\n")
+                    
+        print(f"\n💾 Feedback saved to:")
+        print(f"  - {self.log_file}")
+        print(f"  - {json_file}")
+        
+    def run(self):
+        self.clear_screen()
+        self.print_banner()
+        
+        print("Welcome to the Nix for Humanity feedback session! 🌟")
+        print("\nWe're building a natural language interface for NixOS.")
+        print("Your feedback will help make this tool work for everyone!")
+        print("\nThis session will take about 15-20 minutes.")
+        print("\nIMPORTANT: Make sure you have 'ask-nix-hybrid' in your PATH")
+        print("or run this from the project directory.")
+        
+        self.wait_for_enter()
+        
+        # Run scenarios
+        scenarios = [
+            {
+                "title": "Installing Software",
+                "task": "I want to install a text editor",
+                "commands": [
+                    'ask-nix-hybrid "I want to install a text editor"',
+                    'ask-nix-hybrid "install vim"',
+                    'ask-nix-hybrid "I need something to edit code"'
+                ],
+                "questions": [
+                    "⭐ How easy was it to understand the response?",
+                    "Did you get the information you needed?",
+                    "What would make this better?"
+                ]
+            },
+            {
+                "title": "Checking Installed Software",
+                "task": "What do I have installed?",
+                "commands": [
+                    'ask-nix-hybrid "what programs do I have installed?"',
+                    'ask-nix-hybrid "list my packages"',
+                    'ask-nix-hybrid "show installed software"'
+                ],
+                "questions": [
+                    "⭐ How clear was the output?",
+                    "Could you find what you were looking for?",
+                    "What was confusing, if anything?"
+                ]
+            },
+            {
+                "title": "Removing Software",
+                "task": "I made a mistake, remove something",
+                "commands": [
+                    'ask-nix-hybrid "how do I remove firefox?"',
+                    'ask-nix-hybrid "uninstall vim"',
+                    'ask-nix-hybrid "I don\'t need this program anymore"'
+                ],
+                "questions": [
+                    "⭐ How confident did you feel about the instructions?",
+                    "Were the steps clear?",
+                    "Did you worry about breaking something?"
+                ]
+            },
+            {
+                "title": "Searching for Software",
+                "task": "Search for something specific",
+                "commands": [
+                    'ask-nix-hybrid "is there a package for python?"',
+                    'ask-nix-hybrid "search for image editors"',
+                    'ask-nix-hybrid "find me a music player"'
+                ],
+                "questions": [
+                    "⭐ How helpful were the search results?",
+                    "Did you find what you expected?",
+                    "What information was missing?"
+                ]
+            },
+            {
+                "title": "System Updates",
+                "task": "Update my system",
+                "commands": [
+                    'ask-nix-hybrid "update my system"',
+                    'ask-nix-hybrid "how do I upgrade NixOS?"',
+                    'ask-nix-hybrid "check for updates"'
+                ],
+                "questions": [
+                    "⭐ How safe did the process feel?",
+                    "Were you clear on what would happen?",
+                    "What concerns did you have?"
+                ]
+            }
+        ]
+        
+        for i, scenario in enumerate(scenarios, 1):
+            self.run_scenario(
+                i,
+                scenario["title"],
+                scenario["task"],
+                scenario["commands"],
+                scenario["questions"]
+            )
+            
+        # Final feedback
+        self.run_final_feedback()
+        
+        # Save responses
+        self.save_responses()
+        
+        # Thank you message
+        self.clear_screen()
+        self.print_banner()
+        print("🙏 THANK YOU!")
+        print("\nYour feedback is invaluable in making Nix for Humanity")
+        print("truly accessible to everyone.")
+        print("\nYour responses have been saved and will help us:")
+        print("  ✓ Prioritize improvements")
+        print("  ✓ Fix confusing aspects")
+        print("  ✓ Add missing features")
+        print("  ✓ Make NixOS accessible to all")
+        print("\nThank you for helping us democratize NixOS! 🌊")
+        print("\n" + "=" * 60)
+        
+
+if __name__ == "__main__":
+    session = FeedbackSession()
+    try:
+        session.run()
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Session interrupted. Partial feedback saved.")
+        session.save_responses()
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        print("Please report this issue on GitHub!")
+        sys.exit(1)

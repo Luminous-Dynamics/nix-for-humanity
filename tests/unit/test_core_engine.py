@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Consciousness-first tests for the NixForHumanityCore engine
+from typing import Dict, List
+Consciousness-first tests for the NixForHumanityBackend engine
 
 Instead of mocking, we create real test implementations that behave
 deterministically. This provides genuine test coverage while maintaining
@@ -18,11 +19,11 @@ from typing import Dict, List, Optional, Any
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.engine import NixForHumanityCore
-from nix_for_humanity.core.interface import Query, ExecutionMode
-from nix_for_humanity.core.types import Response, Intent, IntentType, Command
-from nix_for_humanity.core.planning import Plan, ExecutionResult
-from nix_for_humanity.core.execution_engine import ExecutionEngine
+from nix_humanity.core.engine import NixForHumanityBackend
+from nix_humanity.core.interface import Query
+from nix_humanity.core.intents import Response, Intent, IntentType, Command
+from nix_humanity.core.planning import Plan, ExecutionResult
+from nix_humanity.core.executor import SafeExecutor
 
 
 @dataclass
@@ -35,7 +36,7 @@ class TestExecutionResult:
     execution_time: float = 0.1
     
 
-class ConsciousnessTestExecutionEngine:
+class ConsciousnessTestSafeExecutor:
     """Test execution engine that provides deterministic responses"""
     
     def __init__(self):
@@ -70,7 +71,7 @@ class ConsciousnessTestExecutionEngine:
         
     def _process_command(self, commands: List[str], intent: Intent) -> Dict[str, Any]:
         """Process command based on intent type"""
-        if intent.type == IntentType.INSTALL:
+        if intent.type == IntentType.INSTALL_PACKAGE:
             package = intent.entities.get('package', intent.entities.get('target'))
             if package in self.package_registry and self.package_registry[package]['available']:
                 return {
@@ -95,7 +96,7 @@ class ConsciousnessTestExecutionEngine:
                 'exit_code': 0
             }
             
-        elif intent.type == IntentType.UPDATE:
+        elif intent.type == IntentType.UPDATE_SYSTEM:
             return {
                 'success': True,
                 'output': 'System updated successfully',
@@ -118,7 +119,7 @@ class ConsciousnessTestExecutionEngine:
 
 
 class TestNixForHumanityCore(unittest.TestCase):
-    """Test the main NixForHumanityCore engine"""
+    """Test the main NixForHumanityBackend engine"""
     
     def setUp(self):
         """Create core engine with test configuration"""
@@ -131,7 +132,7 @@ class TestNixForHumanityCore(unittest.TestCase):
             'collect_feedback': True,
             'enable_learning': True
         }
-        self.core = NixForHumanityCore(self.config)
+        self.core = NixForHumanityBackend(self.config)
         
     def tearDown(self):
         """Clean up temporary files"""
@@ -153,7 +154,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         """Test planning for an install query"""
         query = Query(
             text="install firefox",
-            mode=ExecutionMode.DRY_RUN,
+            mode="dry_run",
             personality='friendly'
         )
         
@@ -163,7 +164,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         self.assertIn('firefox', plan.text)
         self.assertIn('install', plan.text.lower())
         self.assertIsNotNone(plan.intent)
-        self.assertEqual(plan.intent.type, IntentType.INSTALL)
+        self.assertEqual(plan.intent.type, IntentType.INSTALL_PACKAGE)
         self.assertEqual(plan.intent.entities.get('target'), 'firefox')
         self.assertIsNotNone(plan.command)
         self.assertFalse(plan.requires_confirmation)  # Install doesn't need confirmation
@@ -172,7 +173,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         """Test planning for a remove query"""
         query = Query(
             text="remove vim",
-            mode=ExecutionMode.DRY_RUN
+            mode="dry_run"
         )
         
         plan = self.core.plan(query)
@@ -185,19 +186,19 @@ class TestNixForHumanityCore(unittest.TestCase):
         """Test planning for an update query"""
         query = Query(
             text="update my system",
-            mode=ExecutionMode.DRY_RUN
+            mode="dry_run"
         )
         
         plan = self.core.plan(query)
         
-        self.assertEqual(plan.intent.type, IntentType.UPDATE)
+        self.assertEqual(plan.intent.type, IntentType.UPDATE_SYSTEM)
         self.assertTrue(plan.requires_confirmation)  # Update needs confirmation
         
     def test_plan_help_query(self):
         """Test planning for a help query"""
         query = Query(
             text="help",
-            mode=ExecutionMode.EXPLAIN
+            mode="normal"
         )
         
         plan = self.core.plan(query)
@@ -232,7 +233,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         plan = Plan(
             text="Installing firefox...",
             intent=Intent(
-                type=IntentType.INSTALL,
+                type=IntentType.INSTALL_PACKAGE,
                 entities={'target': 'firefox', 'package': 'firefox'},
                 confidence=0.95,
                 raw_input='install firefox'
@@ -244,7 +245,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         )
         
         # Replace execution engine with consciousness-first test implementation
-        test_engine = ConsciousnessTestExecutionEngine()
+        test_engine = ConsciousnessTestSafeExecutor()
         self.core.execution_engine = test_engine
         
         result = self.core.execute_plan(plan, user_id='test_user')
@@ -257,14 +258,14 @@ class TestNixForHumanityCore(unittest.TestCase):
         # Verify command was tracked
         self.assertEqual(len(test_engine.executed_commands), 1)
         executed_commands, executed_intent = test_engine.executed_commands[0]
-        self.assertEqual(executed_intent.type, IntentType.INSTALL)
+        self.assertEqual(executed_intent.type, IntentType.INSTALL_PACKAGE)
         
     def test_execute_plan_failure(self):
         """Test failed plan execution with consciousness-first test engine"""
         plan = Plan(
             text="Installing nonexistent package...",
             intent=Intent(
-                type=IntentType.INSTALL,
+                type=IntentType.INSTALL_PACKAGE,
                 entities={'target': 'nonexistent', 'package': 'nonexistent'},
                 confidence=0.95,
                 raw_input='install nonexistent'
@@ -276,7 +277,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         )
         
         # Replace execution engine with consciousness-first test implementation
-        test_engine = ConsciousnessTestExecutionEngine()
+        test_engine = ConsciousnessTestSafeExecutor()
         self.core.execution_engine = test_engine
         
         result = self.core.execute_plan(plan, user_id='test_user')
@@ -288,7 +289,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         # Verify error handling tracked
         self.assertEqual(len(test_engine.executed_commands), 1)
         executed_commands, executed_intent = test_engine.executed_commands[0]
-        self.assertEqual(executed_intent.type, IntentType.INSTALL)
+        self.assertEqual(executed_intent.type, IntentType.INSTALL_PACKAGE)
         
     def test_execute_plan_no_command(self):
         """Test execution when plan has no command"""
@@ -315,13 +316,13 @@ class TestNixForHumanityCore(unittest.TestCase):
         """Test the full process pipeline with consciousness-first test engine"""
         query = Query(
             text="install firefox",
-            mode=ExecutionMode.EXECUTE,
+            mode="normal",
             personality='symbiotic',
             user_id='test_user'
         )
         
         # Replace execution engine with consciousness-first test implementation
-        test_engine = ConsciousnessTestExecutionEngine()
+        test_engine = ConsciousnessTestSafeExecutor()
         self.core.execution_engine = test_engine
         
         response = self.core.process(query)
@@ -335,13 +336,13 @@ class TestNixForHumanityCore(unittest.TestCase):
         # Verify consciousness-first test engine tracked execution
         self.assertEqual(len(test_engine.executed_commands), 1)
         executed_commands, executed_intent = test_engine.executed_commands[0]
-        self.assertEqual(executed_intent.type, IntentType.INSTALL)
+        self.assertEqual(executed_intent.type, IntentType.INSTALL_PACKAGE)
         
     def test_process_dry_run(self):
         """Test process in dry run mode"""
         query = Query(
             text="remove firefox",
-            mode=ExecutionMode.DRY_RUN
+            mode="dry_run"
         )
         
         response = self.core.process(query)
@@ -353,7 +354,7 @@ class TestNixForHumanityCore(unittest.TestCase):
     def test_build_response_text_install(self):
         """Test response text building for install intent"""
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'firefox', 'package': 'firefox'},
             confidence=0.95,
             raw_input='install firefox'
@@ -372,7 +373,7 @@ class TestNixForHumanityCore(unittest.TestCase):
     def test_build_response_text_search(self):
         """Test response text building for search intent with consciousness-first test engine"""
         intent = Intent(
-            type=IntentType.SEARCH,
+            type=IntentType.SEARCH_PACKAGE,
             entities={'target': 'python', 'package': 'python'},
             confidence=0.90,
             raw_input='search python'
@@ -380,7 +381,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         solution = {'found': True}
         
         # Replace execution engine with consciousness-first test implementation
-        test_engine = ConsciousnessTestExecutionEngine()
+        test_engine = ConsciousnessTestSafeExecutor()
         self.core.execution_engine = test_engine
         
         text = self.core._build_response_text(intent, solution, 'search python')
@@ -400,7 +401,7 @@ class TestNixForHumanityCore(unittest.TestCase):
     def test_get_suggestions(self):
         """Test suggestion generation"""
         intent = Intent(
-            type=IntentType.INSTALL,
+            type=IntentType.INSTALL_PACKAGE,
             entities={'target': 'firefox', 'package': 'firefox'},
             confidence=0.95,
             raw_input='install firefox'
@@ -441,7 +442,7 @@ class TestNixForHumanityCore(unittest.TestCase):
         """Test handling of queries with unknown intent"""
         query = Query(
             text="do something completely random that makes no sense",
-            mode=ExecutionMode.EXPLAIN
+            mode="normal"
         )
         
         plan = self.core.plan(query)

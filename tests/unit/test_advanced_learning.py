@@ -19,24 +19,18 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from nix_for_humanity.ai.advanced_learning import (
-    AdvancedLearningSystem,
-    PreferencePair,
-    LearningMetrics,
-    UserModel,
-    LearningMode,
-    AdaptationStrategy
-)
+from nix_humanity.learning.preferences import PreferenceManager as AdvancedPreferenceManager
+from nix_humanity.learning.preferences import PreferencePair, LearningMetrics, UserModel, LearningMode, AdaptationStrategy
 
 
-class TestAdvancedLearningSystemCore(unittest.TestCase):
+class TestAdvancedPreferenceManagerCore(unittest.TestCase):
     """Test core Advanced Learning System functionality"""
     
     def setUp(self):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -63,13 +57,13 @@ class TestAdvancedLearningSystemCore(unittest.TestCase):
     
     def test_learning_mode_initialization(self):
         """Test different learning mode initialization"""
-        passive_system = AdvancedLearningSystem(
+        passive_system = AdvancedPreferenceManager(
             db_path=Path(self.temp_dir) / "passive.db",
             learning_mode=LearningMode.PASSIVE
         )
         self.assertEqual(passive_system.learning_mode, LearningMode.PASSIVE)
         
-        active_system = AdvancedLearningSystem(
+        active_system = AdvancedPreferenceManager(
             db_path=Path(self.temp_dir) / "active.db",
             learning_mode=LearningMode.ACTIVE
         )
@@ -118,7 +112,7 @@ class TestPreferencePairHandling(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -132,7 +126,7 @@ class TestPreferencePairHandling(unittest.TestCase):
             preferred_response="Installing Firefox for you!",
             rejected_response="Running: nix-env -iA nixos.firefox",
             feedback_strength=0.8,
-            context={"category": "install"},
+            context={"category": "install_package"},
             user_id="test_user"
         )
         
@@ -164,7 +158,7 @@ class TestPreferencePairHandling(unittest.TestCase):
             preferred_response="Installing Firefox for you!",
             rejected_response="Running: nix-env -iA nixos.firefox",
             feedback_strength=0.8,
-            context={"category": "install"},
+            context={"category": "install_package"},
             user_id="test_user"
         )
         
@@ -211,7 +205,7 @@ class TestDPOLearning(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -328,7 +322,7 @@ class TestUserModelPersistence(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -366,7 +360,7 @@ class TestUserModelPersistence(unittest.TestCase):
         self.system._save_user_model(user_model)
         
         # Create new system instance to test loading
-        new_system = AdvancedLearningSystem(db_path=self.db_path)
+        new_system = AdvancedPreferenceManager(db_path=self.db_path)
         
         # Should have loaded the model
         loaded_model = new_system.get_user_model("load_test")
@@ -386,7 +380,7 @@ class TestUserModelPersistence(unittest.TestCase):
         conn.close()
         
         # Should handle gracefully and create default model
-        new_system = AdvancedLearningSystem(db_path=self.db_path)
+        new_system = AdvancedPreferenceManager(db_path=self.db_path)
         model = new_system.get_user_model("corrupted_user")
         
         # Should be default model
@@ -401,7 +395,7 @@ class TestResponseAdaptation(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -521,7 +515,7 @@ class TestIntentPrediction(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -588,7 +582,7 @@ class TestLearningMetrics(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -651,7 +645,7 @@ class TestSymbioticFeatures(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path, learning_mode=LearningMode.SYMBIOTIC)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path, learning_mode=LearningMode.SYMBIOTIC)
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -693,7 +687,7 @@ class TestSymbioticFeatures(unittest.TestCase):
         """Test getting symbiotic relationship insights"""
         # Create some test data
         user_model = self.system.get_user_model("insight_user")
-        user_model.common_intents = {"install": 0.8, "search": 0.6}
+        user_model.common_intents = {"install_package": 0.8, "search_package": 0.6}
         
         insights = self.system.get_symbiotic_insights("insight_user")
         
@@ -729,7 +723,7 @@ class TestSymbioticFeatures(unittest.TestCase):
         # Test with more data
         metrics.preference_pairs_collected = 10
         metrics.adaptation_accuracy = 0.8
-        user_model.common_intents = {"install": 0.8, "search": 0.6, "update": 0.4}
+        user_model.common_intents = {"install_package": 0.8, "search_package": 0.6, "update_system": 0.4}
         metrics.convergence_score = 0.8
         
         stage = self.system._determine_symbiotic_stage(user_model, metrics)
@@ -760,7 +754,7 @@ class TestEdgeCases(unittest.TestCase):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.db_path = Path(self.temp_dir) / "test_advanced_learning.db"
-        self.system = AdvancedLearningSystem(db_path=self.db_path)
+        self.system = AdvancedPreferenceManager(db_path=self.db_path)
     
     def tearDown(self):
         """Clean up test fixtures"""

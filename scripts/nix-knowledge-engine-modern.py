@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 NixOS Knowledge Engine - Modern Commands Version
 Uses current best practices: nix profile, Home Manager, etc.
 """
@@ -384,7 +385,63 @@ class ModernNixOSKnowledgeEngine:
                 'query': query
             }
         
-        # Generation patterns
+        # Flake patterns
+        elif 'flake' in query_lower:
+            if any(word in query_lower for word in ['create', 'make', 'generate']):
+                # Extract description
+                description = query
+                for word in ['create', 'make', 'generate', 'flake', 'a', 'for']:
+                    description = description.replace(word, '').strip()
+                return {
+                    'action': 'create_flake',
+                    'description': description or query,
+                    'query': query
+                }
+            elif any(word in query_lower for word in ['validate', 'check', 'verify']):
+                return {
+                    'action': 'validate_flake',
+                    'query': query
+                }
+            elif 'convert' in query_lower:
+                return {
+                    'action': 'convert_flake',
+                    'query': query
+                }
+            elif any(word in query_lower for word in ['show', 'info', 'describe']):
+                return {
+                    'action': 'show_flake_info',
+                    'query': query
+                }
+        
+        # Configuration generation patterns
+        elif any(word in query_lower for word in ['generate', 'create', 'make', 'build']) and \
+             any(word in query_lower for word in ['config', 'configuration']):
+            # Extract description more carefully using regex
+            import re
+            # Pattern to extract everything after config generation keywords
+            pattern = r'(?:generate|create|make|build)\s+(?:me\s+)?(?:a\s+)?(?:config|configuration)\s+(?:for\s+)?(.+)'
+            match = re.search(pattern, query_lower)
+            if match:
+                description = match.group(1).strip()
+            # Also handle "make me a X configuration/config"
+            elif re.search(r'(?:make|create|build)\s+(?:me\s+)?(?:a\s+)?(.+?)\s+(?:config|configuration)', query_lower):
+                match = re.search(r'(?:make|create|build)\s+(?:me\s+)?(?:a\s+)?(.+?)\s+(?:config|configuration)', query_lower)
+                description = match.group(1).strip()
+            else:
+                # Fallback: just remove the action words
+                description = query_lower
+                for word in ['generate', 'create', 'make', 'build']:
+                    description = re.sub(r'\b' + word + r'\b', '', description)
+                description = re.sub(r'\b(?:a|me)\s+(?:config|configuration)\b', '', description)
+                description = re.sub(r'\s+', ' ', description).strip()
+            
+            return {
+                'action': 'generate_config',
+                'description': description or query,
+                'query': query
+            }
+        
+        # Generation patterns (system generations, not config generation)
         elif any(word in query_lower for word in ['generation', 'rollback', 'previous', 'undo', 'history']):
             if 'list' in query_lower or 'show' in query_lower or 'history' in query_lower:
                 return {
@@ -432,6 +489,55 @@ class ModernNixOSKnowledgeEngine:
         conn.close()
         
         if not result:
+            # Special handling for generate_config
+            if action == 'generate_config':
+                return {
+                    'found': True,
+                    'solution': 'Generate a NixOS configuration file',
+                    'example': f'ask-nix config generate "{intent.get("description", "web server with nginx")}"',
+                    'explanation': 'I can generate NixOS configurations from natural language descriptions',
+                    'related': ['configuration.nix', 'nixos-rebuild'],
+                    'requires_sudo': False
+                }
+            
+            # Special handling for flake operations
+            elif action == 'create_flake':
+                return {
+                    'found': True,
+                    'solution': 'Create a Nix flake for development environment',
+                    'example': f'ask-nix flake create "{intent.get("description", "python development environment")}"',
+                    'explanation': 'I can create Nix flakes from natural language descriptions for development environments',
+                    'related': ['flake.nix', 'nix develop', 'nix flake'],
+                    'requires_sudo': False
+                }
+            elif action == 'validate_flake':
+                return {
+                    'found': True,
+                    'solution': 'Validate a flake.nix file',
+                    'example': 'ask-nix flake validate',
+                    'explanation': 'Check if your flake.nix is syntactically correct and well-formed',
+                    'related': ['flake.nix', 'nix flake check'],
+                    'requires_sudo': False
+                }
+            elif action == 'convert_flake':
+                return {
+                    'found': True,
+                    'solution': 'Convert shell.nix to flake.nix',
+                    'example': 'ask-nix flake convert',
+                    'explanation': 'Automatically convert traditional Nix files to the modern flake format',
+                    'related': ['shell.nix', 'default.nix', 'flake.nix'],
+                    'requires_sudo': False
+                }
+            elif action == 'show_flake_info':
+                return {
+                    'found': True,
+                    'solution': 'Show information about a flake',
+                    'example': 'ask-nix flake info',
+                    'explanation': 'Display description, inputs, outputs, and available dev shells',
+                    'related': ['flake.nix', 'nix flake metadata'],
+                    'requires_sudo': False
+                }
+            
             return {
                 'found': False,
                 'suggestion': 'I don\'t understand that yet. Try asking about installing packages, updating the system, or fixing WiFi.'
@@ -548,6 +654,44 @@ class ModernNixOSKnowledgeEngine:
             if solution.get('related'):
                 response += f"\n\nRelated: {', '.join(solution['related'])}"
                 
+            return response
+        
+        elif intent['action'] == 'generate_config':
+            description = intent.get('description', 'your system')
+            response += f"I can help you generate a NixOS configuration for {description}!\n\n"
+            response += "To generate the configuration, I'll analyze your requirements and create a complete configuration.nix file.\n\n"
+            response += f"Run this command:\n```\n{solution['example']}\n```\n\n"
+            response += "This will:\n"
+            response += "• Parse your natural language description\n"
+            response += "• Identify needed modules (desktop environments, services, etc.)\n"
+            response += "• Add appropriate packages\n"
+            response += "• Generate a complete configuration.nix\n"
+            response += "• Save it to /tmp/generated-config.nix for review\n\n"
+            response += "💡 You can then test it with: sudo nixos-rebuild test -I nixos-config=/tmp/generated-config.nix"
+            return response
+            
+        elif intent['action'] == 'create_flake':
+            description = intent.get('description', 'development environment')
+            response += f"I can help you create a Nix flake for {description}!\n\n"
+            response += "Flakes are the modern way to manage Nix projects with:\n"
+            response += "• Reproducible builds across all machines\n"
+            response += "• Locked dependencies with flake.lock\n"
+            response += "• Clean, declarative project structure\n\n"
+            response += f"Run this command:\n```\n{solution['example']}\n```\n\n"
+            response += "This will:\n"
+            response += "• Detect your project type (Python, Node.js, Rust, etc.)\n"
+            response += "• Create a flake.nix with appropriate dev tools\n"
+            response += "• Set up development shell with all dependencies\n"
+            response += "• Configure language-specific tooling\n\n"
+            response += "💡 Then use `nix develop` to enter the development environment!"
+            return response
+            
+        elif intent['action'] in ['validate_flake', 'convert_flake', 'show_flake_info']:
+            response += f"{solution['solution']}\n\n"
+            response += f"Command:\n```\n{solution['example']}\n```\n\n"
+            response += f"💡 {solution['explanation']}\n\n"
+            if solution.get('related'):
+                response += f"Related: {', '.join(solution['related'])}"
             return response
             
         else:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List, Optional
 Educational Error Handler for Nix for Humanity
 Transforms errors into learning opportunities for all personas
 """

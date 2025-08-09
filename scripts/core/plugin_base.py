@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict, List
 Plugin Base Interface for Nix for Humanity
 Defines the contract that all plugins must follow
 """

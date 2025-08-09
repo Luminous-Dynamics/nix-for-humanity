@@ -1,0 +1,435 @@
+#!/usr/bin/env python3
+"""
+Adaptive NixOS Assistant - Dynamic response adaptation based on user needs
+
+This version replaces fixed personality styles with an adaptive response system
+that adjusts multiple dimensions based on natural language cues.
+"""
+
+import sys
+import subprocess
+import time
+import threading
+from pathlib import Path
+import os
+import json
+import shutil
+import tempfile
+import importlib.util
+from typing import Dict, Optional, Tuple, List
+from datetime import datetime
+
+# Add scripts directory to path
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+sys.path.insert(0, script_dir)
+
+# Import our knowledge engines and systems
+from nix_knowledge_engine import NixOSKnowledgeEngine
+spec = importlib.util.spec_from_file_location("nix_knowledge_engine_modern", 
+    os.path.join(script_dir, "nix-knowledge-engine-modern.py"))
+nix_knowledge_engine_modern = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(nix_knowledge_engine_modern)
+ModernNixOSKnowledgeEngine = nix_knowledge_engine_modern.ModernNixOSKnowledgeEngine
+
+# Import adaptive response formatter
+spec = importlib.util.spec_from_file_location("adaptive_response_formatter",
+    os.path.join(script_dir, "adaptive-response-formatter.py"))
+adaptive_response_formatter = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(adaptive_response_formatter)
+AdaptiveResponseFormatter = adaptive_response_formatter.AdaptiveResponseFormatter
+
+# Import learning and cache systems
+try:
+    # Import command learning system
+    spec = importlib.util.spec_from_file_location("command_learning_system", 
+        os.path.join(script_dir, "command-learning-system.py"))
+    command_learning_system = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(command_learning_system)
+    CommandLearningSystem = command_learning_system.CommandLearningSystem
+    
+    # Import package cache manager
+    spec = importlib.util.spec_from_file_location("package_cache_manager", 
+        os.path.join(script_dir, "package-cache-manager.py"))
+    package_cache_manager = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(package_cache_manager)
+    IntelligentPackageCache = package_cache_manager.IntelligentPackageCache
+except Exception as e:
+    print(f"Warning: Could not load advanced features: {e}")
+    # Create dummy implementations
+    class CommandLearningSystem:
+        def __init__(self):
+            pass
+        def learn_from_outcome(self, *args, **kwargs):
+            pass
+        def get_success_rate(self, *args, **kwargs):
+            return 0.0
+    
+    class IntelligentPackageCache:
+        def __init__(self):
+            pass
+        def get_cached_search(self, *args, **kwargs):
+            return None
+        def cache_search_results(self, *args, **kwargs):
+            pass
+
+# Try to import Rich for better visuals (graceful fallback)
+try:
+    from rich.console import Console
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import print as rprint
+    RICH_AVAILABLE = True
+    console = Console()
+except ImportError:
+    RICH_AVAILABLE = False
+    console = None
+    rprint = print
+
+class ProgressSpinner:
+    """Simple progress spinner for long operations"""
+    def __init__(self, message="Processing", estimated_time=None):
+        self.message = message
+        self.estimated_time = estimated_time
+        self.running = False
+        self.thread = None
+        self.spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+        self.current = 0
+        
+    def start(self):
+        self.running = True
+        self.thread = threading.Thread(target=self._spin)
+        self.thread.start()
+        
+    def _spin(self):
+        start_time = time.time()
+        while self.running:
+            elapsed = int(time.time() - start_time)
+            time_str = f" ({elapsed}s)"
+            if self.estimated_time:
+                time_str = f" (~{self.estimated_time})"
+            
+            print(f"\r{self.spinner_chars[self.current]} {self.message}{time_str}", 
+                  end='', flush=True)
+            self.current = (self.current + 1) % len(self.spinner_chars)
+            time.sleep(0.1)
+            
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join()
+        print("\r" + " " * 80 + "\r", end='', flush=True)
+
+class AdaptiveNixAssistant:
+    def __init__(self):
+        self.basic_knowledge = NixOSKnowledgeEngine()
+        self.modern_knowledge = ModernNixOSKnowledgeEngine()
+        self.adaptive_formatter = AdaptiveResponseFormatter()
+        self.learning_system = CommandLearningSystem()
+        self.cache_manager = IntelligentPackageCache()
+        
+        # Configuration
+        self.execute_commands = False
+        self.use_bridge = False
+        self.show_progress = True
+        self.use_cache = True
+        self.visual_mode = RICH_AVAILABLE
+        
+        # Track conversation history for adaptation
+        self.conversation_history = []
+        
+    def answer(self, query: str):
+        """Process query with adaptive response formatting"""
+        # Add to history
+        self.conversation_history.append(query)
+        
+        # Step 1: Extract intent using modern engine
+        intent = self.modern_knowledge.extract_intent(query)
+        
+        # Step 2: Get solution
+        if intent['action'] != 'unknown':
+            solution = self.modern_knowledge.get_solution(intent)
+        else:
+            # Fallback to basic knowledge engine
+            basic_intent = self.basic_knowledge.extract_intent(query)
+            solution = self.basic_knowledge.get_solution(basic_intent)
+            intent = basic_intent
+        
+        # Step 3: Format initial response
+        if solution.get('found', False):
+            if intent['action'] == 'install_package':
+                response = self.modern_knowledge.format_install_response(intent, solution)
+            else:
+                response = self.modern_knowledge.format_response(intent, solution)
+        else:
+            response = solution.get('suggestion', "I don't understand that command yet.")
+        
+        # Step 4: Apply adaptive formatting
+        adapted_response, dimensions = self.adaptive_formatter.adapt_response(
+            query, 
+            response, 
+            intent['action'],
+            self.conversation_history[-10:]  # Last 10 queries for context
+        )
+        
+        # Display dimension info if in debug mode
+        if os.environ.get('NIX_ADAPTIVE_DEBUG'):
+            print(f"\n[DEBUG] Response dimensions:")
+            print(f"  Complexity: {dimensions.complexity:.1f}")
+            print(f"  Verbosity: {dimensions.verbosity:.1f}")
+            print(f"  Warmth: {dimensions.warmth:.1f}")
+            print(f"  Examples: {dimensions.examples:.1f}")
+            print(f"  Pace: {dimensions.pace:.1f}")
+            print("")
+        
+        return adapted_response, intent
+    
+    def execute_command(self, intent: Dict, solution: Dict) -> bool:
+        """Execute the actual command if requested"""
+        action = intent.get('action')
+        
+        if action == 'install_package':
+            package = intent.get('package')
+            if package:
+                if self.use_bridge:
+                    cmd = f"nix-profile-do install {package}"
+                else:
+                    cmd = f"nix profile install nixpkgs#{package}"
+                
+                print(f"\n🚀 Executing: {cmd}")
+                result = subprocess.run(cmd, shell=True)
+                
+                # Learn from outcome
+                success = result.returncode == 0
+                self.learning_system.learn_from_outcome(
+                    'install_package', 
+                    cmd, 
+                    success
+                )
+                
+                return success
+        
+        elif action == 'search_package':
+            # Execute search with caching
+            self.execute_search(intent.get('query', ''), intent.get('package'))
+            return True
+            
+        elif action == 'remove_package':
+            package = intent.get('package')
+            if package:
+                cmd = f"nix profile remove {package}"
+                print(f"\n🗑️  Executing: {cmd}")
+                result = subprocess.run(cmd, shell=True)
+                return result.returncode == 0
+                
+        elif action == 'update_system':
+            cmd = "sudo nixos-rebuild switch"
+            print(f"\n🔄 Executing: {cmd}")
+            print("⚠️  This may take several minutes...")
+            result = subprocess.run(cmd, shell=True)
+            return result.returncode == 0
+            
+        return False
+    
+    def execute_search(self, query: str, package: Optional[str] = None):
+        """Execute package search with intelligent caching"""
+        search_term = package or query.replace('search', '').strip()
+        
+        print(f"\n🔍 Searching for '{search_term}'...")
+        
+        # Try cache first
+        if self.use_cache:
+            cached_results = self.cache_manager.get_cached_search(search_term)
+            if cached_results:
+                print("Using cached results (instant!)")
+                self._display_search_results(cached_results, search_term)
+                return
+        
+        # Perform actual search
+        spinner = ProgressSpinner("Searching nixpkgs", "10-30 seconds")
+        if self.show_progress:
+            spinner.start()
+            
+        results = self._perform_search(search_term)
+        
+        if self.show_progress:
+            spinner.stop()
+        
+        # Cache the results
+        if self.use_cache and results:
+            self.cache_manager.cache_search_results(search_term, results)
+        
+        # Display results
+        self._display_search_results(results, search_term)
+    
+    def _perform_search(self, search_term: str) -> Dict:
+        """Perform actual package search"""
+        try:
+            result = subprocess.run(
+                f"nix search nixpkgs {search_term} --json",
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                return json.loads(result.stdout)
+            else:
+                return {}
+        except:
+            return {}
+    
+    def _display_search_results(self, results: Dict, search_term: str):
+        """Display search results"""
+        if not results:
+            print(f"\nNo packages found matching '{search_term}'")
+            print("\n💡 Try a different search term or check spelling")
+            return
+        
+        # Sort results by relevance
+        sorted_results = sorted(
+            results.items(),
+            key=lambda x: (
+                search_term.lower() not in x[0].split('.')[-1].lower(),
+                x[0]
+            )
+        )[:10]
+        
+        print(f"\nFound {len(results)} packages:")
+        print("-" * 60)
+        
+        for pkg_path, pkg_info in sorted_results:
+            pkg_name = pkg_path.split('.')[-1]
+            version = pkg_info.get('version', 'unknown')
+            description = pkg_info.get('description', 'No description')[:50]
+            if len(pkg_info.get('description', '')) > 50:
+                description += "..."
+            
+            print(f"  {pkg_name} ({version})")
+            print(f"    {description}")
+            print()
+        
+        print(f"\nShowing top {len(sorted_results)} results")
+        print("\n💡 To install: ask-nix-adaptive 'install package-name'")
+
+def print_help():
+    """Print adaptive help message"""
+    if RICH_AVAILABLE:
+        console.print("\n[bold cyan]🎯 Adaptive NixOS Assistant[/bold cyan]")
+        console.print("Natural language interface with dynamic response adaptation\n")
+        
+        console.print("[bold]Usage:[/bold]")
+        console.print("  ask-nix-adaptive 'your natural language query'")
+        
+        console.print("\n[bold]Examples:[/bold]")
+        console.print("  ask-nix-adaptive 'How do I install Firefox?'")
+        console.print("  ask-nix-adaptive 'quickly tell me how to update'")
+        console.print("  ask-nix-adaptive 'explain simply how to install software'")
+        console.print("  ask-nix-adaptive 'I need detailed info about garbage collection'")
+        
+        console.print("\n[bold]Options:[/bold]")
+        console.print("  --execute         Actually run commands (careful!)")
+        console.print("  --no-cache        Disable intelligent caching")
+        console.print("  --no-progress     Disable progress indicators")
+        console.print("  --debug           Show response adaptation details")
+        
+        console.print("\n[bold]Features:[/bold]")
+        console.print("  🧠 Adapts to your communication style")
+        console.print("  🚀 Intelligent package search caching")
+        console.print("  📚 Learns from your usage patterns")
+        console.print("  🎯 Natural language understanding")
+        console.print("  ♿ Accessibility-aware responses")
+        
+        console.print("\n[dim]The system adapts responses based on:[/dim]")
+        console.print("[dim]  - Detected frustration or confusion[/dim]")
+        console.print("[dim]  - Learning needs vs quick answers[/dim]")
+        console.print("[dim]  - Time pressure cues[/dim]")
+        console.print("[dim]  - Accessibility requirements[/dim]")
+        console.print("[dim]  - Technical expertise level[/dim]")
+    else:
+        print("\n🎯 Adaptive NixOS Assistant")
+        print("Natural language interface with dynamic response adaptation\n")
+        
+        print("Usage:")
+        print("  ask-nix-adaptive 'your natural language query'")
+        
+        print("\nExamples:")
+        print("  ask-nix-adaptive 'How do I install Firefox?'")
+        print("  ask-nix-adaptive 'quickly tell me how to update'")
+        print("  ask-nix-adaptive 'explain simply how to install software'")
+        print("  ask-nix-adaptive 'I need detailed info about garbage collection'")
+        
+        print("\nOptions:")
+        print("  --execute         Actually run commands (careful!)")
+        print("  --no-cache        Disable intelligent caching")
+        print("  --no-progress     Disable progress indicators")
+        print("  --debug           Show response adaptation details")
+        
+        print("\nFeatures:")
+        print("  🧠 Adapts to your communication style")
+        print("  🚀 Intelligent package search caching")
+        print("  📚 Learns from your usage patterns")
+        print("  🎯 Natural language understanding")
+        print("  ♿ Accessibility-aware responses")
+        
+        print("\nThe system adapts responses based on:")
+        print("  - Detected frustration or confusion")
+        print("  - Learning needs vs quick answers")
+        print("  - Time pressure cues")
+        print("  - Accessibility requirements")
+        print("  - Technical expertise level")
+
+def main():
+    if len(sys.argv) < 2:
+        print_help()
+        sys.exit(0)
+    
+    assistant = AdaptiveNixAssistant()
+    
+    # Process command line flags
+    args = []
+    for arg in sys.argv[1:]:
+        if arg == '--execute':
+            assistant.execute_commands = True
+        elif arg == '--use-bridge':
+            assistant.use_bridge = True
+        elif arg == '--no-cache':
+            assistant.use_cache = False
+        elif arg == '--no-progress':
+            assistant.show_progress = False
+        elif arg == '--no-visual':
+            assistant.visual_mode = False
+        elif arg == '--debug':
+            os.environ['NIX_ADAPTIVE_DEBUG'] = '1'
+        elif arg == '--help' or arg == '-h':
+            print_help()
+            sys.exit(0)
+        else:
+            args.append(arg)
+    
+    if not args:
+        print("Error: No query provided")
+        sys.exit(1)
+    
+    query = ' '.join(args)
+    
+    # Get adaptive response
+    response, intent = assistant.answer(query)
+    print(response)
+    
+    # Execute if requested and applicable
+    if assistant.execute_commands and intent.get('action') != 'unknown':
+        solution = assistant.modern_knowledge.get_solution(intent)
+        if solution.get('found', False):
+            print("\n" + "="*60)
+            confirm = input("Execute this command? (y/N): ")
+            if confirm.lower() == 'y':
+                success = assistant.execute_command(intent, solution)
+                if success:
+                    print("\n✅ Command executed successfully!")
+                else:
+                    print("\n❌ Command failed. Check the error messages above.")
+
+if __name__ == "__main__":
+    main()

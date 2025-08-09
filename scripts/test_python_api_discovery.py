@@ -130,7 +130,7 @@ def check_nixos_version():
         result = subprocess.run(['nixos-version'], capture_output=True, text=True)
         if result.returncode == 0:
             print(f"📌 NixOS version: {result.stdout.strip()}")
-    except:
+    except Exception:
         print("⚠️  Could not determine NixOS version")
 
 

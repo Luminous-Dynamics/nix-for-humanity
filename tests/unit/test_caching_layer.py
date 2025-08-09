@@ -26,8 +26,8 @@ from src.nix_for_humanity.caching import (
     CacheInvalidator, InvalidationStrategy
 )
 from src.nix_for_humanity.core.types import Request, Response, Intent, IntentType, ExecutionResult
-from src.nix_for_humanity.ai.xai_engine import ExplanationLevel
-from src.nix_for_humanity.xai.causal_engine import CausalExplanation
+# v2.0+ feature: from src.nix_for_humanity.ai.xai_engine import ExplanationLevel
+# v2.0+ feature: from src.nix_for_humanity.xai.causal_engine import CausalExplanation
 
 
 class TestCacheManager:
@@ -149,7 +149,7 @@ class TestResponseCache:
         
         response = Response(
             success=True,
-            intent=Intent(type=IntentType.INSTALL),
+            intent=Intent(type=IntentType.INSTALL_PACKAGE),
             message="Installing firefox..."
         )
         
@@ -293,7 +293,7 @@ class TestXAICache:
         """Test caching of XAI explanations"""
         explanation = CausalExplanation(
             decision_type="intent_recognition",
-            decision_value="install",
+            decision_value="install_package",
             explanation="I understood you want to install software",
             confidence=0.9,
             level=ExplanationLevel.SIMPLE
@@ -302,7 +302,7 @@ class TestXAICache:
         # Cache explanation
         xai_cache.set(
             "intent_recognition",
-            "install",
+            "install_package",
             {'user_input': 'install firefox'},
             ExplanationLevel.SIMPLE,
             explanation,
@@ -312,7 +312,7 @@ class TestXAICache:
         # Should retrieve
         cached = xai_cache.get(
             "intent_recognition",
-            "install",
+            "install_package",
             {'user_input': 'install firefox'},
             ExplanationLevel.SIMPLE
         )

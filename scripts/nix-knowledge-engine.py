@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 NixOS Knowledge Engine - A better solution
 Combines LLM intent recognition with deterministic knowledge
 """

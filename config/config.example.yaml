@@ -1,0 +1,177 @@
+# Nix for Humanity Configuration Example
+# Copy this file to ~/.config/nix-for-humanity/config.yaml and customize
+
+# Core Settings
+core:
+  version: "0.8.3"
+  backend: "python"                    # python, nodejs, or hybrid
+  data_directory: "~/.local/share/nix-for-humanity"
+  cache_directory: "~/.cache/nix-for-humanity"
+  log_level: "info"                    # debug, info, warn, error
+
+# User Interface Settings  
+ui:
+  default_personality: "friendly"      # minimal, friendly, encouraging, technical, accessible
+  response_format: "structured"        # plain, structured, json, yaml
+  show_commands: true                  # Show underlying NixOS commands
+  confirm_actions: true                # Ask before executing commands
+  use_colors: true                     # Colored output
+  progress_indicators: true            # Show progress bars
+  theme: "default"                     # default, dark, light, high-contrast
+  
+  # Custom messages (optional)
+  greeting: null                       # Custom greeting message
+  farewell: null                       # Custom farewell message
+  error_prefix: "Oops!"               # Prefix for error messages
+  success_prefix: "Great!"            # Prefix for success messages
+  
+# Natural Language Processing
+nlp:
+  engine: "hybrid"                     # rule-based, statistical, neural, hybrid
+  confidence_threshold: 0.7            # Minimum confidence for suggestions (0.0-1.0)
+  typo_correction: true                # Auto-correct common typos
+  context_memory: 10                   # Remember last N interactions
+  learning_enabled: true               # Learn from user interactions
+  
+  # Advanced NLP settings
+  fuzzy_match_threshold: 0.8           # Fuzzy matching threshold
+  synonym_expansion: true              # Expand synonyms
+  intent_patterns_file: null           # Custom intent patterns file
+  custom_vocabulary: []                # Additional vocabulary words
+  
+# Performance Settings
+performance:
+  fast_mode: false                     # Prioritize speed over accuracy
+  cache_responses: true                # Cache common responses
+  parallel_processing: true            # Use multiple CPU cores
+  memory_limit: "512MB"                # Maximum memory usage
+  timeout: 30                          # Command timeout in seconds
+  
+  # Advanced performance settings
+  worker_threads: 4                    # Number of worker threads
+  cache_size: 1000                     # Maximum cache entries
+  batch_size: 10                       # Batch processing size
+  prefetch_common: true                # Prefetch common operations
+  
+# Privacy & Security
+privacy:
+  data_collection: "minimal"           # none, minimal, standard, full
+  share_anonymous_stats: false         # Help improve the system
+  local_only: true                     # Never send data externally
+  encrypt_data: true                   # Encrypt stored data
+  auto_cleanup: true                   # Clean old data automatically
+  
+  # Data retention
+  log_retention_days: 30               # Keep logs for N days
+  cache_retention_days: 7              # Keep cache for N days
+  learning_retention_days: 365         # Keep learning data for N days
+  
+  # Security settings
+  allowed_commands:                    # Whitelist of allowed commands
+    - "nix-env"
+    - "nixos-rebuild"
+    - "nix-channel"
+    - "nix"
+    - "home-manager"
+  forbidden_patterns:                  # Patterns to block
+    - "rm -rf /"
+    - "dd if="
+    - "mkfs"
+    - "> /dev/"
+  
+# Learning System
+learning:
+  enabled: true                        # Enable learning from interactions
+  personal_preferences: true           # Learn user preferences
+  command_patterns: true               # Learn command usage patterns
+  error_recovery: true                 # Learn from corrections
+  privacy_mode: "strict"               # strict, balanced, open
+  retention_days: 365                  # Keep learning data for N days
+  
+  # Learning parameters
+  min_confidence: 0.6                  # Minimum confidence to learn
+  feedback_weight: 0.3                 # Weight of user feedback
+  success_boost: 0.1                   # Boost for successful commands
+  failure_penalty: 0.05                # Penalty for failed commands
+  
+# Accessibility
+accessibility:
+  screen_reader: false                 # Optimize for screen readers
+  high_contrast: false                 # Use high contrast colors
+  large_text: false                    # Use larger text in TUI
+  reduce_motion: false                 # Minimize animations
+  keyboard_only: false                 # Optimize for keyboard navigation
+  simple_language: false               # Use simpler vocabulary
+  
+  # Additional accessibility options
+  consistent_terminology: true         # Use consistent terms
+  structured_output: false             # Structure output for screen readers
+  extra_confirmations: false           # Additional confirmations
+  patient_mode: false                  # No time limits
+  
+# Voice Interface (when available)
+voice:
+  enabled: false                       # Enable voice commands
+  wake_word: "hey nix"                 # Voice activation phrase
+  language: "en-US"                    # Voice recognition language
+  voice_feedback: true                 # Speak responses
+  noise_reduction: true                # Filter background noise
+  
+  # Voice parameters
+  silence_threshold: 0.1               # Silence detection threshold
+  speech_timeout: 5                    # Speech timeout in seconds
+  voice_model: "whisper-small"         # Voice recognition model
+  tts_voice: "default"                 # Text-to-speech voice
+  speed: 1.0                           # Speech speed multiplier
+  
+# Development Settings  
+development:
+  debug_mode: false                    # Enable debug features
+  test_mode: false                     # Use test data
+  api_logging: false                   # Log API calls
+  performance_profiling: false         # Profile performance
+  mock_execution: false                # Don't actually run commands
+  
+  # Additional development options
+  show_internal_errors: false          # Show internal error details
+  save_all_interactions: false         # Save all interactions
+  benchmark_mode: false                # Enable benchmarking
+  experimental_features: false         # Enable experimental features
+  
+# Integration Settings
+integration:
+  shell_integration: true              # Enable shell integration
+  editor_integration:                  # Editor integrations
+    vscode: false
+    vim: false
+    emacs: false
+    
+  # API settings
+  api_enabled: false                   # Enable REST API
+  api_port: 8765                       # API port
+  api_host: "localhost"                # API host
+  api_key: null                        # API authentication key
+  
+# Custom Aliases and Shortcuts
+aliases:
+  # Command aliases - map short names to full commands
+  aliases:
+    up: "update system"
+    i: "install"
+    s: "search"
+    r: "remove"
+    gc: "collect garbage"
+    
+  # Shortcuts - execute multiple commands with one name
+  shortcuts:
+    dev-setup:
+      - "install git vim tmux"
+      - "install docker"
+      - "install vscode"
+    clean:
+      - "collect garbage"
+      - "optimize store"
+    update-all:
+      - "update channels"
+      - "update system"
+      - "collect garbage"

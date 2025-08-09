@@ -1,0 +1,21 @@
+# Voice Interface Dependencies for Nix for Humanity
+# Use this with minimal shell + venv approach
+
+# Speech Recognition
+openai-whisper==20231117
+sounddevice==0.4.6
+numpy==1.26.3
+scipy==1.11.4
+
+# Text to Speech
+piper-tts==1.2.0
+
+# Audio Processing
+pyaudio==0.2.14
+wave==0.0.2
+
+# Optional: For better voice activity detection
+webrtcvad==2.0.10
+
+# Optional: For noise suppression
+noisereduce==3.0.0

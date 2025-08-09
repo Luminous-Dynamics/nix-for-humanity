@@ -1,0 +1,166 @@
+#!/usr/bin/env node
+/**
+ * nix-humanity-unified - Unified CLI for Nix for Humanity
+ * Uses the existing nodejs-mvp implementation
+ * 
+ * Usage:
+ *   nix-humanity-unified "search firefox"
+ *   nix-humanity-unified "install neovim" --dry-run
+ *   nix-humanity-unified "install neovim" --execute
+ */
+
+const path = require('path');
+const intentEngine = require('../implementations/nodejs-mvp/services/intent-engine.js');
+const realExecutor = require('../implementations/nodejs-mvp/services/real-executor.js');
+
+// Parse command line arguments
+function parseArgs(args) {
+  const options = {
+    input: '',
+    dryRun: true,  // Default to dry-run for safety
+    execute: false,
+    help: false,
+    verbose: false
+  };
+
+  const inputParts = [];
+
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      options.help = true;
+    } else if (arg === '--execute' || arg === '-e') {
+      options.execute = true;
+      options.dryRun = false;
+    } else if (arg === '--dry-run' || arg === '-d') {
+      options.dryRun = true;
+      options.execute = false;
+    } else if (arg === '--verbose' || arg === '-v') {
+      options.verbose = true;
+    } else if (!arg.startsWith('-')) {
+      inputParts.push(arg);
+    }
+  }
+
+  options.input = inputParts.join(' ');
+  return options;
+}
+
+function showHelp() {
+  console.log(`
+🗣️  Nix for Humanity - Natural Language NixOS Interface
+
+Usage:
+  nix-humanity-unified <command> [options]
+
+Examples:
+  nix-humanity-unified "search firefox"
+  nix-humanity-unified "install neovim" --dry-run
+  nix-humanity-unified "install neovim" --execute
+  nix-humanity-unified "what packages do I have installed?"
+  nix-humanity-unified "update my system"
+
+Options:
+  -h, --help      Show this help message
+  -d, --dry-run   Show what would be done (default)
+  -e, --execute   Actually execute the command
+  -v, --verbose   Show detailed output
+
+Safety:
+  By default, all commands run in dry-run mode.
+  Use --execute to actually run commands.
+
+Common Commands:
+  - "search <package>"     Find packages
+  - "install <package>"    Install a package
+  - "remove <package>"     Remove a package
+  - "update system"        Update NixOS
+  - "list services"        Show system services
+  - "check updates"        Check for available updates
+`);
+}
+
+async function main() {
+  const options = parseArgs(process.argv);
+  
+  if (options.help) {
+    showHelp();
+    process.exit(0);
+  }
+
+  if (!options.input) {
+    console.error('❌ Error: No command provided');
+    console.log('💡 Try: nix-humanity-unified --help');
+    process.exit(1);
+  }
+
+  // Set environment for dry-run mode
+  if (options.dryRun) {
+    process.env.DRY_RUN = 'true';
+  } else {
+    process.env.DRY_RUN = 'false';
+  }
+
+  // Safety warning for execute mode
+  if (options.execute) {
+    console.log('⚠️  WARNING: Running in EXECUTE mode - commands will be run for real!');
+    console.log();
+  }
+
+  try {
+    // Process the intent
+    console.log(`🔍 Processing: "${options.input}"`);
+    const intent = await intentEngine.processIntent(options.input);
+    
+    if (!intent.action) {
+      console.log('❌ I didn\'t understand that command.');
+      if (intent.suggestions && intent.suggestions.length > 0) {
+        console.log('\n💡 Did you mean:');
+        intent.suggestions.forEach(s => console.log(`   - ${s}`));
+      }
+      process.exit(1);
+    }
+
+    // Display what we understood
+    if (options.verbose) {
+      console.log(`\n🎯 Intent: ${intent.action}`);
+      if (intent.target) console.log(`📦 Target: ${intent.target}`);
+      console.log(`📊 Confidence: ${(intent.confidence * 100).toFixed(0)}%`);
+    }
+
+    // Execute the command
+    const result = await realExecutor.execute(intent.action, intent.target ? [intent.target] : []);
+    
+    // Display results
+    console.log();
+    if (result.success) {
+      console.log('✅', result.output);
+      
+      if (result.command && options.verbose) {
+        console.log(`\n🔧 Command: ${result.command}`);
+      }
+    } else {
+      console.log('❌ Error:', result.error);
+      if (result.suggestion) {
+        console.log('💡 Suggestion:', result.suggestion);
+      }
+    }
+
+    // Exit with appropriate code
+    process.exit(result.success ? 0 : 1);
+
+  } catch (error) {
+    console.error('❌ Fatal error:', error.message);
+    if (options.verbose) {
+      console.error(error.stack);
+    }
+    process.exit(2);
+  }
+}
+
+// Run the CLI
+main().catch(error => {
+  console.error('❌ Unhandled error:', error);
+  process.exit(3);
+});

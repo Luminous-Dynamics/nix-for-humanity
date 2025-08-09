@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 NixOS Documentation Scraper for Model Training
 Ethically scrapes and processes NixOS documentation for local model fine-tuning
 """
@@ -63,7 +64,7 @@ class NixOSDocScraper:
             try:
                 rp.read()
                 self.robot_parsers[base_url] = rp
-            except:
+            except Exception:
                 logger.warning(f"Could not read robots.txt for {base_url}")
                 return True
         

@@ -1,0 +1,16 @@
+{
+  "showcase_date": "2025-08-08 23:20:00",
+  "tests": {
+    "list_generations": {
+      "subprocess_ms": 22.28037500026403,
+      "native_ms": null,
+      "speedup": null
+    },
+    "version_check": {
+      "subprocess_ms": 2.544098999351263,
+      "native_ms": null,
+      "speedup": null
+    },
+    "nlp_average_ms": 0.2516708002076484
+  }
+}

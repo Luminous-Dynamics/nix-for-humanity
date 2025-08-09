@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 AI Environment Architect - Generates sophisticated flake.nix files for ML/AI environments
 Part of Nix for Humanity's natural language interface
 """

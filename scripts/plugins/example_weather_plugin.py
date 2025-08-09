@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Dict
 Example Plugin: Weather Integration for Nix for Humanity
 Shows how to extend the headless core with custom functionality
 """

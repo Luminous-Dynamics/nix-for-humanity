@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import List
 Test Harness: Validate Legacy vs Headless Engine Compatibility
 Ensures both engines produce equivalent results for the same queries
 """

@@ -1,4 +1,5 @@
 """
+import subprocess
 Global test configuration and fixtures.
 """
 import sys

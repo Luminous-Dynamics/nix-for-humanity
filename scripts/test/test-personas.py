@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple, List
 Persona-based testing for ask-nix
 Tests the 10 core personas with realistic scenarios
 """

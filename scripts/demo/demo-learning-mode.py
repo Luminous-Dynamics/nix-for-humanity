@@ -14,7 +14,13 @@ def run_command(cmd):
     """Run a command and display output"""
     print(f"\n💻 Running: {cmd}")
     print("-" * 60)
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    # Convert string command to list for safety
+    if isinstance(cmd, str):
+        import shlex
+        cmd_list = shlex.split(cmd)
+    else:
+        cmd_list = cmd
+    result = subprocess.run(cmd_list, capture_output=True, text=True)
     print(result.stdout)
     if result.stderr:
         print(f"Error: {result.stderr}")

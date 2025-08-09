@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Tuple
 Performance Testing Script for Python Backend vs Traditional Methods
 Tests real-world NixOS operations and measures performance differences
 """

@@ -23,13 +23,13 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import our consciousness-first test infrastructure
-from tests.fixtures.consciousness_test_backend import ConsciousnessTestBackend
+from tests.fixtures.sacred_test_base import ConsciousnessTestBackend
 from tests.fixtures.sacred_test_base import SacredTestBase
 from tests.utils.async_test_runner import AsyncTestCase
 
 # Import the components we're testing
 from frontends.cli.adapter import CLIAdapter
-from src.nix_for_humanity.core.interface import Query, Response, Intent, IntentType
+from src.nix_for_humanity.core.interface import  Response, Intent, IntentType
 from src.nix_for_humanity.core.types import Command
 
 
@@ -332,7 +332,7 @@ class TestCLIAdapter(SacredTestBase):
         self.assertIn('firefox_installation_successful', learned)
         
         # Test that future similar requests benefit from learning
-        future_query = Query(text="install chrome")
+        future_query = {"query": text="install chrome"}
         future_response = await self.backend.process_query(future_query)
         
         # Should apply learned patterns about browser installation
@@ -370,7 +370,7 @@ class TestCLIAdapter(SacredTestBase):
         self.assertIn('avoid_complex_dev_environments', learned)
         
         # Test that future similar requests are simpler
-        future_query = Query(text="install code editor")
+        future_query = {"query": text="install code editor"}
         future_response = await self.backend.process_query(future_query)
         
         # Should suggest VS Code, not complex dev environment
@@ -402,7 +402,7 @@ class TestCLIAdapter(SacredTestBase):
         self.assertIn('avoid_option_overload', learned)
         
         # Future responses should be simpler
-        future_query = Query(text="how do I install something?")
+        future_query = {"query": text="how do I install something?"}
         future_response = await self.backend.process_query(future_query)
         
         # Should give one clear recommendation
@@ -434,7 +434,7 @@ class TestCLIAdapter(SacredTestBase):
         self.assertNotIn('user_silent', learned)
         
         # System should not penalize skipping
-        future_query = Query(text="install chrome")
+        future_query = {"query": text="install chrome"}
         future_response = await self.backend.process_query(future_query)
         self.assertTrue(future_response.success)
         self.assertGreater(future_response.confidence, 0.8)
@@ -448,7 +448,7 @@ class TestCLIAdapter(SacredTestBase):
     #     
     #     mock_response = Response(
     #         text="Installing Vim",
-    #         intent=Intent(type=IntentType.INSTALL, target="vim")
+    #         intent=Intent(type=IntentType.INSTALL_PACKAGE, target="vim")
     #     )
     #     self.mock_core.process.return_value = mock_response
     #     
@@ -509,7 +509,7 @@ class TestCLIAdapter(SacredTestBase):
                 
                 # Process through backend
                 response = await self.backend.process_query(
-                    Query(text=query, context=request.context)
+                    {"query": text=query, context=request.context}
                 )
                 
                 # Verify response serves this persona
@@ -546,7 +546,7 @@ class TestCLIAdapter(SacredTestBase):
                             args = self.adapter.parse_arguments()
                             request = self.adapter.build_request(args)
                             response = await self.backend.process_query(
-                                Query(text=' '.join(args.query), context=request.context)
+                                {"query": text=' '.join(args.query}, context=request.context)
                             )
                             formatted = self.adapter.format_response(response, args)
                             print(formatted)
@@ -602,7 +602,7 @@ class TestCLIAdapter(SacredTestBase):
                 
                 # Process query
                 response = await self.backend.process_query(
-                    Query(text=query, context=request.context)
+                    {"query": text=query, context=request.context}
                 )
                 
                 # Track growing understanding
@@ -662,7 +662,7 @@ class TestCLIAdapter(SacredTestBase):
         self.assertIsInstance(self.adapter.backend, ConsciousnessTestBackend)
         
         # Test that backend can process voice-like natural language
-        voice_query = Query(text="I need that Firefox thing my grandson mentioned")
+        voice_query = {"query": text="I need that Firefox thing my grandson mentioned"}
         response = await self.backend.process_query(voice_query)
         
         # Verify response is voice-friendly (Grandma Rose persona)
@@ -772,7 +772,7 @@ class TestCLIAdapterPersonaJourneys(SacredTestBase):
             
             # Process through backend with persona context
             return await self.backend.process_query(
-                Query(text=query, context=request.context),
+                {"query": text=query, context=request.context},
                 persona=persona
             )
 

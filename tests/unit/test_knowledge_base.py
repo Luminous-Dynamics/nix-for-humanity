@@ -14,8 +14,8 @@ import json
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_for_humanity.core.knowledge_base import KnowledgeBase, PackageInfo
-from nix_for_humanity.core.interface import IntentType
+from nix_humanity.core.knowledge import KnowledgeBase, PackageInfo
+from nix_humanity.core.interface import IntentType
 
 
 class TestKnowledgeBase(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestKnowledgeBase(unittest.TestCase):
         
     def test_get_solution_install(self):
         """Test getting installation solution"""
-        solution = self.kb.get_solution(IntentType.INSTALL)
+        solution = self.kb.get_solution(IntentType.INSTALL_PACKAGE)
         
         self.assertTrue(solution['found'])
         self.assertIn('install', solution['solution'].lower())
@@ -145,12 +145,12 @@ class TestKnowledgeBase(unittest.TestCase):
     def test_solutions_have_all_intent_types(self):
         """Test that we have solutions for all main intent types"""
         intent_types = [
-            IntentType.INSTALL,
+            IntentType.INSTALL_PACKAGE,
             IntentType.REMOVE,
-            IntentType.UPDATE,
-            IntentType.SEARCH,
+            IntentType.UPDATE_SYSTEM,
+            IntentType.SEARCH_PACKAGE,
             IntentType.ROLLBACK,
-            IntentType.INFO,
+            IntentType.EXPLAIN,
             IntentType.HELP
         ]
         

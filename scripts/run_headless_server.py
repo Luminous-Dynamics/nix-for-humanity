@@ -67,7 +67,8 @@ def main():
     try:
         signal.pause()  # Wait for signals
     except KeyboardInterrupt:
-        pass
+        # TODO: Add proper error handling
+        pass  # Silent for now, should log error
     
     # Cleanup
     shutdown_handler(None, None)

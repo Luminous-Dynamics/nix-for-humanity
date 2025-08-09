@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+from typing import Optional
 Resilient Core - Unified Multi-Tiered System
 ============================================
 
@@ -61,8 +62,9 @@ class ResilientExecutor:
                     "safety": "Highest",
                     "features": ["Real-time progress", "Direct API access"]
                 })
-        except:
-            pass
+        except Exception:
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
             
         # Tier 2: nix profile (modern)
         try:
@@ -78,8 +80,9 @@ class ResilientExecutor:
                     "safety": "High",
                     "features": ["Modern interface", "Profile management"]
                 })
-        except:
-            pass
+        except Exception:
+            # TODO: Add proper error handling
+            pass  # Silent for now, should log error
             
         # Tier 3: nix-env (legacy)
         self.tiers.append({
@@ -180,7 +183,7 @@ class ResilientUI:
                 print("✨", end='', flush=True)
                 print("\r  ", end='', flush=True)
                 return "rich"
-            except:
+            except Exception:
                 return "colored"
         elif os.environ.get('TERM') != 'dumb':
             return "basic"

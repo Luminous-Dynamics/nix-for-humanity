@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""
+Nix for Humanity Voice Interface
+
+Natural voice interaction with NixOS using Whisper and Piper.
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+def main():
+    """Run the voice interface"""
+    try:
+        from nix_humanity.interfaces.voice_interface import VoiceAssistant
+        from nix_humanity.core.engine import NixForHumanityBackend
+        
+        print("🎤 Nix for Humanity Voice Interface")
+        print("=" * 50)
+        print()
+        print("I'll listen for 'Hey Nix' to activate.")
+        print("Then you can say commands like:")
+        print("  - 'Install Firefox'")
+        print("  - 'Update my system'") 
+        print("  - 'Search for text editors'")
+        print("  - 'How much disk space?'")
+        print()
+        print("Press Ctrl+C to exit")
+        print()
+        
+        # Check if we should use mock mode
+        use_mock = os.environ.get("NIX_VOICE_MOCK", "false").lower() == "true"
+        
+        if use_mock:
+            print("🎭 Running in MOCK mode (no real audio)")
+            print()
+        
+        # Create backend
+        backend = NixForHumanityBackend()
+        
+        # Create and start assistant
+        assistant = VoiceAssistant(backend=backend)
+        assistant.start()
+        
+        # Keep running until interrupted
+        try:
+            import time
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\n\n👋 Goodbye!")
+            assistant.stop()
+            
+    except ImportError as e:
+        print(f"❌ Missing dependencies: {e}")
+        print()
+        print("To set up voice interface:")
+        print("  python setup_voice.py")
+        print()
+        print("Or install manually:")
+        print("  pip install openai-whisper sounddevice numpy")
+        print("  # Then download Piper voices")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
