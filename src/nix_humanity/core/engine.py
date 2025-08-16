@@ -52,7 +52,7 @@ class NixForHumanityBackend:
             progress_callback: Optional callback for progress updates
         """
         self.intent_recognizer = IntentRecognizer()
-        self.executor = SafeExecutor(progress_callback)
+        self.executor = SafeExecutor()  # SafeExecutor doesn't take progress_callback
         self.knowledge = KnowledgeBase()
         self.package_discovery = PackageDiscovery()
         self.progress_callback = progress_callback

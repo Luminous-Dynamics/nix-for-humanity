@@ -7,6 +7,7 @@ These tests focus on the actual implementation, not phantom features.
 import unittest
 import tempfile
 import json
+import os
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import sys
@@ -20,13 +21,21 @@ from nix_humanity.core.interface import Query
 from nix_humanity.core.personality import PersonalityStyle
 
 
+@patch('nix_humanity.core.engine.KnowledgeBase')
 class TestNixForHumanityBackend(unittest.TestCase):
     """Test the core backend engine"""
     
-    def setUp(self):
+    def setUp(self, mock_kb_class=None):
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
+        
+        # Create the backend (KnowledgeBase is already mocked at class level)
         self.backend = NixForHumanityBackend()
+        
+        # Configure the mock knowledge base
+        if hasattr(self.backend, 'knowledge'):
+            self.backend.knowledge.search.return_value = []
+            self.backend.knowledge.get_similar_commands.return_value = []
     
     def tearDown(self):
         """Clean up"""
