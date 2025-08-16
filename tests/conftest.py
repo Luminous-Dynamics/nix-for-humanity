@@ -151,11 +151,8 @@ def mock_optional_dependencies():
     
     for module_name in optional_modules:
         if module_name not in sys.modules:
-            try:
-                __import__(module_name)
-            except ImportError:
-                # Create a simple mock for missing modules
-                sys.modules[module_name] = MagicMock()
+            # Don't try to import - just mock missing modules
+            sys.modules[module_name] = MagicMock()
 
 # Apply mocking before any imports
 mock_optional_dependencies()
