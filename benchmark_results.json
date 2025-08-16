@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-08-10T03:18:33.945119",
+  "system": {
+    "platform": "linux",
+    "python_version": "3.13.5 (main, Jun 11 2025, 15:36:57) [GCC 14.3.0]",
+    "iterations": 5,
+    "warmup": 1
+  },
+  "summary": {
+    "total_benchmarks": 5,
+    "average_speedup": 159.70292588771804,
+    "median_speedup": 10.349491739690905,
+    "max_speedup": 773.2392030768945,
+    "min_speedup": 0.447070398130422,
+    "overall_speedup": 0.9996866263065088,
+    "total_time_saved_ms": -0.6769728002837816
+  },
+  "benchmarks": [
+    {
+      "name": "Startup Time",
+      "operation": "Initialize system",
+      "native_avg_ms": 0.01776520221028477,
+      "subprocess_avg_ms": 13.736750799580477,
+      "speedup": 773.2392030768945,
+      "native_std_ms": 0.013378860840391225,
+      "subprocess_std_ms": 1.4497645469251987,
+      "iterations": 5
+    },
+    {
+      "name": "Package Search",
+      "operation": "Search for 'firefox' package",
+      "native_avg_ms": 2060.5941802059533,
+      "subprocess_avg_ms": 2088.5359539999627,
+      "speedup": 1.0135600566392053,
+      "native_std_ms": 58.539740385571804,
+      "subprocess_std_ms": 76.19847547495367,
+      "iterations": 5
+    },
+    {
+      "name": "Intent Parsing",
+      "operation": "Parse 'install firefox' intent",
+      "native_avg_ms": 0.1575769972987473,
+      "subprocess_avg_ms": 2.1218221983872354,
+      "speedup": 13.465304167235221,
+      "native_std_ms": 0.030420780999014924,
+      "subprocess_std_ms": 0.06953416486938438,
+      "iterations": 5
+    },
+    {
+      "name": "Cache Operations",
+      "operation": "100 cache writes and reads",
+      "native_avg_ms": 98.42148839961737,
+      "subprocess_avg_ms": 44.001334003405645,
+      "speedup": 0.447070398130422,
+      "native_std_ms": 84.5777255486086,
+      "subprocess_std_ms": 69.17512713036777,
+      "iterations": 5
+    },
+    {
+      "name": "Parallel Execution",
+      "operation": "Execute 10 commands in parallel",
+      "native_avg_ms": 1.0822167969308794,
+      "subprocess_avg_ms": 11.200393800390884,
+      "speedup": 10.349491739690905,
+      "native_std_ms": 0.15816031055271962,
+      "subprocess_std_ms": 0.05269703250387924,
+      "iterations": 5
+    }
+  ]
+}

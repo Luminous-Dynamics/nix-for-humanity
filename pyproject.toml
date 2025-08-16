@@ -70,10 +70,11 @@ python-socketio = {version = "^5.10.0", optional = true}
 cryptography = {version = "^41.0.0", optional = true}
 
 # ML dependencies (from scripts/requirements.txt)
-pandas = {version = "^2.3.0", optional = true}  # Latest: 2.3.1
+# NOTE: Some ML packages are disabled due to C++ compilation issues
+# pandas = {version = "^2.3.0", optional = true}  # Disabled: pyarrow dependency issue
 numpy = {version = "^1.26.0", optional = true}  # Compatible with latest pandas
 nltk = {version = "^3.8.0", optional = true}
-spacy = {version = "^3.5.0", optional = true}
+# spacy = {version = "^3.5.0", optional = true}  # Disabled: blis dependency issue
 transformers = {version = "^4.55.0", optional = true}  # Latest: 4.55.0
 torch = {version = "^2.8.0", optional = true}  # Latest: 2.8.0
 scikit-learn = {version = "^1.7.0", optional = true}  # Latest: 1.7.1
@@ -134,9 +135,9 @@ ipython = "^8.17.0"
 tui = ["textual", "textual-dev", "rich", "blessed", "pyperclip"]
 voice = ["whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng"]
 web = ["flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography"]
-ml = ["pandas", "numpy", "nltk", "spacy", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors"]
+ml = ["numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors"]
 advanced = ["accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
-all = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "pandas", "numpy", "nltk", "spacy", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
+all = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
 
 [tool.poetry.urls]
 "Homepage" = "https://github.com/Luminous-Dynamics/nix-for-humanity"
