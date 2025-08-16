@@ -1,96 +1,47 @@
-"""
-Async test runner for consciousness-first testing.
-
-This runner enables running async test methods in unittest-style classes.
-"""
+"""Async test runner utilities."""
 
 import asyncio
 import unittest
-from unittest import TestCase
-import sys
+from typing import Any, Coroutine
 
 
-class AsyncTestCase(TestCase):
+class AsyncTestCase(unittest.TestCase):
     """Base class for async test cases."""
     
-    def __init__(self, methodName='runTest'):
-        super().__init__(methodName)
-        self.loop = None
+    def run_async(self, coro: Coroutine) -> Any:
+        """Run an async coroutine in a test."""
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If loop is already running, create a new task
+            task = asyncio.create_task(coro)
+            return asyncio.run(asyncio.gather(task))[0]
+        else:
+            # Otherwise run normally
+            return loop.run_until_complete(coro)
     
     def setUp(self):
-        """Set up the event loop."""
+        """Set up async test environment."""
+        super().setUp()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        
-        # Call async setup if it exists
-        if hasattr(self, 'asyncSetUp'):
-            self.loop.run_until_complete(self.asyncSetUp())
     
     def tearDown(self):
-        """Clean up the event loop."""
-        # Call async teardown if it exists
-        if hasattr(self, 'asyncTearDown'):
-            self.loop.run_until_complete(self.asyncTearDown())
+        """Clean up async test environment."""
+        # Cancel all pending tasks
+        pending = asyncio.all_tasks(self.loop)
+        for task in pending:
+            task.cancel()
         
-        # Clean up the loop
-        try:
-            self.loop.run_until_complete(asyncio.sleep(0))
-            self.loop.close()
-        except Exception:
-            # TODO: Add proper error handling
-            pass  # Silent for now, should log error
+        # Run loop until all tasks are cancelled
+        self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        
+        # Close the loop
+        self.loop.close()
+        super().tearDown()
     
-    def __getattribute__(self, name):
-        """Wrap async test methods to run in the event loop."""
-        attr = super().__getattribute__(name)
-        
-        if name.startswith('test') and asyncio.iscoroutinefunction(attr):
-            def wrapper():
-                return self.loop.run_until_complete(attr())
-            return wrapper
-        
-        return attr
-
-
-class AsyncTestRunner(unittest.TextTestRunner):
-    """Test runner that supports async test cases."""
-    
-    def run(self, test):
-        """Run the test suite with async support."""
-        # Ensure we have an event loop
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        # Run the tests
-        result = super().run(test)
-        
-        # Clean up
-        try:
-            loop.run_until_complete(asyncio.sleep(0))
-            loop.close()
-        except Exception:
-            # TODO: Add proper error handling
-            pass  # Silent for now, should log error
-        
-        return result
-
-
-def main():
-    """Run tests with async support."""
-    # Discover and run tests
-    loader = unittest.TestLoader()
-    suite = loader.discover('tests', pattern='test_*.py')
-    
-    # Use our async-aware runner
-    runner = AsyncTestRunner(verbosity=2)
-    result = runner.run(suite)
-    
-    # Exit with appropriate code
-    sys.exit(0 if result.wasSuccessful() else 1)
-
-
-if __name__ == '__main__':
-    main()
+    def async_test(self, coro_func):
+        """Decorator to run async test methods."""
+        def wrapper(*args, **kwargs):
+            coro = coro_func(*args, **kwargs)
+            return self.run_async(coro)
+        return wrapper

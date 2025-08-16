@@ -17,6 +17,10 @@ from enum import Enum
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
+# Import Response and Command for re-export
+from ..api.schema import Command
+from .responses import Response
+
 
 class IntentType(Enum):
     """Types of intents we can recognize"""
@@ -1199,3 +1203,12 @@ class IntentRecognizer:
             confidence=0.0,
             raw_text=text
         )
+
+# Export all public classes
+__all__ = [
+    'Intent',
+    'IntentType',
+    'IntentRecognizer',
+    'Response',
+    'Command',
+]

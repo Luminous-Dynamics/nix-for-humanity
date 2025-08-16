@@ -130,6 +130,7 @@ mkdocstrings = {extras = ["python"], version = "^0.24.0"}
 watchdog = "^3.0.0"
 tqdm = "^4.65.0"
 ipython = "^8.17.0"
+pre-commit = "^4.3.0"
 
 [tool.poetry.extras]
 tui = ["textual", "textual-dev", "rich", "blessed", "pyperclip"]

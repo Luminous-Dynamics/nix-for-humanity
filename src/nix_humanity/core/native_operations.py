@@ -651,3 +651,27 @@ async def demo_native_operations():
 
 if __name__ == "__main__":
     asyncio.run(demo_native_operations())
+
+
+# Legacy aliases for backward compatibility with tests
+NativeNixBackend = NativeOperationsManager
+NixOperation = NativeOperationType
+NixResult = NativeOperationResult
+OperationType = NativeOperationType
+
+# Type alias for progress callbacks
+from typing import Callable
+ProgressCallback = Callable[[str, float], None]
+
+# Export all public names
+__all__ = [
+    'NativeOperationsManager',
+    'NativeOperationType', 
+    'NativeOperationResult',
+    # Legacy aliases
+    'NativeNixBackend',
+    'NixOperation',
+    'NixResult',
+    'OperationType',
+    'ProgressCallback',
+]
