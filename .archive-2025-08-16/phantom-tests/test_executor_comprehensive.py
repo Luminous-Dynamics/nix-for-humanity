@@ -25,8 +25,8 @@ from tests.test_utils.test_implementations import (
     PERSONA_TEST_DATA
 )
 
-from nix_humanity.core.executor import SafeExecutor
-from nix_humanity.core.intents import Intent, IntentType, ExecutionResult
+from luminous_nix.core.executor import SafeExecutor
+from luminous_nix.core.intents import Intent, IntentType, ExecutionResult
 
 
 class TestSafeExecutor:

@@ -9,16 +9,16 @@ import tempfile
 from pathlib import Path
 
 # Add paths for imports
-nix_humanity_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, nix_humanity_dir)
-sys.path.insert(0, os.path.join(nix_humanity_dir, 'scripts'))
-sys.path.insert(0, os.path.join(nix_humanity_dir, 'scripts', 'backend'))
+luminous_nix_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, luminous_nix_dir)
+sys.path.insert(0, os.path.join(luminous_nix_dir, 'scripts'))
+sys.path.insert(0, os.path.join(luminous_nix_dir, 'scripts', 'backend'))
 
 # Set environment for proper imports
-os.chdir(nix_humanity_dir)
+os.chdir(luminous_nix_dir)
 
 # Import modules directly
-from nix_humanity.core.engine import UnifiedNixBackend, Intent, IntentType
+from luminous_nix.core.engine import UnifiedNixBackend, Intent, IntentType
 
 def test_configuration_generation():
     """Test configuration generation feature"""

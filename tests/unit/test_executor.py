@@ -16,17 +16,17 @@ import os
 # Add parent directories to path
 project_root = os.path.join(os.path.dirname(__file__), '../..')
 sys.path.insert(0, project_root)
-backend_path = os.path.join(project_root, 'nix_humanity')
+backend_path = os.path.join(project_root, 'luminous_nix')
 sys.path.insert(0, backend_path)
 
 # Mock the imports that might not be available
-sys.modules['nix_humanity.python'] = MagicMock()
-sys.modules['nix_humanity.python.native_nix_backend'] = MagicMock()
+sys.modules['luminous_nix.python'] = MagicMock()
+sys.modules['luminous_nix.python.native_nix_backend'] = MagicMock()
 
 # Import after mocking
-from nix_humanity.core.executor import SafeExecutor, ValidationResult
-from nix_humanity.core.intents import Intent, IntentType
-from nix_humanity.api.schema import Result
+from luminous_nix.core.executor import SafeExecutor, ValidationResult
+from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.api.schema import Result
 
 
 class TestValidationResult(unittest.TestCase):
@@ -35,14 +35,20 @@ class TestValidationResult(unittest.TestCase):
     def test_validation_result_creation(self):
         """Test creating ValidationResult objects."""
         # Valid result
-        result = ValidationResult(valid=True, reason="All checks passed")
-        self.assertTrue(result.valid)
-        self.assertEqual(result.reason, "All checks passed")
+        result = ValidationResult(is_valid=True, message="All checks passed")
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.message, "All checks passed")
+        self.assertEqual(result.suggestions, [])
         
-        # Invalid result
-        result = ValidationResult(valid=False, reason="Dangerous pattern detected")
-        self.assertFalse(result.valid)
-        self.assertEqual(result.reason, "Dangerous pattern detected")
+        # Invalid result with suggestions
+        result = ValidationResult(
+            is_valid=False, 
+            message="Dangerous pattern detected",
+            suggestions=["Use a safer alternative"]
+        )
+        self.assertFalse(result.is_valid)
+        self.assertEqual(result.message, "Dangerous pattern detected")
+        self.assertEqual(len(result.suggestions), 1)
 
 
 class TestSafeExecutor(unittest.TestCase):
@@ -50,31 +56,17 @@ class TestSafeExecutor(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures."""
-        self.progress_callback = Mock()
-        
-        # Mock the Python API module
-        self.native_backend_mock = MagicMock()
-        self.native_backend_mock.execute = AsyncMock()
-        
-        # Create executor
-        with patch('backend.core.executor.SafeExecutor._init_python_api'):
-            self.executor = SafeExecutor(progress_callback=self.progress_callback)
-            self.executor._has_python_api = False
-            self.executor.native_backend = None
+        # Create executor - SafeExecutor has no required parameters
+        self.executor = SafeExecutor()
+        self.executor.dry_run = False
+        self.executor.verbosity = 0
     
     def test_init(self):
         """Test SafeExecutor initialization."""
-        with patch('backend.core.executor.SafeExecutor._init_python_api') as mock_init:
-            executor = SafeExecutor()
-            self.assertIsNone(executor.progress_callback)
-            self.assertFalse(executor.dry_run)
-            mock_init.assert_called_once()
-        
-        # With progress callback
-        callback = Mock()
-        with patch('backend.core.executor.SafeExecutor._init_python_api'):
-            executor = SafeExecutor(progress_callback=callback)
-            self.assertEqual(executor.progress_callback, callback)
+        executor = SafeExecutor()
+        self.assertIsNotNone(executor)
+        self.assertFalse(executor.dry_run)
+        self.assertEqual(executor.verbosity, 0)
     
     def test_get_operation_type(self):
         """Test mapping intent to operation type."""
@@ -432,9 +424,8 @@ class TestSafeExecutorAsync(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures."""
-        with patch('backend.core.executor.SafeExecutor._init_python_api'):
-            self.executor = SafeExecutor()
-            self.executor._has_python_api = False
+        self.executor = SafeExecutor()
+        self.executor.dry_run = False
     
     def test_async_execution(self):
         """Test that execute is properly async."""

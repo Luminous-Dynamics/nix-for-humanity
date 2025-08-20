@@ -14,8 +14,8 @@ import json
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.knowledge import KnowledgeBase, PackageInfo
-from nix_humanity.core.interface import IntentType
+from luminous_nix.core.knowledge import KnowledgeBase, PackageInfo
+from luminous_nix.core.interface import IntentType
 
 
 class TestKnowledgeBase(unittest.TestCase):

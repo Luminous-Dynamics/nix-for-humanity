@@ -10,10 +10,10 @@ import os
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
-# Import the actual backend (still using nix_humanity module name for now)
-from nix_humanity.core.engine import NixForHumanityBackend as LuminousNixBackend
-from nix_humanity.core.intents import Intent, IntentType
-from nix_humanity.core.interface import Query
+# Import the actual backend (still using luminous_nix module name for now)
+from luminous_nix.core.engine import NixForHumanityBackend as LuminousNixBackend
+from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.core.interface import Query
 
 
 class TestLuminousNixBackendReal(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestLuminousNixBackendReal(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         
         # Patch KnowledgeBase at module level to avoid database initialization
-        self.kb_patcher = patch('nix_humanity.core.engine.KnowledgeBase')
+        self.kb_patcher = patch('luminous_nix.core.engine.KnowledgeBase')
         mock_kb_class = self.kb_patcher.start()
         
         # Configure mock instance
@@ -226,7 +226,7 @@ class TestIntentRecognizerIntegration(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Patch KnowledgeBase
-        self.kb_patcher = patch('nix_humanity.core.engine.KnowledgeBase')
+        self.kb_patcher = patch('luminous_nix.core.engine.KnowledgeBase')
         self.kb_patcher.start()
         
         self.backend = NixForHumanityBackend()

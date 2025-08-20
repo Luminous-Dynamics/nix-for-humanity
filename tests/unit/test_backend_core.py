@@ -22,13 +22,13 @@ from pathlib import Path
 # Add parent directories to path
 project_root = os.path.join(os.path.dirname(__file__), '../..')
 sys.path.insert(0, project_root)
-backend_path = os.path.join(project_root, 'nix_humanity')
+backend_path = os.path.join(project_root, 'luminous_nix')
 sys.path.insert(0, backend_path)
 
 # Import the module we're testing
-from nix_humanity.core.engine import NixForHumanityBackend, create_backend
-from nix_humanity.api.schema import Request, Response, Result
-from nix_humanity.core.intents import Intent, IntentType
+from luminous_nix.core.engine import NixForHumanityBackend, create_backend
+from luminous_nix.api.schema import Request, Response, Result
+from luminous_nix.core.intents import Intent, IntentType
 
 
 class TestNixForHumanityBackend(unittest.TestCase):

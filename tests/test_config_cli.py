@@ -11,7 +11,7 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import the config generator
-from nix_humanity.core.config_generator import NixConfigGenerator
+from luminous_nix.core.config_generator import NixConfigGenerator
 
 # Test the direct flow
 print("=== Testing Direct Config Generation ===\n")

@@ -17,8 +17,8 @@ from pathlib import Path
 # Add the src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.adapters.cli_adapter import CLIAdapter
-from nix_humanity.core import (
+from luminous_nix.adapters.cli_adapter import CLIAdapter
+from luminous_nix.core import (
     
     Response,
     PersonalityStyle

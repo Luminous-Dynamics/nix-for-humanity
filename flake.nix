@@ -46,6 +46,10 @@
           blessed
           pyperclip
           
+          # Tree-sitter for AST parsing (Phase A-Prime)
+          tree-sitter
+          # Note: tree-sitter-nix grammar will be built separately
+          
           # Other useful packages for development
           pyyaml
           pytest
@@ -87,6 +91,31 @@
           
           # Launch the TUI with poetry2nix-managed Python
           exec ${poetryEnv}/bin/python -m nix_humanity.interfaces.tui "$@"
+        '';
+        
+        # Create Grandma Mode launcher
+        grandmaNix = pkgs.writeShellScriptBin "grandma-nix" ''
+          #!/usr/bin/env bash
+          set -e
+          
+          cd ${toString ./.}
+          export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
+          
+          # Launch Grandma Mode with proper Python environment
+          exec ${poetryEnv}/bin/python ${toString ./.}/bin/grandma-nix "$@"
+        '';
+        
+        # Create main ask-nix launcher
+        askNix = pkgs.writeShellScriptBin "ask-nix" ''
+          #!/usr/bin/env bash
+          set -e
+          
+          cd ${toString ./.}
+          export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
+          export NIX_HUMANITY_PYTHON_BACKEND=true
+          
+          # Launch with proper Python environment
+          exec ${poetryEnv}/bin/python ${toString ./.}/bin/ask-nix "$@"
         '';
         
         # Create our custom ask-nix-guru command
@@ -221,6 +250,10 @@
             # TUI launcher
             runTuiApp
             
+            # Grandma Mode and ask-nix launchers
+            grandmaNix
+            askNix
+            
             # Development utilities
             git
             ripgrep
@@ -255,6 +288,8 @@
             echo "  Use poetry environment for full feature set including DoWhy"
             echo ""
             echo "📚 Available commands:"
+            echo "  grandma-nix       - REAL NixOS for non-technical users"
+            echo "  ask-nix           - Natural language NixOS interface"
             echo "  run-tui-app       - Launch the beautiful TUI (no pip install needed!)"
             echo "  ask-nix-guru      - Query local LLM for NixOS expertise"
             echo "  npm test          - Run NLP engine tests"
@@ -299,8 +334,11 @@
 
         # Package
         packages = {
-          default = self.packages.${system}.nix-for-humanity;
+          default = self.packages.${system}.luminous-nix;
+          luminous-nix = self.packages.${system}.nix-for-humanity;  # Alias for compatibility
           ask-nix-guru = askNixGuru;
+          grandma-nix = grandmaNix;
+          ask-nix = askNix;
           run-tui-app = runTuiApp;
           ollama = pkgs.ollama;
           
@@ -374,7 +412,13 @@
         # App runner for development
         apps = {
           default = flake-utils.lib.mkApp {
-            drv = self.packages.${system}.nix-for-humanity;
+            drv = grandmaNix;  # Default to Grandma Mode for accessibility
+          };
+          grandma-nix = flake-utils.lib.mkApp {
+            drv = grandmaNix;
+          };
+          ask-nix = flake-utils.lib.mkApp {
+            drv = askNix;
           };
           ask-nix-guru = flake-utils.lib.mkApp {
             drv = askNixGuru;

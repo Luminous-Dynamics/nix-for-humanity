@@ -12,8 +12,8 @@ project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
 # Import what we need
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.api.schema import Request, Context
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.api.schema import Request, Context
 
 def test_help_command():
     """Test that help command works"""

@@ -15,11 +15,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Test imports
 try:
-    from nix_humanity.core.first_run_wizard import FirstRunWizard, SystemInfo
-    from nix_humanity.core.graceful_degradation import (
+    from luminous_nix.core.first_run_wizard import FirstRunWizard, SystemInfo
+    from luminous_nix.core.graceful_degradation import (
         GracefulDegradation, DegradationLevel, handle_degraded_operation
     )
-    from nix_humanity.security.security_audit import (
+    from luminous_nix.security.security_audit import (
         SecurityAuditor, ThreatLevel, audit_user_input, audit_command_execution
     )
     print("✅ All v1.0 improvement modules imported successfully!")

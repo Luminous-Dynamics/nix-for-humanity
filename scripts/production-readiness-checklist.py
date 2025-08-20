@@ -118,7 +118,7 @@ class ProductionReadinessChecker:
             ))
             
         # Check native backend
-        native_backend_file = self.project_root / "src/nix_humanity/nix/native_backend.py"
+        native_backend_file = self.project_root / "src/luminous_nix/nix/native_backend.py"
         if native_backend_file.exists():
             with open(native_backend_file) as f:
                 content = f.read()
@@ -128,7 +128,7 @@ class ProductionReadinessChecker:
                         category="Native Backend",
                         description="Native Python-Nix backend has incomplete implementations",
                         action="Complete all TODO items in native backend",
-                        files=["src/nix_humanity/nix/native_backend.py"],
+                        files=["src/luminous_nix/nix/native_backend.py"],
                         estimated_time="4-6 hours"
                     ))
                     
@@ -254,7 +254,7 @@ class ProductionReadinessChecker:
             category="Performance",
             description="Native Python-Nix API integration incomplete",
             action="Complete native backend integration for 10x-1500x performance gains",
-            files=["src/nix_humanity/nix/native_backend.py"],
+            files=["src/luminous_nix/nix/native_backend.py"],
             estimated_time="8-12 hours"
         ))
         
@@ -275,7 +275,7 @@ class ProductionReadinessChecker:
             category="User Experience",
             description="Error messages need to be user-friendly",
             action="Review all error messages for clarity and helpfulness",
-            files=["src/nix_humanity/core/educational_errors.py"],
+            files=["src/luminous_nix/core/educational_errors.py"],
             estimated_time="3-4 hours"
         ))
         
@@ -285,7 +285,7 @@ class ProductionReadinessChecker:
             category="User Experience",
             description="First-run wizard needs testing",
             action="Test and polish the first-run experience",
-            files=["src/nix_humanity/core/first_run_wizard.py"],
+            files=["src/luminous_nix/core/first_run_wizard.py"],
             estimated_time="2-3 hours"
         ))
         

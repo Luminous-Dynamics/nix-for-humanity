@@ -19,7 +19,7 @@ from contextlib import redirect_stdout, redirect_stderr
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 # Import the CLI adapter that needs coverage (the one under src/)
-from nix_humanity.adapters.cli_adapter import CLIAdapter
+from luminous_nix.adapters.cli_adapter import CLIAdapter
 
 
 # Mock classes to avoid core dependencies

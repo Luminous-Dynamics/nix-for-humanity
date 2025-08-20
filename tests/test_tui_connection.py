@@ -2,8 +2,8 @@
 import sys
 sys.path.insert(0, 'src')
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.api.schema import Request
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.api.schema import Request
 
 try:
     backend = NixForHumanityBackend()

@@ -51,7 +51,7 @@ This document shows how the adaptive visual embodiment layer integrates with the
 The Visual State Controller acts as a bridge between the headless core and visual representation:
 
 ```python
-# File: nix_humanity/ui/visual_state_controller.py
+# File: luminous_nix/ui/visual_state_controller.py
 from enum import Enum
 from typing import Dict, Optional, Callable
 import asyncio
@@ -140,7 +140,7 @@ class VisualStateController:
 ### From User Input to Visual Response
 
 ```python
-# File: nix_humanity/core/event_flow.py
+# File: luminous_nix/core/event_flow.py
 class EventFlowManager:
     """Manages event flow between components"""
     
@@ -194,7 +194,7 @@ class EventFlowManager:
 ### Adding Visual Awareness to Existing Components
 
 ```python
-# File: nix_humanity/core/engine_enhancements.py
+# File: luminous_nix/core/engine_enhancements.py
 
 class VisuallyAwareNLPEngine(NLPEngine):
     """NLP Engine with visual state awareness"""
@@ -245,7 +245,7 @@ class VisuallyAwareNLPEngine(NLPEngine):
 ### Integrating Flow State with Visual Adaptation
 
 ```python
-# File: nix_humanity/core/user_state_detector.py
+# File: luminous_nix/core/user_state_detector.py
 
 class UserStateDetector:
     """Detects user cognitive and flow states"""
@@ -290,7 +290,7 @@ class UserStateDetector:
 ### Dynamic UI Complexity Based on Context
 
 ```python
-# File: nix_humanity/ui/complexity_manager.py
+# File: luminous_nix/ui/complexity_manager.py
 
 class ComplexityManager:
     """Manages UI complexity based on user state and context"""
@@ -351,10 +351,10 @@ class ComplexityManager:
 ### 1. Terminal UI Integration (Textual)
 
 ```python
-# File: nix_humanity/ui/tui_integration.py
+# File: luminous_nix/ui/tui_integration.py
 from textual.app import App
-from nix_humanity.ui.consciousness_orb import ConsciousnessOrb
-from nix_humanity.ui.visual_state_controller import VisualStateController
+from luminous_nix.ui.consciousness_orb import ConsciousnessOrb
+from luminous_nix.ui.visual_state_controller import VisualStateController
 
 class NixHumanityTUI(App):
     """Main TUI application with visual embodiment"""
@@ -425,7 +425,7 @@ function App() {
   };
   
   return (
-    <div className="nix-humanity-app">
+    <div className="luminous-nix-app">
       <ConsciousnessOrb 
         aiState={visualState.aiState}
         emotion={visualState.emotion}
@@ -443,7 +443,7 @@ function App() {
 ### 3. Voice Integration with Visual Feedback
 
 ```python
-# File: nix_humanity/voice/visual_voice_bridge.py
+# File: luminous_nix/voice/visual_voice_bridge.py
 class VisualVoiceBridge:
     """Connects voice interface with visual feedback"""
     

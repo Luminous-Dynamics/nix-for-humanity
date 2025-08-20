@@ -13,8 +13,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
-from nix_humanity.core.intents import IntentRecognizer as IntentRecognizer
-from nix_humanity.core.intents import Intent, IntentType
+from luminous_nix.core.intents import IntentRecognizer as IntentRecognizer
+from luminous_nix.core.intents import Intent, IntentType
 
 class TestIntentType(unittest.TestCase):
     """Test IntentType enum"""

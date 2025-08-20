@@ -17,8 +17,8 @@ class TestNixForHumanityTUI:
     def mock_backend(self):
         """Mock the backend for testing."""
         # Mock the consciousness orb to avoid animation issues
-        with patch("nix_humanity.ui.consciousness_orb.ConsciousnessOrb"):
-            with patch("nix_humanity.ui.main_app.NixForHumanityBackend") as mock_class:
+        with patch("luminous_nix.ui.consciousness_orb.ConsciousnessOrb"):
+            with patch("luminous_nix.ui.main_app.NixForHumanityBackend") as mock_class:
                 mock_instance = Mock()
                 mock_class.return_value = mock_instance
 

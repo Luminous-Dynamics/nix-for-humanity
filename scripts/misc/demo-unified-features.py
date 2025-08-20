@@ -18,8 +18,8 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from nix_humanity.ui.unified_enhanced_tui import UnifiedEnhancedTUI
-from nix_humanity.core.engine import NixForHumanityBackend
+from luminous_nix.ui.unified_enhanced_tui import UnifiedEnhancedTUI
+from luminous_nix.core.engine import NixForHumanityBackend
 from textual.app import App
 from rich.console import Console
 

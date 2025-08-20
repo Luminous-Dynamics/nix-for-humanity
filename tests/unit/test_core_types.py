@@ -4,7 +4,7 @@ Unit tests for core type definitions
 
 import unittest
 from datetime import datetime
-from nix_humanity.core.intents import (
+from luminous_nix.core.intents import (
     Request,
     Response,
     Context,

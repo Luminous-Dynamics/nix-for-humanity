@@ -16,8 +16,8 @@ from unittest.mock import Mock, patch
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.knowledge import KnowledgeBase
-from nix_humanity.core.intents import IntentType
+from luminous_nix.core.knowledge import KnowledgeBase
+from luminous_nix.core.intents import IntentType
 
 
 class TestKnowledgeBaseEnhanced(unittest.TestCase):

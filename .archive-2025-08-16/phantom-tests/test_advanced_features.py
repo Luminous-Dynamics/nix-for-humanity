@@ -9,8 +9,8 @@ import pytest
 import asyncio
 from pathlib import Path
 
-from nix_humanity.core.advanced_features import AdvancedFeatures
-from nix_humanity.core.native_operations_advanced import (
+from luminous_nix.core.advanced_features import AdvancedFeatures
+from luminous_nix.core.native_operations_advanced import (
     FlakeOperationType,
     ProfileOperationType,
     RemoteOperationType,
@@ -140,7 +140,7 @@ class TestAdvancedFeatures:
     @pytest.mark.asyncio
     async def test_convenience_functions(self):
         """Test standalone convenience functions"""
-        from nix_humanity.core.advanced_features import (
+        from luminous_nix.core.advanced_features import (
             switch_to_work_profile,
             update_system_flake,
             build_test_vm

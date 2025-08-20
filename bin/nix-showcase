@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Nix for Humanity - Feature Showcase Launcher
-
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-# Run the showcase script
-exec python3 "$PROJECT_ROOT/scripts/working-examples-showcase.py" "$@"

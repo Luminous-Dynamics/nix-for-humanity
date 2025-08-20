@@ -19,7 +19,7 @@ def test_backend_initialization():
     print("=" * 50)
     
     try:
-        from nix_humanity.core.engine import NixForHumanityBackend
+        from luminous_nix.core.engine import NixForHumanityBackend
         
         # Create backend
         print("Creating backend...")
@@ -121,8 +121,8 @@ def test_request_processing():
     print("=" * 50)
     
     try:
-        from nix_humanity.core.engine import NixForHumanityBackend
-        from nix_humanity.api.schema import Request
+        from luminous_nix.core.engine import NixForHumanityBackend
+        from luminous_nix.api.schema import Request
         
         backend = NixForHumanityBackend()
         

@@ -58,7 +58,7 @@ The TUI includes an automated demo mode that runs through all features:
 python -c "
 import sys
 sys.argv.append('--demo')
-from nix_humanity.ui.enhanced_main_app_with_demo import EnhancedNixForHumanityTUIWithDemo
+from luminous_nix.ui.enhanced_main_app_with_demo import EnhancedNixForHumanityTUIWithDemo
 app = EnhancedNixForHumanityTUIWithDemo()
 app.run()
 "
@@ -236,7 +236,7 @@ Essential features to showcase:
 For developers creating custom demos:
 
 ```python
-from nix_humanity.ui.demo_mode import DemoScript, DemoStep
+from luminous_nix.ui.demo_mode import DemoScript, DemoStep
 
 # Create custom demo
 demo = DemoScript(app)

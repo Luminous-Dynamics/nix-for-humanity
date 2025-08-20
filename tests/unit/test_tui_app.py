@@ -39,18 +39,18 @@ sys.modules['rich.table'] = MagicMock()
 sys.modules['rich.text'] = MagicMock()
 
 # Mock backend components
-from nix_humanity.core import (
+from luminous_nix.core import (
      Plan, PersonalityStyle,
     NixForHumanityBackend, Command, ExecutionResult
 )
-# v2.0+ feature: from nix_humanity.ai.xai_engine import XAIEngine, ExplanationLevel, ConfidenceLevel
-# v2.0+ feature: from nix_humanity.xai.causal_engine import CausalXAI, CausalExplanation
-# v2.0+ feature: from nix_humanity.xai.confidence_calculator import ConfidenceCalculator
-# v2.0+ feature: from nix_humanity.xai.explanation_formatter import PersonaExplanationAdapter
-from nix_humanity.tui.persona_styles import PersonaStyleManager, PersonaType
+# v2.0+ feature: from luminous_nix.ai.xai_engine import XAIEngine, ExplanationLevel, ConfidenceLevel
+# v2.0+ feature: from luminous_nix.xai.causal_engine import CausalXAI, CausalExplanation
+# v2.0+ feature: from luminous_nix.xai.confidence_calculator import ConfidenceCalculator
+# v2.0+ feature: from luminous_nix.xai.explanation_formatter import PersonaExplanationAdapter
+from luminous_nix.tui.persona_styles import PersonaStyleManager, PersonaType
 
 # Now import the app module
-from nix_humanity.tui.app import (
+from luminous_nix.tui.app import (
     NixHumanityApp, ChatMessage, CommandPreview, HelpScreen,
     XAIExplanationPanel
 )

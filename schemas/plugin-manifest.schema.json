@@ -1,0 +1,480 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://luminous-nix.dev/schemas/plugin-manifest/v1.0.0",
+  "title": "Luminous Nix Plugin Manifest",
+  "description": "The sacred contract that every plugin must honor to join the Luminous ecosystem",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "plugin",
+    "consciousness",
+    "capabilities",
+    "boundaries"
+  ],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "The version of this manifest schema"
+    },
+    
+    "plugin": {
+      "type": "object",
+      "description": "Core identity of the plugin",
+      "required": ["id", "name", "version", "description", "author"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "minLength": 3,
+          "maxLength": 50,
+          "description": "Unique identifier (lowercase, hyphens only)",
+          "examples": ["flow-guardian", "learning-companion"]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 100,
+          "description": "Human-readable name",
+          "examples": ["Flow Guardian", "Learning Companion"]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*)?$",
+          "description": "Semantic version (SemVer 2.0.0)",
+          "examples": ["1.0.0", "2.1.0-beta.1"]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "What sacred purpose does this plugin serve?"
+        },
+        "author": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the author or guild"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Contact email"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Website or repository"
+            }
+          }
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "Plugin homepage or documentation"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Source code repository"
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier",
+          "examples": ["MIT", "Apache-2.0", "GPL-3.0"]
+        }
+      }
+    },
+    
+    "consciousness": {
+      "type": "object",
+      "description": "The sacred alignment and philosophical grounding",
+      "required": ["governing_principle", "sacred_promise"],
+      "properties": {
+        "governing_principle": {
+          "type": "string",
+          "enum": [
+            "amplify_awareness",
+            "protect_attention",
+            "enable_sovereignty",
+            "serve_wellbeing",
+            "foster_learning",
+            "build_community",
+            "preserve_privacy",
+            "reduce_complexity"
+          ],
+          "description": "Primary consciousness principle this plugin serves"
+        },
+        "sacred_promise": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 200,
+          "description": "The vow this plugin makes to the user",
+          "examples": [
+            "I will protect your flow state and guard your attention as sacred",
+            "I will help you understand every action, empowering your sovereignty"
+          ]
+        },
+        "ethical_boundaries": {
+          "type": "array",
+          "description": "Explicit ethical commitments",
+          "items": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          },
+          "examples": [
+            "Never interrupt without urgent cause",
+            "Never collect data without explicit consent",
+            "Never make decisions without user understanding"
+          ]
+        }
+      }
+    },
+    
+    "capabilities": {
+      "type": "object",
+      "description": "What this plugin can do",
+      "required": ["intents"],
+      "properties": {
+        "intents": {
+          "type": "array",
+          "description": "Natural language patterns this plugin handles",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["pattern", "handler", "description"],
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Natural language pattern to match",
+                "examples": ["start focus session", "check interruptions"]
+              },
+              "handler": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "description": "Method name that handles this intent"
+              },
+              "description": {
+                "type": "string",
+                "description": "What this intent does"
+              },
+              "examples": {
+                "type": "array",
+                "description": "Example phrases that trigger this intent",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "description": "System permissions required",
+          "properties": {
+            "required": {
+              "type": "array",
+              "description": "Permissions that must be granted",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "filesystem.read",
+                  "filesystem.write",
+                  "filesystem.watch",
+                  "network.local",
+                  "network.internet",
+                  "process.spawn",
+                  "process.monitor",
+                  "system.notifications",
+                  "system.info",
+                  "configuration.read",
+                  "configuration.write"
+                ]
+              }
+            },
+            "optional": {
+              "type": "array",
+              "description": "Permissions that enhance functionality if granted",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "apis": {
+          "type": "array",
+          "description": "External APIs this plugin integrates with",
+          "items": {
+            "type": "object",
+            "required": ["name", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "API or service name"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Why this API is needed"
+              },
+              "optional": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether the plugin works without this API"
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "boundaries": {
+      "type": "object",
+      "description": "What this plugin must never do",
+      "required": ["forbidden_actions"],
+      "properties": {
+        "forbidden_actions": {
+          "type": "array",
+          "description": "Actions explicitly prohibited",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          },
+          "examples": [
+            "Modify system configuration without explicit consent",
+            "Share user data with external services",
+            "Run with elevated privileges"
+          ]
+        },
+        "data_policy": {
+          "type": "object",
+          "description": "How this plugin handles user data",
+          "required": ["collection", "storage", "sharing"],
+          "properties": {
+            "collection": {
+              "type": "string",
+              "enum": ["none", "minimal", "functional", "analytics"],
+              "description": "What data is collected"
+            },
+            "storage": {
+              "type": "string",
+              "enum": ["none", "memory_only", "local_only", "encrypted_local"],
+              "description": "How data is stored"
+            },
+            "sharing": {
+              "type": "string",
+              "enum": ["never", "local_only", "with_consent"],
+              "description": "How data is shared"
+            }
+          }
+        },
+        "resource_limits": {
+          "type": "object",
+          "description": "Self-imposed resource constraints",
+          "properties": {
+            "max_memory_mb": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 1024,
+              "default": 256,
+              "description": "Maximum memory usage in MB"
+            },
+            "max_cpu_percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "description": "Maximum CPU usage percentage"
+            },
+            "max_storage_mb": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1024,
+              "default": 100,
+              "description": "Maximum storage usage in MB"
+            }
+          }
+        }
+      }
+    },
+    
+    "dependencies": {
+      "type": "object",
+      "description": "Requirements for this plugin to function",
+      "properties": {
+        "luminous_nix": {
+          "type": "object",
+          "required": ["min_version"],
+          "properties": {
+            "min_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Minimum Luminous Nix version required"
+            },
+            "max_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Maximum compatible version"
+            }
+          }
+        },
+        "plugins": {
+          "type": "array",
+          "description": "Other plugins this depends on",
+          "items": {
+            "type": "object",
+            "required": ["id", "version"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Plugin identifier"
+              },
+              "version": {
+                "type": "string",
+                "description": "Version constraint (npm-style)"
+              }
+            }
+          }
+        },
+        "system": {
+          "type": "array",
+          "description": "System packages required",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    
+    "interface": {
+      "type": "object",
+      "description": "How this plugin presents itself",
+      "properties": {
+        "settings_schema": {
+          "type": "object",
+          "description": "JSON Schema for plugin settings"
+        },
+        "ui_components": {
+          "type": "array",
+          "description": "UI components this plugin provides",
+          "items": {
+            "type": "object",
+            "required": ["id", "type", "label"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Component identifier"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["widget", "panel", "modal", "notification"],
+                "description": "Component type"
+              },
+              "label": {
+                "type": "string",
+                "description": "User-visible label"
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "lifecycle": {
+      "type": "object",
+      "description": "Plugin lifecycle hooks",
+      "properties": {
+        "install": {
+          "type": "string",
+          "description": "Script to run on installation"
+        },
+        "activate": {
+          "type": "string",
+          "description": "Script to run on activation"
+        },
+        "deactivate": {
+          "type": "string",
+          "description": "Script to run on deactivation"
+        },
+        "uninstall": {
+          "type": "string",
+          "description": "Script to run on uninstallation"
+        }
+      }
+    }
+  },
+  
+  "examples": [
+    {
+      "manifest_version": "1.0.0",
+      "plugin": {
+        "id": "flow-guardian",
+        "name": "Flow Guardian",
+        "version": "1.0.0",
+        "description": "Protects your deep work by intelligently managing interruptions and creating sanctuaries for focused creation",
+        "author": {
+          "name": "Luminous Dynamics",
+          "email": "hello@luminous-nix.dev"
+        },
+        "license": "MIT"
+      },
+      "consciousness": {
+        "governing_principle": "protect_attention",
+        "sacred_promise": "I will guard your attention as the most precious resource, creating sacred boundaries around your flow state",
+        "ethical_boundaries": [
+          "Never interrupt a focus session unless truly urgent",
+          "Never sell or analyze your productivity data",
+          "Always respect your chosen work rhythms"
+        ]
+      },
+      "capabilities": {
+        "intents": [
+          {
+            "pattern": "start focus session",
+            "handler": "handle_start_focus",
+            "description": "Begin a protected deep work session",
+            "examples": [
+              "start focusing for 25 minutes",
+              "enter flow state",
+              "protect my attention for an hour"
+            ]
+          }
+        ],
+        "permissions": {
+          "required": [
+            "system.notifications",
+            "process.monitor"
+          ],
+          "optional": [
+            "network.local"
+          ]
+        }
+      },
+      "boundaries": {
+        "forbidden_actions": [
+          "Share focus data with external services",
+          "Interrupt emergency communications",
+          "Override system-critical notifications"
+        ],
+        "data_policy": {
+          "collection": "minimal",
+          "storage": "local_only",
+          "sharing": "never"
+        },
+        "resource_limits": {
+          "max_memory_mb": 128,
+          "max_cpu_percent": 5
+        }
+      },
+      "dependencies": {
+        "luminous_nix": {
+          "min_version": "1.1.0"
+        }
+      }
+    }
+  ]
+}

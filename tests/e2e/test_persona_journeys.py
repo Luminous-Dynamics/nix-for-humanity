@@ -15,11 +15,11 @@ from unittest.mock import patch, MagicMock
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from nix_humanity.core.engine import NixForHumanityBackend as Engine
-from nix_humanity.core.intents import IntentEngine
-from nix_humanity.core.knowledge import KnowledgeBase
-from nix_humanity.core.executor import ExecutionEngine
-from nix_humanity.core.personality import PersonalitySystem
+from luminous_nix.core.engine import NixForHumanityBackend as Engine
+from luminous_nix.core.intents import IntentEngine
+from luminous_nix.core.knowledge import KnowledgeBase
+from luminous_nix.core.executor import ExecutionEngine
+from luminous_nix.core.personality import PersonalitySystem
 
 class PersonaJourney:
     """Base class for persona test journeys."""

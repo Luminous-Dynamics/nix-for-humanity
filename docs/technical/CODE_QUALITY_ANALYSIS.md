@@ -8,7 +8,7 @@ This analysis examines the code quality and architectural patterns in the Nix fo
 
 ### Major Duplication: Backend Implementations
 - **Finding**: Two nearly identical backend implementations exist:
-  - `nix_humanity/core/engine.py`
+  - `luminous_nix/core/engine.py`
   - `backend/core/backend.py`
 - **Impact**: Maintenance overhead, potential for inconsistent behavior
 - **Recommendation**: Consolidate into a single backend implementation
@@ -16,7 +16,7 @@ This analysis examines the code quality and architectural patterns in the Nix fo
 ### Import Path Inconsistencies
 - Multiple import patterns used throughout the codebase:
   - Relative imports: `from .intents import IntentRecognizer`
-  - Absolute imports: `from nix_humanity.api.schema import Request`
+  - Absolute imports: `from luminous_nix.api.schema import Request`
   - Project-relative: `from ..api.schema import Request`
 - **Impact**: Confusion about proper import structure, potential circular dependencies
 
@@ -59,7 +59,7 @@ class IntentType(Enum):
 @dataclass
 class ResearchConfig:
     skg_enabled: bool = True
-    skg_db_path: str = "./data/nix_humanity_skg.db"
+    skg_db_path: str = "./data/luminous_nix_skg.db"
     
     def __post_init__(self):
         # Environment variable overrides
@@ -75,8 +75,8 @@ class ResearchConfig:
 #### 1. Excessive Mock Usage in Tests
 ```python
 # Mock the imports that might not be available
-sys.modules['nix_humanity.python'] = MagicMock()
-sys.modules['nix_humanity.python.native_nix_backend'] = MagicMock()
+sys.modules['luminous_nix.python'] = MagicMock()
+sys.modules['luminous_nix.python.native_nix_backend'] = MagicMock()
 ```
 - Heavy reliance on mocking reduces test value
 - Path manipulation in tests indicates import issues
@@ -87,7 +87,7 @@ sys.modules['nix_humanity.python.native_nix_backend'] = MagicMock()
 class SafeExecutor:
     def _init_python_api(self):
         # Import inside method
-        from nix_humanity.nix.native_backend import NativeNixBackend
+        from luminous_nix.nix.native_backend import NativeNixBackend
         # Direct instantiation
         self.native_backend = NativeNixBackend()
 ```
@@ -236,7 +236,7 @@ def find_nixos_rebuild_module() -> Optional[str]:
 ## Recommendations
 
 ### Immediate Actions
-1. **Consolidate Backends**: Merge `nix_humanity/core/engine.py` and `backend/core/backend.py`
+1. **Consolidate Backends**: Merge `luminous_nix/core/engine.py` and `backend/core/backend.py`
 2. **Standardize Imports**: Adopt consistent import strategy across codebase
 3. **Reduce Mocking**: Replace mocks with real components or test doubles
 

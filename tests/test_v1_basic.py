@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Import v1.0 components
 try:
-    from nix_humanity.core import (
+    from luminous_nix.core import (
         NixForHumanityBackend,
         IntentRecognizer,
         Intent,
@@ -20,7 +20,7 @@ try:
         SafeExecutor,
         KnowledgeBase
     )
-    from nix_humanity.api import Request, Response, Result
+    from luminous_nix.api import Request, Response, Result
     print("✅ All core imports successful!")
 except ImportError as e:
     print(f"❌ Import error: {e}")

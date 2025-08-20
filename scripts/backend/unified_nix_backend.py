@@ -28,9 +28,9 @@ from package_cache_manager import PackageCacheManager
 try:
     # Add parent directories to find the module
     import sys
-    nix_humanity_dir = Path(__file__).parent.parent.parent
-    sys.path.insert(0, str(nix_humanity_dir))
-    from nix_humanity.core.config_generator import NixConfigGenerator
+    luminous_nix_dir = Path(__file__).parent.parent.parent
+    sys.path.insert(0, str(luminous_nix_dir))
+    from luminous_nix.core.config_generator import NixConfigGenerator
     CONFIG_GENERATOR_AVAILABLE = True
 except ImportError:
     CONFIG_GENERATOR_AVAILABLE = False
@@ -38,7 +38,7 @@ except ImportError:
 
 # Import home manager
 try:
-    from nix_humanity.core.home_manager import HomeManager
+    from luminous_nix.core.home_manager import HomeManager
     HOME_MANAGER_AVAILABLE = True
 except ImportError:
     HOME_MANAGER_AVAILABLE = False
@@ -46,7 +46,7 @@ except ImportError:
 
 # Import package discovery
 try:
-    from nix_humanity.core.package_discovery import PackageDiscovery
+    from luminous_nix.core.package_discovery import PackageDiscovery
     PACKAGE_DISCOVERY_AVAILABLE = True
 except ImportError:
     PACKAGE_DISCOVERY_AVAILABLE = False
@@ -872,7 +872,7 @@ class UnifiedNixBackend:
         
         try:
             # Import flake manager
-            from nix_humanity.core.flake_manager import FlakeManager
+            from luminous_nix.core.flake_manager import FlakeManager
             manager = FlakeManager()
             
             description = intent.entities.get('description', intent.query)
@@ -937,7 +937,7 @@ class UnifiedNixBackend:
         """Handle flake validation requests"""
         
         try:
-            from nix_humanity.core.flake_manager import FlakeManager
+            from luminous_nix.core.flake_manager import FlakeManager
             manager = FlakeManager()
             
             path = context.get('path', Path("."))
@@ -967,7 +967,7 @@ class UnifiedNixBackend:
         """Handle flake conversion requests"""
         
         try:
-            from nix_humanity.core.flake_manager import FlakeManager
+            from luminous_nix.core.flake_manager import FlakeManager
             manager = FlakeManager()
             
             path = context.get('path', Path("."))
@@ -1006,7 +1006,7 @@ class UnifiedNixBackend:
         """Handle flake info display requests"""
         
         try:
-            from nix_humanity.core.flake_manager import FlakeManager
+            from luminous_nix.core.flake_manager import FlakeManager
             manager = FlakeManager()
             
             path = context.get('path', Path("."))
@@ -1031,7 +1031,7 @@ class UnifiedNixBackend:
         """Handle generation rollback requests"""
         
         try:
-            from nix_humanity.core.generation_manager import GenerationManager
+            from luminous_nix.core.generation_manager import GenerationManager
             manager = GenerationManager()
             
             generation = intent.entities.get('generation')
@@ -1089,7 +1089,7 @@ class UnifiedNixBackend:
         """Handle generation deletion requests"""
         
         try:
-            from nix_humanity.core.generation_manager import GenerationManager
+            from luminous_nix.core.generation_manager import GenerationManager
             manager = GenerationManager()
             
             keep_last = intent.entities.get('keep', 5)
@@ -1140,7 +1140,7 @@ class UnifiedNixBackend:
         """Handle system health check requests"""
         
         try:
-            from nix_humanity.core.generation_manager import GenerationManager
+            from luminous_nix.core.generation_manager import GenerationManager
             manager = GenerationManager()
             
             health = manager.check_system_health()
@@ -1228,7 +1228,7 @@ class UnifiedNixBackend:
         """Handle recovery snapshot creation"""
         
         try:
-            from nix_humanity.core.generation_manager import GenerationManager
+            from luminous_nix.core.generation_manager import GenerationManager
             manager = GenerationManager()
             
             description = intent.entities.get('description', 'Manual recovery snapshot')
@@ -1279,7 +1279,7 @@ class UnifiedNixBackend:
         """Handle generation comparison requests"""
         
         try:
-            from nix_humanity.core.generation_manager import GenerationManager
+            from luminous_nix.core.generation_manager import GenerationManager
             manager = GenerationManager()
             
             gen1 = intent.entities.get('generation1')
@@ -1356,7 +1356,7 @@ class UnifiedNixBackend:
         """Handle error explanation requests"""
         
         try:
-            from nix_humanity.core.error_translator import ErrorTranslator
+            from luminous_nix.core.error_translator import ErrorTranslator
             translator = ErrorTranslator()
             
             error_text = intent.entities.get('error_text', intent.query)
@@ -1429,7 +1429,7 @@ class UnifiedNixBackend:
         """Handle log analysis requests"""
         
         try:
-            from nix_humanity.core.error_translator import ErrorTranslator
+            from luminous_nix.core.error_translator import ErrorTranslator
             translator = ErrorTranslator()
             
             log_path = intent.entities.get('log_path')

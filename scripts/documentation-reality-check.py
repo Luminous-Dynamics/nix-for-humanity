@@ -106,44 +106,44 @@ class DocumentationChecker:
         # Check feature claims - search in multiple possible locations
         features = {
             "Natural Language Understanding": [
-                ["src/nix_humanity/core/intents.py", "Intent"],
-                ["src/nix_humanity/ai/nlp.py", "NLPEngine"],
-                ["src/nix_humanity/core/engine.py", "NixForHumanityBackend"],
+                ["src/luminous_nix/core/intents.py", "Intent"],
+                ["src/luminous_nix/ai/nlp.py", "NLPEngine"],
+                ["src/luminous_nix/core/engine.py", "NixForHumanityBackend"],
             ],
             "Smart Package Discovery": [
-                ["src/nix_humanity/core/package_discovery.py", "SmartPackageDiscovery"],
-                ["src/nix_humanity/core/knowledge.py", "search_packages"],
-                ["src/nix_humanity/cli/discover_command.py", "DiscoverCommand"],
+                ["src/luminous_nix/core/package_discovery.py", "SmartPackageDiscovery"],
+                ["src/luminous_nix/core/knowledge.py", "search_packages"],
+                ["src/luminous_nix/cli/discover_command.py", "DiscoverCommand"],
             ],
             "Beautiful TUI": [
-                ["src/nix_humanity/ui/main_app.py", "NixHumanityApp"],
-                ["src/nix_humanity/ui/enhanced_main_app.py", "EnhancedNixHumanityApp"],
-                ["src/nix_humanity/interfaces/tui.py", "run"],
+                ["src/luminous_nix/ui/main_app.py", "NixHumanityApp"],
+                ["src/luminous_nix/ui/enhanced_main_app.py", "EnhancedNixHumanityApp"],
+                ["src/luminous_nix/interfaces/tui.py", "run"],
             ],
             "Configuration Management": [
-                ["src/nix_humanity/core/config_generator.py", "ConfigGenerator"],
-                ["src/nix_humanity/cli/config_command.py", "ConfigCommand"],
-                ["src/nix_humanity/config/config_manager.py", "ConfigManager"],
+                ["src/luminous_nix/core/config_generator.py", "ConfigGenerator"],
+                ["src/luminous_nix/cli/config_command.py", "ConfigCommand"],
+                ["src/luminous_nix/config/config_manager.py", "ConfigManager"],
             ],
             "Home Manager Integration": [
-                ["src/nix_humanity/core/home_manager.py", "HomeManagerIntegration"],
-                ["src/nix_humanity/cli/home_command.py", "HomeCommand"],
+                ["src/luminous_nix/core/home_manager.py", "HomeManagerIntegration"],
+                ["src/luminous_nix/cli/home_command.py", "HomeCommand"],
                 ["features/v1.0/home_manager.py", "HomeManagerIntegration"],
             ],
             "Flake Support": [
-                ["src/nix_humanity/core/flake_manager.py", "FlakeManager"],
-                ["src/nix_humanity/cli/flake_command.py", "FlakeCommand"],
+                ["src/luminous_nix/core/flake_manager.py", "FlakeManager"],
+                ["src/luminous_nix/cli/flake_command.py", "FlakeCommand"],
                 ["features/v1.0/flake_management.py", "FlakeManager"],
             ],
             "Generation Management": [
-                ["src/nix_humanity/core/generation_manager.py", "GenerationManager"],
-                ["src/nix_humanity/cli/generation_command.py", "GenerationCommand"],
+                ["src/luminous_nix/core/generation_manager.py", "GenerationManager"],
+                ["src/luminous_nix/cli/generation_command.py", "GenerationCommand"],
                 ["features/v1.0/generation_management.py", "GenerationManager"],
             ],
             "Intelligent Error Handling": [
-                ["src/nix_humanity/core/error_intelligence.py", "ErrorIntelligence"],
-                ["src/nix_humanity/core/educational_errors.py", "educational_error_handler"],
-                ["src/nix_humanity/core/error_translator.py", "ErrorTranslator"],
+                ["src/luminous_nix/core/error_intelligence.py", "ErrorIntelligence"],
+                ["src/luminous_nix/core/educational_errors.py", "educational_error_handler"],
+                ["src/luminous_nix/core/error_translator.py", "ErrorTranslator"],
             ],
         }
         
@@ -187,14 +187,14 @@ class DocumentationChecker:
         for personality in personalities:
             if f"--{personality}" in content:
                 # Check if personality is implemented
-                if self.check_function_exists("src/nix_humanity/interfaces/cli.py", "enhance_response"):
+                if self.check_function_exists("src/luminous_nix/interfaces/cli.py", "enhance_response"):
                     self.results['accurate_claims'].append(f"Personality option --{personality} documented and implemented")
                 else:
                     self.results['aspirational_claims'].append(f"Personality option --{personality} documented but implementation unclear")
         
         # Check for voice interface claims
         if "Voice interface" in content or "voice commands" in content:
-            if self.check_file_exists("src/nix_humanity/features/voice_interface.py"):
+            if self.check_file_exists("src/luminous_nix/features/voice_interface.py"):
                 self.results['accurate_claims'].append("Voice interface module exists")
             else:
                 self.results['aspirational_claims'].append("Voice interface documented but not implemented")
@@ -242,12 +242,12 @@ class DocumentationChecker:
         
         # Check for actual working features
         feature_checks = {
-            "Native Python-Nix API": "src/nix_humanity/nix/native_backend.py",
-            "Progress indicators": "src/nix_humanity/core/progress_indicator.py",
-            "Educational errors": "src/nix_humanity/core/educational_errors.py",
-            "Error translation": "src/nix_humanity/core/error_translator.py",
-            "Settings management": "src/nix_humanity/cli/settings_command.py",
-            "Advanced native operations": "src/nix_humanity/core/native_operations_advanced.py",
+            "Native Python-Nix API": "src/luminous_nix/nix/native_backend.py",
+            "Progress indicators": "src/luminous_nix/core/progress_indicator.py",
+            "Educational errors": "src/luminous_nix/core/educational_errors.py",
+            "Error translation": "src/luminous_nix/core/error_translator.py",
+            "Settings management": "src/luminous_nix/cli/settings_command.py",
+            "Advanced native operations": "src/luminous_nix/core/native_operations_advanced.py",
         }
         
         for feature, module_path in feature_checks.items():
@@ -256,7 +256,7 @@ class DocumentationChecker:
                 self.results['accurate_claims'].append(f"Working feature: {feature}")
         
         # Check if TUI is actually connected
-        tui_interface = self.project_root / "src/nix_humanity/interfaces/tui.py"
+        tui_interface = self.project_root / "src/luminous_nix/interfaces/tui.py"
         if tui_interface.exists():
             with open(tui_interface, 'r') as f:
                 content = f.read()

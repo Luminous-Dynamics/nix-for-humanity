@@ -17,7 +17,7 @@ from rich.layout import Layout
 
 # Import our consciousness orb components
 try:
-    from nix_humanity.ui.consciousness_orb import (
+    from luminous_nix.ui.consciousness_orb import (
         ConsciousnessOrb, AIState, EmotionalState
     )
     print("✅ Successfully imported Consciousness Orb components!")

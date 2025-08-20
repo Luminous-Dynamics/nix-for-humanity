@@ -8,8 +8,8 @@ These tests actually call the native API (no mocks!) to ensure everything works.
 import pytest
 import asyncio
 import time
-from nix_humanity.core.native_operations import NativeOperationsManager, NativeOperationType
-from nix_humanity.core.nixos_version import check_nixos_version
+from luminous_nix.core.native_operations import NativeOperationsManager, NativeOperationType
+from luminous_nix.core.nixos_version import check_nixos_version
 
 
 class TestNativeOperationsReal:

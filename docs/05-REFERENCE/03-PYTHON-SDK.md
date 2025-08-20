@@ -28,7 +28,7 @@ pip install -e .
 ## Quick Start
 
 ```python
-from nix_humanity import NixClient
+from luminous_nix import NixClient
 
 # Create client
 client = NixClient(base_url="http://localhost:5000")
@@ -46,7 +46,7 @@ if response.commands:
 
 ### Basic Configuration
 ```python
-from nix_humanity import NixClient, Personality, ExecutionMode
+from luminous_nix import NixClient, Personality, ExecutionMode
 
 client = NixClient(
     base_url="http://localhost:5000",
@@ -141,7 +141,7 @@ client.submit_feedback(
 
 ```python
 import asyncio
-from nix_humanity import AsyncNixClient
+from luminous_nix import AsyncNixClient
 
 async def main():
     async with AsyncNixClient() as client:
@@ -179,7 +179,7 @@ for query, response in zip(queries, responses):
 ### Custom Personalities
 
 ```python
-from nix_humanity import Personality
+from luminous_nix import Personality
 
 # Use built-in personalities
 client.set_personality(Personality.MINIMAL)      # Just the facts
@@ -195,7 +195,7 @@ client.query("install neovim", personality="custom_personality")
 ### Execution Modes
 
 ```python
-from nix_humanity import ExecutionMode
+from luminous_nix import ExecutionMode
 
 # Dry run - just show what would happen
 response = client.query(
@@ -225,7 +225,7 @@ response = client.query(
 ### Error Handling
 
 ```python
-from nix_humanity import NixError, RateLimitError, APIError
+from luminous_nix import NixError, RateLimitError, APIError
 
 try:
     response = client.query("install firefox")
@@ -241,7 +241,7 @@ except NixError as e:
 ### WebSocket Support
 
 ```python
-from nix_humanity import NixWebSocketClient
+from luminous_nix import NixWebSocketClient
 
 # Real-time interaction
 ws_client = NixWebSocketClient("ws://localhost:5000")
@@ -268,7 +268,7 @@ ws_client.wait()
 
 ```python
 #!/usr/bin/env python3
-from nix_humanity import NixClient, Personality
+from luminous_nix import NixClient, Personality
 import readline  # For command history
 
 def main():
@@ -322,7 +322,7 @@ if __name__ == "__main__":
 
 ```python
 #!/usr/bin/env python3
-from nix_humanity import NixClient, ExecutionMode
+from luminous_nix import NixClient, ExecutionMode
 import sys
 import logging
 
@@ -387,7 +387,7 @@ if __name__ == "__main__":
 ### Learning Assistant
 
 ```python
-from nix_humanity import NixClient, ExecutionMode
+from luminous_nix import NixClient, ExecutionMode
 import json
 from datetime import datetime
 
@@ -476,7 +476,7 @@ for s in similar:
 ```python
 import unittest
 from unittest.mock import Mock, patch
-from nix_humanity import NixClient
+from luminous_nix import NixClient
 
 class TestNixClient(unittest.TestCase):
     

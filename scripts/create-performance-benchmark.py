@@ -89,7 +89,7 @@ class PerformanceBenchmark:
         try:
             import sys
             sys.path.insert(0, '/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity/src')
-            from nix_humanity.nix.native_backend import NativeNixBackend
+            from luminous_nix.nix.native_backend import NativeNixBackend
             
             backend = NativeNixBackend()
             
@@ -148,7 +148,7 @@ class PerformanceBenchmark:
         try:
             import sys
             sys.path.insert(0, '/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity/src')
-            from nix_humanity.ai.nlp import NLPEngine
+            from luminous_nix.ai.nlp import NLPEngine
             
             nlp = NLPEngine()
             

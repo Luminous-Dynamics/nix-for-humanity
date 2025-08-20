@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.responses import ResponseGenerator, PersonalityStyle
+from luminous_nix.core.responses import ResponseGenerator, PersonalityStyle
 
 
 class TestResponseGeneratorEnhanced(unittest.TestCase):

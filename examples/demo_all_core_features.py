@@ -13,9 +13,9 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from nix_humanity.core.config_generator import NixConfigGenerator
-from nix_humanity.core.flake_manager import FlakeManager
-from nix_humanity.core.generation_manager import GenerationManager, list_system_generations, check_system_recovery_status
+from luminous_nix.core.config_generator import NixConfigGenerator
+from luminous_nix.core.flake_manager import FlakeManager
+from luminous_nix.core.generation_manager import GenerationManager, list_system_generations, check_system_recovery_status
 
 def demo_config_generation():
     """Demo configuration generation"""

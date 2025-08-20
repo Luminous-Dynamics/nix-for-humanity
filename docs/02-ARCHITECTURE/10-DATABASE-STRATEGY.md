@@ -45,13 +45,13 @@ Our database strategy must support:
 class ConsciousnessDataLayer:
     def __init__(self):
         # 1. DuckDB - Analytics and structured data
-        self.analytics = duckdb.connect("nix_humanity.duckdb")
+        self.analytics = duckdb.connect("luminous_nix.duckdb")
         
         # 2. LanceDB - Vector embeddings and semantic search
-        self.vectors = lancedb.connect("./nix_humanity_vectors")
+        self.vectors = lancedb.connect("./luminous_nix_vectors")
         
         # 3. TileDB - Tensor storage for ML models
-        self.tensors = tiledb.open("./nix_humanity_tensors")
+        self.tensors = tiledb.open("./luminous_nix_tensors")
 ```
 
 ### 1. DuckDB - The Analytical Mind
@@ -243,7 +243,7 @@ pip install lancedb
 ```python
 # Migrate analytical queries to DuckDB
 # Keep SQLite for simple lookups
-duckdb.sql("CREATE TABLE interactions AS FROM sqlite_scan('nix_humanity.db', 'interactions')")
+duckdb.sql("CREATE TABLE interactions AS FROM sqlite_scan('luminous_nix.db', 'interactions')")
 ```
 
 ### Phase 4: Tensor Intelligence (6 months)

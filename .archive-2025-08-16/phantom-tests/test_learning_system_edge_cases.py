@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock, Mock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.learning.preferences import PreferenceManager, Interaction, Preference
+from luminous_nix.learning.preferences import PreferenceManager, Interaction, Preference
 
 
 class TestPreferenceManagerEdgeCases(unittest.TestCase):

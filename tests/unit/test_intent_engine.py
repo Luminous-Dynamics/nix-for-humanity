@@ -11,8 +11,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 
-from nix_humanity.core.intents import Intent, IntentType
-from nix_humanity.core.intents import IntentRecognizer
+from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.core.intents import IntentRecognizer
 
 class TestIntentRecognizer(unittest.TestCase):
     """Test the IntentRecognizer component"""

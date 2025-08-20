@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Update test imports from backend to nix_humanity package.
+Update test imports from backend to luminous_nix package.
 This script updates all import statements in test files.
 """
 
@@ -10,26 +10,26 @@ from pathlib import Path
 from datetime import datetime
 
 def update_imports(content: str) -> tuple[str, int]:
-    """Update import statements to use nix_humanity package."""
+    """Update import statements to use luminous_nix package."""
     changes = 0
     
     # Direct backend imports
     patterns = [
-        (r'from backend\.', 'from nix_humanity.'),
-        (r'import nix_humanity.core as backend\.', 'import nix_humanity.'),
-        (r'from \.\.backend', 'from nix_humanity'),
+        (r'from backend\.', 'from luminous_nix.'),
+        (r'import luminous_nix.core as backend\.', 'import luminous_nix.'),
+        (r'from \.\.backend', 'from luminous_nix'),
         
         # Specific module mappings
-        (r'from backend\.core\.backend import', 'from nix_humanity.core.engine import'),
-        (r'backend\.core\.backend\.', 'nix_humanity.core.engine.'),
+        (r'from backend\.core\.backend import', 'from luminous_nix.core.engine import'),
+        (r'backend\.core\.backend\.', 'luminous_nix.core.engine.'),
         
         # Mock paths
-        (r"sys\.modules\['backend\.", "sys.modules['nix_humanity."),
-        (r'backend\.python\.native_nix_backend', 'nix_humanity.nix.native_backend'),
+        (r"sys\.modules\['backend\.", "sys.modules['luminous_nix."),
+        (r'backend\.python\.native_nix_backend', 'luminous_nix.nix.native_backend'),
         
         # Path additions
         (r"backend_path = os\.path\.join\(project_root, 'backend'\)", 
-         "backend_path = os.path.join(project_root, 'nix_humanity')"),
+         "backend_path = os.path.join(project_root, 'luminous_nix')"),
     ]
     
     for pattern, replacement in patterns:
@@ -56,7 +56,7 @@ def process_test_file(file_path: Path) -> tuple[bool, int]:
 
 def main():
     """Main execution."""
-    print("🔄 Updating Test Imports to nix_humanity")
+    print("🔄 Updating Test Imports to luminous_nix")
     print("=" * 60)
     
     root = Path('/srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity')
@@ -107,7 +107,7 @@ def main():
         f.write(f"## Summary\n\n")
         f.write(f"- Updated {total_files} test files\n")
         f.write(f"- Made {total_changes} import changes\n")
-        f.write(f"- All imports now use `nix_humanity` package\n\n")
+        f.write(f"- All imports now use `luminous_nix` package\n\n")
         
         if updated_files:
             f.write(f"## Updated Files\n\n")

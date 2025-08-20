@@ -152,7 +152,7 @@ Configuration files are loaded in this order (later overrides earlier):
 1. **System**: `/etc/nix-for-humanity/config.yaml`
 2. **User**: `~/.config/nix-for-humanity/config.yaml`
 3. **Legacy**: `~/.nix-for-humanity/config.yaml` (auto-migrated)
-4. **Project**: `./.nix-humanity/config.yaml`
+4. **Project**: `./.luminous-nix/config.yaml`
 5. **Environment**: `NIX_HUMANITY_*` variables
 
 ## Environment Variables
@@ -338,7 +338,7 @@ ask-nix settings restore
 ### Python API
 
 ```python
-from nix_humanity.config import get_config_manager, ConfigSchema
+from luminous_nix.config import get_config_manager, ConfigSchema
 
 # Get manager
 manager = get_config_manager()
@@ -371,7 +371,7 @@ if errors:
 ### Creating Custom Configurations
 
 ```python
-from nix_humanity.config.schema import ConfigSchema, UIConfig, Personality
+from luminous_nix.config.schema import ConfigSchema, UIConfig, Personality
 
 # Create custom config
 config = ConfigSchema()
@@ -386,7 +386,7 @@ config.aliases.aliases['up'] = 'update system'
 errors = config.validate()
 
 # Save
-from nix_humanity.config.loader import ConfigLoader
+from luminous_nix.config.loader import ConfigLoader
 loader = ConfigLoader()
 loader.save_config(config, "~/.config/nix-for-humanity/config.yaml")
 ```

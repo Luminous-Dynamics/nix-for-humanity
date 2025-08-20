@@ -19,11 +19,11 @@ from typing import Dict, List, Optional, Any
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.core.interface import Query
-from nix_humanity.core.intents import Response, Intent, IntentType, Command
-from nix_humanity.core.planning import Plan, ExecutionResult
-from nix_humanity.core.executor import SafeExecutor
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.interface import Query
+from luminous_nix.core.intents import Response, Intent, IntentType, Command
+from luminous_nix.core.planning import Plan, ExecutionResult
+from luminous_nix.core.executor import SafeExecutor
 
 
 @dataclass

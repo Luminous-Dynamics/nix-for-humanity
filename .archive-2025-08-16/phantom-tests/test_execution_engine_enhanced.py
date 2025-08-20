@@ -16,9 +16,9 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.executor import SafeExecutor
-from nix_humanity.core.interface import ExecutionMode
-from nix_humanity.core.intents import Command
+from luminous_nix.core.executor import SafeExecutor
+from luminous_nix.core.interface import ExecutionMode
+from luminous_nix.core.intents import Command
 
 
 class TestSafeExecutorEnhanced(unittest.TestCase):

@@ -84,11 +84,11 @@ def main():
         print("\n🔧 Issues found! Let's check what files exist:")
         
         # Check what files actually exist
-        src_nix_humanity = src_dir / "nix_for_humanity"
-        if src_nix_humanity.exists():
-            print(f"\n📁 Contents of {src_nix_humanity}:")
-            for item in sorted(src_nix_humanity.rglob("*.py")):
-                rel_path = item.relative_to(src_nix_humanity)
+        src_luminous_nix = src_dir / "nix_for_humanity"
+        if src_luminous_nix.exists():
+            print(f"\n📁 Contents of {src_luminous_nix}:")
+            for item in sorted(src_luminous_nix.rglob("*.py")):
+                rel_path = item.relative_to(src_luminous_nix)
                 print(f"   {rel_path}")
         
         # Check frontends directory

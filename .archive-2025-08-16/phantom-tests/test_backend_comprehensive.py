@@ -31,9 +31,9 @@ from tests.test_utils.test_implementations import (
     create_failed_process
 )
 
-from nix_humanity.core.engine import NixForHumanityBackend, create_backend
-from nix_humanity.api.schema import Request, Response, Result
-from nix_humanity.core.intents import Intent, IntentType
+from luminous_nix.core.engine import NixForHumanityBackend, create_backend
+from luminous_nix.api.schema import Request, Response, Result
+from luminous_nix.core.intents import Intent, IntentType
 
 
 class TestNixForHumanityBackend:

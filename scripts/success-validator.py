@@ -76,7 +76,7 @@ class SuccessValidator:
             passed = False
         
         # Check for proper source structure
-        required_dirs = ['src/nix_humanity', 'tests', 'docs', 'scripts']
+        required_dirs = ['src/luminous_nix', 'tests', 'docs', 'scripts']
         missing_dirs = [d for d in required_dirs if not os.path.exists(d)]
         
         if missing_dirs:
@@ -84,8 +84,8 @@ class SuccessValidator:
             passed = False
         
         # Check for no duplicate backends
-        if os.path.exists('backend') and os.path.exists('nix_humanity'):
-            details["duplicate_backends"] = "Both backend/ and nix_humanity/ exist"
+        if os.path.exists('backend') and os.path.exists('luminous_nix'):
+            details["duplicate_backends"] = "Both backend/ and luminous_nix/ exist"
             details["critical"] = "Duplicate backend implementations"
             passed = False
         
@@ -180,7 +180,7 @@ class SuccessValidator:
         src_files = list(Path('src').rglob('*.py')) if Path('src').exists() else []
         
         if not src_files:
-            src_files = list(Path('nix_humanity').rglob('*.py')) if Path('nix_humanity').exists() else []
+            src_files = list(Path('luminous_nix').rglob('*.py')) if Path('luminous_nix').exists() else []
         
         typed_files = 0
         for file in src_files[:20]:  # Sample

@@ -140,7 +140,7 @@ The system recognizes these natural language patterns:
 
 ### Core Module
 ```python
-from nix_humanity.core.package_discovery import PackageDiscovery
+from luminous_nix.core.package_discovery import PackageDiscovery
 
 discovery = PackageDiscovery()
 
@@ -158,7 +158,7 @@ popular = discovery.get_popular_packages("development")
 ```
 
 ### Integration Points
-- **CLI**: `nix_humanity/cli/discover_command.py`
+- **CLI**: `luminous_nix/cli/discover_command.py`
 - **Backend**: Intent recognition in unified backend
 - **API**: RESTful endpoints for package discovery
 
@@ -178,7 +178,7 @@ popular = discovery.get_popular_packages("development")
 ## 🛠️ Configuration
 
 ### Package Aliases
-Customize common names in `~/.config/nix-humanity/aliases.json`:
+Customize common names in `~/.config/luminous-nix/aliases.json`:
 ```json
 {
   "browser": ["firefox", "chromium", "brave", "qutebrowser"],
@@ -187,7 +187,7 @@ Customize common names in `~/.config/nix-humanity/aliases.json`:
 ```
 
 ### Category Definitions
-Add custom categories in `~/.config/nix-humanity/categories.json`:
+Add custom categories in `~/.config/luminous-nix/categories.json`:
 ```json
 {
   "mycategory": {

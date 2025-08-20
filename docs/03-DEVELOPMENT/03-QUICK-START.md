@@ -1,6 +1,6 @@
-# 🚀 Quick Start Guide - Nix for Humanity
+# 🚀 Quick Start Guide - Luminous Nix
 
-*Get started with natural language NixOS in 5 minutes*
+*Get started with natural language NixOS in 30 seconds*
 
 ---
 
@@ -28,27 +28,36 @@
 
 ## Installation
 
-### Development Setup (Current Method)
+### One-Line Install (Recommended)
 ```bash
-# Clone repository
-git clone https://github.com/Luminous-Dynamics/nix-for-humanity
-cd nix-for-humanity
+# Install with curl
+curl -sSL https://raw.githubusercontent.com/Luminous-Dynamics/luminous-nix/main/install.sh | bash
 
-# Enter development environment
-./dev.sh
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Run the CLI tool
-./bin/ask-nix "help"
+# That's it! Now use:
+ask-nix "help"
 ```
 
-### Future Installation (Coming Soon)
+### Manual Installation
 ```bash
-# Once released, you'll be able to:
-nix-env -iA nixpkgs.nix-for-humanity
-# or add to configuration.nix
+# Clone repository
+git clone https://github.com/Luminous-Dynamics/luminous-nix
+cd luminous-nix
+
+# Run installer
+./install.sh
+
+# Start using
+ask-nix "install firefox"
+```
+
+### Development Setup
+```bash
+# For contributors/developers
+git clone https://github.com/Luminous-Dynamics/luminous-nix
+cd luminous-nix
+nix develop  # Enter Nix shell
+poetry install  # Install dependencies
+./bin/ask-nix "help"
 ```
 
 ## First Launch
@@ -56,12 +65,12 @@ nix-env -iA nixpkgs.nix-for-humanity
 Start the development version:
 
 ```bash
-# From the project directory
-./bin/ask-nix
+# Just run it!
+ask-nix
 
-# Or with the Python backend enabled (recommended)
-export NIX_HUMANITY_PYTHON_BACKEND=true
-./bin/ask-nix
+# The Python backend is enabled by default for maximum performance
+# You can also try the beautiful TUI:
+nix-tui
 ```
 
 You'll see:

@@ -44,9 +44,48 @@ results/*.log
 *.cache
 *.pyc
 __pycache__/
+.pytest_cache/
 
 # Test coverage and monitoring
 .coverage
 .coverage_monitor/
 .performance_monitoring/
 .postgres/
+htmlcov/
+
+# Archive directories
+.archive-*/
+
+# Backup files
+*.bak
+*.backup
+*.bak.rename
+*.backup-*
+
+# Temporary Python scripts
+fix-*.py
+test-*.py
+week*.py
+
+# Duplicate files
+*_COMPLETE.md
+*_REPORT.md
+*_SUMMARY.md
+*_STATUS.md
+
+# Development databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Metrics and logs
+metrics_server.log
+performance_*.json
+*.log.json
+
+# Training data (if regenerated)
+training-data/
+
+# Old documentation
+docs/Temp/

@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""
+Maya Nix - Lightning-fast NixOS for ADHD users
+
+NO waiting. NO fluff. JUST speed.
+
+Examples:
+    maya-nix i ff vs         # Install firefox & vscode
+    maya-nix r ch            # Remove chromium
+    maya-nix s python        # Search for python
+    maya-nix l               # List installed
+    maya-nix m i:ff,vs r:ch  # Multi-operation (parallel!)
+"""
+
+import sys
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from luminous_nix.core.maya_mode import MayaCLI
+
+if __name__ == "__main__":
+    cli = MayaCLI()
+    
+    # Get args
+    args = sys.argv[1:]
+    
+    if args:
+        # One-shot mode
+        cli.run(args)
+    else:
+        # Interactive mode
+        print("⚡ MAYA MODE")
+        print("i=install r=remove s=search l=list u=update")
+        print("shortcuts: ff=firefox vs=vscode dc=discord")
+        print("multi: m i:ff,vs r:ch")
+        print("quit: q")
+        print()
+        
+        try:
+            while True:
+                cmd = input("> ").strip()
+                
+                if cmd in ['q', 'quit']:
+                    print("⚡")
+                    break
+                    
+                cli.run(cmd.split())
+                
+        except (KeyboardInterrupt, EOFError):
+            print("\n⚡")

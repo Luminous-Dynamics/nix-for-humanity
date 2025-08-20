@@ -17,10 +17,10 @@ print("🧪 Testing new backend architecture...\n")
 # Test 1: Import backend module
 print("1️⃣ Testing backend imports...")
 try:
-    from nix_humanity.core import NixForHumanityBackend, Request, Response
+    from luminous_nix.core import NixForHumanityBackend, Request, Response
     print("✅ Successfully imported backend module")
 except Exception as e:
-    print(f"❌ Failed to import nix_humanity.core as backend: {e}")
+    print(f"❌ Failed to import luminous_nix.core as backend: {e}")
     sys.exit(1)
 
 # Test 2: Create backend instance

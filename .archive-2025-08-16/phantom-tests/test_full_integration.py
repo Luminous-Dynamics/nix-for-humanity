@@ -33,7 +33,7 @@ except ImportError as e:
 
 try:
     # Check if trust engine exists in actual structure
-    from nix_humanity.core.engine import TheoryOfMindTrustEngine
+    from luminous_nix.core.engine import TheoryOfMindTrustEngine
     print("✅ Theory of Mind Trust Engine imported")
 except ImportError as e:
     print(f"❌ Trust Engine import failed: {e}")
@@ -42,7 +42,7 @@ except ImportError as e:
 
 try:
     # Check if metrics exists in actual structure
-    from nix_humanity.core.engine import SacredMetricsCollector
+    from luminous_nix.core.engine import SacredMetricsCollector
     print("✅ Sacred Metrics Collector imported")
 except ImportError as e:
     print(f"❌ Metrics import failed: {e}")
@@ -60,7 +60,7 @@ except ImportError as e:
 
 try:
     # Check if consciousness guard exists in actual structure
-    from nix_humanity.core.engine import ConsciousnessGuard
+    from luminous_nix.core.engine import ConsciousnessGuard
     print("✅ Consciousness Guard imported")
 except ImportError as e:
     print(f"❌ Consciousness Guard import failed: {e}")
@@ -186,7 +186,7 @@ except Exception as e:
 # Test 7: Test Backend Integration
 print("\n🔌 Testing Full Backend Integration...")
 try:
-    from nix_humanity.core.engine import NixForHumanityBackend
+    from luminous_nix.core.engine import NixForHumanityBackend
     
     backend = NixForHumanityBackend()
     print("✅ Backend initialized with research components")

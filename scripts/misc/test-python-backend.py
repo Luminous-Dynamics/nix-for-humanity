@@ -19,7 +19,7 @@ def test_backend_import():
         sys.path.insert(0, str(script_dir))
         sys.path.insert(0, str(backend_dir))
         
-        from nix_humanity.core.engine import UnifiedNixBackend, IntentType
+        from luminous_nix.core.engine import UnifiedNixBackend, IntentType
         print("✅ Successfully imported UnifiedNixBackend")
         
         # Test basic functionality
@@ -28,7 +28,7 @@ def test_backend_import():
         print(f"✅ Intent extraction works: {intent.type.value}")
         return True
     except Exception as e:
-        print(f"❌ Failed to import nix_humanity.core as backend: {e}")
+        print(f"❌ Failed to import luminous_nix.core as backend: {e}")
         return False
 
 def test_command(command: str, description: str, use_feature_flag: bool = True):

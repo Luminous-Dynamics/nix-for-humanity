@@ -18,7 +18,7 @@ EXCLUDE_DIRS = {
     'build',
     '.git',
     '__pycache__',
-    'nix_humanity',  # Our new Python package
+    'luminous_nix',  # Our new Python package
     'backend',  # Keep backend Python code for now
 }
 
@@ -135,7 +135,7 @@ def remove_typescript_javascript():
         f.write(f"- Removed {len(removed_dirs)} directories\n")
         f.write(f"- Cleaned up {len(empty_dirs)} empty directories\n\n")
         f.write(f"## Next Steps\n\n")
-        f.write(f"1. Migrate Python code from `backend/` to `nix_humanity/`\n")
+        f.write(f"1. Migrate Python code from `backend/` to `luminous_nix/`\n")
         f.write(f"2. Update all imports to use the new package structure\n")
         f.write(f"3. Remove the old `backend/` directory\n")
         f.write(f"4. Update `pyproject.toml` with all dependencies\n")

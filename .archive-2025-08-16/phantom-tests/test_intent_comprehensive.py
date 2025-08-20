@@ -20,8 +20,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backend')))
 
 
-from nix_humanity.core.intents import Intent, IntentType
-from nix_humanity.core.intents import IntentRecognizer as IntentRecognizer
+from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.core.intents import IntentRecognizer as IntentRecognizer
 
 class TestIntentRecognizer(unittest.TestCase):
     """Test suite for IntentRecognizer"""

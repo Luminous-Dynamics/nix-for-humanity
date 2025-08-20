@@ -44,7 +44,7 @@ except Exception as e:
 # Native API method
 print("\n⚡ Native Python-Nix API:")
 try:
-    from nix_humanity.nix.native_backend import NativeNixBackend
+    from luminous_nix.nix.native_backend import NativeNixBackend
     backend = NativeNixBackend()
     
     start = time.perf_counter()
@@ -102,7 +102,7 @@ print("\n\n📊 Test 3: Natural Language Processing")
 print("=" * 60)
 
 try:
-    from nix_humanity.ai.nlp import process
+    from luminous_nix.ai.nlp import process
     
     test_queries = [
         "install firefox",

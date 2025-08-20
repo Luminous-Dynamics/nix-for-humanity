@@ -21,7 +21,7 @@ from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend/python'))
-from nix_humanity.core.native_operations import (
+from luminous_nix.core.native_operations import (
     NativeNixBackend, 
     NixOperation, 
     NixResult, 

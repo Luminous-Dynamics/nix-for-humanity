@@ -98,7 +98,7 @@ class TestCoverageMonitor(unittest.TestCase):
         call_args = mock_run.call_args[0][0]
         self.assertIn("-m", call_args)
         self.assertIn("pytest", call_args)
-        self.assertIn("--cov=nix_humanity", call_args)
+        self.assertIn("--cov=luminous_nix", call_args)
 
     @patch("subprocess.run")
     def test_run_coverage_failure(self, mock_run):
@@ -126,9 +126,9 @@ class TestCoverageMonitor(unittest.TestCase):
 
         # Check some expected paths
         expected_paths = [
-            "nix_humanity/nlp/",
-            "nix_humanity/executor/",
-            "nix_humanity/safety/",
+            "luminous_nix/nlp/",
+            "luminous_nix/executor/",
+            "luminous_nix/safety/",
         ]
 
         for path in expected_paths:
@@ -144,9 +144,9 @@ class TestCoverageMonitor(unittest.TestCase):
 
         # Check some expected features
         expected_features = [
-            "nix_humanity/learning/",
-            "nix_humanity/context/",
-            "nix_humanity/personality/",
+            "luminous_nix/learning/",
+            "luminous_nix/context/",
+            "luminous_nix/personality/",
         ]
 
         for feature in expected_features:
@@ -161,7 +161,7 @@ class TestCoverageMonitor(unittest.TestCase):
         self.assertGreater(len(UI_COMPONENTS), 0)
 
         # Check some expected components
-        expected_components = ["nix_humanity/cli/", "nix_humanity/tui/"]
+        expected_components = ["luminous_nix/cli/", "luminous_nix/tui/"]
 
         for component in expected_components:
             self.assertIn(component, UI_COMPONENTS)

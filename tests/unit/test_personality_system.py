@@ -10,8 +10,8 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.responses import ResponseGenerator
-from nix_humanity.core.personality import PersonalityStyle
+from luminous_nix.core.responses import ResponseGenerator
+from luminous_nix.core.personality import PersonalityStyle
 
 
 class TestResponseGenerator(unittest.TestCase):

@@ -36,10 +36,10 @@ def add_basic_type_hints(filepath: Path) -> None:
 
 # Add type hints to key files
 key_files = [
-    'src/nix_humanity/core/executor.py',
-    'src/nix_humanity/core/knowledge.py',
-    'src/nix_humanity/core/personality.py',
-    'src/nix_humanity/learning/patterns.py',
+    'src/luminous_nix/core/executor.py',
+    'src/luminous_nix/core/knowledge.py',
+    'src/luminous_nix/core/personality.py',
+    'src/luminous_nix/learning/patterns.py',
 ]
 
 for file_path in key_files:

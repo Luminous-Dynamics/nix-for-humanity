@@ -14,8 +14,8 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from nix_humanity.core.backend import CachedBackend
-from nix_humanity.core.backend import EnhancedBackend
+from luminous_nix.core.backend import CachedBackend
+from luminous_nix.core.backend import EnhancedBackend
 from src.nix_for_humanity.core.types import Request, PersonalityStyle
 from src.nix_for_humanity.ai.xai_engine import ExplanationLevel
 

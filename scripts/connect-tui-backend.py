@@ -10,10 +10,10 @@ print("🔗 Connecting TUI to Backend\n")
 print("1. Checking imports...")
 
 components = {
-    "Backend": ("nix_humanity.core.engine", "NixForHumanityBackend"),
-    "Request": ("nix_humanity.api.schema", "Request"),
-    "Response": ("nix_humanity.api.schema", "Response"),
-    "TUI (without Textual)": ("nix_humanity.ui", "__all__"),
+    "Backend": ("luminous_nix.core.engine", "NixForHumanityBackend"),
+    "Request": ("luminous_nix.api.schema", "Request"),
+    "Response": ("luminous_nix.api.schema", "Response"),
+    "TUI (without Textual)": ("luminous_nix.ui", "__all__"),
 }
 
 available = {}
@@ -30,8 +30,8 @@ for name, (module, attr) in components.items():
 if available.get("Backend") and available.get("Request"):
     print("\n2. Testing backend functionality...")
     
-    from nix_humanity.core.engine import NixForHumanityBackend
-    from nix_humanity.api.schema import Request
+    from luminous_nix.core.engine import NixForHumanityBackend
+    from luminous_nix.api.schema import Request
     
     backend = NixForHumanityBackend()
     
@@ -70,7 +70,7 @@ expected_backend_methods = [
 
 print("\nBackend methods needed by TUI:")
 if available.get("Backend"):
-    from nix_humanity.core.engine import NixForHumanityBackend
+    from luminous_nix.core.engine import NixForHumanityBackend
     backend = NixForHumanityBackend()
     
     for method in expected_backend_methods:

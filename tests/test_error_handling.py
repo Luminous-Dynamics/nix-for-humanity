@@ -11,11 +11,11 @@ from pathlib import Path
 backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
 
-from nix_humanity.core.error_handler import (
+from luminous_nix.core.error_handler import (
     ErrorHandler, ErrorContext, ErrorCategory, ErrorSeverity,
     NixError, handle_error, safe_execute
 )
-from nix_humanity.utils.decorators import with_error_handling, with_timing, retry_on_error
+from luminous_nix.utils.decorators import with_error_handling, with_timing, retry_on_error
 
 
 class TestErrorHandler:

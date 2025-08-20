@@ -17,7 +17,7 @@ results = {}
 print("1. Testing native backend import...")
 start = time.perf_counter()
 try:
-    from nix_humanity.nix.native_backend import NativeNixBackend
+    from luminous_nix.nix.native_backend import NativeNixBackend
     backend = NativeNixBackend()
     import_time = time.perf_counter() - start
     print(f"   ✅ Import successful: {import_time*1000:.2f}ms")
@@ -66,7 +66,7 @@ except Exception as e:
 # Test 5: NLP processing speed
 print("\n5. Testing NLP processing speed...")
 try:
-    from nix_humanity.ai.nlp import NLPEngine
+    from luminous_nix.ai.nlp import NLPEngine
     nlp = NLPEngine()
     
     test_phrases = [

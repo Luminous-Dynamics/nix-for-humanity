@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.bayesian_knowledge_tracer import (
+from luminous_nix.core.bayesian_knowledge_tracer import (
     BayesianKnowledgeTracer,
     NixOSSkillGraph,
     BKTParameters,

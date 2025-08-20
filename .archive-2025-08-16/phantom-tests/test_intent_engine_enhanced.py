@@ -12,11 +12,11 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 
-from nix_humanity.core.intents import Intent, IntentType
-from nix_humanity.core.intents import IntentRecognizer
-from nix_humanity.core.interface import Intent, IntentType
+from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.core.intents import IntentRecognizer
+from luminous_nix.core.interface import Intent, IntentType
 
-from nix_humanity.core.intents import IntentRecognizer as IntentRecognizer
+from luminous_nix.core.intents import IntentRecognizer as IntentRecognizer
 
 class TestIntentRecognizerEnhanced(unittest.TestCase):
     """Enhanced tests for the IntentRecognizer"""

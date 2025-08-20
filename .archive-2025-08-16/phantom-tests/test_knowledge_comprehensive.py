@@ -19,7 +19,7 @@ import os
 # Add the backend directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from nix_humanity.core.knowledge import KnowledgeBase
+from luminous_nix.core.knowledge import KnowledgeBase
 
 
 class TestKnowledgeBase(unittest.TestCase):

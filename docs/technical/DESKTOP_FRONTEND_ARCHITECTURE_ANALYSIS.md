@@ -212,7 +212,7 @@ Philosophy Score: 8/10 - Future-forward
 Building on the existing Textual integration with consciousness-first enhancements:
 
 ```python
-# File: nix_humanity/ui/consciousness_terminal.py
+# File: luminous_nix/ui/consciousness_terminal.py
 from textual.app import App
 from textual.widgets import Static
 from textual.animation import Animation
@@ -269,7 +269,7 @@ class AdaptiveComplexityUI(App):
 For users who want richer visuals without leaving the terminal:
 
 ```python
-# File: nix_humanity/ui/floating_orb.py
+# File: luminous_nix/ui/floating_orb.py
 from PyQt6.QtWidgets import QWidget, QApplication
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation
 from PyQt6.QtGui import QPainter, QRadialGradient, QColor

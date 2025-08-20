@@ -16,11 +16,11 @@ import shutil
 # Add parent directories to path
 project_root = os.path.join(os.path.dirname(__file__), '../..')
 sys.path.insert(0, project_root)
-backend_path = os.path.join(project_root, 'nix_humanity')
+backend_path = os.path.join(project_root, 'luminous_nix')
 sys.path.insert(0, backend_path)
 
 # Import after setting path
-from nix_humanity.learning.preferences import PreferenceManager
+from luminous_nix.learning.preferences import PreferenceManager
 
 
 class TestPreferenceManager(unittest.TestCase):

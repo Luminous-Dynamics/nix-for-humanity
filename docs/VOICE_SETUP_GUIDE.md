@@ -165,19 +165,19 @@ For user-specific installation:
 ### 1. Enable the Service (NixOS module)
 ```bash
 # Start the voice service
-sudo systemctl start nix-humanity-voice
+sudo systemctl start luminous-nix-voice
 
 # Enable at boot
-sudo systemctl enable nix-humanity-voice
+sudo systemctl enable luminous-nix-voice
 
 # Check status
-sudo systemctl status nix-humanity-voice
+sudo systemctl status luminous-nix-voice
 ```
 
 ### 2. Test Audio (All methods)
 ```bash
 # Run the convenience script (if using NixOS module)
-/etc/nix-humanity/enable-voice.sh
+/etc/luminous-nix/enable-voice.sh
 
 # Or test manually
 arecord -d 3 test.wav && aplay test.wav
@@ -222,7 +222,7 @@ wget https://github.com/rhasspy/piper/releases/download/v1.0.0/en_US-amy-medium.
 
 ### Voice Settings
 
-Create or edit `~/.config/nix-humanity/voice.yaml`:
+Create or edit `~/.config/luminous-nix/voice.yaml`:
 ```yaml
 voice:
   # Wake word configuration
@@ -274,7 +274,7 @@ cd /srv/luminous-dynamics/11-meta-consciousness/nix-for-humanity
 
 3. **Programmatically**:
 ```python
-from nix_humanity.interfaces.voice_interface import VoiceAssistant
+from luminous_nix.interfaces.voice_interface import VoiceAssistant
 
 assistant = VoiceAssistant()
 assistant.start()
@@ -335,7 +335,7 @@ voice:
 2. **Check background noise**:
 ```bash
 # Monitor audio levels
-python -m nix_humanity.tools.audio_monitor
+python -m luminous_nix.tools.audio_monitor
 ```
 
 3. **Use push-to-talk**:
@@ -528,7 +528,7 @@ voice:
 
 ### Custom Commands
 
-Add to `~/.config/nix-humanity/voice_commands.py`:
+Add to `~/.config/luminous-nix/voice_commands.py`:
 ```python
 def handle_custom_command(text):
     if "good morning" in text.lower():

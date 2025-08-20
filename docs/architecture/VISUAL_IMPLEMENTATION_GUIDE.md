@@ -7,7 +7,7 @@
 ### 1. Terminal-Based (Textual) - Fastest to Implement
 
 ```python
-# File: nix_humanity/ui/consciousness_orb.py
+# File: luminous_nix/ui/consciousness_orb.py
 from textual.app import App, ComposeResult
 from textual.widgets import Static
 from textual.reactive import reactive
@@ -342,7 +342,7 @@ function AdaptiveInterface({ userProfile, currentTask, cognitiveLoad }) {
 ### Color and Animation Mapping
 
 ```python
-# File: nix_humanity/ui/emotion_system.py
+# File: luminous_nix/ui/emotion_system.py
 from dataclasses import dataclass
 from typing import Dict, Tuple
 import colorsys
@@ -426,7 +426,7 @@ class EmotionSystem:
 ### Connecting to Core Engine
 
 ```python
-# File: nix_humanity/ui/visual_bridge.py
+# File: luminous_nix/ui/visual_bridge.py
 from typing import Optional
 import asyncio
 from dataclasses import dataclass

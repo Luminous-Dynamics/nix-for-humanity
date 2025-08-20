@@ -10,7 +10,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from nix_humanity.config import (
+from luminous_nix.config import (
     ConfigManager, get_config, get_config_manager,
     ConfigSchema, Personality, ResponseFormat
 )

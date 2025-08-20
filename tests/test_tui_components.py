@@ -25,14 +25,14 @@ def test_imports():
     
     tests = [
         ("Core imports", [
-            "from nix_humanity.ui import ConsciousnessOrb",
-            "from nix_humanity.ui import AdaptiveInterface", 
-            "from nix_humanity.ui import NixForHumanityTUI"
+            "from luminous_nix.ui import ConsciousnessOrb",
+            "from luminous_nix.ui import AdaptiveInterface", 
+            "from luminous_nix.ui import NixForHumanityTUI"
         ]),
         ("Component imports", [
-            "from nix_humanity.ui.consciousness_orb import AIState, EmotionalState",
-            "from nix_humanity.ui.adaptive_interface import UserFlowState, ComplexityLevel",
-            "from nix_humanity.ui.visual_state_controller import VisualStateController"
+            "from luminous_nix.ui.consciousness_orb import AIState, EmotionalState",
+            "from luminous_nix.ui.adaptive_interface import UserFlowState, ComplexityLevel",
+            "from luminous_nix.ui.visual_state_controller import VisualStateController"
         ]),
         ("Dependencies", [
             "import textual",
@@ -66,7 +66,7 @@ def test_consciousness_orb():
     console.print("\n[bold cyan]🔮 Testing Consciousness Orb...[/bold cyan]")
     
     try:
-        from nix_humanity.ui.consciousness_orb import ConsciousnessOrb, AIState, EmotionalState
+        from luminous_nix.ui.consciousness_orb import ConsciousnessOrb, AIState, EmotionalState
         
         # Create orb instance
         orb = ConsciousnessOrb()
@@ -104,7 +104,7 @@ def test_adaptive_interface():
     console.print("\n[bold cyan]🎨 Testing Adaptive Interface...[/bold cyan]")
     
     try:
-        from nix_humanity.ui.adaptive_interface import (
+        from luminous_nix.ui.adaptive_interface import (
             AdaptiveInterface, UserFlowState, ComplexityLevel, COMPLEXITY_CONFIGS
         )
         
@@ -140,7 +140,7 @@ def test_visual_state_controller():
     console.print("\n[bold cyan]🔗 Testing Visual State Controller...[/bold cyan]")
     
     try:
-        from nix_humanity.ui.visual_state_controller import VisualStateController, VisualState
+        from luminous_nix.ui.visual_state_controller import VisualStateController, VisualState
         
         # Mock engine
         class MockEngine:
@@ -180,7 +180,7 @@ def test_main_app_creation():
     console.print("\n[bold cyan]🌟 Testing Main App Creation...[/bold cyan]")
     
     try:
-        from nix_humanity.ui.main_app import NixForHumanityTUI
+        from luminous_nix.ui.main_app import NixForHumanityTUI
         
         # Mock engine
         class MockEngine:
@@ -209,7 +209,7 @@ def test_tui_entry_point():
     console.print("\n[bold cyan]🚪 Testing TUI Entry Point...[/bold cyan]")
     
     try:
-        from nix_humanity.interfaces.tui import main
+        from luminous_nix.interfaces.tui import main
         console.print("  ✅ TUI entry point imports correctly")
         
         # Check if nix-tui script exists
@@ -230,7 +230,7 @@ def run_quick_visual_test():
     console.print("\n[bold cyan]👁️  Quick Visual Test...[/bold cyan]")
     
     try:
-        from nix_humanity.ui.consciousness_orb import ConsciousnessOrb, AIState, EmotionalState
+        from luminous_nix.ui.consciousness_orb import ConsciousnessOrb, AIState, EmotionalState
         
         orb = ConsciousnessOrb()
         orb.set_state(AIState.THINKING, EmotionalState.THINKING)

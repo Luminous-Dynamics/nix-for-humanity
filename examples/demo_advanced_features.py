@@ -19,8 +19,8 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from nix_humanity.core.advanced_features import AdvancedFeatures
-from nix_humanity.core.native_operations import NativeOperationsManager
+from luminous_nix.core.advanced_features import AdvancedFeatures
+from luminous_nix.core.native_operations import NativeOperationsManager
 
 
 async def main():
@@ -100,7 +100,7 @@ async def main():
     
     print("\n💡 Or use the features programmatically:")
     print("""
-    from nix_humanity.core.advanced_features import AdvancedFeatures
+    from luminous_nix.core.advanced_features import AdvancedFeatures
     
     features = AdvancedFeatures()
     

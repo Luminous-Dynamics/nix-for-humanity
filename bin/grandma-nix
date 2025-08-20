@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""
+Grandma Nix - REAL NixOS for non-technical users
+
+This ACTUALLY WORKS. Not a demo. Not dry-run. REAL.
+
+Example:
+    grandma-nix install firefox     # Actually installs Firefox
+    grandma-nix search email         # Finds email programs  
+    grandma-nix remove zoom          # Actually removes Zoom
+    grandma-nix what is installed    # Shows programs simply
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from luminous_nix.core.grandma_mode import GrandmaMode, GrandmaResponse
+
+
+class GrandmaNixCLI:
+    """
+    The REAL CLI for Grandma Rose.
+    
+    NO technical jargon.
+    NO confusing options.
+    JUST works.
+    """
+    
+    def __init__(self):
+        self.grandma = GrandmaMode()
+        
+    def run(self, args: list):
+        """Process commands in the simplest possible way"""
+        
+        if not args:
+            self.show_help()
+            return
+        
+        # Join all args into one command string
+        command = ' '.join(args).lower().strip()
+        
+        # Handle different phrasings Grandma might use
+        if any(x in command for x in ['help', 'what can', 'how do i', 'how to']):
+            self.show_help()
+            
+        elif any(x in command for x in ['install', 'get', 'add', 'download']):
+            # Extract program name
+            program = command
+            for word in ['install', 'get', 'add', 'download', 'me', 'please', 'program', 'app']:
+                program = program.replace(word, '').strip()
+            
+            if not program:
+                print("What program would you like to install?")
+                program = input("Program name: ").strip()
+            
+            self.install(program)
+            
+        elif any(x in command for x in ['search', 'find', 'look for', 'is there']):
+            # Extract search term
+            search = command
+            for word in ['search', 'find', 'look', 'for', 'me', 'please', 'program', 'app', 'is', 'there', 'a']:
+                search = search.replace(word, '').strip()
+            
+            if not search:
+                print("What kind of program are you looking for?")
+                search = input("Search for: ").strip()
+            
+            self.search(search)
+            
+        elif any(x in command for x in ['remove', 'delete', 'uninstall', 'get rid']):
+            # Extract program name
+            program = command
+            for word in ['remove', 'delete', 'uninstall', 'get', 'rid', 'of', 'please']:
+                program = program.replace(word, '').strip()
+            
+            if not program:
+                print("What program would you like to remove?")
+                program = input("Program name: ").strip()
+            
+            self.remove(program)
+            
+        elif any(x in command for x in ['what is installed', 'what do i have', 'list', 'show programs', 'my programs']):
+            self.list_installed()
+            
+        else:
+            # Try to understand what they want
+            print(f"I'm not sure what you mean by '{command}'.")
+            print("\nHere's what I can help you with:")
+            self.show_help()
+    
+    def show_help(self):
+        """Show help in Grandma-friendly language"""
+        print("""
+Welcome to Nix for Grandma! I can help you manage programs on your computer.
+
+Here's what you can say to me:
+
+📦 To INSTALL a program:
+   grandma-nix install firefox
+   grandma-nix get email program
+   grandma-nix add zoom
+
+🔍 To SEARCH for programs:
+   grandma-nix search photo editor
+   grandma-nix find music player
+   grandma-nix look for email
+
+🗑️ To REMOVE a program:
+   grandma-nix remove zoom
+   grandma-nix delete old program
+   grandma-nix uninstall firefox
+
+📋 To see what's installed:
+   grandma-nix what is installed
+   grandma-nix show my programs
+   grandma-nix list
+
+Don't worry about being exact - I'll understand what you mean!
+""")
+    
+    def install(self, program: str):
+        """Install a program with confirmation"""
+        print(f"\n🔍 Looking for {program}...")
+        
+        # First attempt - no confirmation
+        response = self.grandma.install_program(program, confirm=False)
+        print(f"\n{response.message}")
+        
+        if response.needs_confirmation:
+            # Ask for confirmation
+            print("\nType 'yes' to install, or 'no' to cancel: ", end='')
+            answer = input().lower().strip()
+            
+            if answer in ['yes', 'y', 'ok', 'sure', 'please']:
+                # Actually install it!
+                print("\n⏳ Installing... (this might take a minute)")
+                response = self.grandma.install_program(program, confirm=True)
+                print(f"\n{response.message}")
+                
+                if response.suggestions:
+                    print("\n💡 Helpful tips:")
+                    for tip in response.suggestions:
+                        print(f"   • {tip}")
+            else:
+                print("\n👍 No problem! Nothing was changed.")
+        
+        if not response.success and response.suggestions:
+            print("\n💡 Suggestions:")
+            for suggestion in response.suggestions:
+                print(f"   • {suggestion}")
+    
+    def search(self, term: str):
+        """Search for programs"""
+        print(f"\n🔍 Searching for '{term}'...")
+        
+        response = self.grandma.search_programs(term)
+        print(f"\n{response.message}")
+        
+        if response.suggestions:
+            print("\n💡 What to do next:")
+            for tip in response.suggestions:
+                print(f"   • {tip}")
+    
+    def remove(self, program: str):
+        """Remove a program with confirmation"""
+        print(f"\n🔍 Checking {program}...")
+        
+        # First check
+        response = self.grandma.remove_program(program, confirm=False)
+        print(f"\n{response.message}")
+        
+        if response.needs_confirmation:
+            print("\nType 'yes' to remove, or 'no' to keep it: ", end='')
+            answer = input().lower().strip()
+            
+            if answer in ['yes', 'y', 'ok', 'sure']:
+                print("\n🗑️ Removing...")
+                response = self.grandma.remove_program(program, confirm=True)
+                print(f"\n{response.message}")
+            else:
+                print("\n👍 Good choice! The program will stay installed.")
+    
+    def list_installed(self):
+        """List installed programs"""
+        print("\n📋 Checking your installed programs...")
+        
+        response = self.grandma.list_installed()
+        print(f"\n{response.message}")
+        
+        if response.suggestions:
+            print("\n💡 Tips:")
+            for tip in response.suggestions:
+                print(f"   • {tip}")
+
+
+def main():
+    """Main entry point"""
+    cli = GrandmaNixCLI()
+    
+    # Get command from arguments
+    args = sys.argv[1:]
+    
+    if not args:
+        # Interactive mode
+        print("👵 Hello! I'm Grandma Nix, here to help you with your computer.")
+        print("What would you like to do? (type 'help' if you're not sure)")
+        print()
+        
+        try:
+            while True:
+                command = input("grandma-nix> ").strip()
+                if command.lower() in ['quit', 'exit', 'bye', 'goodbye']:
+                    print("\n👋 Goodbye! Have a wonderful day!")
+                    break
+                    
+                cli.run(command.split())
+                print()  # Empty line for readability
+                
+        except KeyboardInterrupt:
+            print("\n\n👋 Goodbye! Have a wonderful day!")
+    else:
+        # One-shot mode
+        cli.run(args)
+
+
+if __name__ == "__main__":
+    main()

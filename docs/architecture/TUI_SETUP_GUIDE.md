@@ -45,7 +45,7 @@ run-tui-app
 ./bin/nix-tui
 
 # Option 3: Python module
-python -m nix_humanity.interfaces.tui
+python -m luminous_nix.interfaces.tui
 ```
 
 ## 🔮 What You'll See
@@ -108,7 +108,7 @@ If you see import errors:
 ### File Structure
 
 ```
-nix_humanity/
+luminous_nix/
 ├── ui/                    # TUI components
 │   ├── consciousness_orb.py    # The living orb
 │   ├── adaptive_interface.py   # Complexity management
@@ -149,7 +149,7 @@ If you want to modify the TUI:
 
 ```bash
 # Edit components
-vim nix_humanity/ui/consciousness_orb.py
+vim luminous_nix/ui/consciousness_orb.py
 
 # Test changes immediately (no rebuild needed)
 run-tui-app

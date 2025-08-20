@@ -31,7 +31,7 @@ print("  Ctrl+C - Exit")
 print("\n🔮 Watch the consciousness orb breathe...\n")
 
 try:
-    from nix_humanity.interfaces.tui import main
+    from luminous_nix.interfaces.tui import main
     main()
 except KeyboardInterrupt:
     print("\n\n✨ Thank you for experiencing consciousness-first computing!")

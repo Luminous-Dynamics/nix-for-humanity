@@ -13,7 +13,7 @@ def create_directory_structure():
     
     # Define the new structure
     structure = {
-        'nix_humanity': {
+        'luminous_nix': {
             '__init__.py': '"""Nix for Humanity - Making NixOS accessible through natural conversation."""\n\n__version__ = "0.5.2"',
             'core': {
                 '__init__.py': '"""Core business logic for intent recognition and command execution."""',
@@ -64,7 +64,7 @@ def create_directory_structure():
                     print(f"📄 Created file: {path}")
     
     # Create the main package
-    create_structure(root, {'nix_humanity': structure['nix_humanity']})
+    create_structure(root, {'luminous_nix': structure['luminous_nix']})
     
     # Create other necessary directories
     other_dirs = ['tests', 'docs', 'scripts']
@@ -122,12 +122,12 @@ voice = [
 ]
 
 [project.scripts]
-nix-humanity = "nix_humanity.interfaces.cli:main"
-nix-humanity-tui = "nix_humanity.interfaces.tui:main"
+nix-humanity = "luminous_nix.interfaces.cli:main"
+nix-humanity-tui = "luminous_nix.interfaces.tui:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["nix_humanity*"]
+include = ["luminous_nix*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -158,22 +158,22 @@ def migrate_existing_code():
     
     migrations = [
         # Core migrations
-        ('backend/core/intent.py', 'nix_humanity/core/intents.py'),
-        ('backend/core/executor.py', 'nix_humanity/core/executor.py'),
-        ('backend/core/knowledge.py', 'nix_humanity/core/knowledge.py'),
-        ('backend/core/personality.py', 'nix_humanity/core/personality.py'),
+        ('backend/core/intent.py', 'luminous_nix/core/intents.py'),
+        ('backend/core/executor.py', 'luminous_nix/core/executor.py'),
+        ('backend/core/knowledge.py', 'luminous_nix/core/knowledge.py'),
+        ('backend/core/personality.py', 'luminous_nix/core/personality.py'),
         
         # Learning migrations
-        ('backend/learning/pattern_learner.py', 'nix_humanity/learning/patterns.py'),
-        ('backend/learning/preference_manager.py', 'nix_humanity/learning/preferences.py'),
-        ('backend/ui/adaptive_complexity.py', 'nix_humanity/learning/adaptation.py'),
+        ('backend/learning/pattern_learner.py', 'luminous_nix/learning/patterns.py'),
+        ('backend/learning/preference_manager.py', 'luminous_nix/learning/preferences.py'),
+        ('backend/ui/adaptive_complexity.py', 'luminous_nix/learning/adaptation.py'),
         
         # Interface migrations
-        ('bin/ask-nix', 'nix_humanity/interfaces/cli.py'),
-        ('bin/nix-tui', 'nix_humanity/interfaces/tui.py'),
+        ('bin/ask-nix', 'luminous_nix/interfaces/cli.py'),
+        ('bin/nix-tui', 'luminous_nix/interfaces/tui.py'),
         
         # Security migrations
-        ('backend/security/input_validator.py', 'nix_humanity/security/validator.py'),
+        ('backend/security/input_validator.py', 'luminous_nix/security/validator.py'),
     ]
     
     print("\n📦 Migrating existing code...")
@@ -186,9 +186,9 @@ def migrate_existing_code():
             content = old_file.read_text()
             
             # Update imports
-            content = content.replace('from backend.', 'from nix_humanity.')
-            content = content.replace('from ..', 'from nix_humanity')
-            content = content.replace('import nix_humanity.core as backend.', 'import nix_humanity.')
+            content = content.replace('from backend.', 'from luminous_nix.')
+            content = content.replace('from ..', 'from luminous_nix')
+            content = content.replace('import luminous_nix.core as backend.', 'import luminous_nix.')
             
             # Write to new location
             new_file.parent.mkdir(parents=True, exist_ok=True)
@@ -207,7 +207,7 @@ def main():
     print("\nNext steps:")
     print("1. Run remove_typescript_javascript.py to clean up TS/JS files")
     print("2. Migrate existing Python code to new structure")
-    print("3. Update all imports to use nix_humanity package")
+    print("3. Update all imports to use luminous_nix package")
     print("4. Run tests to ensure everything works")
 
 if __name__ == '__main__':

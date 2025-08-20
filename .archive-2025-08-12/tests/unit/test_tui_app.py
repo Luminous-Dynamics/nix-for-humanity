@@ -187,20 +187,20 @@ class TestNixHumanityApp(unittest.TestCase):
         # Patch the constructors
         self.patches = [
             patch(
-                "nix_humanity.ui.app.NixForHumanityBackend", return_value=self.core_mock
+                "luminous_nix.ui.app.NixForHumanityBackend", return_value=self.core_mock
             ),
-            patch("nix_humanity.ui.app.XAIEngine", return_value=self.xai_engine_mock),
-            patch("nix_humanity.ui.app.CausalXAI", return_value=self.causal_xai_mock),
+            patch("luminous_nix.ui.app.XAIEngine", return_value=self.xai_engine_mock),
+            patch("luminous_nix.ui.app.CausalXAI", return_value=self.causal_xai_mock),
             patch(
-                "nix_humanity.ui.app.ConfidenceCalculator",
+                "luminous_nix.ui.app.ConfidenceCalculator",
                 return_value=self.confidence_calculator_mock,
             ),
             patch(
-                "nix_humanity.ui.app.PersonaExplanationAdapter",
+                "luminous_nix.ui.app.PersonaExplanationAdapter",
                 return_value=self.explanation_adapter_mock,
             ),
             patch(
-                "nix_humanity.ui.app.PersonaStyleManager",
+                "luminous_nix.ui.app.PersonaStyleManager",
                 return_value=self.persona_manager_mock,
             ),
         ]

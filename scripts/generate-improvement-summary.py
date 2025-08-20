@@ -20,7 +20,7 @@ def generate_summary():
         },
         "major_achievements": {
             "week1": [
-                "Backend consolidation - removed duplicate nix_humanity/ directory",
+                "Backend consolidation - removed duplicate luminous_nix/ directory",
                 "Fixed 70+ import issues across codebase",
                 "Unified dependency management under Nix",
                 "Created automation scripts for maintenance",

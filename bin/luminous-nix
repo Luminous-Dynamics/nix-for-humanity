@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""
+Luminous Nix - Unified Natural Language Interface for NixOS
+
+This is the MAIN entry point that intelligently routes to the right mode.
+It unifies Grandma Mode, Maya Mode, and Standard Mode into one smart system.
+
+Examples:
+    luminous-nix "install firefox"        # Auto-detects standard mode
+    luminous-nix "what is email?"         # Auto-detects grandma mode  
+    luminous-nix "i ff vs"                # Auto-detects maya mode
+    luminous-nix --mode grandma           # Force grandma mode
+    luminous-nix --mode maya              # Force maya mode
+"""
+
+import sys
+import os
+import argparse
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from luminous_nix.core.unified_system import get_instance, UserMode
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Luminous Nix - Natural Language NixOS for Everyone",
+        epilog="Making NixOS accessible through consciousness-first design"
+    )
+    
+    # Mode selection
+    parser.add_argument(
+        '--mode', '-m',
+        choices=['auto', 'grandma', 'maya', 'standard', 'developer'],
+        default='auto',
+        help='User mode (auto-detect by default)'
+    )
+    
+    # Configuration
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Preview commands without executing'
+    )
+    
+    parser.add_argument(
+        '--no-cache',
+        action='store_true',
+        help='Disable caching for fresh results'
+    )
+    
+    parser.add_argument(
+        '--no-sacred',
+        action='store_true',
+        help='Disable consciousness features for speed'
+    )
+    
+    # Commands
+    parser.add_argument(
+        'command',
+        nargs='*',
+        help='Natural language command or question'
+    )
+    
+    # Special commands
+    parser.add_argument(
+        '--status',
+        action='store_true',
+        help='Show system status'
+    )
+    
+    parser.add_argument(
+        '--suggest',
+        action='store_true',
+        help='Show suggestions based on your usage'
+    )
+    
+    parser.add_argument(
+        '--config',
+        action='store_true',
+        help='Open configuration wizard'
+    )
+    
+    args = parser.parse_args()
+    
+    # Get the unified system
+    nix = get_instance()
+    
+    # Apply command-line overrides
+    if args.dry_run:
+        nix.config.dry_run = True
+    
+    if args.no_cache:
+        nix.config.enable_cache = False
+    
+    if args.no_sacred:
+        nix.config.enable_sacred_pauses = False
+        nix.config.mindful_operations = False
+    
+    # Set mode if specified
+    if args.mode != 'auto':
+        mode_map = {
+            'grandma': UserMode.GRANDMA,
+            'maya': UserMode.MAYA,
+            'standard': UserMode.STANDARD,
+            'developer': UserMode.DEVELOPER
+        }
+        nix.set_mode(mode_map[args.mode])
+    
+    # Handle special commands
+    if args.status:
+        show_status(nix)
+        return
+    
+    if args.suggest:
+        show_suggestions(nix)
+        return
+    
+    if args.config:
+        run_config_wizard(nix)
+        return
+    
+    # Process command
+    if args.command:
+        # One-shot mode
+        command_text = ' '.join(args.command)
+        result = nix.process(command_text)
+        display_result(result, nix.state.current_mode)
+    else:
+        # Interactive mode
+        run_interactive(nix)
+    
+    # Cleanup
+    nix.shutdown()
+
+
+def show_status(nix):
+    """Display system status"""
+    status = nix.get_status()
+    
+    print("═" * 50)
+    print("✨ LUMINOUS NIX STATUS")
+    print("═" * 50)
+    print(f"Mode: {status['mode'].upper()}")
+    print(f"User: {status['user']}")
+    print(f"Session: {status['session_duration']:.0f} seconds")
+    print(f"Operations: {status['operations']}")
+    print(f"Success Rate: {status['success_rate']*100:.1f}%")
+    print(f"Consciousness: {status['consciousness_level']*100:.0f}%")
+    print(f"Cache Size: {status['cache_size']} items")
+    print()
+    print("Configuration:")
+    for key, value in status['config'].items():
+        print(f"  {key}: {value}")
+
+
+def show_suggestions(nix):
+    """Show personalized suggestions"""
+    suggestions = nix.get_suggestions()
+    
+    if suggestions:
+        print("💡 Based on your usage, try these:")
+        for i, suggestion in enumerate(suggestions, 1):
+            print(f"  {i}. {suggestion}")
+    else:
+        print("💡 No suggestions yet. Use the system more to get personalized tips!")
+
+
+def run_config_wizard(nix):
+    """Interactive configuration wizard"""
+    print("🔧 CONFIGURATION WIZARD")
+    print("━" * 40)
+    
+    # Mode selection
+    print("\nSelect your preferred mode:")
+    print("1. Grandma (Non-technical, safety-first)")
+    print("2. Maya (ADHD-friendly, lightning-fast)")
+    print("3. Standard (Natural language)")
+    print("4. Developer (Technical, verbose)")
+    print("5. Auto (Let system decide)")
+    
+    choice = input("Choice (1-5): ").strip()
+    mode_map = {
+        '1': UserMode.GRANDMA,
+        '2': UserMode.MAYA,
+        '3': UserMode.STANDARD,
+        '4': UserMode.DEVELOPER,
+        '5': UserMode.STANDARD  # Auto uses standard as base
+    }
+    
+    if choice in mode_map:
+        nix.config.mode = mode_map[choice]
+        print(f"✓ Mode set to {nix.config.mode.value}")
+    
+    # Safety settings
+    confirm = input("\nRequire confirmation for changes? (y/n): ").lower()
+    nix.config.require_confirmation = confirm == 'y'
+    
+    # Performance settings
+    cache = input("Enable caching for speed? (y/n): ").lower()
+    nix.config.enable_cache = cache == 'y'
+    
+    # Sacred settings
+    sacred = input("Enable consciousness features? (y/n): ").lower()
+    nix.config.enable_sacred_pauses = sacred == 'y'
+    
+    # Save configuration
+    nix.config.save_to_file(
+        Path.home() / '.config' / 'luminous-nix' / 'config.json'
+    )
+    print("\n✅ Configuration saved!")
+
+
+def display_result(result, mode):
+    """Display result based on mode"""
+    if not result['success']:
+        print(f"❌ Error: {result['error']}")
+        if 'suggestion' in result:
+            print(f"💡 {result['suggestion']}")
+    else:
+        # Format based on mode
+        if mode == UserMode.GRANDMA:
+            # Friendly, verbose output
+            print("✅ Success!")
+            if isinstance(result['result'], dict):
+                if 'message' in result['result']:
+                    print(result['result']['message'])
+            else:
+                print(result['result'])
+        elif mode == UserMode.MAYA:
+            # Minimal output
+            if isinstance(result['result'], dict):
+                if 'result' in result['result']:
+                    print(result['result']['result'])
+            else:
+                print(result['result'])
+        else:
+            # Standard output
+            print(result['result'])
+
+
+def run_interactive(nix):
+    """Run interactive mode"""
+    print("✨ LUMINOUS NIX - Natural Language NixOS")
+    print("━" * 40)
+    print("Type 'help' for commands, 'quit' to exit")
+    print(f"Mode: {nix.state.current_mode.value}")
+    print()
+    
+    try:
+        while True:
+            # Dynamic prompt based on mode
+            if nix.state.current_mode == UserMode.MAYA:
+                prompt = "> "  # Minimal
+            elif nix.state.current_mode == UserMode.GRANDMA:
+                prompt = "What would you like to do? "  # Friendly
+            else:
+                prompt = "nix> "  # Standard
+            
+            command = input(prompt).strip()
+            
+            if command.lower() in ['quit', 'exit', 'q']:
+                print("Goodbye! 🌊")
+                break
+            elif command.lower() == 'help':
+                show_help(nix.state.current_mode)
+            elif command.lower() == 'status':
+                show_status(nix)
+            elif command.lower() == 'suggest':
+                show_suggestions(nix)
+            elif command.startswith('mode '):
+                new_mode = command.split()[1]
+                try:
+                    nix.set_mode(new_mode)
+                    print(f"✓ Switched to {new_mode} mode")
+                except:
+                    print(f"✗ Unknown mode: {new_mode}")
+            else:
+                result = nix.process(command)
+                display_result(result, nix.state.current_mode)
+            
+            print()  # Blank line for readability
+            
+    except (KeyboardInterrupt, EOFError):
+        print("\nGoodbye! 🌊")
+
+
+def show_help(mode):
+    """Show mode-specific help"""
+    if mode == UserMode.GRANDMA:
+        print("""
+HELP FOR GRANDMA MODE
+━━━━━━━━━━━━━━━━━━━━
+You can ask me anything! Just type naturally:
+  "install firefox" - Get a web browser
+  "what is email?" - Find email programs
+  "help with photos" - Get photo software
+  "what do I have?" - See your programs
+        """)
+    elif mode == UserMode.MAYA:
+        print("""
+⚡ MAYA MODE
+━━━━━━━━━━━
+i ff vs    Install firefox vscode
+r ch       Remove chromium
+s python   Search
+l          List
+m i:ff,vs  Multi-op
+        """)
+    else:
+        print("""
+LUMINOUS NIX HELP
+━━━━━━━━━━━━━━━━
+Commands:
+  install <package>    Install a package
+  remove <package>     Remove a package
+  search <term>        Search for packages
+  list                 List installed packages
+  update              Update system
+  
+Special:
+  mode <name>         Switch mode (grandma/maya/standard)
+  status              Show system status
+  suggest             Get suggestions
+  help                Show this help
+  quit                Exit
+        """)
+
+
+if __name__ == "__main__":
+    main()

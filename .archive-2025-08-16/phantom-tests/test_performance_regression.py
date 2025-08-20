@@ -20,7 +20,7 @@ import os
 backend_path = Path(__file__).parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
-from nix_humanity.core.native_operations import (
+from luminous_nix.core.native_operations import (
     EnhancedNativeNixBackend,
     NixOperation,
     OperationType,
@@ -122,7 +122,7 @@ class TestPerformanceRegression:
     @pytest.fixture
     def basic_backend(self):
         """Create basic backend for comparison"""
-        from nix_humanity.core.native_operations import NativeNixBackend
+        from luminous_nix.core.native_operations import NativeNixBackend
         return NativeNixBackend()
         
     def test_list_generations_performance(self, backend):

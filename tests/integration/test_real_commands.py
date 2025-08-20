@@ -14,11 +14,11 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.core.intents import IntentRecognizer, IntentType
-from nix_humanity.core.executor import SafeExecutor
-from nix_humanity.core.knowledge import KnowledgeBase
-from nix_humanity.api.schema import Request, Response, Result
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.intents import IntentRecognizer, IntentType
+from luminous_nix.core.executor import SafeExecutor
+from luminous_nix.core.knowledge import KnowledgeBase
+from luminous_nix.api.schema import Request, Response, Result
 
 
 class TestRealIntegration:

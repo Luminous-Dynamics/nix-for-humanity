@@ -66,21 +66,21 @@ class CoverageMonitor:
         
         # Component mapping
         self.COMPONENTS = {
-            "nlp": ["src/nlp/", "nix_humanity/nlp/"],
-            "command_executor": ["src/executor/", "nix_humanity/executor/"],
-            "cli": ["src/cli/", "bin/", "nix_humanity/cli/"],
-            "backend": ["src/backend/", "nix_humanity/backend/"],
-            "learning": ["src/learning/", "nix_humanity/learning/"],
-            "security": ["src/security/", "nix_humanity/security/"],
-            "ui": ["src/ui/", "src/tui/", "nix_humanity/ui/"]
+            "nlp": ["src/nlp/", "luminous_nix/nlp/"],
+            "command_executor": ["src/executor/", "luminous_nix/executor/"],
+            "cli": ["src/cli/", "bin/", "luminous_nix/cli/"],
+            "backend": ["src/backend/", "luminous_nix/backend/"],
+            "learning": ["src/learning/", "luminous_nix/learning/"],
+            "security": ["src/security/", "luminous_nix/security/"],
+            "ui": ["src/ui/", "src/tui/", "luminous_nix/ui/"]
         }
         
         # Critical paths (must meet 95% target)
         self.CRITICAL_PATHS = [
-            "nix_humanity/nlp/intent_recognition.py",
-            "nix_humanity/executor/command_executor.py",
-            "nix_humanity/security/input_validator.py",
-            "nix_humanity/backend/native_api.py"
+            "luminous_nix/nlp/intent_recognition.py",
+            "luminous_nix/executor/command_executor.py",
+            "luminous_nix/security/input_validator.py",
+            "luminous_nix/backend/native_api.py"
         ]
     
     def _init_database(self):
@@ -120,7 +120,7 @@ class CoverageMonitor:
             # Parse existing coverage results
             if not self._coverage_files_exist():
                 print("⚠️ No existing coverage files found. Run tests first with:")
-                print("   python -m pytest --cov=nix_humanity --cov-report=xml --cov-report=json")
+                print("   python -m pytest --cov=luminous_nix --cov-report=xml --cov-report=json")
                 return None
             return self._parse_coverage_results()
         
@@ -130,7 +130,7 @@ class CoverageMonitor:
             # Run tests with coverage (optimized for speed)
             result = subprocess.run([
                 "python", "-m", "pytest", 
-                "--cov=nix_humanity",
+                "--cov=luminous_nix",
                 "--cov-report=xml",
                 "--cov-report=json",
                 "--cov-report=html:htmlcov",

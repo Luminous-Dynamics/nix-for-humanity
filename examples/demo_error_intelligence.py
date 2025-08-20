@@ -10,7 +10,7 @@ from pathlib import Path
 # Add the backend to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from nix_humanity.core.error_intelligence import ErrorIntelligence
+from luminous_nix.core.error_intelligence import ErrorIntelligence
 
 def demo_error_intelligence():
     """Demonstrate error analysis capabilities"""

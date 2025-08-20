@@ -12,7 +12,7 @@ def analyze_imports():
     
     print("🔍 Analyzing Import Structure\n")
     
-    src_dir = Path('src/nix_humanity')
+    src_dir = Path('src/luminous_nix')
     
     # Track imports and exports
     imports_by_file = {}
@@ -223,7 +223,7 @@ def suggest_fixes(report):
     print("   - Consider dependency injection instead of direct imports")
     
     print("\n3. Standardize Import Patterns:")
-    print("   - Use absolute imports from 'nix_humanity' for clarity")
+    print("   - Use absolute imports from 'luminous_nix' for clarity")
     print("   - Keep relative imports only for same-package imports")
     print("   - Create clear __init__.py exports")
 

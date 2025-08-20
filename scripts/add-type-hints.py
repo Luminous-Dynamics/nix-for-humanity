@@ -225,12 +225,12 @@ def main():
     
     # For now, let's add type hints to some key modules
     key_modules = [
-        'nix_humanity/core/executor.py',
-        'nix_humanity/core/knowledge.py',
-        'nix_humanity/core/personality.py',
-        'nix_humanity/ai/nlp.py',
-        'nix_humanity/learning/patterns.py',
-        'nix_humanity/security/validator.py',
+        'luminous_nix/core/executor.py',
+        'luminous_nix/core/knowledge.py',
+        'luminous_nix/core/personality.py',
+        'luminous_nix/ai/nlp.py',
+        'luminous_nix/learning/patterns.py',
+        'luminous_nix/security/validator.py',
     ]
     
     files_to_update = []
@@ -280,10 +280,10 @@ def add_basic_type_hints(filepath: Path) -> None:
 
 # Add type hints to key files
 key_files = [
-    'src/nix_humanity/core/executor.py',
-    'src/nix_humanity/core/knowledge.py',
-    'src/nix_humanity/core/personality.py',
-    'src/nix_humanity/learning/patterns.py',
+    'src/luminous_nix/core/executor.py',
+    'src/luminous_nix/core/knowledge.py',
+    'src/luminous_nix/core/personality.py',
+    'src/luminous_nix/learning/patterns.py',
 ]
 
 for file_path in key_files:

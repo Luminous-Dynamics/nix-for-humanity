@@ -14,7 +14,7 @@ parent_dir = backend_dir.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(parent_dir))
 
-from nix_humanity.core.engine import UnifiedNixBackend, Intent, IntentType
+from luminous_nix.core.engine import UnifiedNixBackend, Intent, IntentType
 
 def progress_callback(message: str, progress: float):
     """Simple progress display"""

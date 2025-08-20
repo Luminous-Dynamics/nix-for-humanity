@@ -104,7 +104,7 @@ jobs:
         # Ensure critical paths meet 95% threshold
         echo "=== Critical Path Coverage Check ==="
         
-        MODULES="nix_humanity/nlp/intent_engine.py nix_humanity/executor/command_executor.py nix_humanity/safety/validator.py"
+        MODULES="luminous_nix/nlp/intent_engine.py luminous_nix/executor/command_executor.py luminous_nix/safety/validator.py"
         
         for module in $MODULES; do
           if [ -f "$module" ]; then

@@ -54,7 +54,7 @@ def run_tests():
     
     # Analyze what we've covered
     try:
-        from nix_humanity.core.learning_system import LearningSystem
+        from luminous_nix.core.learning_system import LearningSystem
         
         # Get all methods
         methods = [method for method in dir(LearningSystem) if not method.startswith('_') or method == '__init__']

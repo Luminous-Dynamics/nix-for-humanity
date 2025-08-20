@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from nix_humanity.core.home_manager import HomeManager
+from luminous_nix.core.home_manager import HomeManager
 
 def demo_home_manager():
     """Demo the Home Manager integration"""

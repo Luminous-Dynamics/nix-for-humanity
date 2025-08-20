@@ -123,7 +123,7 @@ def create_unified_backend():
     analyzer = CodeAnalyzer()
     
     # Analyze all Python files in backend directories
-    backend_dirs = ['backend', 'nix_humanity', 'src/nix_humanity']
+    backend_dirs = ['backend', 'luminous_nix', 'src/luminous_nix']
     
     for dir_path in backend_dirs:
         if Path(dir_path).exists():
@@ -157,7 +157,7 @@ def create_unified_backend():
 
 ## 1. Unified Structure
 ```
-src/nix_humanity/
+src/luminous_nix/
 ├── __init__.py
 ├── core/
 │   ├── __init__.py
@@ -189,7 +189,7 @@ src/nix_humanity/
 ## 2. Key Consolidations
 
 ### Executor (HIGHEST PRIORITY)
-- Merge `backend/core/executor.py` and `nix_humanity/core/executor.py`
+- Merge `backend/core/executor.py` and `luminous_nix/core/executor.py`
 - Keep the best error handling from both
 - Use dependency injection for backends
 
@@ -205,7 +205,7 @@ src/nix_humanity/
 
 ## 3. Migration Steps
 
-1. **Create unified structure** in `src/nix_humanity/`
+1. **Create unified structure** in `src/luminous_nix/`
 2. **Copy best implementations** from each duplicate
 3. **Update all imports** to use new structure
 4. **Remove old implementations** after testing
@@ -214,7 +214,7 @@ src/nix_humanity/
 ## 4. Code Example
 
 ```python
-# src/nix_humanity/core/executor.py
+# src/luminous_nix/core/executor.py
 from typing import Protocol
 from ..native.api import NativeAPI
 from ..native.fallback import SubprocessFallback
@@ -366,8 +366,8 @@ class UnifiedExecutor:
 """
     
     # Write the unified executor
-    os.makedirs("src/nix_humanity/core", exist_ok=True)
-    with open("src/nix_humanity/core/executor.py", "w") as f:
+    os.makedirs("src/luminous_nix/core", exist_ok=True)
+    with open("src/luminous_nix/core/executor.py", "w") as f:
         f.write(unified_executor)
     
     print("✓ Created unified executor")
@@ -377,11 +377,11 @@ def main():
     
     # Step 1: Create new structure
     dirs = [
-        "src/nix_humanity/core",
-        "src/nix_humanity/native", 
-        "src/nix_humanity/learning",
-        "src/nix_humanity/interfaces",
-        "src/nix_humanity/config"
+        "src/luminous_nix/core",
+        "src/luminous_nix/native", 
+        "src/luminous_nix/learning",
+        "src/luminous_nix/interfaces",
+        "src/luminous_nix/config"
     ]
     
     for d in dirs:

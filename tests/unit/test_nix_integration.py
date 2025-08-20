@@ -16,7 +16,7 @@ test_dir = Path(__file__).parent
 backend_path = test_dir.parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
-from nix_humanity.core.nix_integration import (
+from luminous_nix.core.nix_integration import (
     NixOSIntegration,
     update_system,
     rollback_system,

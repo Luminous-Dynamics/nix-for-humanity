@@ -1,0 +1,75 @@
+{
+  "id": "flow-guardian",
+  "name": "Flow Guardian",
+  "version": "1.0.0",
+  "description": "Sacred productivity companion that protects your flow state",
+  "author": "Luminous Dynamics",
+  
+  "consciousness": {
+    "governing_principle": "sacred_reciprocity",
+    "sacred_promise": "I protect your attention and cultivate deep focus",
+    "harmonic_frequency": 528
+  },
+  
+  "capabilities": {
+    "intents": [
+      {
+        "pattern": "start focus.*|begin flow.*|enter deep work.*",
+        "handler": "start_focus_session",
+        "description": "Begin a protected focus session"
+      },
+      {
+        "pattern": "end focus.*|stop flow.*|exit deep work.*",
+        "handler": "end_focus_session",
+        "description": "Gracefully end the focus session"
+      },
+      {
+        "pattern": ".*focus status.*|.*flow state.*",
+        "handler": "get_focus_status",
+        "description": "Check current focus state"
+      }
+    ],
+    
+    "services": [
+      "notification_management",
+      "time_tracking",
+      "system_monitoring"
+    ]
+  },
+  
+  "permissions": {
+    "required": [
+      "show_notifications",
+      "track_time"
+    ],
+    "optional": [
+      "system_monitoring",
+      "execute_commands"
+    ],
+    "execute_commands": false,
+    "modify_settings": false,
+    "access_knowledge": false,
+    "allowed_commands": []
+  },
+  
+  "resources": {
+    "max_memory_mb": 128,
+    "max_cpu_percent": 10,
+    "timeout_seconds": 30
+  },
+  
+  "compatibility": {
+    "min_luminous_version": "1.0.0",
+    "max_luminous_version": "2.0.0",
+    "platforms": ["linux", "darwin"]
+  },
+  
+  "dependencies": [],
+  
+  "metadata": {
+    "icon": "🧘",
+    "color": "#7B68EE",
+    "tags": ["productivity", "focus", "flow", "mindfulness"],
+    "homepage": "https://github.com/luminous-dynamics/flow-guardian"
+  }
+}

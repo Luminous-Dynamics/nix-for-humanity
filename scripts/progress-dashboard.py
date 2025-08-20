@@ -76,7 +76,7 @@ class ProgressDashboard:
             issues.append(f"Status files in root: {status_files_in_root}")
         
         # Check for duplicate backends
-        if os.path.exists('backend') and os.path.exists('nix_humanity'):
+        if os.path.exists('backend') and os.path.exists('luminous_nix'):
             score -= 2.0
             issues.append("Duplicate backend directories exist")
         

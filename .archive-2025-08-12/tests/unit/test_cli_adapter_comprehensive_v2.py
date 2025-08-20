@@ -27,13 +27,13 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
         """Set up test fixtures"""
         # Mock the core engine to avoid system dependencies
         self.mock_core_patcher = patch(
-            "nix_humanity.interfaces.cli.NixForHumanityBackend"
+            "luminous_nix.interfaces.cli.NixForHumanityBackend"
         )
         self.mock_core_class = self.mock_core_patcher.start()
         self.mock_core = self.mock_core_class.return_value
 
         # Mock UUID generation for predictable session IDs
-        self.mock_uuid_patcher = patch("nix_humanity.interfaces.cli.uuid.uuid4")
+        self.mock_uuid_patcher = patch("luminous_nix.interfaces.cli.uuid.uuid4")
         self.mock_uuid = self.mock_uuid_patcher.start()
         mock_uuid_obj = Mock()
         mock_uuid_obj.__str__ = Mock(return_value="test-session-id-12345678")
@@ -70,7 +70,7 @@ class TestCLIAdapterComprehensive(unittest.TestCase):
     def test_check_rich_available_with_rich(self):
         """Test _check_rich_available when Rich is available"""
         with patch(
-            "nix_humanity.interfaces.cli.CLIAdapter._check_rich_available"
+            "luminous_nix.interfaces.cli.CLIAdapter._check_rich_available"
         ) as mock_check:
             mock_check.return_value = True
             adapter = CLIAdapter()
@@ -408,7 +408,7 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         self.mock_core_patcher = patch(
-            "nix_humanity.interfaces.cli.NixForHumanityBackend"
+            "luminous_nix.interfaces.cli.NixForHumanityBackend"
         )
         self.mock_core_class = self.mock_core_patcher.start()
         self.mock_core = self.mock_core_class.return_value
@@ -487,7 +487,7 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
     def test_core_initialization_failure(self):
         """Test handling of core initialization failure"""
         with patch(
-            "nix_humanity.interfaces.cli.NixForHumanityBackend",
+            "luminous_nix.interfaces.cli.NixForHumanityBackend",
             side_effect=Exception("Core init failed"),
         ):
             with self.assertRaises(Exception):

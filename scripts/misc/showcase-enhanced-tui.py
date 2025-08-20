@@ -74,8 +74,8 @@ try:
     
     # Try to import and run the enhanced version
     try:
-        from nix_humanity.ui.enhanced_main_app import EnhancedNixForHumanityTUI
-        from nix_humanity.core.engine import NixForHumanityBackend
+        from luminous_nix.ui.enhanced_main_app import EnhancedNixForHumanityTUI
+        from luminous_nix.core.engine import NixForHumanityBackend
         
         # Create mock backend if needed
         class EnhancedMockBackend:

@@ -35,8 +35,8 @@ async def test_integration():
     
     try:
         # Import after setting environment
-        from nix_humanity.core.engine import NixForHumanityBackend
-        from nix_humanity.api.schema import Request, Context
+        from luminous_nix.core.engine import NixForHumanityBackend
+        from luminous_nix.api.schema import Request, Context
         
         # Create backend
         print("\n1️⃣ Creating backend with research components...")
@@ -117,8 +117,8 @@ async def test_consciousness_flow():
     print("=" * 50)
     
     try:
-        from nix_humanity.core.engine import NixForHumanityBackend
-        from nix_humanity.api.schema import Request, Context
+        from luminous_nix.core.engine import NixForHumanityBackend
+        from luminous_nix.api.schema import Request, Context
         
         backend = NixForHumanityBackend()
         

@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 
-def initialize_skg_database(db_path: str = "./nix_humanity_skg.db"):
+def initialize_skg_database(db_path: str = "./luminous_nix_skg.db"):
     """Create all necessary tables for the SKG"""
     
     # Ensure directory exists
@@ -109,6 +109,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         db_path = sys.argv[1]
     else:
-        db_path = os.getenv('NIX_HUMANITY_SKG_PATH', './nix_humanity_skg.db')
+        db_path = os.getenv('NIX_HUMANITY_SKG_PATH', './luminous_nix_skg.db')
     
     initialize_skg_database(db_path)

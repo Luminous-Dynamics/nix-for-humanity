@@ -15,8 +15,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 os.environ['NIX_HUMANITY_ENHANCED_RESPONSES'] = 'true'
 os.environ['NIX_HUMANITY_PYTHON_BACKEND'] = 'true'
 
-from nix_humanity.api.schema import Request, Context
-from nix_humanity.core.engine import create_backend
+from luminous_nix.api.schema import Request, Context
+from luminous_nix.core.engine import create_backend
 
 def demo_enhanced_cli():
     """Demonstrate the enhanced CLI experience"""

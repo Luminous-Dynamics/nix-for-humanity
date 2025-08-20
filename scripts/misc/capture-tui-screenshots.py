@@ -13,7 +13,7 @@ from pathlib import Path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
-from nix_humanity.ui.enhanced_consciousness_orb import EnhancedConsciousnessOrb, AIState, EmotionalState
+from luminous_nix.ui.enhanced_consciousness_orb import EnhancedConsciousnessOrb, AIState, EmotionalState
 from rich.console import Console
 from rich.layout import Layout
 from rich.panel import Panel

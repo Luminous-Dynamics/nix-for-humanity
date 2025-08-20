@@ -8,8 +8,8 @@ import tempfile
 import os
 from pathlib import Path
 
-from nix_humanity.config import get_config_manager, ConfigSchema
-from nix_humanity.config.schema import Personality, ResponseFormat
+from luminous_nix.config import get_config_manager, ConfigSchema
+from luminous_nix.config.schema import Personality, ResponseFormat
 
 
 class TestConfigIntegration:
@@ -90,7 +90,7 @@ class TestConfigIntegration:
             assert success
             
             # Create new manager and load from temp file
-            from nix_humanity.config.config_manager import ConfigManager
+            from luminous_nix.config.config_manager import ConfigManager
             new_manager = ConfigManager(temp_path)
             
             # Verify settings were persisted
@@ -110,7 +110,7 @@ class TestConfigIntegration:
         
         try:
             # Force reload of config manager
-            from nix_humanity.config import config_manager
+            from luminous_nix.config import config_manager
             config_manager._config_manager = None
             
             # Get fresh manager
@@ -149,7 +149,7 @@ class TestConfigIntegration:
         manager = get_config_manager()
         
         # Create a profile that inherits from maya
-        from nix_humanity.config.profiles import UserProfile
+        from luminous_nix.config.profiles import UserProfile
         custom = UserProfile(
             name="maya-custom",
             base_profile="maya",

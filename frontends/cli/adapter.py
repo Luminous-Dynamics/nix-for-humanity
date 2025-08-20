@@ -19,7 +19,7 @@ backend_path = Path(__file__).parent.parent.parent / "backend"
 if str(backend_path) not in sys.path:
     sys.path.insert(0, str(backend_path))
 
-from nix_humanity.core import NixForHumanityBackend, Request, Response, Context
+from luminous_nix.core import NixForHumanityBackend, Request, Response, Context
 
 
 class CLIAdapter:
@@ -271,7 +271,7 @@ For more help: ask-nix --docs
         """Handle voice input if enabled"""
         try:
             # Try to import voice module
-            from nix_humanity.voice import VoiceInterface
+            from luminous_nix.voice import VoiceInterface
             voice = VoiceInterface()
             
             print("🎤 Listening... (press Ctrl+C to cancel)")
@@ -289,7 +289,7 @@ For more help: ask-nix --docs
     def speak_response(self, text: str):
         """Speak response if voice output enabled"""
         try:
-            from nix_humanity.voice import VoiceInterface
+            from luminous_nix.voice import VoiceInterface
             voice = VoiceInterface()
             voice.speak(text)
         except ImportError:

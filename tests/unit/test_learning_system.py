@@ -12,7 +12,7 @@ import sqlite3
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.learning.preferences import (
+from luminous_nix.learning.preferences import (
     PreferenceManager, Interaction, Preference
 )
 

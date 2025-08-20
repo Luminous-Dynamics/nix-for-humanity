@@ -135,7 +135,7 @@ You can launch it from your applications menu."
                             │
                     ┌───────▼────────┐
                     │  Core Engine   │
-                    │ (nix_humanity) │
+                    │ (luminous_nix) │
                     └───────┬────────┘
                             │
         ┌───────────────────┼───────────────────┐

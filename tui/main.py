@@ -37,15 +37,15 @@ import threading
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from nix_humanity.core.native_operations import NativeOperationsManager, NativeOperationType
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.api.schema import Request, Context
-from nix_humanity.core.educational_errors import make_error_educational
-from nix_humanity.core.progress_indicator import ProgressIndicator, ProgressStyle
+from luminous_nix.core.native_operations import NativeOperationsManager, NativeOperationType
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.api.schema import Request, Context
+from luminous_nix.core.educational_errors import make_error_educational
+from luminous_nix.core.progress_indicator import ProgressIndicator, ProgressStyle
 
 # Try to import voice interface
 try:
-    from nix_humanity.interfaces.voice_interface import VoiceAssistant, VoiceState
+    from luminous_nix.interfaces.voice_interface import VoiceAssistant, VoiceState
     from tui.voice_widget import create_voice_widget
     VOICE_AVAILABLE = True
 except ImportError:
@@ -56,8 +56,8 @@ except ImportError:
 
 # Try to import enhanced components (may not exist yet)
 try:
-    from nix_humanity.ui.enhanced_consciousness_orb import EnhancedConsciousnessOrb, AIState, EmotionalState
-    from nix_humanity.ui.visual_state_controller import VisualStateController, ComplexityLevel
+    from luminous_nix.ui.enhanced_consciousness_orb import EnhancedConsciousnessOrb, AIState, EmotionalState
+    from luminous_nix.ui.visual_state_controller import VisualStateController, ComplexityLevel
     ENHANCED_AVAILABLE = True
 except ImportError:
     ENHANCED_AVAILABLE = False
@@ -848,7 +848,7 @@ Features:
             try:
                 # Import enhanced interface if available
                 try:
-                    from nix_humanity.interfaces.voice_interface_enhanced import VoiceAssistant as EnhancedVoiceAssistant
+                    from luminous_nix.interfaces.voice_interface_enhanced import VoiceAssistant as EnhancedVoiceAssistant
                     assistant_class = EnhancedVoiceAssistant
                 except ImportError:
                     assistant_class = VoiceAssistant

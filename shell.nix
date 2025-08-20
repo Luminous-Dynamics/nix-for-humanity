@@ -14,6 +14,7 @@ pkgs.mkShell {
     gnumake
     gcc
     pkg-config
+    stdenv.cc.cc.lib  # Provides libstdc++.so.6
     
     # SSL/TLS support
     openssl
@@ -48,6 +49,11 @@ pkgs.mkShell {
     python313Packages.textual      # For TUI interface
     python313Packages.blessed      # Terminal capabilities
     python313Packages.pyperclip    # Clipboard support
+    
+    # Tree-sitter for AST parsing (Phase A-Prime: Declarative Agent Foundation)
+    python313Packages.tree-sitter  # Core tree-sitter library
+    tree-sitter                    # Tree-sitter CLI tool
+    tree-sitter-grammars.tree-sitter-nix  # Nix grammar for tree-sitter
     
     # Secondary Python (3.11) for research components that need DoWhy
     python311
@@ -104,6 +110,9 @@ pkgs.mkShell {
   ];
   
   shellHook = ''
+    # Set up library paths for Python packages
+    export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
+    
     echo "🗣️ Nix for Humanity Development Environment"
     echo "=========================================="
     echo "Node.js: $(node --version)"

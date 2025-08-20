@@ -97,7 +97,7 @@ class PerformanceValidator:
         
         # Check if native API is available
         try:
-            from nix_humanity.native.api import NativeAPI
+            from luminous_nix.native.api import NativeAPI
             if not NativeAPI.is_available():
                 print("⚠️  Native API not available - using mock data")
                 return self.generate_mock_report()

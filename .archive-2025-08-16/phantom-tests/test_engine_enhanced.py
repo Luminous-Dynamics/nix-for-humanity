@@ -25,14 +25,14 @@ from tests.test_utils.test_implementations import (
     create_successful_process
 )
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.core.interface import (
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.interface import (
      Response, Intent, IntentType
 )
-from nix_humanity.core.intents import Command, ExecutionResult
-from nix_humanity.core.planning import Plan
-from nix_humanity.core.responses import PersonalityStyle
-from nix_humanity.learning.preferences import Interaction
+from luminous_nix.core.intents import Command, ExecutionResult
+from luminous_nix.core.planning import Plan
+from luminous_nix.core.responses import PersonalityStyle
+from luminous_nix.learning.preferences import Interaction
 
 
 class TestEngineEnhanced:

@@ -51,7 +51,7 @@ cd /path/to/nix-for-humanity
 export PATH="$PATH:/path/to/nix-for-humanity/bin"
 ```
 
-#### "No module named 'nix_humanity'"
+#### "No module named 'luminous_nix'"
 **Problem**: Python dependencies not installed.
 
 **Solution**:
@@ -140,13 +140,13 @@ The system learns from corrections!
 **Solution**:
 ```bash
 # Check if backend is running
-ps aux | grep nix-humanity-backend
+ps aux | grep luminous-nix-backend
 
 # Start backend manually
-./bin/nix-humanity-backend &
+./bin/luminous-nix-backend &
 
 # Check logs
-tail -f ~/.local/share/nix-humanity/backend.log
+tail -f ~/.local/share/luminous-nix/backend.log
 ```
 
 #### Memory usage too high
@@ -161,7 +161,7 @@ export NIX_HUMANITY_LIGHTWEIGHT=true
 export NIX_HUMANITY_LEARNING=false
 
 # Clear cache
-rm -rf ~/.cache/nix-humanity/*
+rm -rf ~/.cache/luminous-nix/*
 ```
 
 ### Learning System Issues
@@ -175,7 +175,7 @@ rm -rf ~/.cache/nix-humanity/*
 ./bin/ask-nix --show-config | grep learning
 
 # Check data directory exists
-ls -la ~/.local/share/nix-humanity/
+ls -la ~/.local/share/luminous-nix/
 ```
 
 **Solution**:
@@ -311,7 +311,7 @@ export NIX_HUMANITY_LOG_LEVEL=debug
 ./bin/ask-nix -vvv "your command"
 
 # Check debug logs
-tail -f ~/.local/share/nix-humanity/debug.log
+tail -f ~/.local/share/luminous-nix/debug.log
 ```
 
 ## Getting Help
@@ -365,7 +365,7 @@ Include this information:
 ### Reset to defaults
 ```bash
 # Reset configuration
-rm ~/.config/nix-humanity/config.json
+rm ~/.config/luminous-nix/config.json
 ./bin/ask-nix --init
 
 # Reset learning

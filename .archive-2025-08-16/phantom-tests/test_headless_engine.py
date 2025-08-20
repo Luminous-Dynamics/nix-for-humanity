@@ -16,9 +16,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
-from nix_humanity.core.engine import NixForHumanityBackend as Engine
-from nix_humanity.core.interface import  Intent, Response
-from nix_humanity.core.intents import Context
+from luminous_nix.core.engine import NixForHumanityBackend as Engine
+from luminous_nix.core.interface import  Intent, Response
+from luminous_nix.core.intents import Context
 
 
 class TestEngine(unittest.TestCase):

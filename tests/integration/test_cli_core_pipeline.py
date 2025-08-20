@@ -15,12 +15,12 @@ from io import StringIO
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from nix_humanity.core.intents import (
+from luminous_nix.core.intents import (
     Request, Response, Context, Intent, IntentType, 
     ExecutionResult, Plan, Command
 )
-from nix_humanity.core.engine import NixForHumanityBackend as Engine
-from nix_humanity.core.interface import Query
+from luminous_nix.core.engine import NixForHumanityBackend as Engine
+from luminous_nix.core.interface import Query
 
 class TestCLICorePipeline(unittest.TestCase):
     """Test the complete pipeline from CLI input to execution."""

@@ -10,7 +10,7 @@ def add_tui_methods():
     
     print("🔧 Adding TUI-required methods to backend\n")
     
-    engine_file = Path('src/nix_humanity/core/engine.py')
+    engine_file = Path('src/luminous_nix/core/engine.py')
     
     # Methods to add
     new_methods = '''

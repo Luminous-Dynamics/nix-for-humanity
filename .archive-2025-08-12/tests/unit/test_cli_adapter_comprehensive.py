@@ -57,16 +57,16 @@ class TestCLIAdapter(unittest.TestCase):
         """Set up test fixtures with mocked dependencies"""
         # Mock all the core dependencies
         self.mock_core_patcher = patch(
-            "nix_humanity.interfaces.cli.NixForHumanityBackend"
+            "luminous_nix.interfaces.cli.NixForHumanityBackend"
         )
-        self.mock_query_patcher = patch("nix_humanity.interfaces.cli.Query", MockQuery)
+        self.mock_query_patcher = patch("luminous_nix.interfaces.cli.Query", MockQuery)
         self.mock_execution_mode_patcher = patch(
-            "nix_humanity.interfaces.cli.str", Mockstr
+            "luminous_nix.interfaces.cli.str", Mockstr
         )
         self.mock_personality_style_patcher = patch(
-            "nix_humanity.interfaces.cli.PersonalityStyle", MockPersonalityStyle
+            "luminous_nix.interfaces.cli.PersonalityStyle", MockPersonalityStyle
         )
-        self.mock_uuid_patcher = patch("nix_humanity.interfaces.cli.uuid")
+        self.mock_uuid_patcher = patch("luminous_nix.interfaces.cli.uuid")
 
         # Start all patches
         self.mock_core_class = self.mock_core_patcher.start()
@@ -529,16 +529,16 @@ class TestCLIAdapterEdgeCases(unittest.TestCase):
 
     def setUp(self):
         """Set up with minimal mocking for edge case testing"""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query", MockQuery):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query", MockQuery):
                 with patch(
-                    "nix_humanity.interfaces.cli.str", Mockstr
+                    "luminous_nix.interfaces.cli.str", Mockstr
                 ):
                     with patch(
-                        "nix_humanity.interfaces.cli.PersonalityStyle",
+                        "luminous_nix.interfaces.cli.PersonalityStyle",
                         MockPersonalityStyle,
                     ):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             self.adapter = CLIAdapter()
 
     def test_empty_suggestions_list(self):

@@ -205,10 +205,10 @@ def check_critical_files() -> List[Tuple[str, str]]:
     
     # Critical files to check
     critical_files = {
-        'src/nix_humanity/core/backend.py': 'Core backend functionality',
-        'src/nix_humanity/core/executor.py': 'Command execution',
-        'src/nix_humanity/ai/nlp.py': 'Natural language processing',
-        'src/nix_humanity/nix/native_backend.py': 'Native Nix integration',
+        'src/luminous_nix/core/backend.py': 'Core backend functionality',
+        'src/luminous_nix/core/executor.py': 'Command execution',
+        'src/luminous_nix/ai/nlp.py': 'Natural language processing',
+        'src/luminous_nix/nix/native_backend.py': 'Native Nix integration',
         'bin/ask-nix': 'Main CLI entry point',
         'bin/nix-tui': 'TUI entry point',
     }

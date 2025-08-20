@@ -12,7 +12,7 @@ from pathlib import Path
 backend_path = Path(__file__).parent / "backend"
 sys.path.insert(0, str(backend_path))
 
-from nix_humanity.core.native_operations import NativeNixBackend, NixOperation, OperationType, NATIVE_API_AVAILABLE
+from luminous_nix.core.native_operations import NativeNixBackend, NixOperation, OperationType, NATIVE_API_AVAILABLE
 
 
 async def test_native_interface():

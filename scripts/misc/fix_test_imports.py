@@ -18,65 +18,65 @@ def fix_imports_in_file(file_path):
     # Map of replacements
     replacements = [
         # Core modules
-        (r'from nix_for_humanity\.core\.engine import', 'from nix_humanity.core.engine import'),
-        (r'from nix_for_humanity\.core\.types import', 'from nix_humanity.core.intents import'),
-        (r'from nix_for_humanity\.core\.intent_engine import', 'from nix_humanity.core.intents import'),
-        (r'from nix_for_humanity\.core\.intent import', 'from nix_humanity.core.intents import'),
-        (r'from nix_for_humanity\.core\.execution_engine import', 'from nix_humanity.core.executor import'),
-        (r'from nix_for_humanity\.core\.executor import', 'from nix_humanity.core.executor import'),
-        (r'from nix_for_humanity\.core\.knowledge_base import', 'from nix_humanity.core.knowledge import'),
-        (r'from nix_for_humanity\.core\.knowledge import', 'from nix_humanity.core.knowledge import'),
-        (r'from nix_for_humanity\.core\.backend import', 'from nix_humanity.core.engine import'),
-        (r'from nix_for_humanity\.core\.personality_system import', 'from nix_humanity.core.personality import'),
-        (r'from nix_for_humanity\.core\.interface import', 'from nix_humanity.core.interface import'),
+        (r'from nix_for_humanity\.core\.engine import', 'from luminous_nix.core.engine import'),
+        (r'from nix_for_humanity\.core\.types import', 'from luminous_nix.core.intents import'),
+        (r'from nix_for_humanity\.core\.intent_engine import', 'from luminous_nix.core.intents import'),
+        (r'from nix_for_humanity\.core\.intent import', 'from luminous_nix.core.intents import'),
+        (r'from nix_for_humanity\.core\.execution_engine import', 'from luminous_nix.core.executor import'),
+        (r'from nix_for_humanity\.core\.executor import', 'from luminous_nix.core.executor import'),
+        (r'from nix_for_humanity\.core\.knowledge_base import', 'from luminous_nix.core.knowledge import'),
+        (r'from nix_for_humanity\.core\.knowledge import', 'from luminous_nix.core.knowledge import'),
+        (r'from nix_for_humanity\.core\.backend import', 'from luminous_nix.core.engine import'),
+        (r'from nix_for_humanity\.core\.personality_system import', 'from luminous_nix.core.personality import'),
+        (r'from nix_for_humanity\.core\.interface import', 'from luminous_nix.core.interface import'),
         
         # NLP modules
-        (r'from nix_for_humanity\.nlp\.intent_engine import', 'from nix_humanity.core.intents import'),
-        (r'from nix_for_humanity\.nlp\.pattern_matcher import', 'from nix_humanity.core.intents import'),
+        (r'from nix_for_humanity\.nlp\.intent_engine import', 'from luminous_nix.core.intents import'),
+        (r'from nix_for_humanity\.nlp\.pattern_matcher import', 'from luminous_nix.core.intents import'),
         
         # Learning modules
-        (r'from nix_for_humanity\.learning\.preferences import', 'from nix_humanity.learning.preferences import'),
-        (r'from nix_for_humanity\.learning\.pattern_learner import', 'from nix_humanity.learning.pattern_learner import'),
+        (r'from nix_for_humanity\.learning\.preferences import', 'from luminous_nix.learning.preferences import'),
+        (r'from nix_for_humanity\.learning\.pattern_learner import', 'from luminous_nix.learning.pattern_learner import'),
         
         # XAI modules
-        (r'from nix_for_humanity\.xai\.engine import', 'from nix_humanity.xai.engine import'),
-        (r'from nix_for_humanity\.xai\.causal_engine import', 'from nix_humanity.xai.causal_engine import'),
-        (r'from nix_for_humanity\.xai\.explanation_formatter import', 'from nix_humanity.xai.explanation_formatter import'),
+        (r'from nix_for_humanity\.xai\.engine import', 'from luminous_nix.xai.engine import'),
+        (r'from nix_for_humanity\.xai\.causal_engine import', 'from luminous_nix.xai.causal_engine import'),
+        (r'from nix_for_humanity\.xai\.explanation_formatter import', 'from luminous_nix.xai.explanation_formatter import'),
         
         # TUI modules
-        (r'from nix_for_humanity\.tui\.app import', 'from nix_humanity.tui.app import'),
-        (r'from nix_for_humanity\.tui\.enhanced_app import', 'from nix_humanity.tui.enhanced_app import'),
-        (r'from nix_for_humanity\.tui\.persona_styles import', 'from nix_humanity.tui.persona_styles import'),
+        (r'from nix_for_humanity\.tui\.app import', 'from luminous_nix.tui.app import'),
+        (r'from nix_for_humanity\.tui\.enhanced_app import', 'from luminous_nix.tui.enhanced_app import'),
+        (r'from nix_for_humanity\.tui\.persona_styles import', 'from luminous_nix.tui.persona_styles import'),
         
         # Voice modules
-        (r'from nix_for_humanity\.voice\.interface import', 'from nix_humanity.voice.interface import'),
-        (r'from nix_for_humanity\.voice\.model_manager import', 'from nix_humanity.voice.model_manager import'),
-        (r'from nix_for_humanity\.voice\.voice_config import', 'from nix_humanity.voice.voice_config import'),
+        (r'from nix_for_humanity\.voice\.interface import', 'from luminous_nix.voice.interface import'),
+        (r'from nix_for_humanity\.voice\.model_manager import', 'from luminous_nix.voice.model_manager import'),
+        (r'from nix_for_humanity\.voice\.voice_config import', 'from luminous_nix.voice.voice_config import'),
         
         # Security modules
-        (r'from nix_for_humanity\.security\.validator import', 'from nix_humanity.security.validator import'),
-        (r'from nix_for_humanity\.security\.enhanced_validator import', 'from nix_humanity.security.enhanced_validator import'),
+        (r'from nix_for_humanity\.security\.validator import', 'from luminous_nix.security.validator import'),
+        (r'from nix_for_humanity\.security\.enhanced_validator import', 'from luminous_nix.security.enhanced_validator import'),
         
         # Accessibility modules
-        (r'from nix_for_humanity\.accessibility\.screen_reader import', 'from nix_humanity.accessibility.screen_reader import'),
-        (r'from nix_for_humanity\.accessibility\.persona_accessibility import', 'from nix_humanity.accessibility.persona_accessibility import'),
+        (r'from nix_for_humanity\.accessibility\.screen_reader import', 'from luminous_nix.accessibility.screen_reader import'),
+        (r'from nix_for_humanity\.accessibility\.persona_accessibility import', 'from luminous_nix.accessibility.persona_accessibility import'),
         
         # Monitoring modules
-        (r'from nix_for_humanity\.monitoring\.performance_monitor import', 'from nix_humanity.monitoring.performance_monitor import'),
+        (r'from nix_for_humanity\.monitoring\.performance_monitor import', 'from luminous_nix.monitoring.performance_monitor import'),
         
         # Adapters
-        (r'from nix_for_humanity\.adapters\.cli_adapter import', 'from nix_humanity.adapters.cli_adapter import'),
+        (r'from nix_for_humanity\.adapters\.cli_adapter import', 'from luminous_nix.adapters.cli_adapter import'),
         
         # Caching modules
-        (r'from nix_for_humanity\.caching\.response_cache import', 'from nix_humanity.caching.response_cache import'),
-        (r'from nix_for_humanity\.caching\.xai_cache import', 'from nix_humanity.caching.xai_cache import'),
+        (r'from nix_for_humanity\.caching\.response_cache import', 'from luminous_nix.caching.response_cache import'),
+        (r'from nix_for_humanity\.caching\.xai_cache import', 'from luminous_nix.caching.xai_cache import'),
         
         # Testing modules
-        (r'from nix_for_humanity\.testing\.persona_testing_framework import', 'from nix_humanity.testing.persona_testing_framework import'),
+        (r'from nix_for_humanity\.testing\.persona_testing_framework import', 'from luminous_nix.testing.persona_testing_framework import'),
         
         # General catch-all for any missed imports
-        (r'from nix_for_humanity\.', 'from nix_humanity.'),
-        (r'import nix_for_humanity\.', 'import nix_humanity.'),
+        (r'from nix_for_humanity\.', 'from luminous_nix.'),
+        (r'import nix_for_humanity\.', 'import luminous_nix.'),
     ]
     
     # Apply replacements

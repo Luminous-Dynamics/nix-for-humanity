@@ -39,7 +39,7 @@ class TestCLIAdapterCore:
     def mock_core(self):
         """Mock the headless core engine."""
         with patch(
-            "nix_humanity.interfaces.cli.NixForHumanityBackend"
+            "luminous_nix.interfaces.cli.NixForHumanityBackend"
         ) as mock_core_class:
             mock_core = Mock()
             mock_core_class.return_value = mock_core
@@ -61,12 +61,12 @@ class TestCLIAdapterCore:
     @pytest.fixture
     def cli_adapter(self, mock_core):
         """Create CLI adapter with mocked dependencies."""
-        with patch("nix_humanity.interfaces.cli.Query") as mock_query:
-            with patch("nix_humanity.interfaces.cli.str") as mock_mode:
+        with patch("luminous_nix.interfaces.cli.Query") as mock_query:
+            with patch("luminous_nix.interfaces.cli.str") as mock_mode:
                 with patch(
-                    "nix_humanity.interfaces.cli.PersonalityStyle"
+                    "luminous_nix.interfaces.cli.PersonalityStyle"
                 ) as mock_style:
-                    with patch("nix_humanity.interfaces.cli.uuid") as mock_uuid:
+                    with patch("luminous_nix.interfaces.cli.uuid") as mock_uuid:
                         # Mock UUID generation
                         mock_uuid.uuid4.return_value = Mock(
                             __str__=Mock(return_value="test-session-id-12345")
@@ -183,13 +183,13 @@ class TestCLIPersonalityAdaptation:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter with personality system mocked."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
                     with patch(
-                        "nix_humanity.interfaces.cli.PersonalityStyle"
+                        "luminous_nix.interfaces.cli.PersonalityStyle"
                     ) as mock_style:
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             adapter = CLIAdapter()
                             # Mock personality system
                             adapter.core.personality_system = Mock()
@@ -234,11 +234,11 @@ class TestCLIOutputFormatting:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for output testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             return CLIAdapter()
 
     def test_simple_text_display(self, cli_adapter):
@@ -344,11 +344,11 @@ class TestCLIErrorHandling:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for error testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             return CLIAdapter()
 
     def test_core_processing_exception(self, cli_adapter):
@@ -394,11 +394,11 @@ class TestCLIStreaming:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for streaming tests."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             adapter = CLIAdapter()
                             adapter.show_progress = True
                             return adapter
@@ -439,11 +439,11 @@ class TestCLIAccessibility:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for accessibility testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             return CLIAdapter()
 
     def test_screen_reader_friendly_output(self, cli_adapter):
@@ -529,11 +529,11 @@ class TestCLIPerformance:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for performance testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             adapter = CLIAdapter()
                             # Mock fast core responses
                             adapter.core.process.return_value = Mock(
@@ -628,11 +628,11 @@ class TestCLIFeedbackSystem:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for feedback testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             return CLIAdapter()
 
     def test_positive_feedback_collection(self, cli_adapter):
@@ -683,11 +683,11 @@ class TestCLISystemStats:
     @pytest.fixture
     def cli_adapter(self):
         """Create CLI adapter for stats testing."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             return CLIAdapter()
 
     def test_simple_stats_display(self, cli_adapter):
@@ -775,11 +775,11 @@ class TestCLIAdapterCoverage:
 
     def test_initialization_parameters_covered(self):
         """Verify all initialization parameters and attributes are tested."""
-        with patch("nix_humanity.interfaces.cli.NixForHumanityBackend"):
-            with patch("nix_humanity.interfaces.cli.Query"):
-                with patch("nix_humanity.interfaces.cli.str"):
-                    with patch("nix_humanity.interfaces.cli.PersonalityStyle"):
-                        with patch("nix_humanity.interfaces.cli.uuid"):
+        with patch("luminous_nix.interfaces.cli.NixForHumanityBackend"):
+            with patch("luminous_nix.interfaces.cli.Query"):
+                with patch("luminous_nix.interfaces.cli.str"):
+                    with patch("luminous_nix.interfaces.cli.PersonalityStyle"):
+                        with patch("luminous_nix.interfaces.cli.uuid"):
                             adapter = CLIAdapter()
 
                             # Verify key attributes exist

@@ -97,7 +97,7 @@ Following our code standards, we maintain:
 ```python
 # tests/unit/test_nlp_engine.py
 import pytest
-from nix_humanity.nlp import NLPEngine
+from luminous_nix.nlp import NLPEngine
 
 class TestNLPEngine:
     """Test natural language understanding components."""
@@ -132,8 +132,8 @@ class TestNLPEngine:
 ```python
 # tests/integration/test_cli_integration.py
 import pytest
-from nix_humanity.cli import CLI
-from nix_humanity.backend import Backend
+from luminous_nix.cli import CLI
+from luminous_nix.backend import Backend
 
 class TestCLIIntegration:
     """Test CLI interaction with backend services."""
@@ -163,7 +163,7 @@ class TestCLIIntegration:
 ```python
 # tests/e2e/test_persona_journeys.py
 import pytest
-from nix_humanity.test_utils import PersonaSimulator
+from luminous_nix.test_utils import PersonaSimulator
 
 class TestPersonaJourneys:
     """Test complete user journeys for each persona."""
@@ -314,7 +314,7 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Run tests with coverage
         run: |
-          pytest --cov=nix_humanity --cov-report=xml
+          pytest --cov=luminous_nix --cov-report=xml
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 ```

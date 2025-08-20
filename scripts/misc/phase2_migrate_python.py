@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 2: Migrate Python code to clean nix_humanity package structure.
+Phase 2: Migrate Python code to clean luminous_nix package structure.
 Consolidates all Python code from backend/ and other locations.
 """
 
@@ -11,18 +11,18 @@ import re
 from datetime import datetime
 
 def update_imports(content: str) -> str:
-    """Update import statements to use nix_humanity package."""
+    """Update import statements to use luminous_nix package."""
     # Update backend imports
-    content = re.sub(r'from backend\.', 'from nix_humanity.', content)
-    content = re.sub(r'import nix_humanity.core as backend\.', 'import nix_humanity.', content)
-    content = re.sub(r'from \.\.backend', 'from nix_humanity', content)
+    content = re.sub(r'from backend\.', 'from luminous_nix.', content)
+    content = re.sub(r'import luminous_nix.core as backend\.', 'import luminous_nix.', content)
+    content = re.sub(r'from \.\.backend', 'from luminous_nix', content)
     
     # Update relative imports
-    content = re.sub(r'from \.\.core', 'from nix_humanity.core', content)
-    content = re.sub(r'from \.\.learning', 'from nix_humanity.learning', content)
-    content = re.sub(r'from \.\.security', 'from nix_humanity.security', content)
-    content = re.sub(r'from \.\.api', 'from nix_humanity.api', content)
-    content = re.sub(r'from \.\.ai', 'from nix_humanity.ai', content)
+    content = re.sub(r'from \.\.core', 'from luminous_nix.core', content)
+    content = re.sub(r'from \.\.learning', 'from luminous_nix.learning', content)
+    content = re.sub(r'from \.\.security', 'from luminous_nix.security', content)
+    content = re.sub(r'from \.\.api', 'from luminous_nix.api', content)
+    content = re.sub(r'from \.\.ai', 'from luminous_nix.ai', content)
     
     return content
 
@@ -42,47 +42,47 @@ def migrate_python_files():
     
     # Core module migrations
     core_migrations = [
-        ('backend/core/intent.py', 'nix_humanity/core/intents.py'),
-        ('backend/core/executor.py', 'nix_humanity/core/executor.py'),
-        ('backend/core/knowledge.py', 'nix_humanity/core/knowledge.py'),
-        ('backend/core/personality.py', 'nix_humanity/core/personality.py'),
-        ('backend/core/backend.py', 'nix_humanity/core/engine.py'),
-        ('backend/core/error_handler.py', 'nix_humanity/core/error_handler.py'),
-        ('backend/core/responses.py', 'nix_humanity/core/responses.py'),
-        ('backend/core/nix_integration.py', 'nix_humanity/core/nix_integration.py'),
+        ('backend/core/intent.py', 'luminous_nix/core/intents.py'),
+        ('backend/core/executor.py', 'luminous_nix/core/executor.py'),
+        ('backend/core/knowledge.py', 'luminous_nix/core/knowledge.py'),
+        ('backend/core/personality.py', 'luminous_nix/core/personality.py'),
+        ('backend/core/backend.py', 'luminous_nix/core/engine.py'),
+        ('backend/core/error_handler.py', 'luminous_nix/core/error_handler.py'),
+        ('backend/core/responses.py', 'luminous_nix/core/responses.py'),
+        ('backend/core/nix_integration.py', 'luminous_nix/core/nix_integration.py'),
     ]
     
     # Learning module migrations
     learning_migrations = [
-        ('backend/learning/pattern_learner.py', 'nix_humanity/learning/patterns.py'),
-        ('backend/learning/preference_manager.py', 'nix_humanity/learning/preferences.py'),
-        ('backend/learning/feedback.py', 'nix_humanity/learning/feedback.py'),
-        ('backend/ui/adaptive_complexity.py', 'nix_humanity/learning/adaptation.py'),
+        ('backend/learning/pattern_learner.py', 'luminous_nix/learning/patterns.py'),
+        ('backend/learning/preference_manager.py', 'luminous_nix/learning/preferences.py'),
+        ('backend/learning/feedback.py', 'luminous_nix/learning/feedback.py'),
+        ('backend/ui/adaptive_complexity.py', 'luminous_nix/learning/adaptation.py'),
     ]
     
     # Interface migrations
     interface_migrations = [
-        ('bin/ask-nix', 'nix_humanity/interfaces/cli.py'),
-        ('bin/nix-tui', 'nix_humanity/interfaces/tui.py'),
-        ('backend/voice/voice_interface.py', 'nix_humanity/interfaces/voice.py'),
-        ('backend/api/server.py', 'nix_humanity/interfaces/api.py'),
+        ('bin/ask-nix', 'luminous_nix/interfaces/cli.py'),
+        ('bin/nix-tui', 'luminous_nix/interfaces/tui.py'),
+        ('backend/voice/voice_interface.py', 'luminous_nix/interfaces/voice.py'),
+        ('backend/api/server.py', 'luminous_nix/interfaces/api.py'),
     ]
     
     # Security migrations
     security_migrations = [
-        ('backend/security/input_validator.py', 'nix_humanity/security/validator.py'),
-        ('backend/security/command_sanitizer.py', 'nix_humanity/security/sanitizer.py'),
+        ('backend/security/input_validator.py', 'luminous_nix/security/validator.py'),
+        ('backend/security/command_sanitizer.py', 'luminous_nix/security/sanitizer.py'),
     ]
     
     # Additional modules to create
     additional_modules = [
-        ('backend/ai/nlp.py', 'nix_humanity/ai/__init__.py'),
-        ('backend/ai/nlp.py', 'nix_humanity/ai/nlp.py'),
-        ('backend/api/schema.py', 'nix_humanity/api/__init__.py'),
-        ('backend/api/schema.py', 'nix_humanity/api/schema.py'),
-        ('backend/api/handlers.py', 'nix_humanity/api/handlers.py'),
-        ('backend/python/native_nix_backend.py', 'nix_humanity/nix/__init__.py'),
-        ('backend/python/native_nix_backend.py', 'nix_humanity/nix/native_backend.py'),
+        ('backend/ai/nlp.py', 'luminous_nix/ai/__init__.py'),
+        ('backend/ai/nlp.py', 'luminous_nix/ai/nlp.py'),
+        ('backend/api/schema.py', 'luminous_nix/api/__init__.py'),
+        ('backend/api/schema.py', 'luminous_nix/api/schema.py'),
+        ('backend/api/handlers.py', 'luminous_nix/api/handlers.py'),
+        ('backend/python/native_nix_backend.py', 'luminous_nix/nix/__init__.py'),
+        ('backend/python/native_nix_backend.py', 'luminous_nix/nix/native_backend.py'),
     ]
     
     all_migrations = core_migrations + learning_migrations + interface_migrations + security_migrations + additional_modules
@@ -122,7 +122,7 @@ def migrate_python_files():
     # Create __init__.py files for new modules
     new_modules = ['ai', 'api', 'nix']
     for module in new_modules:
-        init_file = root / 'nix_humanity' / module / '__init__.py'
+        init_file = root / 'luminous_nix' / module / '__init__.py'
         if not init_file.exists():
             init_file.parent.mkdir(parents=True, exist_ok=True)
             init_file.write_text(f'"""Module for {module} functionality."""')
@@ -145,7 +145,7 @@ def update_entry_points():
                     content = f'''#!/usr/bin/env python3
 """Entry point for {script_name} command."""
 
-from nix_humanity.interfaces.{"cli" if script_name == "ask-nix" else "tui"} import main
+from luminous_nix.interfaces.{"cli" if script_name == "ask-nix" else "tui"} import main
 
 if __name__ == '__main__':
     main()
@@ -193,7 +193,7 @@ def create_migration_report(migrations):
         f.write(f"**Date**: {datetime.now().isoformat()}\n\n")
         f.write(f"## Summary\n\n")
         f.write(f"- Migrated {len(migrations)} Python files\n")
-        f.write(f"- Updated all imports to use `nix_humanity` package\n")
+        f.write(f"- Updated all imports to use `luminous_nix` package\n")
         f.write(f"- Consolidated duplicate implementations\n")
         f.write(f"- Updated entry point scripts\n\n")
         

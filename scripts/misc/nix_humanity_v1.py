@@ -18,10 +18,10 @@ from typing import Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from nix_humanity.core.engine import NixHumanityEngine
-from nix_humanity.core.intents import Intent
-from nix_humanity.interfaces.cli import CLIInterface
-from nix_humanity.config.loader import load_config
+from luminous_nix.core.engine import NixHumanityEngine
+from luminous_nix.core.intents import Intent
+from luminous_nix.interfaces.cli import CLIInterface
+from luminous_nix.config.loader import load_config
 
 
 class NixHumanityV1:

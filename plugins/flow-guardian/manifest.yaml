@@ -1,0 +1,148 @@
+manifest_version: "1.0.0"
+
+plugin:
+  id: "flow-guardian"
+  name: "Flow Guardian"
+  version: "1.0.0"
+  description: "Protects your deep work by intelligently managing interruptions, tracking context switches, and creating sanctuaries for focused creation. This plugin serves as your consciousness-first attention guardian."
+  author:
+    name: "Luminous Dynamics"
+    email: "tristan.stoltz@gmail.com"
+    url: "https://github.com/Luminous-Dynamics/flow-guardian"
+  homepage: "https://luminous-nix.dev/plugins/flow-guardian"
+  repository: "https://github.com/Luminous-Dynamics/flow-guardian"
+  license: "MIT"
+
+consciousness:
+  governing_principle: "protect_attention"
+  sacred_promise: "I will guard your attention as the most precious resource, creating sacred boundaries around your flow state and helping you reclaim your focus from the fragmented digital world"
+  ethical_boundaries:
+    - "Never interrupt a focus session unless there is a genuine emergency"
+    - "Never sell, share, or analyze your productivity data for profit"
+    - "Always respect your natural work rhythms and energy patterns"
+    - "Never shame or pressure you about productivity metrics"
+    - "Always provide transparent insight into what disrupted your flow"
+
+capabilities:
+  intents:
+    - pattern: "start focus session"
+      handler: "handle_start_focus"
+      description: "Begin a protected deep work session with configurable duration"
+      examples:
+        - "start focusing for 25 minutes"
+        - "enter flow state for 2 hours"
+        - "protect my attention while I write"
+        - "begin deep work on my project"
+    
+    - pattern: "check interruptions"
+      handler: "handle_interruption_report"
+      description: "View analysis of what interrupted your flow today"
+      examples:
+        - "what interrupted me today?"
+        - "show my attention report"
+        - "analyze my focus patterns"
+        - "what broke my flow?"
+    
+    - pattern: "pause focus"
+      handler: "handle_pause_focus"
+      description: "Temporarily pause focus session for a break"
+      examples:
+        - "pause my focus session"
+        - "take a quick break"
+        - "I need to step away"
+    
+    - pattern: "end focus"
+      handler: "handle_end_focus"
+      description: "End the current focus session and see summary"
+      examples:
+        - "end focus session"
+        - "I'm done focusing"
+        - "stop protecting my attention"
+  
+  permissions:
+    required:
+      - "system.notifications"  # To manage system notifications
+      - "process.monitor"       # To track which apps interrupt
+    optional:
+      - "network.local"        # To sync focus state across devices
+      - "filesystem.write"     # To save focus session history
+  
+  apis:
+    - name: "System Notification API"
+      purpose: "Control and filter system notifications during focus"
+      optional: false
+    - name: "Process Monitor API"
+      purpose: "Track which applications steal focus"
+      optional: false
+
+boundaries:
+  forbidden_actions:
+    - "Share focus session data with external analytics services"
+    - "Interrupt genuinely urgent system or safety notifications"
+    - "Override user's explicit decision to end a focus session"
+    - "Access or monitor content of user's work"
+    - "Compare user productivity against others"
+  
+  data_policy:
+    collection: "minimal"        # Only essential data for function
+    storage: "encrypted_local"   # All data stays on user's machine
+    sharing: "never"             # Never shared with anyone
+  
+  resource_limits:
+    max_memory_mb: 128          # Lightweight memory footprint
+    max_cpu_percent: 5          # Minimal CPU usage
+    max_storage_mb: 50          # Small storage for session history
+
+dependencies:
+  luminous_nix:
+    min_version: "1.1.0"        # Requires plugin system support
+    max_version: "2.0.0"        # Compatible with v1.x series
+  
+  system:
+    - "python3"                 # Core runtime
+    - "python3-psutil"          # For process monitoring
+
+interface:
+  settings_schema:
+    type: "object"
+    properties:
+      default_duration:
+        type: "integer"
+        description: "Default focus session duration in minutes"
+        minimum: 5
+        maximum: 240
+        default: 25
+      
+      break_reminder:
+        type: "boolean"
+        description: "Remind to take breaks between sessions"
+        default: true
+      
+      strict_mode:
+        type: "boolean"
+        description: "Block all non-emergency interruptions"
+        default: false
+      
+      sound_enabled:
+        type: "boolean"
+        description: "Play gentle sounds for session start/end"
+        default: true
+  
+  ui_components:
+    - id: "focus-timer"
+      type: "widget"
+      label: "Focus Timer"
+    
+    - id: "interruption-log"
+      type: "panel"
+      label: "Interruption Analysis"
+    
+    - id: "quick-focus"
+      type: "notification"
+      label: "Quick Focus Controls"
+
+lifecycle:
+  install: "scripts/install.sh"
+  activate: "scripts/activate.sh"
+  deactivate: "scripts/deactivate.sh"
+  uninstall: "scripts/uninstall.sh"

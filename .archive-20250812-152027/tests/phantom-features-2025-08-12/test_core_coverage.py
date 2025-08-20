@@ -26,9 +26,9 @@ class TestNixForHumanityBackend:
     @pytest.fixture
     def core_engine(self):
         """Create core engine instance."""
-        with patch("nix_humanity.core.engine.NixKnowledgeBase"):
-            with patch("nix_humanity.core.engine.CommandExecutor"):
-                with patch("nix_humanity.core.engine.NixIntegration"):
+        with patch("luminous_nix.core.engine.NixKnowledgeBase"):
+            with patch("luminous_nix.core.engine.CommandExecutor"):
+                with patch("luminous_nix.core.engine.NixIntegration"):
                     engine = NixForHumanityBackend()
                     return engine
 
@@ -66,7 +66,7 @@ class TestNixKnowledgeBase:
     @pytest.fixture
     def knowledge_base(self):
         """Create knowledge base instance."""
-        with patch("nix_humanity.core.knowledge.Path"):
+        with patch("luminous_nix.core.knowledge.Path"):
             kb = NixKnowledgeBase()
             # Mock the database connection
             kb.conn = Mock()
@@ -109,7 +109,7 @@ class TestCommandExecutor:
     @pytest.fixture
     def executor(self):
         """Create executor instance."""
-        with patch("nix_humanity.core.executor.subprocess"):
+        with patch("luminous_nix.core.executor.subprocess"):
             executor = CommandExecutor()
             return executor
 
@@ -166,7 +166,7 @@ class TestEducationalErrors:
 
         # Mock the translation
         with patch(
-            "nix_humanity.core.educational_errors.translate_error"
+            "luminous_nix.core.educational_errors.translate_error"
         ) as mock_translate:
             mock_translate.return_value = {
                 "message": "Package 'firefox' not found. Did you mean 'firefox-unwrapped'?",
@@ -187,7 +187,7 @@ class TestIntegration:
 
     def test_full_flow(self):
         """Test complete query to response flow."""
-        with patch("nix_humanity.core.backend.NixForHumanityBackend") as MockBackend:
+        with patch("luminous_nix.core.backend.NixForHumanityBackend") as MockBackend:
             backend = MockBackend()
 
             # Mock the process method
@@ -219,7 +219,7 @@ class TestPerformance:
         """Test all operations complete under 0.5s."""
         import time
 
-        with patch("nix_humanity.core.backend.NixForHumanityBackend") as MockBackend:
+        with patch("luminous_nix.core.backend.NixForHumanityBackend") as MockBackend:
             backend = MockBackend()
 
             # Mock fast response

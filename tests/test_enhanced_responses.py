@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Enable enhanced responses
 os.environ['NIX_HUMANITY_ENHANCED_RESPONSES'] = 'true'
 
-from nix_humanity.core.responses import ResponseGenerator, Response
+from luminous_nix.core.responses import ResponseGenerator, Response
 
 def test_responses():
     """Test various response types"""

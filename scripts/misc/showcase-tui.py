@@ -57,8 +57,8 @@ try:
     
     # Try to import and run
     try:
-        from nix_humanity.ui.main_app import NixForHumanityTUI
-        from nix_humanity.core.engine import NixForHumanityBackend
+        from luminous_nix.ui.main_app import NixForHumanityTUI
+        from luminous_nix.core.engine import NixForHumanityBackend
         
         # Create mock backend if needed
         class MockBackend:

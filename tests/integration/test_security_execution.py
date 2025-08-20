@@ -12,8 +12,8 @@ from unittest.mock import patch, MagicMock, call
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from nix_humanity.core.executor import ExecutionEngine
-from nix_humanity.core.intents import IntentEngine
+from luminous_nix.core.executor import ExecutionEngine
+from luminous_nix.core.intents import IntentEngine
 
 class TestSecurityExecution(unittest.TestCase):
     """Test security measures in command execution."""

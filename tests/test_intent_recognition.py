@@ -9,7 +9,7 @@ from pathlib import Path
 # Add the backend to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from nix_humanity.core.intents import IntentRecognizer, IntentType
+from luminous_nix.core.intents import IntentRecognizer, IntentType
 
 def test_intent_recognition():
     """Test if intent recognition works for new commands"""

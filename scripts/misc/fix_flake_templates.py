@@ -6,7 +6,7 @@ Fix the flake templates in flake_manager.py by properly escaping curly braces
 import re
 
 # Read the file
-with open('nix_humanity/core/flake_manager.py', 'r') as f:
+with open('luminous_nix/core/flake_manager.py', 'r') as f:
     content = f.read()
 
 # Function to fix template strings
@@ -60,7 +60,7 @@ if match:
     new_content = content[:match.start()] + method_start + fixed_templates + method_end + content[match.end():]
     
     # Write back
-    with open('nix_humanity/core/flake_manager.py', 'w') as f:
+    with open('luminous_nix/core/flake_manager.py', 'w') as f:
         f.write(new_content)
     
     print("✅ Fixed flake templates!")

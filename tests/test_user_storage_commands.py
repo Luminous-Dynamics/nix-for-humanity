@@ -10,8 +10,8 @@ from pathlib import Path
 # Add the backend to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.api.schema import Request, Context
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.api.schema import Request, Context
 
 def test_command(backend, query):
     """Test a single command"""

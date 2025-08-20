@@ -101,8 +101,8 @@ class TestEngineEnhanced:
         }
 
         with (
-            patch("nix_humanity.core.knowledge_base.KnowledgeBase") as MockKB,
-            patch("nix_humanity.core.learning_system.PreferenceManager") as MockLS,
+            patch("luminous_nix.core.knowledge_base.KnowledgeBase") as MockKB,
+            patch("luminous_nix.core.learning_system.PreferenceManager") as MockLS,
         ):
             engine = NixForHumanityBackend(config)
 

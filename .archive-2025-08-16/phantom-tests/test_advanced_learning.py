@@ -19,8 +19,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from nix_humanity.learning.preferences import PreferenceManager as AdvancedPreferenceManager
-from nix_humanity.learning.preferences import PreferencePair, LearningMetrics, UserModel, LearningMode, AdaptationStrategy
+from luminous_nix.learning.preferences import PreferenceManager as AdvancedPreferenceManager
+from luminous_nix.learning.preferences import PreferencePair, LearningMetrics, UserModel, LearningMode, AdaptationStrategy
 
 
 class TestAdvancedPreferenceManagerCore(unittest.TestCase):

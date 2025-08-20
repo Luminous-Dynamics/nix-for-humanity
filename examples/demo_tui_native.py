@@ -16,7 +16,7 @@ from datetime import datetime
 import time
 
 # Import our native operations
-from nix_humanity.core.native_operations import NativeOperationsManager, NativeOperationType
+from luminous_nix.core.native_operations import NativeOperationsManager, NativeOperationType
 
 
 class NativeOperationResult(Static):

@@ -90,7 +90,7 @@ def test_adapter():
     sys.argv = original_argv
     
     # Test 4: Response formatting
-    from nix_humanity.core import Response
+    from luminous_nix.core import Response
     test_response = Response(
         success=True,
         text="Test response",

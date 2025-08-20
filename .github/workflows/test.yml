@@ -1,0 +1,222 @@
+name: Sacred Guardian - Continuous Testing
+
+# The Automated Guardian of Quality
+# Every commit is tested, every regression caught, every principle upheld
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  # Run daily to catch dependency issues
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  test-consciousness:
+    name: 🧪 Test Suite Guardian
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+    - name: 🌟 Invoke the Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better analysis
+    
+    - name: 🐍 Summon Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: 📦 Restore Sacred Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.cache/pypoetry
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+    
+    - name: 🔮 Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: 🛠️ Configure Poetry
+      run: |
+        poetry config virtualenvs.create true
+        poetry config virtualenvs.in-project true
+    
+    - name: 📚 Install Dependencies
+      run: |
+        poetry install --with dev --all-extras
+    
+    - name: 🧹 Code Quality Check (Black)
+      run: |
+        poetry run black --check src/ tests/
+    
+    - name: 🔍 Linting Check (Ruff)
+      run: |
+        poetry run ruff check src/ tests/
+    
+    - name: 🎯 Type Check (mypy)
+      run: |
+        poetry run mypy src/ --ignore-missing-imports
+    
+    - name: 🧪 Run Sacred Test Suite
+      run: |
+        poetry run pytest tests/unit/ \
+          --cov=luminous_nix \
+          --cov-report=term-missing \
+          --cov-report=html \
+          --cov-report=xml \
+          --cov-fail-under=50 \
+          -v
+    
+    - name: 📊 Upload Coverage Reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports-${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          htmlcov/
+    
+    - name: 🏆 Coverage Badge Update
+      if: matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+    
+    - name: 💬 Comment Coverage on PR
+      if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
+      uses: py-cov-action/python-coverage-comment-action@v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MINIMUM_GREEN: 70
+        MINIMUM_ORANGE: 50
+
+  security-scan:
+    name: 🛡️ Security Guardian
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🌟 Invoke the Repository
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Summon Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 🔮 Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: 📚 Install Dependencies
+      run: poetry install --with dev
+    
+    - name: 🔐 Security Scan (Bandit)
+      run: |
+        poetry run bandit -r src/ -ll
+    
+    - name: 🔍 Dependency Audit
+      run: |
+        poetry run pip-audit
+
+  philosophy-check:
+    name: 🕉️ Philosophy Alignment Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🌟 Invoke the Repository
+      uses: actions/checkout@v4
+    
+    - name: 🧘 Check Living Documentation
+      run: |
+        # Verify all tests have WHY comments
+        echo "Checking for Living Documentation pattern..."
+        if grep -r "def test_" tests/ | grep -v "WHY:"; then
+          echo "❌ Found tests without WHY comments!"
+          exit 1
+        else
+          echo "✅ All tests follow Living Documentation pattern!"
+        fi
+    
+    - name: 🌊 Check Consciousness-First Principles
+      run: |
+        # Verify no phantom tests
+        echo "Checking for phantom tests..."
+        if grep -r "NotImplementedError\|pass  # TODO\|raise SkipTest" tests/; then
+          echo "❌ Found phantom or incomplete tests!"
+          exit 1
+        else
+          echo "✅ No phantom tests detected!"
+        fi
+
+  integration-test:
+    name: 🔗 Integration Guardian
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 🌟 Invoke the Repository
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Summon Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 🔮 Install Poetry and Dependencies
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        poetry install --with dev --all-extras
+    
+    - name: 🌐 Run Integration Tests
+      run: |
+        poetry run pytest tests/integration/ -v --tb=short
+      continue-on-error: true  # Don't fail build on integration tests yet
+
+  sacred-notification:
+    name: 📢 Sacred Notification
+    runs-on: ubuntu-latest
+    needs: [test-consciousness, security-scan, philosophy-check]
+    if: always()
+    
+    steps:
+    - name: 🎉 Celebrate Success
+      if: needs.test-consciousness.result == 'success' && needs.security-scan.result == 'success'
+      run: |
+        echo "🌟 The Sacred Guardian reports: All tests pass! The foundation remains strong!"
+        echo "📊 Coverage is maintained above threshold"
+        echo "🛡️ Security scan passed"
+        echo "🕉️ Philosophy alignment verified"
+        echo "✨ We flow with quality and consciousness!"
+    
+    - name: 🚨 Alert on Failure
+      if: needs.test-consciousness.result == 'failure' || needs.security-scan.result == 'failure'
+      run: |
+        echo "⚠️ The Sacred Guardian has detected a disturbance!"
+        echo "🔍 Please review the test results above"
+        echo "🛠️ Remember: Every failure is a teaching moment"
+        exit 1
+
+# Sacred Comment: This workflow is our Automated Guardian
+# It ensures that every commit maintains our standards of:
+# - Technical Excellence (tests pass)
+# - Security (no vulnerabilities)
+# - Philosophy (consciousness-first principles)
+# - Quality (coverage thresholds)
+#
+# The Guardian never sleeps, never tires, and never compromises.
+# It is our promise to ourselves and our users that Luminous Nix
+# will always maintain the highest standards of quality and consciousness.

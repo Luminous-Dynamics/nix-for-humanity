@@ -21,7 +21,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
 # Import v1.0 components
-from nix_humanity.core import (
+from luminous_nix.core import (
     NixForHumanityBackend,
     IntentRecognizer,
     Intent,
@@ -29,7 +29,7 @@ from nix_humanity.core import (
     SafeExecutor,
     KnowledgeBase
 )
-from nix_humanity.api import Request, Response, Result
+from luminous_nix.api import Request, Response, Result
 
 class TestV1CoreFeatures:
     """Test all 10 core v1.0 features"""

@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../backend/python'))
 
 try:
-    from nix_humanity.core.native_operations import NativeNixBackend, NixOperation, OperationType, NixResult
+    from luminous_nix.core.native_operations import NativeNixBackend, NixOperation, OperationType, NixResult
 except ImportError as e:
     print(f"Import error: {e}")
     # Create mock classes if imports fail

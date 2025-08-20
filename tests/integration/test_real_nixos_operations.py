@@ -14,10 +14,10 @@ import tempfile
 from pathlib import Path
 import time
 
-from nix_humanity.core.engine import NixForHumanityBackend
-from nix_humanity.api.schema import Request, Context
-from nix_humanity.core.native_operations import NativeOperationsManager, NativeOperationType
-from nix_humanity.core.advanced_features import AdvancedFeatures
+from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.api.schema import Request, Context
+from luminous_nix.core.native_operations import NativeOperationsManager, NativeOperationType
+from luminous_nix.core.advanced_features import AdvancedFeatures
 
 
 class TestRealNixOSOperations:

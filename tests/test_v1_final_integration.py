@@ -25,8 +25,8 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Import v1.0 components
-from nix_humanity.core import NixForHumanityBackend
-from nix_humanity.api import Request, Response
+from luminous_nix.core import NixForHumanityBackend
+from luminous_nix.api import Request, Response
 
 class V1IntegrationTest:
     """Complete integration test for v1.0"""

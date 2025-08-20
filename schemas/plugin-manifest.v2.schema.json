@@ -1,0 +1,492 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://luminous-nix.dev/schemas/plugin-manifest/v2.0.0",
+  "title": "Luminous Nix Plugin Manifest v2",
+  "description": "The sacred contract with dependency awareness - enabling the mycelial network",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "plugin",
+    "consciousness",
+    "capabilities",
+    "boundaries"
+  ],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "const": "2.0.0",
+      "description": "The version of this manifest schema"
+    },
+    
+    "plugin": {
+      "type": "object",
+      "description": "Core identity of the plugin",
+      "required": ["id", "name", "version", "description", "author"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "minLength": 3,
+          "maxLength": 50,
+          "description": "Unique identifier (lowercase, hyphens only)"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 100,
+          "description": "Human-readable name"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*)?$",
+          "description": "Semantic version (SemVer 2.0.0)"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "What sacred purpose does this plugin serve?"
+        },
+        "author": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier"
+        }
+      }
+    },
+    
+    "consciousness": {
+      "type": "object",
+      "description": "The sacred alignment and philosophical grounding",
+      "required": ["governing_principle", "sacred_promise"],
+      "properties": {
+        "governing_principle": {
+          "type": "string",
+          "enum": [
+            "amplify_awareness",
+            "protect_attention",
+            "enable_sovereignty",
+            "serve_wellbeing",
+            "foster_learning",
+            "build_community",
+            "preserve_privacy",
+            "reduce_complexity"
+          ],
+          "description": "Primary consciousness principle this plugin serves"
+        },
+        "sacred_promise": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 200,
+          "description": "The vow this plugin makes to the user"
+        },
+        "ethical_boundaries": {
+          "type": "array",
+          "description": "Explicit ethical commitments",
+          "items": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    
+    "capabilities": {
+      "type": "object",
+      "description": "What this plugin can do",
+      "required": ["intents"],
+      "properties": {
+        "intents": {
+          "type": "array",
+          "description": "Natural language patterns this plugin handles",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["pattern", "handler", "description"],
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Natural language pattern to match"
+              },
+              "handler": {
+                "type": "string",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+                "description": "Method name that handles this intent"
+              },
+              "description": {
+                "type": "string",
+                "description": "What this intent does"
+              },
+              "examples": {
+                "type": "array",
+                "description": "Example phrases",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "description": "System permissions required",
+          "properties": {
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "filesystem.read",
+                  "filesystem.write",
+                  "filesystem.watch",
+                  "network.local",
+                  "network.internet",
+                  "process.spawn",
+                  "process.monitor",
+                  "system.notifications",
+                  "system.info",
+                  "configuration.read",
+                  "configuration.write"
+                ]
+              }
+            },
+            "optional": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "resources": {
+          "type": "array",
+          "description": "Exclusive resources this plugin may need",
+          "items": {
+            "type": "object",
+            "required": ["id", "type", "purpose"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Resource identifier (e.g., 'microphone', 'port:8080')"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["hardware", "port", "file", "socket"],
+                "description": "Type of resource"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Why this resource is needed"
+              },
+              "exclusive": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether exclusive access is required"
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "boundaries": {
+      "type": "object",
+      "description": "What this plugin must never do",
+      "required": ["forbidden_actions"],
+      "properties": {
+        "forbidden_actions": {
+          "type": "array",
+          "description": "Actions explicitly prohibited",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        },
+        "data_policy": {
+          "type": "object",
+          "description": "How this plugin handles user data",
+          "required": ["collection", "storage", "sharing"],
+          "properties": {
+            "collection": {
+              "type": "string",
+              "enum": ["none", "minimal", "functional", "analytics"]
+            },
+            "storage": {
+              "type": "string",
+              "enum": ["none", "memory_only", "local_only", "encrypted_local"]
+            },
+            "sharing": {
+              "type": "string",
+              "enum": ["never", "local_only", "with_consent"]
+            }
+          }
+        },
+        "resource_limits": {
+          "type": "object",
+          "properties": {
+            "max_memory_mb": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 1024,
+              "default": 256
+            },
+            "max_cpu_percent": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            }
+          }
+        }
+      }
+    },
+    
+    "relationships": {
+      "type": "object",
+      "description": "How this plugin relates to other plugins in the ecosystem",
+      "properties": {
+        "dependencies": {
+          "type": "array",
+          "description": "Plugins this plugin requires to function",
+          "items": {
+            "type": "object",
+            "required": ["plugin_id", "version_constraint", "relationship_type"],
+            "properties": {
+              "plugin_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$",
+                "description": "ID of the required plugin"
+              },
+              "version_constraint": {
+                "type": "string",
+                "pattern": "^(\\^|~|>=?|<=?|=)?[0-9]+\\.[0-9]+\\.[0-9]+",
+                "description": "Semantic version constraint",
+                "examples": ["^1.0.0", ">=2.0.0", "~1.2.0"]
+              },
+              "relationship_type": {
+                "type": "string",
+                "enum": ["requires", "enhances", "complements", "extends"],
+                "description": "Nature of the dependency"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Why this dependency exists (for user understanding)"
+              },
+              "fallback_behavior": {
+                "type": "string",
+                "enum": ["fail", "degrade", "warn"],
+                "default": "fail",
+                "description": "What happens if dependency is unavailable"
+              }
+            }
+          }
+        },
+        "conflicts": {
+          "type": "array",
+          "description": "Plugins that cannot coexist with this one",
+          "items": {
+            "type": "object",
+            "required": ["plugin_id", "reason"],
+            "properties": {
+              "plugin_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$",
+                "description": "ID of conflicting plugin"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why these plugins conflict"
+              },
+              "resolution_hint": {
+                "type": "string",
+                "description": "Suggestion for resolving the conflict"
+              }
+            }
+          }
+        },
+        "provides": {
+          "type": "array",
+          "description": "Capabilities this plugin provides to others",
+          "items": {
+            "type": "object",
+            "required": ["capability_id", "version", "interface"],
+            "properties": {
+              "capability_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$",
+                "description": "ID of the capability"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                "description": "Version of the capability API"
+              },
+              "interface": {
+                "type": "string",
+                "description": "How other plugins can use this capability"
+              }
+            }
+          }
+        },
+        "companions": {
+          "type": "array",
+          "description": "Plugins that work well together with this one",
+          "items": {
+            "type": "object",
+            "required": ["plugin_id", "synergy"],
+            "properties": {
+              "plugin_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$",
+                "description": "ID of companion plugin"
+              },
+              "synergy": {
+                "type": "string",
+                "description": "How these plugins enhance each other"
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    "requirements": {
+      "type": "object",
+      "description": "System and runtime requirements",
+      "properties": {
+        "luminous_nix": {
+          "type": "object",
+          "required": ["min_version"],
+          "properties": {
+            "min_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Minimum Luminous Nix version required"
+            },
+            "max_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Maximum compatible version"
+            }
+          }
+        },
+        "system_packages": {
+          "type": "array",
+          "description": "NixOS packages required",
+          "items": {
+            "type": "string"
+          }
+        },
+        "runtime": {
+          "type": "string",
+          "enum": ["python", "nodejs", "rust", "any"],
+          "description": "Runtime environment needed"
+        }
+      }
+    }
+  },
+  
+  "examples": [
+    {
+      "manifest_version": "2.0.0",
+      "plugin": {
+        "id": "pomodoro-timer",
+        "name": "Pomodoro Timer",
+        "version": "1.0.0",
+        "description": "Sacred time boxing for deep work using the Pomodoro Technique",
+        "author": {
+          "name": "Time Weavers Guild"
+        },
+        "license": "MIT"
+      },
+      "consciousness": {
+        "governing_principle": "protect_attention",
+        "sacred_promise": "I will help you work in harmony with your natural rhythms",
+        "ethical_boundaries": [
+          "Never force work when rest is needed",
+          "Always honor the break periods as sacred"
+        ]
+      },
+      "capabilities": {
+        "intents": [
+          {
+            "pattern": "start pomodoro",
+            "handler": "handle_start_pomodoro",
+            "description": "Begin a 25-minute focused work session"
+          }
+        ],
+        "permissions": {
+          "required": ["system.notifications"]
+        },
+        "resources": [
+          {
+            "id": "audio_bell",
+            "type": "hardware",
+            "purpose": "Play gentle bell sound at session end",
+            "exclusive": false
+          }
+        ]
+      },
+      "boundaries": {
+        "forbidden_actions": [
+          "Track productivity metrics without consent",
+          "Share session data externally"
+        ],
+        "data_policy": {
+          "collection": "minimal",
+          "storage": "local_only",
+          "sharing": "never"
+        }
+      },
+      "relationships": {
+        "dependencies": [
+          {
+            "plugin_id": "flow-guardian",
+            "version_constraint": "^1.0.0",
+            "relationship_type": "enhances",
+            "rationale": "Flow Guardian provides interruption blocking during pomodoros",
+            "fallback_behavior": "degrade"
+          }
+        ],
+        "companions": [
+          {
+            "plugin_id": "focus-sounds",
+            "synergy": "Ambient sounds enhance concentration during pomodoro sessions"
+          }
+        ],
+        "provides": [
+          {
+            "capability_id": "time-boxing",
+            "version": "1.0.0",
+            "interface": "TimeBoxingProvider"
+          }
+        ]
+      },
+      "requirements": {
+        "luminous_nix": {
+          "min_version": "1.2.0"
+        },
+        "runtime": "python"
+      }
+    }
+  ]
+}
