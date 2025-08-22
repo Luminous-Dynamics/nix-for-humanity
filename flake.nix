@@ -272,6 +272,19 @@
             ffmpeg-full      # Video processing
             gifsicle         # GIF optimization
             termtosvg        # Terminal to SVG converter
+            
+            # Enhanced tools from our integration
+            llama-cpp        # Ultra-fast local LLM inference
+            faiss            # Facebook AI Similarity Search
+            gum              # Charm's beautiful CLI interactions
+            charm-freeze     # Generate beautiful code screenshots
+            # mistral-rs     # Rust-based Mistral (if available)
+            
+            # Code quality tools (system-level)
+            ruff             # Ultra-fast Python linter
+            black            # Python formatter
+            mypy             # Type checker
+            bandit           # Security scanner
           ];
 
           shellHook = ''
@@ -402,7 +415,7 @@
                 Simply type or speak what you want in your own words - no commands to memorize.
               '';
               homepage = "https://github.com/Luminous-Dynamics/nix-for-humanity";
-              license = licenses.srl;
+              license = licenses.mit;
               maintainers = with maintainers; [ ]; # Add maintainers
               platforms = platforms.linux;
             };
