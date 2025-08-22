@@ -1,0 +1,18 @@
+# GitHub Pages Configuration for Luminous Nix
+title: Luminous Nix
+description: Natural Language Interface for NixOS - Making NixOS accessible to all beings
+theme: jekyll-theme-minimal
+url: https://luminous-dynamics.github.io
+baseurl: /nix-for-humanity
+
+# Custom variables
+github_username: Luminous-Dynamics
+github_repo: nix-for-humanity
+
+# Exclude files from processing
+exclude:
+  - "*.py"
+  - "*.nix"
+  - "*.sh"
+  - "__pycache__"
+  - ".pytest_cache"
