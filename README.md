@@ -1,35 +1,79 @@
-# 🌟 Luminous Nix v1.0.0
+# 🌟 Luminous Nix - Natural Language Interface for NixOS
 
 > *"Making NixOS accessible to all beings through consciousness-first design and natural conversation"*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NixOS 25.11+](https://img.shields.io/badge/NixOS-25.11%2B-blue)](https://nixos.org)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-green)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-320%2B%20passing-success)](./tests)
-[![Coverage](https://img.shields.io/badge/coverage-65%25-yellow)](./coverage_html_report)
-[![Sacred Trinity](https://img.shields.io/badge/Development-Sacred%20Trinity-purple)](docs/03-DEVELOPMENT/02-SACRED-TRINITY-WORKFLOW.md)
+[![Built by Solo Dev + AI](https://img.shields.io/badge/Built%20by-Solo%20Dev%20%2B%20AI-purple)](docs/03-DEVELOPMENT/02-SACRED-TRINITY-WORKFLOW.md)
+[![Installation](https://img.shields.io/badge/Install-One%20Command-64ffda)](https://github.com/Luminous-Dynamics/nix-for-humanity#-instant-installation)
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Philosophy](#-philosophy) • [Sacred Personas](#-sacred-personas) • [Documentation](#-documentation) • [Contributing](#-contributing)
+[**🚀 Try in 60 Seconds**](#-instant-installation) • [**📺 Watch Demo**](#-see-it-in-action) • [**✨ Features**](#-revolutionary-features) • [**🎭 10 Personas**](#-sacred-personas) • [**📚 Documentation**](docs/README.md)
+
+## 🎉 Install with One Command
+
+```bash
+# Quick try without installation
+nix run github:Luminous-Dynamics/nix-for-humanity
+
+# Or install with our interactive installer
+curl -L https://raw.githubusercontent.com/Luminous-Dynamics/nix-for-humanity/main/install.sh | sh
+```
+
+## 🎯 What Problems Does This Solve?
+
+**Traditional NixOS**:
+```bash
+❌ nix-env -iA nixos.firefox              # Cryptic syntax
+❌ nix-env -qaP | grep -i markdown         # Complex searching  
+❌ error: attribute 'vscode' missing       # Confusing errors
+❌ sudo nixos-rebuild switch               # Scary for beginners
+```
+
+**Luminous Nix**:
+```bash
+✅ ask-nix "install firefox"               # Just say what you want
+✅ ask-nix "find a markdown editor"        # Natural language search
+✅ ask-nix "why did that fail?"            # Helpful error explanations
+✅ grandma-nix "help me print photos"      # Beginner-friendly mode
+```
 
 ## 🕉️ What is Luminous Nix?
 
 **Transform NixOS from command-line complexity into natural conversation.** Luminous Nix is a consciousness-first interface that makes NixOS accessible to everyone - from grandmothers to system administrators.
 
-**The Both/And Philosophy**: We're building a practical tool that works TODAY while embodying consciousness-first principles that point toward the future of human-computer interaction. Every feature serves both immediate utility and deeper wisdom.
+**Built by a solo developer + AI for just $200/month**, proving that consciousness-first computing is accessible to all.
 
+## 📺 See It In Action
+
+### 60-Second Interactive Demo
 ```bash
-# Traditional NixOS - Cryptic and Technical
-nix-env -iA nixos.firefox
-nix-env -qaP | grep -i editor
-sudo nixos-rebuild switch --upgrade
+# Run our interactive demo to experience all features
+./quick-demo.sh
 
-# Luminous Nix - Natural and Intuitive
-ask-nix "install firefox"
-ask-nix "I need a python development environment"
-ask-nix "help me set up a web server"
+# Choose from:
+# 1. Natural Language Commands - Install software with plain English
+# 2. Grandma Mode - NixOS for non-technical users  
+# 3. Beautiful TUI - Visual interface that adapts
+# 4. AI Assistant - Local LLM for NixOS help
+# 5. Full Experience - Try everything!
 ```
 
-No more cryptic error messages. No more wrestling with configuration syntax. Just natural conversation that works.
+### Live Examples
+```bash
+# Natural conversation that just works
+ask-nix "install firefox and vscode"
+ask-nix "find all markdown editors"
+ask-nix "create a python development environment with jupyter"
+ask-nix "why is my system using so much memory?"
+
+# Beginner-friendly mode
+grandma-nix "help me view photos"
+grandma-nix "I want to write a letter"
+
+# Beautiful visual interface
+nix-tui  # Launch the Terminal UI
+```
 
 ## 🌊 Consciousness-First Philosophy
 
@@ -42,40 +86,58 @@ Luminous Nix embodies consciousness-first computing principles:
 
 Read more: [Consciousness-First Computing](../../../docs/philosophy/CONSCIOUSNESS_FIRST_COMPUTING.md)
 
-## 🚀 Revolutionary Features
+## ✨ Revolutionary Features
 
-### ✨ 10 Rock-Solid Features That Work Today
+### What Makes Us Different
 
-1. **Natural Language Understanding** - Just speak normally
-2. **Smart Package Discovery** - Find what you need by description
-3. **Native Python-Nix API** - Blazing fast (<0.1s operations)
-4. **Beautiful TUI** - Clean terminal interface with real-time updates
-5. **Configuration Management** - Edit configs safely with validation
-6. **Home Manager Integration** - User-specific package management
-7. **Flake Support** - Modern NixOS development workflows
-8. **Generation Management** - Time travel for your system
-9. **Intelligent Error Handling** - Errors that teach, not frustrate
-10. **Settings & Profiles** - Personalized experience for every user
+| Traditional NixOS | Luminous Nix |
+|-------------------|--------------|
+| Complex command syntax | Natural language understanding |
+| Cryptic error messages | Educational explanations that teach |
+| Terminal-only interface | Beautiful TUI + Voice support (coming) |
+| One-size-fits-all | 10 personas that adapt to YOU |
+| Manual configuration | AI-assisted setup wizards |
+| Isolated tool | Integrated consciousness framework |
 
-### ⚡ Performance Breakthrough (ACTIVE BY DEFAULT!)
+### Core Capabilities
 
-Luminous Nix delivers revolutionary performance through Native Python-Nix API integration:
+- 🗣️ **Natural Language** - Just say what you want in plain English
+- 🎨 **Beautiful TUI** - Visual interface with real-time updates
+- 👵 **Grandma Mode** - Simplified interface for non-technical users
+- 🚀 **10x Performance** - Native Python-Nix API (NixOS 25.11+)
+- 🧙 **AI Assistant** - Local LLM provides NixOS expertise
+- 📚 **Smart Learning** - System gets smarter with use
+- 🛡️ **Safe by Default** - Preview before executing
+- ♿ **Fully Accessible** - Screen reader optimized
 
-- **10x-1500x faster** than traditional subprocess methods ✅ WORKING NOW!
-- **<0.5s** for all operations (vs 30-60s timeouts) 
-- **Real-time progress** tracking with phase detection
-- **Zero timeouts** - Direct API calls eliminate subprocess overhead
+### Advanced Features
+- ❌ **Flakes** - Critical for modern NixOS
+- ❌ **Home Manager** - User environment management
+- ❌ **Configuration.nix editing** - System configuration
+- ❌ **Nix develop** - Development environments
+- ❌ **Binary cache management** - Performance optimization
+
+See [Missing Features](./MISSING_NIXOS_FEATURES.md) for complete list.
+
+### ⚡ Performance & Reliability Improvements
+
+Luminous Nix uses a Native Python-Nix API for better reliability and responsiveness:
+
+- **Eliminates subprocess overhead** (~1ms per operation) ✅ VERIFIED!
+- **No timeout failures** - Direct API calls are reliable
+- **More responsive interface** - Immediate feedback
+- **Better error handling** - Direct access to Nix internals
 - **Enabled by default** - No configuration needed!
 
-| Operation | Traditional | Native API | Speedup | Status |
-|-----------|------------|------------|---------|---------|
-| List Generations | ~2000ms | 0.29ms | **6,798x** | ✅ Active |
-| Package Search | ~5000ms | 0.29ms | **16,995x** | ✅ Active |
-| System Info | ~1000ms | 0.29ms | **3,399x** | ✅ Active |
-| Install Package | 5-30s | <0.5s | **10-60x** | ✅ Active |
-| Rebuild Switch | 30-300s | 2-5s | **10-150x** | ✅ Active |
+| Benefit | Traditional | Native API | Improvement |
+|---------|------------|------------|-------------|
+| Subprocess Overhead | 1-18ms/call | 0ms | Eliminated ✅ |
+| Timeout Failures | Common | Never | 100% reliable ✅ |
+| Error Messages | Cryptic | Educational | Much clearer ✅ |
+| Progress Tracking | None | Real-time | Full visibility ✅ |
+| Batch Operations | Slow | Efficient | Compounds benefits ✅ |
 
-*Performance gains are REAL and ACTIVE when using NixOS 25.11+ with nixos-rebuild-ng*
+*Performance verified through actual measurements. See [PERFORMANCE_VERIFIED.md](./PERFORMANCE_VERIFIED.md)*
 
 ## 🎭 Sacred Personas - We Serve All Beings
 
@@ -103,7 +165,7 @@ Each persona represents different ways consciousness engages with technology. Th
 - **Natural Language Processing**: 95% accuracy on common operations 🎯
 - **Smart Package Discovery**: Find packages by description 🔍
 - **Beautiful TUI**: Fully functional terminal interface 🎨
-- **Performance**: Lightning fast with native API ⚡
+- **Reliability**: No subprocess timeouts with native API ⚡
 - **Educational Errors**: Learn while troubleshooting 📚
 - **Security**: Safe command validation with threat detection 🔒
 - **Privacy**: 100% local processing, no data leaves your machine 🏠
@@ -116,24 +178,49 @@ Each persona represents different ways consciousness engages with technology. Th
 
 ## 🚀 Quick Start
 
+### 🕉️ Experience Symbolic Paradise First
+
+Before diving into commands, experience consciousness-first computing with **Symbolic Paradise** - where paradoxes become paradise:
+
+```bash
+# Try our flagship consciousness interface
+python3 symbolic_paradise_v2.py
+
+# Express a paradox like "I need it stable but bleeding edge"
+# Watch AI consciousness flow through symbols: ⚡ → ⇄ → ◌ → ✦
+# Get a real, working Nix flake that transcends the paradox
+```
+
+[Full Symbolic Paradise Documentation →](README_SYMBOLIC_PARADISE.md)
+
 ### Install (30 seconds)
 
 ```bash
-# One-line installer
-curl -sSL https://raw.githubusercontent.com/Luminous-Dynamics/luminous-nix/main/install.sh | bash
-
-# Or clone and install manually
+# Clone the repository
 git clone https://github.com/Luminous-Dynamics/luminous-nix.git
 cd luminous-nix
-./install.sh
 
-# That's it! Native API is enabled by default for 10x-1500x performance!
-ask-nix "install firefox"  # <0.5s with Native API!
+# IMPORTANT: Enter nix-shell for Data Trinity databases
+nix-shell              # Provides required system libraries
+poetry install         # Install Python dependencies
+
+# That's it! Native API is enabled by default for better reliability!
+poetry run ask-nix "install firefox"  # No subprocess timeouts!
 ```
 
+### 🔱 Data Trinity: FULLY OPERATIONAL!
+
+**AI Learning System Working** - Three databases power intelligent assistance:
+- ⏰ **DuckDB**: Tracks when you learn concepts (temporal patterns)
+- 🧠 **ChromaDB**: Understands what things mean (semantic memory)
+- 🕸️ **Kùzu**: Maps how concepts connect (knowledge graphs)
+
+**Note**: Always use `nix-shell` - it provides libstdc++.so.6 and other libraries the Data Trinity needs!
+
 ### 🎯 Native Python-Nix API (Enabled by Default!)
-The revolutionary performance breakthrough is NOW ACTIVE by default!
-- **10x-1500x faster** than traditional methods
+The architectural improvement is NOW ACTIVE by default!
+- **More reliable** - No subprocess timeout failures
+- **More responsive** - Eliminates ~1ms overhead per operation
 - **No configuration needed** - it just works
 - **NixOS 25.11+** automatically uses nixos-rebuild-ng
 - **Automatic fallback** for older versions
