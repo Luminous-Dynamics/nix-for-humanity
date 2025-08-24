@@ -188,7 +188,7 @@ class AIDiscordBot(commands.Bot):
         
         tips = [
             "💡 **Tip**: You can use `ask-nix 'show my system health'` to get a full diagnostic!",
-            "🚀 **Did you know?** Luminous Nix was built in just 2 weeks using Sacred Trinity Development!",
+            "🚀 **Did you know?** Luminous Nix was built in just 2 weeks using the Trinity Development Model!",
             "📚 **Learning moment**: NixOS configurations are reproducible - same config = same system, everywhere!",
             "🎯 **Pro tip**: Use `ask-nix --personality grandma` for the gentlest explanations!",
             "✨ **Feature spotlight**: Our error messages actually explain what went wrong and how to fix it!",

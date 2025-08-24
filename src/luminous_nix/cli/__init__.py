@@ -99,7 +99,41 @@ def ask(ctx, query, personality, dry_run, yes, no_visual, execute, profile):
 def main():
     """Main entry point for the CLI"""
     import sys
+    import os
     
+    # Check if voice mode is enabled
+    if os.environ.get('LUMINOUS_VOICE_ENABLED', '').lower() == 'true':
+        # Run in voice mode
+        from luminous_nix.interfaces.cli import UnifiedNixAssistant
+        from luminous_nix.voice.voice_interface import VoiceInterface
+        
+        assistant = UnifiedNixAssistant()
+        voice = VoiceInterface(verbose=assistant.verbose_level > 0)
+        
+        # Run voice conversation loop
+        def process_voice_command(text):
+            """Process voice command and return response"""
+            # Use the assistant to process the command
+            import io
+            import sys
+            old_stdout = sys.stdout
+            sys.stdout = buffer = io.StringIO()
+            
+            try:
+                assistant.answer(text)
+                response = buffer.getvalue()
+            finally:
+                sys.stdout = old_stdout
+            
+            # Also print to console
+            print(response)
+            return response
+        
+        # Start voice conversation
+        voice.conversation_loop(process_voice_command)
+        return
+    
+    # Normal CLI mode
     # If no arguments, show help
     if len(sys.argv) == 1:
         cli.main(['--help'])

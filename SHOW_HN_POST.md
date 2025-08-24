@@ -20,12 +20,12 @@ ask-nix "install firefox"
 **Native Python-Nix API**: We achieved 10x-1500x performance improvements by bypassing subprocess calls entirely. This eliminates the timeout issues that plague other NixOS tools.
 
 ## The Development Story
-Here's the part that might interest you most: I built this in 2 weeks for about $200/month using what I call the "Sacred Trinity" development model:
+Here's the part that might interest you most: I built this in 2 weeks for about $200/month using what I call the "Trinity Development Model":
 - **Human** (me): Vision, architecture decisions, testing
-- **Claude Code**: Implementation, problem-solving
-- **Local LLM** (Mistral-7B): NixOS domain expertise
+- **Cloud AI** (Claude): Implementation, problem-solving
+- **Local AI** (Mistral-7B): NixOS domain expertise
 
-This proves you don't need $4.2M in VC funding to build developer tools. You need clarity of vision and the right AI collaboration.
+This proves solo developers can build professional-grade developer tools with AI collaboration. You need clarity of vision and the right partnership model.
 
 ## Technical Details
 - **Performance**: <100ms intent recognition, <50ms command generation

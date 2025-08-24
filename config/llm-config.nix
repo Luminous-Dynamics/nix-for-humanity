@@ -1,8 +1,8 @@
 # Local LLM Configuration for Nix for Humanity
-# Sacred Trinity Model Selection: Mistral-7B
+# Trinity Development Model - LLM Selection: Mistral-7B
 
 {
-  # Sacred Trinity default: Mistral-7B
+  # Trinity Development Model default: Mistral-7B
   # Chosen for perfect balance of performance, accuracy, and accessibility
   # Users can override by setting NIX_GURU_MODEL environment variable
   
@@ -10,13 +10,13 @@
     # SACRED TRINITY CHOICE - Best for NixOS expertise
     default = "mistral:7b";
     
-    # Model options with Sacred Trinity recommendations
+    # Model options with Trinity Development Model recommendations
     
-    # ⭐ PRIMARY CHOICE - Sacred Trinity Default
+    # ⭐ PRIMARY CHOICE - Trinity Development Model Default
     balanced = {
       name = "mistral:7b";
       ram = "6GB minimum";
-      description = "Sacred Trinity choice - Perfect balance for NixOS development";
+      description = "Trinity Development Model choice - Perfect balance for NixOS development";
       strengths = [
         "Excellent technical comprehension"
         "Fast response times (< 5 seconds)"

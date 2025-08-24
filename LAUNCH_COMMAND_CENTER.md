@@ -237,7 +237,7 @@ Launch morning:
 
 The preparation is complete. The automation is ready. The community is waiting.
 
-Time to show the world what $200 + Sacred Trinity Development can achieve!
+Time to show the world what the Trinity Development Model can achieve!
 
 ---
 

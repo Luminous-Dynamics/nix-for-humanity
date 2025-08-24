@@ -127,11 +127,11 @@ All in plain English.
 
 ### Built Different
 
-**The Problem**: Enterprise tools wanted $4.2M to make NixOS accessible.
+**The Problem**: NixOS remains inaccessible to most users despite its power.
 
-**The Solution**: One developer + AI collaboration + $200/month = Revolutionary result.
+**The Solution**: Trinity Development Model (Human + Cloud AI + Local AI) = Natural language interface.
 
-**The Method**: Sacred Trinity Development
+**The Method**: Trinity Development Model
 - 🧠 Human: Vision & testing
 - 🤖 Claude: Implementation
 - 🦾 Local LLM: Domain expertise
@@ -243,7 +243,7 @@ Making technology adapt to humans, not the other way around.
 - Terms
 
 **Built with 💜 by Tristan Stoltz**
-*Proving $200 > $4.2M since 2024*
+*Pioneering the Trinity Development Model since 2024*
 
 ---
 
@@ -251,7 +251,7 @@ Making technology adapt to humans, not the other way around.
 
 ```html
 <title>Luminous Nix - Natural Language Interface for NixOS</title>
-<meta name="description" content="Control NixOS with plain English. No syntax, no documentation, just say what you want. Built by 1 dev for $200, beating $4.2M enterprise solutions.">
+<meta name="description" content="Control NixOS with plain English. No syntax, no documentation, just say what you want. Built with the revolutionary Trinity Development Model.">
 <meta name="keywords" content="NixOS, natural language, Linux, DevOps, automation, AI, package manager">
 
 <!-- Open Graph -->
@@ -263,6 +263,6 @@ Making technology adapt to humans, not the other way around.
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Luminous Nix - NixOS in Plain English">
-<meta name="twitter:description" content="Control your OS with natural language. Built for $200, beats $4.2M solutions.">
+<meta name="twitter:description" content="Control your OS with natural language. Built with Trinity Development Model: Human + AI collaboration.">
 <meta name="twitter:image" content="[hero-image]">
 ```

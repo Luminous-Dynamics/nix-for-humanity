@@ -162,7 +162,7 @@ poetry run nix-tui
 
 ## 🤝 Development Philosophy
 
-### The Sacred Trinity Approach
+### The Trinity Development Model Approach
 1. **Human** (Tristan): Vision, architecture, real-world testing
 2. **Claude AI**: Code generation, problem-solving partner
 3. **Local LLM**: NixOS domain expertise

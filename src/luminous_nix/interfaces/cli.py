@@ -53,6 +53,11 @@ class UnifiedNixAssistant:
         self.persona = os.environ.get('LUMINOUS_PERSONA', 'friendly')
         self.ai_enabled = os.environ.get('LUMINOUS_AI_ENABLED', '').lower() == 'true'
         
+        # Voice support
+        self.voice_enabled = os.environ.get('LUMINOUS_VOICE_ENABLED', '').lower() == 'true'
+        self.speak_responses = os.environ.get('LUMINOUS_SPEAK_RESPONSES', '').lower() == 'true'
+        self.continuous_listen = os.environ.get('LUMINOUS_CONTINUOUS_LISTEN', '').lower() == 'true'
+        
         # Visual/progress settings
         self.visual_mode = not self.quiet_mode
         self.show_progress = not self.quiet_mode
@@ -105,6 +110,18 @@ class UnifiedNixAssistant:
             except Exception as e:
                 if self.verbose_level > 0:
                     print(f"⚠️ Could not initialize robust architecture: {e}")
+        
+        # Initialize voice interface
+        self.voice_interface = None
+        if self.voice_enabled or self.speak_responses:
+            try:
+                from luminous_nix.voice.voice_interface import VoiceInterface
+                self.voice_interface = VoiceInterface(verbose=self.verbose_level > 0)
+                if self.verbose_level > 0:
+                    print("🎙️ Voice interface enabled")
+            except Exception as e:
+                if self.verbose_level > 0:
+                    print(f"⚠️ Could not initialize voice interface: {e}")
         
         # Initialize advanced features
         self.intent_pipeline = None
