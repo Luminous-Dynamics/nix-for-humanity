@@ -4,6 +4,7 @@ CLI commands for Nix flake management
 """
 
 import click
+import sys
 from pathlib import Path
 from typing import Optional
 

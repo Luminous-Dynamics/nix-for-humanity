@@ -132,6 +132,10 @@ class IntentRecognitionPipeline:
                 (r'\b(show|list) .* packages\b', 0.8),
                 (r'\bis there (a|an)\b', 0.7),
                 (r'\bdo you have\b', 0.7),
+                (r'\bi need (a|an|some)\b', 0.85),  # "I need a text editor"
+                (r'\bi want (a|an|some)\b', 0.8),   # "I want a browser"
+                (r'\blooking for (a|an|some)\b', 0.9),  # "Looking for a terminal"
+                (r'\bgive me (a|an|some)\b', 0.75),  # "Give me a music player"
             ],
             Intent.LIST: [
                 (r'\b(list|show|display|what\'s) installed\b', 0.95),
@@ -173,6 +177,10 @@ class IntentRecognitionPipeline:
                 (r'\b(not|isn\'t|won\'t|doesn\'t) work(ing)?\b', 0.85),
                 (r'\b(error|problem|issue|broken)\b', 0.8),
                 (r'\bwhy (is|does)\b', 0.7),
+                (r'\bsomething(\'s| is) wrong\b', 0.95),  # "Something's wrong with my system"
+                (r'\bcheck (my )?(system|health|status)\b', 0.9),
+                (r'\bhaving (problems|issues|trouble)\b', 0.85),
+                (r'\bsystem (is )?(slow|broken|acting weird)\b', 0.85),
             ],
             Intent.GARBAGE_COLLECT: [
                 (r'\b(garbage collect|gc|clean up|free space)\b', 0.95),
@@ -205,6 +213,10 @@ class IntentRecognitionPipeline:
                 (r'package (?:called |named )?(\S+)', 'explicit'),
                 (r'(\S+) package', 'trailing'),
                 (r'(?:search|find|look for) (\S+)', 'search'),
+                # Natural language patterns
+                (r'(?:i need|i want|looking for|give me) (?:a |an |some )?(\w+[\w-]*)', 'natural'),
+                (r'(?:a |an |some )?(\w+) (?:editor|browser|player|manager|tool|program|app|server)', 'category'),
+                (r'(?:text |code |music |video |image |file )?(\w+)', 'type_hint'),
             ],
             'config_file': [
                 (r'(/etc/nixos/\S+)', 'path'),
