@@ -1,91 +1,42 @@
-# Dependencies
-node_modules/
-package-lock.json
-
-# Build outputs
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
 dist/
-*.tsbuildinfo
+build/
 
-# Logs
-*.log
-npm-debug.log*
-
-# Environment
-.env
-.env.local
+# Nix
+result
+result-*
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-Thumbs.db
 
-# Test coverage
-coverage/
-.nyc_output/
-
-# Temporary
-tmp/
-temp/
-
-# Learning system databases
-learning/*.db
-learning/*.db-journal
-
-# Test results
-results/*.json
-results/*.log
-
-# Cache files
-*.cache
-*.pyc
-__pycache__/
-.pytest_cache/
-
-# Test coverage and monitoring
-.coverage
-.coverage_monitor/
-.performance_monitoring/
-.postgres/
-htmlcov/
-
-# Archive directories
+# Project specific
+package_cache.db
+*.log
+data/consciousness/*.db
+data/consciousness/*.wal
 .archive-*/
+coverage.json
+test_report.json
 
-# Backup files
-*.bak
-*.backup
-*.bak.rename
-*.backup-*
-
-# Temporary Python scripts
-fix-*.py
-test-*.py
-week*.py
-
-# Duplicate files
-*_COMPLETE.md
-*_REPORT.md
-*_SUMMARY.md
-*_STATUS.md
-
-# Development databases
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
-
-# Metrics and logs
-metrics_server.log
-performance_*.json
-*.log.json
-
-# Training data (if regenerated)
-training-data/
-
-# Old documentation
-docs/Temp/
+# Sensitive
+.env
+secrets/
+ssl/

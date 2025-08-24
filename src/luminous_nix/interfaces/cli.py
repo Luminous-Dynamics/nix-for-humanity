@@ -159,14 +159,29 @@ class UnifiedNixAssistant:
         intent = intent_result.primary_intent
         entities = intent_result.entities
         
-        # Extract package/term from entities
+        # Extract package/term from entities - improved logic
         package = None
         term = None
+        
+        # Filter out common mis-extracted words and use highest confidence entity
+        best_package = None
+        best_package_confidence = 0
+        
         for entity in entities:
             if entity.type == 'package':
-                package = entity.value
+                # Skip words that are likely not package names
+                if entity.value.lower() in {'install', 'remove', 'update', 'search', 'find', 
+                                           'get', 'add', 'delete', 'i', 'want', 'to', 'need', 
+                                           'please', 'can', 'you', 'help', 'me', 'a', 'an', 'the'}:
+                    continue
+                # Use the entity with highest confidence
+                if entity.confidence > best_package_confidence:
+                    best_package = entity.value
+                    best_package_confidence = entity.confidence
             elif entity.type in ['term', 'query']:
                 term = entity.value
+        
+        package = best_package
         
         # Map intent to action
         if intent == Intent.INSTALL:
@@ -430,32 +445,56 @@ class UnifiedNixAssistant:
     
     def _handle_install(self, query: str):
         """Handle package installation"""
-        # Extract package name - simple approach
+        # Debug logging
+        if self.verbose_level >= 2:
+            pass  # Debug removed for production
+        
+        # Extract package name - improved approach
         words = query.split()
+        package = None
+        
+        # Method 1: Find word after "install"
         if "install" in words:
             idx = words.index("install")
             if idx + 1 < len(words):
                 package = words[idx + 1]
-                # Use robust method if available
-                if self.command_executor:
-                    self._install_package_robust(package)
-                else:
-                    self._install_package(package)
-            else:
-                print("❌ Please specify what to install")
-                print("Example: install firefox")
-        else:
-            # Try to find package name after other words
-            ignore_words = {"i", "want", "to", "need", "please", "can", "you", "help", "me"}
-            packages = [w for w in words if w not in ignore_words and w != "install"]
+                # Skip if package is a common word that's not a package name
+                if package in {"i", "want", "to", "need", "please", "can", "you", "help", "me", "a", "an", "the"}:
+                    package = None
+        
+        # Method 2: If no package found, try to find likely package names
+        if not package:
+            ignore_words = {"i", "want", "to", "need", "please", "can", "you", "help", "me", "install", "a", "an", "the"}
+            packages = [w for w in words if w not in ignore_words]
             if packages:
-                # Use robust method if available
-                if self.command_executor:
-                    self._install_package_robust(packages[0])
-                else:
-                    self._install_package(packages[0])
+                package = packages[0]
+        
+        # Method 3: Use intent recognition if available
+        if not package and hasattr(self, 'intent_pipeline'):
+            from luminous_nix.core.intent_pipeline import IntentRecognitionPipeline
+            pipeline = IntentRecognitionPipeline()
+            result = pipeline.recognize(query)
+            
+            # Find package entities with highest confidence
+            package_entities = [e for e in result.entities if e.type == 'package']
+            if package_entities:
+                # Sort by confidence and avoid "install" as package name
+                package_entities = sorted(package_entities, key=lambda x: x.confidence, reverse=True)
+                for entity in package_entities:
+                    if entity.value.lower() != "install":
+                        package = entity.value
+                        break
+        
+        # Execute installation if package found
+        if package:
+            # Use robust method if available
+            if self.command_executor:
+                self._install_package_robust(package)
             else:
-                print("❌ Please specify what to install")
+                self._install_package(package)
+        else:
+            print("❌ Please specify what to install")
+            print("Example: install firefox")
     
     def _handle_search(self, query: str):
         """Handle package search"""

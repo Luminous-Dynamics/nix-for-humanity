@@ -331,7 +331,7 @@ The Trinity Development Model emerged from:
 
 *"In the Trinity, we find not competition but collaboration, not replacement but amplification, not artificial but augmented intelligence."*
 
-**Welcome to the future of development.** 🔺
+**Welcome to the future of human-AI collaboration.** 🔺
 
 ---
 

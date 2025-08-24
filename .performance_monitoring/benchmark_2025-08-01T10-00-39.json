@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-08-01T10:00:39.627543",
+  "total_operations": 5,
+  "successful_operations": 0,
+  "failed_operations": 5,
+  "results": [
+    {
+      "operation": "startup",
+      "duration_ms": Infinity,
+      "memory_mb": 0,
+      "success": false,
+      "error": "No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'",
+      "metadata": {
+        "runs": 0,
+        "target_ms": 3000,
+        "description": "Cold startup time",
+        "raw_durations": []
+      }
+    },
+    {
+      "operation": "intent_parsing",
+      "duration_ms": Infinity,
+      "memory_mb": 0,
+      "success": false,
+      "error": "No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'",
+      "metadata": {
+        "runs": 0,
+        "target_ms": 2000,
+        "description": "Natural language parsing",
+        "raw_durations": []
+      }
+    },
+    {
+      "operation": "package_search",
+      "duration_ms": Infinity,
+      "memory_mb": 0,
+      "success": false,
+      "error": "No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'",
+      "metadata": {
+        "runs": 0,
+        "target_ms": 2000,
+        "description": "Package search operation",
+        "raw_durations": []
+      }
+    },
+    {
+      "operation": "native_api_generation_list",
+      "duration_ms": Infinity,
+      "memory_mb": 0,
+      "success": false,
+      "error": "No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'",
+      "metadata": {
+        "runs": 0,
+        "target_ms": 100,
+        "description": "Native API generation listing",
+        "raw_durations": []
+      }
+    },
+    {
+      "operation": "help_system",
+      "duration_ms": Infinity,
+      "memory_mb": 0,
+      "success": false,
+      "error": "No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'; No module named 'psutil'",
+      "metadata": {
+        "runs": 0,
+        "target_ms": 2000,
+        "description": "Help system response",
+        "raw_durations": []
+      }
+    }
+  ],
+  "summary_stats": {
+    "mean_duration": 0,
+    "median_duration": 0,
+    "max_duration": 0,
+    "min_duration": 0,
+    "std_deviation": 0
+  },
+  "performance_grade": "F"
+}
