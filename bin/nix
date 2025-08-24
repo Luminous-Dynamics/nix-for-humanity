@@ -1,0 +1,59 @@
+#!/usr/bin/env -S poetry run python
+"""
+🌊 NIX - The Natural Command
+Just 'nix' - clean, simple, powerful
+
+Usage:
+    nix "install firefox"
+    nix "search text editor"  
+    nix "update system"
+    
+No subcommands. No complexity. Just natural language.
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Enable native Python backend for performance
+os.environ['NIX_HUMANITY_PYTHON_BACKEND'] = 'true'
+os.environ['LUMINOUS_NIX_PYTHON_BACKEND'] = 'true'
+
+# Add src to path
+src_path = Path(__file__).parent.parent / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+# Always use the unified CLI that handles natural language directly
+try:
+    from luminous_nix.interfaces.cli_unified import main
+    import asyncio
+    
+    # Run the async main function
+    asyncio.run(main())
+    
+except ImportError as e:
+    # Fallback to basic functionality if consciousness not available
+    try:
+        from luminous_nix.cli.main import main_cli
+        # Pass arguments directly - no subcommands
+        if len(sys.argv) > 1:
+            main_cli(['ask'] + sys.argv[1:])
+        else:
+            main_cli(['--help'])
+    except ImportError:
+        print(f"Error: Cannot import luminous_nix: {e}", file=sys.stderr)
+        print("\nPlease install the package:", file=sys.stderr)
+        print("  cd /srv/luminous-dynamics/11-meta-consciousness/luminous-nix", file=sys.stderr)
+        print("  poetry install", file=sys.stderr)
+        sys.exit(1)
+        
+except KeyboardInterrupt:
+    sys.exit(0)
+except Exception as e:
+    if os.environ.get('DEBUG', '').lower() == 'true':
+        import traceback
+        traceback.print_exc()
+    else:
+        print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)

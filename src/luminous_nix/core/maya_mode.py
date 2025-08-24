@@ -93,8 +93,8 @@ class MayaMode:
             expanded.append(self.shortcuts.get(p.lower(), p))
         
         # Build single command for ALL packages
-        packages = " ".join([f"nixos.{p}" for p in expanded])
-        cmd = f"nix-env -iA {packages}"
+        packages = " ".join([f"nixpkgs#{p}" for p in expanded])
+        cmd = f"nix profile install {packages}"
         
         # Execute FAST
         try:

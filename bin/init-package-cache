@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S poetry run python
 """
 Initialize Package Cache for Nix for Humanity
 Pre-populates the cache with popular packages for instant search

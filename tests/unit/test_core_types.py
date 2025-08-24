@@ -4,18 +4,8 @@ Unit tests for core type definitions
 
 import unittest
 from datetime import datetime
-from luminous_nix.core.intents import (
-    Request,
-    Response,
-    Context,
-    Intent,
-    IntentType,
-    ExecutionResult,
-    Plan,
-    Command,
-    Package,
-    FeedbackItem
-)
+from luminous_nix.api.schema import Request, Response, Context, ExecutionResult, Plan, Command
+from luminous_nix.core.intents import Intent, IntentType, Package, FeedbackItem
 
 
 class TestCoreTypes(unittest.TestCase):

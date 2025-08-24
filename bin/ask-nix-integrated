@@ -1,0 +1,42 @@
+#!/usr/bin/env -S poetry run python
+"""
+🧠 LUMINOUS NIX WITH INTEGRATED CONSCIOUSNESS
+The unified CLI where the Seven Spirals live within practical functionality
+"""
+
+import sys
+import os
+import asyncio
+from pathlib import Path
+
+# Enable native Python backend for performance
+os.environ['LUMINOUS_NIX_PYTHON_BACKEND'] = 'true'
+os.environ['NIX_HUMANITY_PYTHON_BACKEND'] = 'true'
+
+# Add source path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Check for consciousness mode flags early
+consciousness_modes = ['--dialogue', '--collective', '--sovereignty', '--standard']
+consciousness_commands = ['--status', '--dojo']
+has_consciousness_flag = any(arg in sys.argv for arg in consciousness_modes + consciousness_commands)
+
+# Check if consciousness integration is available
+try:
+    from luminous_nix.consciousness.integration_simple import SimplifiedCNS, BeingMode
+    CONSCIOUSNESS_AVAILABLE = True
+except ImportError:
+    CONSCIOUSNESS_AVAILABLE = False
+    if has_consciousness_flag:
+        print("⚠️ Consciousness modes not available")
+        print("Falling back to standard interface...")
+
+# Route to appropriate interface
+if has_consciousness_flag and CONSCIOUSNESS_AVAILABLE:
+    # Use the conscious interface
+    from luminous_nix.interfaces.cli_conscious import main
+    asyncio.run(main())
+else:
+    # Use standard interface (maintains backward compatibility)
+    from luminous_nix.interfaces.cli import main
+    main()

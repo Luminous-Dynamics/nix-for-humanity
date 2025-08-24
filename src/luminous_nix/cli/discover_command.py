@@ -13,8 +13,8 @@ from rich.columns import Columns
 from rich import box
 
 from ..core.package_discovery import PackageDiscovery
-from ..core.personas import PersonaManager
-from ..utils.logger import get_logger
+from ..core.personality import PersonalityManager
+from ..utils.logging import get_logger
 
 console = Console()
 logger = get_logger(__name__)
@@ -85,7 +85,7 @@ def search_packages(query: tuple, limit: int, persona: Optional[str]):
     # Show installation commands
     console.print("\n📦 To install a package:")
     console.print(f"   [green]ask-nix install {results[0].name}[/green]")
-    console.print(f"   [dim]or[/dim] [green]nix-env -iA nixpkgs.{results[0].name}[/green]")
+    console.print(f"   [dim]or[/dim] [green]nix profile install nixpkgs#{results[0].name}[/green]")
     
     # Show alternatives for top result
     if results:
@@ -205,7 +205,7 @@ def find_by_command(command: str, persona: Optional[str]):
     for i, match in enumerate(suggestions, 1):
         console.print(f"{i}. [cyan]{match.name}[/cyan]")
         console.print(f"   {match.description}")
-        console.print(f"   Install: [green]nix-env -iA nixpkgs.{match.name}[/green]\n")
+        console.print(f"   Install: [green]nix profile install nixpkgs#{match.name}[/green]\n")
     
     # Quick install option
     if suggestions:

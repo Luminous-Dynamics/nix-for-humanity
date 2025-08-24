@@ -1,0 +1,68 @@
+🚀 DISCORD SETUP - COMPLETE INSTRUCTIONS
+=========================================
+
+All content is ready in text files! Just follow these steps:
+
+STEP 1: CREATE SERVER
+--------------------
+1. Open Discord: https://discord.com
+2. Click the + button (left sidebar)
+3. Choose "Create My Own"
+4. Choose "For me and my friends"
+5. Server name: Luminous Nix | Natural Language NixOS
+6. Click Create
+
+STEP 2: CREATE CHANNELS
+-----------------------
+Open discord_channels.txt and create that structure:
+- Right-click server name → Create Category for each category
+- Right-click category → Create Channel for each channel
+
+STEP 3: POST CONTENT
+-------------------
+Copy and paste from these files:
+- discord_welcome.txt → paste in #welcome channel
+- discord_rules.txt → paste in #rules channel
+- discord_announcement.txt → paste in #announcements channel
+
+STEP 4: SET PERMISSIONS
+----------------------
+Make these channels read-only:
+1. Right-click #welcome → Edit Channel → Permissions
+2. Find @everyone → Toggle OFF "Send Messages"
+3. Repeat for #announcements and #rules
+
+STEP 5: GET INVITE LINK
+-----------------------
+1. Right-click #general channel
+2. Click "Invite People"
+3. Click "Edit invite link"
+4. Set to "Never expire"
+5. Copy the link
+
+STEP 6: SHARE EVERYWHERE
+------------------------
+Post your invite link:
+- Hacker News launch post
+- GitHub README
+- Twitter/X
+- Reddit r/NixOS
+
+FILES CREATED FOR YOU:
+- discord_welcome.txt (welcome message)
+- discord_rules.txt (community guidelines)
+- discord_announcement.txt (launch announcement)
+- discord_channels.txt (channel structure)
+
+QUICK 2-MINUTE VERSION:
+----------------------
+If you're in a rush, just:
+1. Create server
+2. Create #general, #help, #bugs
+3. Paste welcome message in #general
+4. Get invite link
+5. Share!
+
+You can add more channels later!
+
+REMEMBER: A basic Discord with you present beats a perfect Discord without you!

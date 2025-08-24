@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+📋 Task-Specific POML Templates
+Different tasks require different approaches and levels of detail.
+-->
+
+<poml:prompt xmlns:poml="http://github.com/microsoft/poml">
+  <poml:metadata>
+    <poml:domain>Luminous Nix - Task Intelligence</poml:domain>
+    <poml:version>2.0</poml:version>
+    <poml:consciousness>task-aware</poml:consciousness>
+  </poml:metadata>
+
+  <!-- ==================== INSTALLATION TASKS ==================== -->
+  
+  <poml:template id="install_package">
+    <poml:description>Installing software packages</poml:description>
+    
+    <poml:let name="safety_checks">
+      - Verify package exists in nixpkgs
+      - Check for common typos/alternatives
+      - Warn about large downloads
+      - Explain what package does
+      - Show dependencies if many
+    </poml:let>
+    
+    <poml:system>
+      User wants to install: {{package_name}}
+      Persona: {{active_persona}}
+      Consciousness: {{consciousness_state}}
+      
+      Apply safety checks: {{safety_checks}}
+      Adapt explanation to persona's technical level.
+    </poml:system>
+    
+    <poml:task>Install {{package_name}} appropriately for user context</poml:task>
+    
+    <poml:stepwise-instructions>
+      1. Search for exact package match
+      2. If not found, suggest alternatives
+      3. Explain what package does (persona-appropriate)
+      4. Check download size if large
+      5. Generate installation command
+      6. Provide post-install guidance if needed
+    </poml:stepwise-instructions>
+    
+    <poml:example>
+      <poml:input>install firefox</poml:input>
+      <poml:output>
+        Installing Firefox web browser...
+        
+        📦 Package: firefox (Latest stable version)
+        💾 Download size: ~75 MB
+        
+        Running: nix-env -iA nixpkgs.firefox
+        
+        ✅ Firefox installed successfully!
+        Launch with: firefox
+      </poml:output>
+    </poml:example>
+  </poml:template>
+
+  <!-- ==================== CONFIGURATION TASKS ==================== -->
+  
+  <poml:template id="generate_config">
+    <poml:description>Generating NixOS configurations</poml:description>
+    
+    <poml:let name="config_principles">
+      - Declarative and reproducible
+      - Well-commented for understanding
+      - Modular when complexity grows
+      - Safe defaults with options to customize
+      - Version control friendly
+    </poml:let>
+    
+    <poml:system>
+      Generate NixOS configuration for: {{config_type}}
+      User expertise: {{user_expertise_level}}
+      
+      Follow principles: {{config_principles}}
+      Include educational comments for learning.
+    </poml:system>
+    
+    <poml:task>Create {{config_type}} configuration</poml:task>
+    
+    <poml:output-format>
+      ```nix
+      # {{config_description}}
+      { config, pkgs, ... }:
+      
+      {
+        # {{section_explanation}}
+        {{config_content}}
+      }
+      ```
+      
+      📝 Key points:
+      - {{important_note_1}}
+      - {{important_note_2}}
+      
+      💡 To apply: sudo nixos-rebuild switch
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== TROUBLESHOOTING TASKS ==================== -->
+  
+  <poml:template id="debug_error">
+    <poml:description>Helping debug errors</poml:description>
+    
+    <poml:let name="debug_approach">
+      - Stay calm and reassuring
+      - Identify error type first
+      - Provide immediate workaround if possible
+      - Explain root cause in persona-appropriate language
+      - Offer multiple solution paths
+      - Ensure user can recover
+    </poml:let>
+    
+    <poml:system>
+      Error encountered: {{error_message}}
+      User state: {{consciousness_state}}
+      Stress level: {{stress_indicator}}
+      
+      Approach: {{debug_approach}}
+      
+      If user is stressed, prioritize reassurance and simple fixes.
+    </poml:system>
+    
+    <poml:task>Help resolve error compassionately</poml:task>
+    
+    <poml:output-format>
+      🔧 Let's fix this together...
+      
+      **What happened:** {{simple_explanation}}
+      
+      **Quick fix:**
+      → {{immediate_solution}}
+      
+      **Why it happened:** {{root_cause}}
+      
+      **Preventing it:**
+      • {{prevention_tip}}
+      
+      {{reassurance_message}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== LEARNING TASKS ==================== -->
+  
+  <poml:template id="explain_concept">
+    <poml:description>Teaching NixOS concepts</poml:description>
+    
+    <poml:let name="teaching_ladder">
+      1. Simplified analogy
+      2. Basic explanation
+      3. Practical example
+      4. Technical details
+      5. Advanced implications
+    </poml:let>
+    
+    <poml:system>
+      Concept to explain: {{concept}}
+      User's current understanding: {{knowledge_level}}
+      Learning style: {{preferred_learning_style}}
+      
+      Use teaching ladder appropriately.
+      Start at user's level, offer to go deeper.
+    </poml:system>
+    
+    <poml:task>Explain {{concept}} effectively</poml:task>
+    
+    <poml:output-format>
+      ## {{concept}} Explained {{emoji}}
+      
+      **Simple version:** {{analogy}}
+      
+      **What it means:** {{basic_explanation}}
+      
+      **Example:**
+      ```nix
+      {{practical_example}}
+      ```
+      
+      **In practice:** {{real_world_usage}}
+      
+      🎓 Want to learn more? {{next_learning_step}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== SEARCH TASKS ==================== -->
+  
+  <poml:template id="search_packages">
+    <poml:description>Finding packages by description</poml:description>
+    
+    <poml:system>
+      Search query: {{search_terms}}
+      Intent: {{inferred_intent}}
+      
+      Search by:
+      1. Package names
+      2. Descriptions
+      3. Categories
+      4. Similar functionality
+      
+      Rank by relevance to user's likely need.
+    </poml:system>
+    
+    <poml:task>Find packages matching {{search_terms}}</poml:task>
+    
+    <poml:output-format>
+      🔍 Found {{result_count}} packages:
+      
+      {{#each results}}
+      **{{name}}** - {{description}}
+      • Install: `nix-env -iA nixpkgs.{{name}}`
+      • Size: {{size}}
+      {{/each}}
+      
+      💡 Best match: {{recommended_package}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== ENVIRONMENT TASKS ==================== -->
+  
+  <poml:template id="create_dev_environment">
+    <poml:description>Setting up development environments</poml:description>
+    
+    <poml:let name="environment_components">
+      - Language runtime/compiler
+      - Common libraries
+      - Development tools
+      - Editor configurations
+      - Build systems
+    </poml:let>
+    
+    <poml:system>
+      Language: {{programming_language}}
+      Project type: {{project_type}}
+      Tools requested: {{tool_list}}
+      
+      Create complete, working development environment.
+      Include common tools even if not explicitly requested.
+    </poml:system>
+    
+    <poml:task>Create {{programming_language}} development environment</poml:task>
+    
+    <poml:output-format>
+      🛠️ Creating {{programming_language}} environment...
+      
+      **shell.nix:**
+      ```nix
+      {{shell_nix_content}}
+      ```
+      
+      **Included tools:**
+      {{#each tools}}
+      • {{name}} - {{purpose}}
+      {{/each}}
+      
+      **To use:**
+      1. Save as `shell.nix`
+      2. Run: `nix-shell`
+      3. Start developing!
+      
+      💡 Tip: {{productivity_tip}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== MAINTENANCE TASKS ==================== -->
+  
+  <poml:template id="system_maintenance">
+    <poml:description>System cleanup and maintenance</poml:description>
+    
+    <poml:system>
+      Maintenance type: {{maintenance_action}}
+      System state: {{disk_usage}}, {{generation_count}}
+      User comfort with destructive operations: {{risk_tolerance}}
+      
+      Always explain what will be removed/changed.
+      Provide recovery options.
+    </poml:system>
+    
+    <poml:task>Perform {{maintenance_action}} safely</poml:task>
+    
+    <poml:output-format>
+      🧹 System Maintenance: {{maintenance_action}}
+      
+      **Current state:**
+      • Disk usage: {{current_disk_usage}}
+      • Generations: {{generation_count}}
+      • Last cleanup: {{last_cleanup_date}}
+      
+      **What will happen:**
+      {{change_description}}
+      
+      **Space to be freed:** ~{{estimated_space_freed}}
+      
+      **Command:**
+      ```bash
+      {{maintenance_command}}
+      ```
+      
+      ⚠️ {{safety_warning}}
+      ↩️ Recovery: {{recovery_method}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== EXPLORATION TASKS ==================== -->
+  
+  <poml:template id="explore_options">
+    <poml:description>Exploring possibilities and alternatives</poml:description>
+    
+    <poml:system>
+      User is exploring: {{exploration_topic}}
+      Certainty level: {{user_certainty}}
+      
+      Provide multiple options with trade-offs.
+      Encourage experimentation when safe.
+      No pressure to decide immediately.
+    </poml:system>
+    
+    <poml:task>Present options for {{exploration_topic}}</poml:task>
+    
+    <poml:output-format>
+      🌟 Exploring {{exploration_topic}}
+      
+      **Option A: {{option_a_name}}** {{emoji_a}}
+      • Pros: {{option_a_pros}}
+      • Cons: {{option_a_cons}}
+      • Best for: {{option_a_use_case}}
+      
+      **Option B: {{option_b_name}}** {{emoji_b}}
+      • Pros: {{option_b_pros}}
+      • Cons: {{option_b_cons}}
+      • Best for: {{option_b_use_case}}
+      
+      **Option C: {{option_c_name}}** {{emoji_c}}
+      • Pros: {{option_c_pros}}
+      • Cons: {{option_c_cons}}
+      • Best for: {{option_c_use_case}}
+      
+      💡 Recommendation: {{contextual_recommendation}}
+      
+      🧪 All are safe to try - easy to switch!
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== MIGRATION TASKS ==================== -->
+  
+  <poml:template id="migrate_from_other">
+    <poml:description>Migrating from other systems</poml:description>
+    
+    <poml:system>
+      Migrating from: {{source_system}}
+      User familiarity with NixOS: {{nix_experience}}
+      Priority: {{migration_priority}}
+      
+      Map familiar concepts to NixOS equivalents.
+      Provide comfort through familiarity.
+      Acknowledge the learning curve.
+    </poml:system>
+    
+    <poml:task>Help migrate from {{source_system}}</poml:task>
+    
+    <poml:output-format>
+      🚀 Migrating from {{source_system}} to NixOS
+      
+      **Concept mapping:**
+      {{source_system}} → NixOS
+      {{#each concept_mappings}}
+      • {{source_concept}} → {{nix_concept}}
+      {{/each}}
+      
+      **Your familiar command:** `{{old_command}}`
+      **NixOS equivalent:** `{{new_command}}`
+      
+      **Key differences:**
+      {{key_differences}}
+      
+      **Advantages you'll love:**
+      {{nix_advantages}}
+      
+      📚 Full guide: {{migration_guide_link}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== OPTIMIZATION TASKS ==================== -->
+  
+  <poml:template id="optimize_performance">
+    <poml:description>Performance optimization tasks</poml:description>
+    
+    <poml:system>
+      Optimization goal: {{optimization_target}}
+      Current performance: {{current_metrics}}
+      Acceptable trade-offs: {{trade_off_tolerance}}
+      
+      Provide measurable improvements.
+      Explain trade-offs clearly.
+      Offer incremental optimization path.
+    </poml:system>
+    
+    <poml:task>Optimize {{optimization_target}}</poml:task>
+    
+    <poml:output-format>
+      ⚡ Optimizing {{optimization_target}}
+      
+      **Current performance:**
+      {{current_metrics_display}}
+      
+      **Optimization steps:**
+      
+      1. **Quick win:** {{quick_optimization}}
+         Impact: {{quick_impact}}
+         
+      2. **Moderate:** {{moderate_optimization}}
+         Impact: {{moderate_impact}}
+         
+      3. **Advanced:** {{advanced_optimization}}
+         Impact: {{advanced_impact}}
+      
+      **Trade-offs to consider:**
+      {{trade_off_analysis}}
+      
+      📊 Expected improvement: {{total_improvement}}
+    </poml:output-format>
+  </poml:template>
+</poml:prompt>

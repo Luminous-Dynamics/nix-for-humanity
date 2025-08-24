@@ -136,7 +136,7 @@ class ErrorIntelligence:
                 error_type=ErrorType.BUILD_FAILURE,
                 explanation="The package failed to build from source.",
                 solutions=[
-                    "Check if a binary cache has it: nix-env -iA nixpkgs.{package}",
+                    "Check if a binary cache has it: nix profile install nixpkgs#{package}",
                     "Try an older/newer version",
                     "Check the build log for specific errors",
                     "Report the issue upstream"

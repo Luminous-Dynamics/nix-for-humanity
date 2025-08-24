@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luminous Nix - Discord Content Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .copy-box {
+            background: white;
+            border: 2px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            position: relative;
+            font-family: monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        .copy-btn.copied {
+            background: #28a745;
+        }
+        
+        .step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .link-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 2px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .link-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+        }
+        
+        @media (max-width: 600px) {
+            .content {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌟 Luminous Nix Discord Setup</h1>
+            <p class="subtitle">Copy & Paste Templates for Quick Setup</p>
+        </header>
+        
+        <div class="content">
+            <!-- Quick Setup Steps -->
+            <div class="section">
+                <h2><span class="emoji">⚡</span> Quick Setup (5 Minutes)</h2>
+                
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Create Server:</strong> Discord → + → "Create My Own" → Name: "Luminous Nix"
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Create These Channels:</strong>
+                    <div class="copy-box">📢 welcome (make read-only)
+💬 general  
+❓ help
+🐛 bugs
+🚀 showcase</div>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Copy & Paste Content Below:</strong> Into respective channels
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Get Invite Link:</strong> Right-click #general → Invite → Never Expire
+                </div>
+            </div>
+            
+            <!-- Welcome Message -->
+            <div class="section">
+                <h2><span class="emoji">👋</span> #welcome Message</h2>
+                <div class="copy-box">**🌟 Welcome to Luminous Nix!**
+
+Making NixOS accessible through natural language.
+
+**What is Luminous Nix?**
+Instead of complex commands like `nix-env -iA nixos.firefox`, just say:
+```
+ask-nix "install firefox"
+```
+
+**Built Different**
+• Created by 1 developer + AI collaboration
+• 2 weeks development time
+• $200 total cost
+• Beats $4.2M enterprise solutions
+
+**Quick Start**
+```bash
+git clone https://github.com/Luminous-Dynamics/luminous-nix
+cd luminous-nix
+poetry install
+./bin/ask-nix "help"
+```
+
+**Get Involved**
+• Introduce yourself in #general
+• Get help in #help
+• Report bugs in #bugs
+• Show your configs in #showcase
+
+**Important Links**
+• GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+• Hacker News: [Launch Thread]
+• Documentation: Coming Soon
+
+**Philosophy**
+"Technology should adapt to humans, not the other way around."
+
+Welcome to the revolution! 🚀<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- Rules -->
+            <div class="section">
+                <h2><span class="emoji">📜</span> #rules Message</h2>
+                <div class="copy-box">**📜 Community Guidelines**
+
+**✅ DO**
+• Be kind and patient with everyone
+• Ask questions - no matter how basic
+• Share your successes AND failures  
+• Help newcomers get started
+• Respect all skill levels
+• Make technology accessible
+
+**❌ DON'T**
+• No harassment or discrimination
+• No spam or unsolicited promotion
+• No "RTFM" responses
+• No gatekeeping
+• No dismissing accessibility needs
+
+**🎯 Remember**
+We're making NixOS accessible to EVERYONE - from developers to grandmothers!
+
+**Consequences**
+• First offense: Warning
+• Second offense: Timeout
+• Third offense: Ban
+
+Questions? Ask in #help or DM @Tristan<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- Launch Announcement -->
+            <div class="section">
+                <h2><span class="emoji">🎉</span> #announcements Message</h2>
+                <div class="copy-box">**🎉 WE'RE LIVE ON HACKER NEWS!**
+
+After 2 weeks of intense development using Sacred Trinity Development (Human + Claude + Local LLM), Luminous Nix is ready to revolutionize NixOS!
+
+**🚀 Show Your Support**
+⭐ Star on GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+🔼 Upvote on HN: [link]
+🐦 Share on Twitter: [link]
+💬 Tell your friends!
+
+**✨ What's Working**
+• Natural language → NixOS commands
+• 10x-1500x faster with Python-Nix API  
+• Multiple personas (Grandma to Developer)
+• 100% local and private
+
+**🔮 Coming Soon**
+• Voice interface
+• More personas
+• GUI interface
+• Ubuntu/Arch support
+
+**📊 Launch Goal**
+• 100+ HN points
+• 500+ GitHub stars
+• 100+ Discord members
+• 10+ contributors
+
+Join us in making Linux accessible to everyone! 🌟<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- General First Message -->
+            <div class="section">
+                <h2><span class="emoji">💬</span> #general First Message</h2>
+                <div class="copy-box">**Hey everyone! 👋**
+
+Welcome to Luminous Nix! We're building this community live during our Hacker News launch!
+
+**Quick intro about the project:**
+I built Luminous Nix to make NixOS accessible through natural language. Instead of memorizing complex commands, you just say what you want!
+
+**Example:**
+• Say: "install firefox"
+• Get: Working Firefox installation
+• No documentation needed!
+
+**The crazy part?**
+Built this in 2 weeks for $200 using AI collaboration, after enterprise consultants quoted $4.2M for the same thing!
+
+**Let's build this community together!**
+• Introduce yourself
+• Share what you'd like to see
+• Help others get started
+• Suggest channel ideas
+
+What brings you to Luminous Nix? 🌟<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- Invite Message -->
+            <div class="section">
+                <h2><span class="emoji">🔗</span> Invite Message for Sharing</h2>
+                <div class="copy-box">🌟 **Join the Luminous Nix Community!**
+
+We're making NixOS accessible through natural language!
+
+Instead of `nix-env -iA nixos.firefox`, just say "install firefox"
+
+Built by 1 dev + AI for $200 (beating $4.2M enterprise quotes!)
+
+Discord: [your-invite-link]
+
+#NixOS #Linux #OpenSource #NaturalLanguage<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- Quick Responses -->
+            <div class="section">
+                <h2><span class="emoji">💡</span> Quick Response Templates</h2>
+                
+                <p><strong>For new members:</strong></p>
+                <div class="copy-box">Welcome @[username]! 🌟 Great to have you here! 
+
+Check out #welcome to get started, and feel free to introduce yourself here! 
+
+What brings you to Luminous Nix?<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+                
+                <p><strong>For helpers:</strong></p>
+                <div class="copy-box">Thanks for helping out @[username]! 🙏 
+
+You're what makes this community amazing. Would you like a Contributor role?<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+                
+                <p><strong>For bug reports:</strong></p>
+                <div class="copy-box">Thanks for reporting this @[username]! 🐛
+
+I've created an issue on GitHub: [issue-link]
+
+We'll get this fixed ASAP. In the meantime, here's a workaround: [...]<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button></div>
+            </div>
+            
+            <!-- Pro Tips -->
+            <div class="highlight">
+                <h3>💡 Pro Tips for Launch Day</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Greet the first 10 members personally</li>
+                    <li>Give "Pioneer" role to first 100 members</li>
+                    <li>Post updates every hour in #announcements</li>
+                    <li>Screenshot milestones (10, 50, 100 members)</li>
+                    <li>Thank contributors publicly</li>
+                    <li>Keep energy high and positive!</li>
+                </ul>
+            </div>
+            
+            <!-- Links -->
+            <div class="section">
+                <h2><span class="emoji">🔗</span> Useful Links</h2>
+                <div class="links">
+                    <a href="https://discord.com" class="link-btn" target="_blank">Discord Login</a>
+                    <a href="https://mee6.xyz" class="link-btn" target="_blank">MEE6 Bot</a>
+                    <a href="https://carl-bot.com" class="link-btn" target="_blank">Carl Bot</a>
+                    <a href="https://discordjs.guide" class="link-btn" target="_blank">Discord.js Guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard(button) {
+            const textBox = button.parentElement;
+            const textToCopy = textBox.innerText.replace('Copy', '').trim();
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                
+                // Fallback method
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

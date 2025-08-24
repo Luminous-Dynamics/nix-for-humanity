@@ -22,6 +22,7 @@ import asyncio
 import logging
 import subprocess
 import time
+import re
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable, Union, Tuple
 from dataclasses import dataclass, field
@@ -772,6 +773,138 @@ class NativeNixBackend:
         except Exception:
             return []
             
+    async def list_generations(self) -> List[Dict[str, Any]]:
+        """List system generations for rollback"""
+        try:
+            if self.async_api:
+                generations = await self.async_api.get_generations(
+                    "/nix/var/nix/profiles/system"
+                )
+            else:
+                # Fallback to subprocess
+                result = subprocess.run(
+                    ['nix-env', '--list-generations', '-p', '/nix/var/nix/profiles/system'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                
+                generations = []
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    for line in lines:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            generations.append({
+                                'generation': int(parts[0]) if parts[0].isdigit() else 0,
+                                'date': ' '.join(parts[1:]) if len(parts) > 1 else '',
+                                'current': '(current)' in line
+                            })
+            
+            return generations
+            
+        except Exception as e:
+            logger.error(f"Failed to list generations: {e}")
+            return []
+    
+    async def install_package(self, package: str, dry_run: bool = True) -> Dict[str, Any]:
+        """Install a package with safety checks"""
+        try:
+            # Security validation - basic check
+            if not re.match(r'^[a-zA-Z0-9_\-\.]+$', package):
+                return {
+                    'success': False,
+                    'error': f"Invalid package name: {package}",
+                    'suggestion': "Package names should only contain alphanumeric characters, hyphens, and underscores"
+                }
+            
+            # Build command - use nix profile for modern Nix
+            # Check if we should use nix profile (newer) or nix-env (legacy)
+            import subprocess
+            check_cmd = ["nix", "profile", "list"]
+            try:
+                result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=1)
+                use_nix_profile = result.returncode == 0
+            except:
+                use_nix_profile = False
+            
+            if use_nix_profile:
+                # Use modern nix profile command
+                cmd = ['nix', 'profile', 'install', f'nixpkgs#{package}']
+            else:
+                # Fallback to nix-env with nixos channel for NixOS systems
+                cmd = ['nix-env', '-iA', f'nixos.{package}']
+            
+            if dry_run:
+                # Just show what would be done
+                return {
+                    'success': True,
+                    'dry_run': True,
+                    'command': ' '.join(cmd),
+                    'message': f"Would install '{package}' with: {' '.join(cmd)}"
+                }
+            
+            # Actually install (requires user confirmation in real usage)
+            logger.info(f"Installing package: {package}")
+            
+            # Use async subprocess for non-blocking execution
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode == 0:
+                return {
+                    'success': True,
+                    'message': f"Successfully installed '{package}'",
+                    'output': stdout.decode() if stdout else None
+                }
+            else:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                
+                # Provide helpful suggestions based on error
+                suggestion = self._get_install_error_suggestion(error_msg, package)
+                
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'suggestion': suggestion
+                }
+                
+        except asyncio.TimeoutError:
+            return {
+                'success': False,
+                'error': "Installation timed out",
+                'suggestion': "Try running the command manually or check your internet connection"
+            }
+        except Exception as e:
+            logger.error(f"Failed to install package {package}: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'suggestion': "Check if the package name is correct or try searching first"
+            }
+    
+    def _get_install_error_suggestion(self, error: str, package: str) -> str:
+        """Generate helpful suggestions based on installation errors"""
+        error_lower = error.lower()
+        
+        if "attribute" in error_lower and "not found" in error_lower:
+            return f"Package '{package}' not found. Try searching with: ask-nix 'search {package}'"
+        elif "permission" in error_lower:
+            return "Permission denied. You may need to run with appropriate privileges"
+        elif "network" in error_lower or "download" in error_lower:
+            return "Network issue detected. Check your internet connection and try again"
+        elif "conflict" in error_lower:
+            return "Package conflict detected. Try updating your system first"
+        elif "space" in error_lower:
+            return "Insufficient disk space. Clear some space and try again"
+        else:
+            return f"Try searching for alternatives: ask-nix 'find {package}'"
+    
     async def _fallback_execute(self, operation: NixOperation) -> NixResult:
         """Fallback subprocess execution when native API unavailable"""
         logger.info(f"Executing {operation.type.value} via subprocess fallback")

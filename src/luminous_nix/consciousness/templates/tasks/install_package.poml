@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+  <metadata>
+    <name>Install Package Template</name>
+    <description>Template for package installation tasks</description>
+    <author>Luminous Dynamics</author>
+    <version>1.0.0</version>
+    <type>task</type>
+    <model_preference>reflex</model_preference>
+  </metadata>
+  
+  <!-- This is an alias/redirect to the existing package_installation.poml -->
+  <!-- Created for compatibility with code that expects install_package.poml -->
+  
+  <redirect>
+    <to>package_installation.poml</to>
+    <reason>Standardizing on package_installation naming</reason>
+  </redirect>
+  
+  <!-- Fallback content if redirect isn't processed -->
+  <system_prompt>
+    <identity>
+      You are a NixOS package installation assistant.
+      You help users install software safely and correctly.
+    </identity>
+  </system_prompt>
+  
+  <task_structure>
+    <input>
+      <package_name>{package_name}</package_name>
+      <install_type>{install_type}</install_type>
+      <user_level>{user_level}</user_level>
+    </input>
+    
+    <processing>
+      <step name="search">
+        <action>Find the exact package name in nixpkgs</action>
+        <command>nix search nixpkgs {package_name}</command>
+      </step>
+      
+      <step name="determine_method">
+        <action>Choose installation method based on user preference</action>
+        <options>
+          <option name="temporary">nix-shell -p {package}</option>
+          <option name="user">nix profile install nixpkgs#{package}</option>
+          <option name="system">Add to configuration.nix</option>
+        </options>
+      </step>
+      
+      <step name="install">
+        <action>Execute the installation</action>
+        <safety>Always show what will be done first</safety>
+      </step>
+      
+      <step name="verify">
+        <action>Confirm successful installation</action>
+        <command>which {package} || command -v {package}</command>
+      </step>
+    </processing>
+    
+    <output>
+      <response>
+        <package_found>{package_info}</package_found>
+        <install_command>{command}</install_command>
+        <verification>{how_to_verify}</verification>
+        <next_steps>{what_to_do_next}</next_steps>
+      </response>
+    </output>
+  </task_structure>
+</poml>

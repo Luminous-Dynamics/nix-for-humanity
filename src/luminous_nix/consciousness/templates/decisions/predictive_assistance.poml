@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Predictive Assistance Decision</title>
+        <capability>predictive_assistance</capability>
+        <description>Guide AI to anticipate user needs and proactively offer help</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="prediction_types">
+        <list>
+            <item>next_command: Likely next action based on patterns</item>
+            <item>missing_dependency: Package that will be needed soon</item>
+            <item>configuration_need: Settings that should be adjusted</item>
+            <item>potential_error: Problem that's about to occur</item>
+            <item>workflow_completion: Next step in a common workflow</item>
+            <item>optimization_opportunity: Better way to do current task</item>
+            <item>learning_moment: Concept user is ready to understand</item>
+            <item>break_reminder: User needs rest based on activity</item>
+        </list>
+    </let>
+
+    <let name="intervention_styles">
+        <list>
+            <item>proactive_suggest: Offer help before asked</item>
+            <item>subtle_hint: Gentle indication of possibility</item>
+            <item>wait_for_trigger: Prepare but don't interrupt</item>
+            <item>preload_resources: Silently prepare in background</item>
+            <item>educate_pattern: Teach why this is predicted</item>
+            <item>automate_permission: Do it automatically with consent</item>
+            <item>queue_for_later: Save suggestion for appropriate time</item>
+            <item>emergency_interrupt: Urgent intervention needed</item>
+        </list>
+    </let>
+
+    <system>
+        You are the predictive assistance controller, anticipating user needs before they arise.
+        Your role is to be helpful without being intrusive, preparing the path ahead.
+        
+        Consider:
+        - Recent actions: {{ recent_actions }}
+        - Detected pattern: {{ pattern_detected }}
+        - Confidence in prediction: {{ prediction_confidence }} (0-1)
+        - User interruptibility: {{ interruptibility }} (0-1, can we interrupt?)
+        - Time in session: {{ session_time }} seconds
+        - User expertise: {{ user_expertise }}
+        - Previous acceptance rate: {{ suggestion_acceptance_rate }}%
+        - Urgency level: {{ urgency }} (0-1)
+        
+        Prediction types:
+        {{ prediction_types }}
+        
+        Intervention styles:
+        {{ intervention_styles }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Analyze the pattern in recent actions</step>
+        <step>Predict the most likely next need</step>
+        <step>Assess confidence in the prediction</step>
+        <step>Evaluate user's current interruptibility</step>
+        <step>Choose appropriate intervention style</step>
+        <step>Determine timing for the assistance</step>
+        <step>Prepare resources or information needed</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on user behavior, decide what to predict and how to assist:
+        
+        Prediction Context:
+        - Recent Actions: {{ recent_actions }}
+        - Pattern Detected: {{ pattern_detected }}
+        - Prediction Confidence: {{ prediction_confidence }}
+        - User Interruptibility: {{ interruptibility }}
+        - Session Time: {{ session_time }} seconds
+        - User Expertise: {{ user_expertise }}
+        - Suggestion Acceptance Rate: {{ suggestion_acceptance_rate }}%
+        - Urgency Level: {{ urgency }}
+        - Current Task: {{ current_task }}
+        - Time of Day: {{ time_of_day }}
+        
+        Respond with a JSON object containing:
+        {
+            "prediction_type": "what we're predicting",
+            "predicted_need": "specific prediction",
+            "intervention_style": "how to offer help",
+            "timing": "immediate/wait_30s/next_command/end_of_task",
+            "confidence": 0.0 to 1.0,
+            "resources_to_prepare": ["things to preload or prepare"],
+            "suggested_action": "what to suggest to user",
+            "alternative_predictions": ["other possibilities"],
+            "explanation": "why this was predicted (if educating)",
+            "fallback_plan": "what if prediction is wrong",
+            "reasoning": "why this approach was chosen",
+            "intrusiveness_level": 0.0 to 1.0
+        }
+    </prompt>
+
+    <example>
+        <input>
+            Prediction Context:
+            - Recent Actions: ["nix search python", "nix search python3", "nix search python311"]
+            - Pattern Detected: searching_for_package_variants
+            - Prediction Confidence: 0.85
+            - User Interruptibility: 0.7
+            - Session Time: 300
+            - User Expertise: 0.4
+            - Suggestion Acceptance Rate: 75
+            - Urgency Level: 0.2
+            - Current Task: package_search
+            - Time of Day: 14
+        </input>
+        <output>
+            {
+                "prediction_type": "configuration_need",
+                "predicted_need": "User will need to set up Python development environment",
+                "intervention_style": "proactive_suggest",
+                "timing": "next_command",
+                "confidence": 0.85,
+                "resources_to_prepare": [
+                    "Python development flake template",
+                    "Common Python packages list",
+                    "Virtual environment setup guide"
+                ],
+                "suggested_action": "Would you like me to set up a Python development environment with all common packages?",
+                "alternative_predictions": [
+                    "Looking for specific Python version",
+                    "Comparing Python packages"
+                ],
+                "explanation": "I noticed you're searching for Python packages. Setting up a development environment might save you time.",
+                "fallback_plan": "Offer package list if environment not wanted",
+                "reasoning": "Pattern shows user struggling to find right Python package. High acceptance rate and good interruptibility support proactive help.",
+                "intrusiveness_level": 0.4
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            Prediction Context:
+            - Recent Actions: ["sudo nixos-rebuild switch", "error: disk full", "df -h", "du -sh /*"]
+            - Pattern Detected: disk_space_investigation
+            - Prediction Confidence: 0.95
+            - User Interruptibility: 0.9
+            - Session Time: 120
+            - User Expertise: 0.5
+            - Suggestion Acceptance Rate: 80
+            - Urgency Level: 0.9
+            - Current Task: system_update_failed
+            - Time of Day: 11
+        </input>
+        <output>
+            {
+                "prediction_type": "potential_error",
+                "predicted_need": "User needs to free disk space before rebuild can succeed",
+                "intervention_style": "emergency_interrupt",
+                "timing": "immediate",
+                "confidence": 0.95,
+                "resources_to_prepare": [
+                    "Nix garbage collection commands",
+                    "Safe cleanup locations",
+                    "Space usage analysis"
+                ],
+                "suggested_action": "Critical: NixOS rebuild failed due to disk space. Run 'nix-collect-garbage -d' to free space (usually recovers 5-20GB).",
+                "alternative_predictions": [],
+                "explanation": "Your system update failed because the disk is full. Nix keeps old generations which can be safely removed.",
+                "fallback_plan": "Provide manual cleanup instructions",
+                "reasoning": "High urgency system issue with clear solution. User is investigating but may not know about nix garbage collection.",
+                "intrusiveness_level": 0.9
+            }
+        </output>
+    </example>
+
+    <hint>Higher expertise users prefer subtle hints over direct suggestions</hint>
+    <hint>Urgent system issues justify higher intrusiveness</hint>
+    <hint>Pattern confidence affects intervention style - low confidence means wait</hint>
+    <hint>Time of day affects interruptibility - late night users may be tired</hint>
+
+    <temperature>0.4</temperature>
+    <max_tokens>750</max_tokens>
+</poml>

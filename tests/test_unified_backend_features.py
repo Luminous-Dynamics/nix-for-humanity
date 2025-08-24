@@ -26,7 +26,7 @@ def test_all_features():
     print("🎯 Testing Unified Backend with Core Features")
     print("=" * 60)
     
-    backend = UnifiedNixBackend()
+    backend = NixForHumanityBackend()
     
     # Test queries for all 3 features
     test_queries = [

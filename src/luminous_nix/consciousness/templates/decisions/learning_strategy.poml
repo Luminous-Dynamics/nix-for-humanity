@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Learning Strategy Decision</title>
+        <capability>learning_strategy</capability>
+        <description>Guide AI decision-making for learning strategy selection</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="expertise_levels">
+        <list>
+            <item>novice (0.0-0.3): Needs supervised learning with detailed guidance</item>
+            <item>beginner (0.3-0.5): Benefits from reinforcement with hints</item>
+            <item>intermediate (0.5-0.7): Can handle unsupervised exploration</item>
+            <item>advanced (0.7-0.9): Ready for meta-learning and abstraction</item>
+            <item>expert (0.9-1.0): Self-directed learning with minimal guidance</item>
+        </list>
+    </let>
+
+    <let name="learning_strategies">
+        <list>
+            <item>supervised: Step-by-step guidance with examples</item>
+            <item>reinforcement: Learn from success/failure patterns</item>
+            <item>unsupervised: Discover patterns independently</item>
+            <item>meta-learning: Learn how to learn better</item>
+            <item>transfer: Apply knowledge from other domains</item>
+            <item>active: Query-driven learning with user interaction</item>
+            <item>incremental: Small steps building on previous knowledge</item>
+        </list>
+    </let>
+
+    <system>
+        You are the learning strategy controller for an AI assistant helping users with NixOS.
+        Your role is to analyze the user's context and select the optimal learning approach.
+        
+        Consider:
+        - User expertise level ({{ user_expertise }})
+        - Current success rate ({{ success_rate }})
+        - Error patterns ({{ error_count }} errors, type: {{ error_pattern }})
+        - Time in session ({{ session_duration }} seconds)
+        - Recent interactions ({{ recent_commands }})
+        
+        Expertise levels:
+        {{ expertise_levels }}
+        
+        Available strategies:
+        {{ learning_strategies }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Assess the user's current learning state based on expertise and success rate</step>
+        <step>Identify patterns in errors or successes</step>
+        <step>Consider the user's pace and frustration indicators</step>
+        <step>Select the most appropriate learning strategy</step>
+        <step>Determine the optimal learning rate (0.001 to 0.1)</step>
+        <step>Provide reasoning for your decision</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on the following user context, decide on the optimal learning strategy:
+        
+        User Profile:
+        - Expertise Level: {{ user_expertise }} (scale 0-1)
+        - Success Rate: {{ success_rate }}% 
+        - Error Count: {{ error_count }}
+        - Error Type: {{ error_pattern }}
+        - Session Duration: {{ session_duration }} seconds
+        - Frustration Level: {{ frustration_level }} (scale 0-1)
+        - Recent Commands: {{ recent_commands }}
+        
+        Respond with a JSON object containing:
+        {
+            "strategy": "one of: supervised, reinforcement, unsupervised, meta-learning, transfer, active, incremental",
+            "learning_rate": 0.001 to 0.1,
+            "reasoning": "explanation of why this strategy fits the user",
+            "confidence": 0.0 to 1.0,
+            "alternative": "backup strategy if primary doesn't work",
+            "specific_adaptations": ["list of specific things to adjust"]
+        }
+    </prompt>
+
+    <example>
+        <input>
+            User Profile:
+            - Expertise Level: 0.2
+            - Success Rate: 40%
+            - Error Count: 5
+            - Error Type: syntax_errors
+            - Session Duration: 1800
+            - Frustration Level: 0.7
+            - Recent Commands: ["install firefox", "nix-env -i firefox", "sudo install firefox"]
+        </input>
+        <output>
+            {
+                "strategy": "supervised",
+                "learning_rate": 0.005,
+                "reasoning": "User is struggling with basic syntax, showing high frustration. Supervised learning with explicit examples will provide the structure needed.",
+                "confidence": 0.85,
+                "alternative": "incremental",
+                "specific_adaptations": [
+                    "Show correct syntax before user attempts",
+                    "Break complex commands into steps",
+                    "Provide success confirmation after each step",
+                    "Offer encouragement messages"
+                ]
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            User Profile:
+            - Expertise Level: 0.8
+            - Success Rate: 85%
+            - Error Count: 1
+            - Error Type: optimization_opportunity
+            - Session Duration: 600
+            - Frustration Level: 0.1
+            - Recent Commands: ["nix-shell -p python3", "nix develop", "nix flake init"]
+        </input>
+        <output>
+            {
+                "strategy": "meta-learning",
+                "learning_rate": 0.02,
+                "reasoning": "Advanced user with high success rate is ready to learn about learning - understanding patterns and principles rather than specific commands.",
+                "confidence": 0.9,
+                "alternative": "transfer",
+                "specific_adaptations": [
+                    "Share underlying Nix principles",
+                    "Connect patterns across different commands",
+                    "Suggest optimization techniques",
+                    "Enable experimentation mode"
+                ]
+            }
+        </output>
+    </example>
+
+    <temperature>0.3</temperature>
+    <max_tokens>500</max_tokens>
+</poml>

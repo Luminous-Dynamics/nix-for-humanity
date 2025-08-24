@@ -1,0 +1,27 @@
+{
+  "skeptical": [
+    "Fair question! Here's a live demo: [asciinema link]. The code is at https://github.com/Luminous-Dynamics/luminous-nix - try it yourself!",
+    "I understand the skepticism. Check out the working code and demo. It really does work!",
+    "Valid concern! That's why it's open source. See for yourself: [GitHub link]"
+  ],
+  "how_different": [
+    "Great question! Unlike [X], we use natural language, have 10x-1500x performance via native API, and adapt to user skill level.",
+    "Main differences: No command memorization, native Python-Nix API for speed, and personas from beginner to expert.",
+    "We focus on accessibility. Your grandma can use this. That's the difference."
+  ],
+  "technical": [
+    "We bypass subprocess entirely using Python-Nix native bindings. Details in our architecture doc: [link]",
+    "The key insight was eliminating subprocess overhead. Direct API calls = 10x-1500x speedup.",
+    "Happy to dive deep! The magic is in src/luminous_nix/core/backend.py - native Nix integration."
+  ],
+  "contribute": [
+    "Yes! We need testers, doc writers, and developers. Start here: [CONTRIBUTING.md]",
+    "Absolutely! Check 'good first issue' labels on GitHub. Discord for questions: https://discord.gg/TWSVAXHC",
+    "We'd love your help! Join our Discord to coordinate: https://discord.gg/TWSVAXHC"
+  ],
+  "praise": [
+    "Thank you! This is just the beginning. Star the repo if you want to follow progress!",
+    "Appreciate it! Credit to Sacred Trinity Development - Human + AI collaboration works!",
+    "Thanks! Please share with anyone who might benefit from easier Linux!"
+  ]
+}

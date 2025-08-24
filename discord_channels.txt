@@ -1,0 +1,26 @@
+DISCORD CHANNEL STRUCTURE
+========================
+
+Create these categories and channels:
+
+📢 INFORMATION (category)
+  ├── welcome
+  ├── announcements
+  └── rules
+
+💬 GENERAL (category)
+  ├── general
+  ├── introductions
+  └── showcase
+
+🛠️ SUPPORT (category)
+  ├── help
+  └── bugs
+
+💻 DEVELOPMENT (category)
+  └── contributors
+
+PERMISSIONS:
+- Make #welcome read-only (@everyone can't send messages)
+- Make #announcements read-only
+- Make #rules read-only

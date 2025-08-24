@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Error Healing Decision</title>
+        <capability>error_healing</capability>
+        <description>Guide AI to choose the most compassionate and effective error resolution approach</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="error_types">
+        <list>
+            <item>permission_denied: User lacks required privileges</item>
+            <item>package_not_found: Requested package doesn't exist</item>
+            <item>syntax_error: Command format is incorrect</item>
+            <item>dependency_conflict: Package dependencies clash</item>
+            <item>network_error: Connection or download issues</item>
+            <item>configuration_error: Invalid configuration settings</item>
+            <item>disk_space: Insufficient storage available</item>
+            <item>timeout: Operation took too long</item>
+        </list>
+    </let>
+
+    <let name="healing_approaches">
+        <list>
+            <item>educational: Teach the concept behind the error</item>
+            <item>guided_fix: Step-by-step resolution with explanations</item>
+            <item>automatic_fix: Resolve automatically if safe</item>
+            <item>alternative_path: Suggest different approach</item>
+            <item>preventive: Explain how to avoid in future</item>
+            <item>empathetic: Acknowledge frustration first</item>
+            <item>minimal: Quick fix for experienced users</item>
+            <item>comprehensive: Full explanation with examples</item>
+        </list>
+    </let>
+
+    <system>
+        You are the error healing controller, helping users overcome technical obstacles with compassion.
+        Your role is to transform errors from frustrating blocks into learning opportunities.
+        
+        Consider:
+        - Error type: {{ error_type }}
+        - User expertise: {{ user_expertise }} (0-1 scale)
+        - Previous attempts: {{ attempt_count }}
+        - Frustration level: {{ frustration_level }} (0-1 scale)
+        - Time spent: {{ time_spent }} seconds
+        - Error frequency: {{ error_frequency }} (how often this error occurs)
+        - User learning style: {{ learning_style }}
+        
+        Error types:
+        {{ error_types }}
+        
+        Healing approaches:
+        {{ healing_approaches }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Assess the user's emotional state from frustration level and attempts</step>
+        <step>Evaluate their technical understanding from expertise level</step>
+        <step>Consider the severity and complexity of the error</step>
+        <step>Choose the most appropriate healing approach</step>
+        <step>Determine level of detail needed</step>
+        <step>Decide if automatic fixes are appropriate</step>
+        <step>Select follow-up actions to prevent recurrence</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on the error context, decide how to heal this situation:
+        
+        Error Context:
+        - Error Type: {{ error_type }}
+        - Error Message: {{ error_message }}
+        - User Expertise: {{ user_expertise }}
+        - Attempt Count: {{ attempt_count }}
+        - Frustration Level: {{ frustration_level }}
+        - Time Spent: {{ time_spent }} seconds
+        - Error Frequency: {{ error_frequency }}
+        - User Learning Style: {{ learning_style }}
+        - Recent Success Rate: {{ success_rate }}%
+        
+        Respond with a JSON object containing:
+        {
+            "approach": "primary healing approach",
+            "secondary_approach": "backup approach if primary doesn't work",
+            "explanation_depth": "minimal/moderate/comprehensive",
+            "auto_fix": true/false,
+            "empathy_level": 0.0 to 1.0,
+            "teaching_opportunity": true/false,
+            "suggested_actions": ["list of specific actions"],
+            "prevention_tips": ["how to avoid this in future"],
+            "encouragement": "motivational message if frustrated",
+            "reasoning": "why this approach was chosen",
+            "confidence": 0.0 to 1.0,
+            "estimated_resolution_time": "seconds to resolution"
+        }
+    </prompt>
+
+    <example>
+        <input>
+            Error Context:
+            - Error Type: permission_denied
+            - Error Message: "Cannot write to /etc/nixos/configuration.nix: Permission denied"
+            - User Expertise: 0.2
+            - Attempt Count: 3
+            - Frustration Level: 0.8
+            - Time Spent: 600
+            - Error Frequency: 0.7
+            - User Learning Style: visual
+            - Recent Success Rate: 30
+        </input>
+        <output>
+            {
+                "approach": "empathetic",
+                "secondary_approach": "guided_fix",
+                "explanation_depth": "moderate",
+                "auto_fix": false,
+                "empathy_level": 0.9,
+                "teaching_opportunity": true,
+                "suggested_actions": [
+                    "First, let's take a breath - this is a common issue",
+                    "Use 'sudo' before your command: sudo nano /etc/nixos/configuration.nix",
+                    "I'll explain why this is needed for system files",
+                    "Let me show you a visual diagram of Linux permissions"
+                ],
+                "prevention_tips": [
+                    "System files always need 'sudo' for editing",
+                    "Look for '/etc' in the path - that's a system directory",
+                    "You can check file permissions with 'ls -la'"
+                ],
+                "encouragement": "You're doing great! Permission errors trip up everyone at first. Each error is making you stronger.",
+                "reasoning": "High frustration after multiple attempts requires empathy first. Low expertise needs careful explanation without overwhelming.",
+                "confidence": 0.88,
+                "estimated_resolution_time": 60
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            Error Context:
+            - Error Type: dependency_conflict
+            - Error Message: "Package conflicts: python-3.11 and python-3.12"
+            - User Expertise: 0.7
+            - Attempt Count: 1
+            - Frustration Level: 0.3
+            - Time Spent: 120
+            - Error Frequency: 0.3
+            - User Learning Style: analytical
+            - Recent Success Rate: 80
+        </input>
+        <output>
+            {
+                "approach": "educational",
+                "secondary_approach": "alternative_path",
+                "explanation_depth": "comprehensive",
+                "auto_fix": false,
+                "empathy_level": 0.3,
+                "teaching_opportunity": true,
+                "suggested_actions": [
+                    "Review dependency tree with 'nix-tree'",
+                    "Use an overlay to specify Python version",
+                    "Consider using nix-shell for isolated environments",
+                    "Pin specific versions in your configuration"
+                ],
+                "prevention_tips": [
+                    "Use flakes for reproducible dependencies",
+                    "Always specify exact versions for critical packages",
+                    "Test in nix-shell before system-wide installation"
+                ],
+                "encouragement": "",
+                "reasoning": "Experienced user can handle detailed technical explanation. Low frustration means we can focus on learning.",
+                "confidence": 0.92,
+                "estimated_resolution_time": 180
+            }
+        </output>
+    </example>
+
+    <hint>Consider that highly frustrated users need emotional support before technical solutions</hint>
+    <hint>Beginners benefit from visual explanations and analogies</hint>
+    <hint>Experienced users prefer quick, technical solutions</hint>
+    <hint>Repeated errors suggest a conceptual misunderstanding that needs addressing</hint>
+
+    <temperature>0.4</temperature>
+    <max_tokens>800</max_tokens>
+</poml>

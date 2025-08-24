@@ -1,0 +1,22 @@
+**🎉 WE'RE LAUNCHING ON HACKER NEWS!**
+
+After 2 weeks of intense development using Sacred Trinity Development (Human + Claude + Local LLM), Luminous Nix is ready to revolutionize NixOS!
+
+**🚀 Show Your Support**
+⭐ Star on GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+🔼 Upvote on HN: [Coming Tuesday 9 AM EST]
+💬 Tell your friends!
+
+**✨ What's Working**
+• Natural language → NixOS commands
+• 10x-1500x faster with Python-Nix API
+• Multiple personas (Grandma to Developer)
+• 100% local and private
+
+**🔮 Coming Soon**
+• Voice interface
+• More personas
+• GUI interface
+• Cross-platform support
+
+Join us in making Linux accessible to everyone! 🌟

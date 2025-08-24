@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+🔧 Consciousness-Aware Error Templates
+Errors as teachers, not failures. Compassionate guidance through problems.
+-->
+
+<poml:prompt xmlns:poml="http://github.com/microsoft/poml">
+  <poml:metadata>
+    <poml:domain>Luminous Nix - Error Healing</poml:domain>
+    <poml:version>2.0</poml:version>
+    <poml:philosophy>Errors are opportunities for growth</poml:philosophy>
+  </poml:metadata>
+
+  <!-- ==================== PACKAGE NOT FOUND ==================== -->
+  
+  <poml:template id="error_package_not_found">
+    <poml:description>Package doesn't exist in nixpkgs</poml:description>
+    
+    <poml:let name="healing_approach">
+      - Acknowledge the frustration
+      - Explain why package might be missing
+      - Offer concrete alternatives
+      - Show how to search better
+      - Provide workarounds if needed
+    </poml:let>
+    
+    <poml:system>
+      Package not found: {{package_name}}
+      User stress level: {{stress_level}}
+      Similar packages: {{alternatives}}
+      
+      Approach: {{healing_approach}}
+      Adapt tone to user's emotional state.
+    </poml:system>
+    
+    <poml:task>Help user find alternative to {{package_name}}</poml:task>
+    
+    <poml:output-format>
+      {{#if stress_level > 0.7}}
+      💚 I understand this is frustrating. Let's solve it together.
+      {{/if}}
+      
+      **Package "{{package_name}}" not found**
+      
+      This might be because:
+      • Different name in NixOS
+      • Not yet packaged
+      • Typo in the name
+      
+      **Suggestions:**
+      {{#each alternatives}}
+      ✨ {{name}} - {{description}}
+         Install: `nix-env -iA nixpkgs.{{name}}`
+      {{/each}}
+      
+      **Search for similar:**
+      ```bash
+      nix search {{search_term}}
+      ```
+      
+      {{#if no_alternatives}}
+      **Alternative approaches:**
+      • Use Docker: `docker run {{docker_image}}`
+      • Build from source: [Guide link]
+      • Request packaging: [Community link]
+      {{/if}}
+      
+      {{reassurance_message}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== PERMISSION DENIED ==================== -->
+  
+  <poml:template id="error_permission_denied">
+    <poml:description>Insufficient permissions for operation</poml:description>
+    
+    <poml:system>
+      Operation attempted: {{operation}}
+      Required permission: {{permission_needed}}
+      User experience level: {{experience_level}}
+      
+      Explain permissions clearly.
+      Provide safe way to proceed.
+      Educate about security implications.
+    </poml:system>
+    
+    <poml:task>Guide through permission issue safely</poml:task>
+    
+    <poml:output-format>
+      🔒 **Permission needed for: {{operation}}**
+      
+      {{#if experience_level == "beginner"}}
+      **Simple explanation:**
+      This operation needs special privileges because it {{permission_reason}}.
+      {{/if}}
+      
+      **Safe way to proceed:**
+      ```bash
+      sudo {{corrected_command}}
+      ```
+      
+      **Why permission is needed:**
+      • {{security_reason}}
+      
+      {{#if can_avoid_sudo}}
+      **Alternative without sudo:**
+      {{alternative_approach}}
+      {{/if}}
+      
+      ⚠️ **Security note:** {{security_consideration}}
+      
+      💡 **Learn more:** Understanding NixOS permissions
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== BUILD FAILURE ==================== -->
+  
+  <poml:template id="error_build_failure">
+    <poml:description>Package or configuration build failed</poml:description>
+    
+    <poml:let name="build_diagnosis">
+      - Identify failure point
+      - Common causes for this error
+      - Quick fixes to try
+      - Deeper investigation if needed
+      - Community resources
+    </poml:let>
+    
+    <poml:system>
+      Build error: {{error_type}}
+      Package/config: {{build_target}}
+      Error message: {{error_message}}
+      
+      Diagnosis approach: {{build_diagnosis}}
+      Keep user calm during complex errors.
+    </poml:system>
+    
+    <poml:task>Help resolve build failure</poml:task>
+    
+    <poml:output-format>
+      🔨 **Build Issue with {{build_target}}**
+      
+      {{#if is_complex_error}}
+      Don't worry - build errors look scarier than they are!
+      {{/if}}
+      
+      **What happened:**
+      {{simplified_error_explanation}}
+      
+      **Quick fixes to try:**
+      
+      1. **Clear cache and retry:**
+      ```bash
+      nix-collect-garbage -d
+      {{retry_command}}
+      ```
+      
+      2. **Update channel:**
+      ```bash
+      nix-channel --update
+      ```
+      
+      {{#if has_specific_fix}}
+      3. **Specific fix for this error:**
+      {{specific_fix}}
+      {{/if}}
+      
+      **If still failing:**
+      
+      📋 **Diagnostic info to share:**
+      ```
+      Error: {{error_summary}}
+      System: {{system_info}}
+      ```
+      
+      💬 **Get help:**
+      • NixOS Discourse: [Link]
+      • Community chat: [Link]
+      
+      Remember: Every developer faces build errors! 💪
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== NETWORK ERROR ==================== -->
+  
+  <poml:template id="error_network">
+    <poml:description>Network connectivity issues</poml:description>
+    
+    <poml:system>
+      Network operation: {{operation}}
+      Error type: {{network_error_type}}
+      User privacy concern level: {{privacy_concern}}
+      
+      Address connectivity and privacy concerns.
+      Provide offline alternatives when possible.
+    </poml:system>
+    
+    <poml:task>Resolve network issue respectfully</poml:task>
+    
+    <poml:output-format>
+      🌐 **Network Issue: {{network_error_type}}**
+      
+      **Checking connectivity:**
+      {{connectivity_status}}
+      
+      **Common causes:**
+      • {{likely_cause_1}}
+      • {{likely_cause_2}}
+      
+      **Solutions:**
+      
+      {{#if is_firewall}}
+      1. **Firewall blocking:**
+      Check firewall for nixos.org / cache.nixos.org
+      {{/if}}
+      
+      {{#if is_proxy}}
+      2. **Behind proxy:**
+      ```bash
+      export HTTP_PROXY={{proxy_settings}}
+      {{command}} 
+      ```
+      {{/if}}
+      
+      {{#if has_offline_mode}}
+      📴 **Offline alternative:**
+      {{offline_solution}}
+      {{/if}}
+      
+      {{#if privacy_concern > 0.5}}
+      🔒 **Privacy note:**
+      • Only connecting to: {{connection_targets}}
+      • Data sent: {{data_description}}
+      • Can work offline: {{offline_capability}}
+      {{/if}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== DISK SPACE ERROR ==================== -->
+  
+  <poml:template id="error_disk_space">
+    <poml:description>Insufficient disk space</poml:description>
+    
+    <poml:system>
+      Space needed: {{space_required}}
+      Space available: {{space_available}}
+      Safe to clean: {{safe_cleanup_options}}
+      
+      Prioritize safe cleanup options.
+      Never suggest deleting user data.
+    </poml:system>
+    
+    <poml:task>Help free disk space safely</poml:task>
+    
+    <poml:output-format>
+      💾 **Need more disk space**
+      
+      Required: {{space_required}}
+      Available: {{space_available}}
+      Short by: {{space_deficit}}
+      
+      **Safe cleanup options:**
+      
+      1. **Old generations** ({{old_generations_space}}):
+      ```bash
+      # Keep last 3 generations
+      nix-collect-garbage --delete-older-than 7d
+      ```
+      
+      2. **Package cache** ({{cache_space}}):
+      ```bash
+      nix-collect-garbage
+      ```
+      
+      3. **Build artifacts** ({{build_space}}):
+      ```bash
+      nix-store --gc
+      ```
+      
+      **Check what's using space:**
+      ```bash
+      du -sh /nix/store/* | sort -h | tail -20
+      ```
+      
+      ⚠️ **Never delete:**
+      • Current system generation
+      • User home directories
+      • Active profiles
+      
+      💡 **Tip:** Regular cleanup command:
+      ```bash
+      nix-collect-garbage --delete-older-than 30d
+      ```
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== CONFIGURATION ERROR ==================== -->
+  
+  <poml:template id="error_configuration">
+    <poml:description>Invalid NixOS configuration</poml:description>
+    
+    <poml:system>
+      Config error: {{error_location}}
+      Error type: {{config_error_type}}
+      User's nix expertise: {{nix_expertise}}
+      
+      Explain error in context.
+      Show exact fix if possible.
+      Teach the principle behind it.
+    </poml:system>
+    
+    <poml:task>Fix configuration error educationally</poml:task>
+    
+    <poml:output-format>
+      📝 **Configuration Issue**
+      
+      **Location:** `{{file_path}}:{{line_number}}`
+      
+      **The problem:**
+      ```nix
+      {{problematic_code}}
+      ```
+      {{error_indicator}}
+      
+      **Why this is wrong:**
+      {{conceptual_explanation}}
+      
+      **The fix:**
+      ```nix
+      {{corrected_code}}
+      ```
+      
+      **What changed:**
+      {{change_explanation}}
+      
+      **The principle:**
+      💡 {{learning_point}}
+      
+      **Test before applying:**
+      ```bash
+      sudo nixos-rebuild test
+      ```
+      
+      **Related examples:**
+      {{related_pattern}}
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== DEPENDENCY CONFLICT ==================== -->
+  
+  <poml:template id="error_dependency_conflict">
+    <poml:description>Package dependency conflicts</poml:description>
+    
+    <poml:system>
+      Conflicting packages: {{package_a}} vs {{package_b}}
+      Conflict reason: {{conflict_type}}
+      
+      Explain why conflicts happen in Nix.
+      Provide resolution strategies.
+      Suggest alternatives.
+    </poml:system>
+    
+    <poml:task>Resolve dependency conflict</poml:task>
+    
+    <poml:output-format>
+      ⚔️ **Dependency Conflict**
+      
+      {{package_a}} ↔️ {{package_b}}
+      
+      **Why this happens:**
+      {{conflict_explanation}}
+      
+      **Resolution options:**
+      
+      **Option 1: Use separate profiles**
+      ```bash
+      nix-env -p /nix/var/nix/profiles/{{profile_a}} -iA nixpkgs.{{package_a}}
+      nix-env -p /nix/var/nix/profiles/{{profile_b}} -iA nixpkgs.{{package_b}}
+      ```
+      
+      **Option 2: Override dependency**
+      ```nix
+      {{override_example}}
+      ```
+      
+      **Option 3: Use alternatives**
+      • Instead of {{package_a}}: {{alternative_a}}
+      • Instead of {{package_b}}: {{alternative_b}}
+      
+      💡 **Understanding Nix conflicts:**
+      Unlike other systems, Nix prevents conflicts by design.
+      This error means these packages truly cannot coexist.
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== TIMEOUT ERROR ==================== -->
+  
+  <poml:template id="error_timeout">
+    <poml:description>Operation timed out</poml:description>
+    
+    <poml:system>
+      Operation: {{timed_out_operation}}
+      Timeout duration: {{timeout_duration}}
+      Can retry: {{is_retryable}}
+      
+      Explain why timeouts happen.
+      Provide patience and alternatives.
+    </poml:system>
+    
+    <poml:task>Handle timeout with grace</poml:task>
+    
+    <poml:output-format>
+      ⏱️ **Operation Timed Out**
+      
+      After {{timeout_duration}} seconds: {{timed_out_operation}}
+      
+      **Why this might happen:**
+      • Slow network connection
+      • Large download/build
+      • Server temporarily busy
+      
+      **What to do:**
+      
+      {{#if is_retryable}}
+      1. **Retry with longer timeout:**
+      ```bash
+      NIX_TIMEOUT={{longer_timeout}} {{retry_command}}
+      ```
+      {{/if}}
+      
+      2. **Try again later:**
+      Server might be less busy
+      
+      {{#if has_alternative_server}}
+      3. **Use alternative cache:**
+      ```bash
+      {{alternative_cache_command}}
+      ```
+      {{/if}}
+      
+      {{#if is_large_operation}}
+      💡 **For large operations:**
+      Run in background:
+      ```bash
+      nohup {{command}} &
+      tail -f nohup.out
+      ```
+      {{/if}}
+      
+      🍵 Sometimes patience is the solution...
+    </poml:output-format>
+  </poml:template>
+
+  <!-- ==================== RECOVERY TEMPLATE ==================== -->
+  
+  <poml:template id="error_recovery_general">
+    <poml:description>General recovery from any error state</poml:description>
+    
+    <poml:system>
+      Error severity: {{severity}}
+      User stress: {{stress_level}}
+      System state: {{system_state}}
+      
+      Focus on recovery and reassurance.
+      Provide clear path forward.
+      Restore confidence.
+    </poml:system>
+    
+    <poml:task>Guide recovery from error state</poml:task>
+    
+    <poml:output-format>
+      {{#if stress_level > 0.8}}
+      🌟 **Take a deep breath. Everything is fixable.**
+      {{/if}}
+      
+      **Recovery Steps:**
+      
+      1. **Check current state:**
+      ```bash
+      {{status_check_command}}
+      ```
+      
+      2. **Safe reset if needed:**
+      ```bash
+      {{safe_reset_command}}
+      ```
+      
+      3. **Verify system health:**
+      ```bash
+      nix-store --verify --check-contents
+      ```
+      
+      **Your data is safe:** ✅
+      • User files: Untouched
+      • System can be restored
+      • Previous configurations saved
+      
+      **Roll back if needed:**
+      ```bash
+      # List previous working states
+      nixos-rebuild list-generations
+      
+      # Return to previous state
+      nixos-rebuild switch --rollback
+      ```
+      
+      💚 **Remember:**
+      • Errors are learning opportunities
+      • NixOS makes recovery easy
+      • The community is here to help
+      • You've got this!
+      
+      **Next step:** {{recommended_next_action}}
+    </poml:output-format>
+  </poml:template>
+</poml:prompt>

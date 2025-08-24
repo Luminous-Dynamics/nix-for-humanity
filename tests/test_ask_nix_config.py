@@ -9,13 +9,13 @@ import os
 # Add all necessary paths
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
-sys.path.insert(0, os.path.join(script_dir, 'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(script_dir), 'scripts'))
 
 # Import the modern knowledge engine using importlib for hyphenated filename
 import importlib.util
 spec = importlib.util.spec_from_file_location(
     "nix_knowledge_engine_modern", 
-    os.path.join(script_dir, 'scripts', 'nix-knowledge-engine-modern.py')
+    os.path.join(os.path.dirname(script_dir), 'scripts', 'nix-knowledge-engine-modern.py')
 )
 nix_knowledge_engine_modern = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(nix_knowledge_engine_modern)

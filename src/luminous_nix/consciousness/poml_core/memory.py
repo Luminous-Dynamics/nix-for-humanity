@@ -145,6 +145,23 @@ class POMLMemory:
             self.logger.error(f"Failed to initialize semantic memory: {e}")
             self.semantic_db = None
     
+    def remember(self, interaction_id: str, query: str, response: str, success: bool):
+        """Remember an interaction for learning"""
+        pattern = POMLPattern(
+            template_id=f"interaction_{interaction_id}",
+            template_path="user_interaction",
+            context_hash=str(hash(query)),
+            outcome_score=1.0 if success else 0.0,
+            user_satisfaction=0.8 if success else 0.3,
+            timestamp=datetime.now().isoformat(),
+            metadata={
+                "query": query,
+                "response": response[:100],  # Store first 100 chars
+                "success": success
+            }
+        )
+        self.store_pattern(pattern)
+    
     def _init_relational_memory(self):
         """Initialize Kùzu for pattern relationship mapping"""
         if not HAS_KUZU:
@@ -154,10 +171,20 @@ class POMLMemory:
         try:
             import pandas as pd  # Required for Kùzu
             
-            kuzu_dir = self.data_dir / "relational_memory"
-            kuzu_dir.mkdir(exist_ok=True)
+            kuzu_path = self.data_dir / "relational_memory"
             
-            self.relational_db = kuzu.Database(str(kuzu_dir))
+            # If the path exists as a directory from old code, we need to handle it
+            if kuzu_path.exists() and kuzu_path.is_dir():
+                # Check if it's an empty directory (from mkdir)
+                if not any(kuzu_path.iterdir()):
+                    # Empty directory, can use as-is for Kùzu
+                    pass
+                else:
+                    # Has content, likely already a Kùzu database
+                    pass
+            
+            # Kùzu will manage its own directory structure at this path
+            self.relational_db = kuzu.Database(str(kuzu_path))
             self.relational_conn = kuzu.Connection(self.relational_db)
             
             # Create pattern nodes
@@ -309,6 +336,48 @@ class POMLMemory:
             self.logger.info(f"✨ Remembered successful pattern: {pattern.template_id} (score: {outcome_score:.2f})")
         
         return stored
+    
+    def store(self, query: str, response: str, context: Dict[str, Any], feedback: float = 0.5):
+        """
+        Store an interaction in memory.
+        
+        Args:
+            query: The user's query
+            response: The generated response
+            context: Context metadata
+            feedback: User feedback score
+        """
+        # Convert to the format expected by remember_success
+        outcome = {
+            'success': feedback > 0.5,
+            'satisfaction': feedback,
+            'response': response
+        }
+        
+        # Store using a default template path for now
+        template_path = context.get('template_path', 'default/template.poml')
+        
+        self.remember_success(
+            template_path=template_path,
+            context={'query': query, **context},
+            outcome=outcome,
+            user_feedback=feedback
+        )
+    
+    def recall(self, intent: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Recall relevant memories for the given intent and context.
+        
+        Args:
+            intent: The user's intention
+            context: Current context
+            
+        Returns:
+            Relevant memory context if found
+        """
+        # For now, return None to indicate no relevant memories
+        # Full implementation would search through temporal, semantic, and relational stores
+        return None
     
     def suggest_template(self, new_context: Dict[str, Any]) -> Optional[str]:
         """

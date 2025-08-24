@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luminous Nix - Consciousness-First NixOS</title>
+    <meta name="description" content="Natural language interface for NixOS with AI-powered assistance" />
+    <style>
+      /* Base styles before app loads */
+      :root {
+        --bg-primary: #1a1a2e;
+        --bg-secondary: #0f3460;
+        --text-primary: #eee;
+        --text-secondary: #666;
+        --accent-color: #0f4c75;
+        --border-color: #16213e;
+        --radius-lg: 12px;
+        --spacing-md: 16px;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      /* Loading state */
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid var(--border-color);
+        border-top-color: var(--accent-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      /* Hide loading when app starts */
+      body.app-loaded .loading {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Awakening consciousness...</div>
+      </div>
+    </div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

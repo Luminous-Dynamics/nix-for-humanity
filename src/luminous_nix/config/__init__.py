@@ -10,19 +10,26 @@ Provides comprehensive configuration management with support for:
 - User profiles and personas
 """
 
-from .config_manager import ConfigManager, get_config, update_config
-from .schema import ConfigSchema, UIConfig, NLPConfig, PerformanceConfig
+from .config_manager import ConfigManager, get_config, update_config, get_config_manager
+from .schema import (
+    ConfigSchema, UIConfig, NLPConfig, PerformanceConfig,
+    Personality, ResponseFormat, NLPEngine
+)
 from .loader import ConfigLoader
 from .profiles import ProfileManager, UserProfile
 
 __all__ = [
     "ConfigManager",
     "get_config",
+    "get_config_manager",
     "update_config",
     "ConfigSchema",
     "UIConfig",
     "NLPConfig", 
     "PerformanceConfig",
+    "Personality",
+    "ResponseFormat",
+    "NLPEngine",
     "ConfigLoader",
     "ProfileManager",
     "UserProfile",

@@ -15,10 +15,8 @@ from io import StringIO
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from luminous_nix.core.intents import (
-    Request, Response, Context, Intent, IntentType, 
-    ExecutionResult, Plan, Command
-)
+from luminous_nix.api.schema import Request, Response, Context, ExecutionResult, Plan, Command
+from luminous_nix.core.intents import Intent, IntentType
 from luminous_nix.core.engine import NixForHumanityBackend as Engine
 from luminous_nix.core.interface import Query
 
@@ -135,6 +133,14 @@ class TestCLICorePipeline(unittest.TestCase):
     @patch('subprocess.run')
     def test_command_execution_integration(self, mock_run):
         """Test actual command execution with mocked subprocess."""
+        # Create engine with execution enabled
+        config = {
+            'knowledge_db_path': self.temp_db.name,
+            'dry_run': False,  # Enable execution for this test
+            'default_personality': 'friendly'
+        }
+        engine = Engine(config)
+        
         # Mock successful execution
         mock_run.return_value = MagicMock(
             returncode=0,
@@ -145,10 +151,10 @@ class TestCLICorePipeline(unittest.TestCase):
         # Create request with execution enabled
         request = Request(
             query="install vim",
-            context=Context(execute=True, dry_run=False)
+            context=Context(execute=True)
         )
         
-        response = self.engine.process(request)
+        response = engine.process(request)
         
         # Verify subprocess was called
         mock_run.assert_called_once()
@@ -176,7 +182,6 @@ class TestCLICorePipeline(unittest.TestCase):
             request = Request(
                 query="install firefox",
                 context=Context(
-                    dry_run=True,
                     personality=personality
                 )
             )

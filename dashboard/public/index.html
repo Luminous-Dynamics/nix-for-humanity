@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Sacred Council Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <h1>🛡️ Sacred Council Command Protection</h1>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot offline"></span>
+                <span>Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Risk Meter -->
+            <div class="panel risk-meter-panel">
+                <h2>Current Risk Assessment</h2>
+                <div class="risk-meter" id="riskMeter">
+                    <div class="risk-levels">
+                        <div class="risk-level safe">SAFE</div>
+                        <div class="risk-level low">LOW</div>
+                        <div class="risk-level medium">MEDIUM</div>
+                        <div class="risk-level high">HIGH</div>
+                        <div class="risk-level critical">CRITICAL</div>
+                    </div>
+                    <div class="risk-indicator" id="riskIndicator">
+                        <div class="indicator-arrow">▲</div>
+                    </div>
+                </div>
+                <div class="current-command" id="currentCommand">
+                    Waiting for command...
+                </div>
+            </div>
+
+            <!-- Council Members -->
+            <div class="panel council-panel">
+                <h2>Sacred Council Members</h2>
+                <div class="council-members">
+                    <div class="member" id="mindMember">
+                        <div class="member-icon">🧠</div>
+                        <div class="member-name">Mind</div>
+                        <div class="member-status">Ready</div>
+                        <div class="member-thought"></div>
+                    </div>
+                    <div class="member" id="heartMember">
+                        <div class="member-icon">❤️</div>
+                        <div class="member-name">Heart</div>
+                        <div class="member-status">Ready</div>
+                        <div class="member-thought"></div>
+                    </div>
+                    <div class="member" id="conscienceMember">
+                        <div class="member-icon">⚖️</div>
+                        <div class="member-name">Conscience</div>
+                        <div class="member-status">Ready</div>
+                        <div class="member-thought"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="panel timeline-panel">
+                <h2>Deliberation Timeline</h2>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-item welcome">
+                        <span class="time">--:--:--</span>
+                        <span class="event">Dashboard initialized</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="panel stats-panel">
+                <h2>Session Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <div class="stat-value" id="totalCommands">0</div>
+                        <div class="stat-label">Commands Checked</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="blockedCommands">0</div>
+                        <div class="stat-label">Blocked</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="warningsGiven">0</div>
+                        <div class="stat-label">Warnings</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="safePassed">0</div>
+                        <div class="stat-label">Safe</div>
+                    </div>
+                </div>
+                <div class="risk-breakdown" id="riskBreakdown">
+                    <!-- Risk level breakdown will be added here -->
+                </div>
+            </div>
+
+            <!-- Alternatives -->
+            <div class="panel alternatives-panel" id="alternativesPanel" style="display: none;">
+                <h2>✅ Safer Alternatives</h2>
+                <div class="alternatives-list" id="alternativesList">
+                    <!-- Alternatives will be added here -->
+                </div>
+            </div>
+
+            <!-- Verdict -->
+            <div class="panel verdict-panel" id="verdictPanel" style="display: none;">
+                <h2>⚖️ Council Verdict</h2>
+                <div class="verdict" id="verdict">
+                    <!-- Verdict will be shown here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <button id="clearEvents">Clear Events</button>
+            <span>Sacred Council Dashboard v1.0</span>
+        </footer>
+    </div>
+
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Dashboard Script -->
+    <script src="dashboard.js"></script>
+</body>
+</html>

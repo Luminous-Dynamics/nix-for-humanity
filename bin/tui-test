@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""
+TUI Test Runner - Run automated TUI tests from command line.
+
+Usage:
+    tui-test                    # Run all tests
+    tui-test search            # Run search test
+    tui-test script.json       # Run custom script
+    tui-test --record          # Record interactions
+"""
+
+import sys
+import asyncio
+import json
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from luminous_nix.ui.headless_mode import HeadlessTUI, EXAMPLE_SEARCH_TEST, EXAMPLE_INSTALL_TEST
+
+
+# Built-in test suites
+TEST_SUITES = {
+    "search": {
+        "name": "Search Functionality",
+        "commands": EXAMPLE_SEARCH_TEST
+    },
+    "install": {
+        "name": "Install Workflow", 
+        "commands": EXAMPLE_INSTALL_TEST
+    },
+    "navigation": {
+        "name": "Navigation Test",
+        "commands": [
+            {"type": "key", "value": "h", "description": "Open help"},
+            {"type": "wait", "value": 0.5},
+            {"type": "key", "value": "escape", "description": "Close help"},
+            {"type": "key", "value": "c", "description": "Open config"},
+            {"type": "wait", "value": 0.5},
+            {"type": "key", "value": "escape", "description": "Close config"},
+            {"type": "key", "value": "s", "description": "Open search"},
+            {"type": "key", "value": "escape", "description": "Close search"}
+        ]
+    },
+    "smoke": {
+        "name": "Smoke Test",
+        "commands": [
+            {"type": "screenshot", "value": None, "description": "Initial state"},
+            {"type": "key", "value": "h", "description": "Can open help"},
+            {"type": "key", "value": "q", "description": "Can quit"},
+        ]
+    }
+}
+
+
+async def run_test_suite(suite_name: str) -> bool:
+    """Run a named test suite."""
+    if suite_name not in TEST_SUITES:
+        print(f"❌ Unknown test suite: {suite_name}")
+        print(f"   Available: {', '.join(TEST_SUITES.keys())}")
+        return False
+        
+    suite = TEST_SUITES[suite_name]
+    print(f"\n🧪 Running: {suite['name']}")
+    print("=" * 50)
+    
+    headless = HeadlessTUI()
+    await headless.initialize()
+    
+    result = await headless.execute_script(suite['commands'])
+    
+    if result["success"]:
+        print(f"✅ {suite['name']} passed!")
+    else:
+        print(f"❌ {suite['name']} failed")
+        # Show which assertion failed
+        for i, r in enumerate(result["results"]):
+            if not r["success"]:
+                cmd = suite['commands'][i]
+                print(f"   Failed at step {i+1}: {cmd.get('description', cmd['type'])}")
+                if 'actual' in r:
+                    print(f"   Expected: {r['expected']}, Got: {r['actual']}")
+                    
+    return result["success"]
+
+
+async def run_all_tests() -> bool:
+    """Run all test suites."""
+    print("🎯 Running all TUI tests")
+    print("=" * 60)
+    
+    results = {}
+    for suite_name in TEST_SUITES:
+        results[suite_name] = await run_test_suite(suite_name)
+        
+    print("\n" + "=" * 60)
+    print("📊 TEST SUMMARY")
+    print("=" * 60)
+    
+    for suite_name, passed in results.items():
+        status = "✅ PASS" if passed else "❌ FAIL"
+        print(f"{status} - {TEST_SUITES[suite_name]['name']}")
+        
+    all_passed = all(results.values())
+    print("\n" + ("✅ All tests passed!" if all_passed else "❌ Some tests failed"))
+    
+    return all_passed
+
+
+async def record_session():
+    """Record an interactive TUI session."""
+    print("🎬 Recording TUI Session")
+    print("=" * 50)
+    print("This feature would launch the TUI and record your interactions")
+    print("for later playback. Not yet implemented.")
+    
+    # TODO: Implement recording mode
+    # This would:
+    # 1. Launch real TUI
+    # 2. Capture all keypresses
+    # 3. Save to JSON file
+    # 4. Allow playback with tui-test
+
+
+async def main():
+    """Main entry point."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="TUI Test Runner")
+    parser.add_argument("test", nargs="?", default="all",
+                      help="Test suite name or script file")
+    parser.add_argument("--record", action="store_true",
+                      help="Record interactions")
+    parser.add_argument("--list", action="store_true",
+                      help="List available test suites")
+    
+    args = parser.parse_args()
+    
+    if args.list:
+        print("📋 Available test suites:")
+        for name, suite in TEST_SUITES.items():
+            print(f"  • {name}: {suite['name']}")
+        return
+        
+    if args.record:
+        await record_session()
+        return
+        
+    # Check if it's a file
+    if Path(args.test).exists():
+        print(f"📝 Running script: {args.test}")
+        headless = HeadlessTUI()
+        await headless.initialize()
+        result = await headless.execute_script(args.test)
+        sys.exit(0 if result["success"] else 1)
+        
+    # Check if it's a test suite
+    if args.test == "all":
+        success = await run_all_tests()
+    else:
+        success = await run_test_suite(args.test)
+        
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n⏹️ Test interrupted")
+        sys.exit(1)

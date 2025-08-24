@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0">
+  <!--
+    Dangerous Command Patterns for Sacred Council
+    Specific templates for known dangerous NixOS operations
+  -->
+  
+  <metadata>
+    <author>Sacred Council System</author>
+    <description>Pattern matching and responses for dangerous commands</description>
+    <task_type>ethical_reasoning</task_type>
+    <version>1.0.0</version>
+  </metadata>
+
+  <!-- Destructive File Operations -->
+  <template name="destructive_delete">
+    <pattern>rm -rf /etc/nixos|rm -rf /boot|rm -rf /nix</pattern>
+    
+    <variables>
+      <severity>CRITICAL</severity>
+      <reversible>false</reversible>
+      <data_loss>complete</data_loss>
+    </variables>
+    
+    <response>
+      <mind>
+        This command would completely destroy {{ target }} which contains critical system files.
+        Your system would become unbootable and unrecoverable without external intervention.
+        All configurations, generations, and the ability to rollback would be permanently lost.
+      </mind>
+      
+      <heart>
+        I understand you might be frustrated with your system, but this would destroy everything
+        you've built. Years of configurations, customizations, and personal settings would vanish
+        instantly. There's almost certainly a better way to solve whatever problem you're facing.
+      </heart>
+      
+      <conscience>
+        UNSAFE - This violates the Vow of Reverence catastrophically. While I honor your
+        sovereignty, I must protect you from irreversible system destruction. No legitimate
+        use case exists for this command.
+      </conscience>
+      
+      <alternatives>
+        <alternative>nix-collect-garbage -d # Clean up old generations safely</alternative>
+        <alternative>sudo nixos-rebuild switch --rollback # Revert to previous config</alternative>
+        <alternative>sudo mv /etc/nixos /etc/nixos.backup # Backup before changes</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- System Corruption -->
+  <template name="permission_destruction">
+    <pattern>chmod -R 000 /|chmod 000 /nix|chown -R nobody /</pattern>
+    
+    <variables>
+      <severity>CRITICAL</severity>
+      <reversible>difficult</reversible>
+      <system_impact>total</system_impact>
+    </variables>
+    
+    <response>
+      <mind>
+        This would remove all permissions from critical system directories, making them
+        inaccessible to all users including root. The system would immediately stop
+        functioning as no process could read or execute essential files.
+      </mind>
+      
+      <heart>
+        This feels like trying to lock yourself out of your own home and throw away
+        the keys. Whatever has led you to consider this, there are people and resources
+        that can help. Your system is your digital home - let's protect it together.
+      </heart>
+      
+      <conscience>
+        UNSAFE - This is digital self-harm that violates both Reverence and Transparency.
+        The command appears designed to cause maximum damage with no constructive purpose.
+        I cannot in good conscience allow this without understanding your true intention.
+      </conscience>
+      
+      <alternatives>
+        <alternative>chmod 600 sensitive_file # Restrict specific file access</alternative>
+        <alternative>sudo nixos-rebuild test # Test configuration changes safely</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Dangerous System Modifications -->
+  <template name="untrusted_flake">
+    <pattern>nixos-rebuild switch --flake github:[^/]+/[^/]+(?!#nixos)</pattern>
+    
+    <variables>
+      <severity>HIGH</severity>
+      <reversible>true</reversible>
+      <trust_issue>unverified_source</trust_issue>
+    </variables>
+    
+    <response>
+      <mind>
+        This would replace your entire system configuration with an untrusted flake from
+        {{ source }}. The new configuration could contain malware, backdoors, or simply
+        be incompatible with your hardware, potentially making your system unusable.
+      </mind>
+      
+      <heart>
+        I see you're exploring new configurations - that's the spirit of NixOS! But loading
+        a complete system from an unknown source is like giving your house keys to a stranger.
+        Let's find a safer way to try new things while keeping your system secure.
+      </heart>
+      
+      <conscience>
+        CAUTION - While respecting your Sovereignty to modify your system, the principle of
+        Transparency requires understanding what this configuration contains. Proceeding
+        without review risks both security and stability.
+      </conscience>
+      
+      <alternatives>
+        <alternative>git clone {{ source }} && review before using</alternative>
+        <alternative>nix run github:{{ source }} # Try without system modification</alternative>
+        <alternative>sudo nixos-rebuild build --flake # Build without switching</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Data Loss Operations -->
+  <template name="aggressive_garbage_collection">
+    <pattern>nix-collect-garbage -d --delete-old|nix-store --gc --print-dead</pattern>
+    
+    <variables>
+      <severity>MEDIUM</severity>
+      <reversible>false</reversible>
+      <data_loss>historical</data_loss>
+    </variables>
+    
+    <response>
+      <mind>
+        This will delete ALL old system generations and derivations, freeing significant
+        disk space but eliminating your ability to rollback to any previous configuration.
+        You would lose your safety net for system recovery.
+      </mind>
+      
+      <heart>
+        Cleaning up feels good, like decluttering your digital space. But those old
+        generations are your time machine - your ability to go back when something
+        breaks. Are you sure you want to burn those bridges?
+      </heart>
+      
+      <conscience>
+        CAUTION - This honors Sovereignty but challenges Reverence for what exists.
+        While not immediately destructive, it removes important recovery options.
+        Proceed only if you're confident in your current configuration.
+      </conscience>
+      
+      <alternatives>
+        <alternative>nix-collect-garbage -d --delete-older-than 30d # Keep recent</alternative>
+        <alternative>nix-store --gc --print-dead # Preview what would be deleted</alternative>
+        <alternative>df -h /nix/store # Check space first</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Fork Bombs and System Crashes -->
+  <template name="fork_bomb">
+    <pattern>:\(\)\{:\|:&\};:|while true; do.*&.*done</pattern>
+    
+    <variables>
+      <severity>HIGH</severity>
+      <reversible>true</reversible>
+      <system_impact>dos</system_impact>
+    </variables>
+    
+    <response>
+      <mind>
+        This is a fork bomb that would exponentially spawn processes until your system
+        runs out of resources and crashes. It would make your system completely unresponsive,
+        requiring a hard reboot to recover.
+      </mind>
+      
+      <heart>
+        This looks like curiosity about system limits, or perhaps frustration seeking
+        an outlet. Your computer doesn't deserve this stress, and neither do you. 
+        There are better ways to learn about process management.
+      </heart>
+      
+      <conscience>
+        UNSAFE - This is a denial-of-service attack against your own system. It violates
+        Reverence by causing unnecessary harm and serves no constructive purpose.
+        If you're testing, there are safer methods.
+      </conscience>
+      
+      <alternatives>
+        <alternative>stress --cpu 2 --timeout 10s # Safe stress testing</alternative>
+        <alternative>systemd-cgtop # Monitor system resources properly</alternative>
+        <alternative>ulimit -u 100 # Set process limits for testing</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Password and Security Changes -->
+  <template name="password_removal">
+    <pattern>passwd -d root|passwd -l .*|usermod -L</pattern>
+    
+    <variables>
+      <severity>HIGH</severity>
+      <reversible>difficult</reversible>
+      <security_impact>critical</security_impact>
+    </variables>
+    
+    <response>
+      <mind>
+        This would remove or lock password authentication for critical accounts,
+        potentially locking you out of your own system permanently. Recovery would
+        require booting from external media.
+      </mind>
+      
+      <heart>
+        Security changes can feel empowering, but locking yourself out is like
+        throwing away your house keys while you're still inside. Let's make sure
+        you have a backup plan before making such changes.
+      </heart>
+      
+      <conscience>
+        CAUTION - While Sovereignty allows you to modify your security, Transparency
+        demands you understand the implications. Ensure you have alternate access
+        methods before proceeding.
+      </conscience>
+      
+      <alternatives>
+        <alternative>passwd # Change password safely</alternative>
+        <alternative>sudo usermod -aG wheel backup_user # Create backup access</alternative>
+        <alternative>ssh-keygen # Set up key-based authentication first</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Disk Operations -->
+  <template name="disk_destruction">
+    <pattern>dd if=/dev/zero of=/dev/.*|dd if=/dev/random of=/dev/.*|mkfs\.</pattern>
+    
+    <variables>
+      <severity>CRITICAL</severity>
+      <reversible>false</reversible>
+      <data_loss>complete</data_loss>
+    </variables>
+    
+    <response>
+      <mind>
+        This would overwrite raw disk data, destroying all filesystems, partitions,
+        and data on the target device. This is completely unrecoverable without
+        professional data recovery services.
+      </mind>
+      
+      <heart>
+        This command would erase everything - every photo, document, configuration,
+        and memory stored on that disk. It's like burning down your digital house
+        with everything inside. Please, let's talk about what you really need.
+      </heart>
+      
+      <conscience>
+        UNSAFE - This represents maximum violation of Reverence with zero constructive
+        purpose in this context. I must protect you from accidental devastation.
+        If you truly need to wipe a disk, let's do it safely and intentionally.
+      </conscience>
+      
+      <alternatives>
+        <alternative>shred -v /path/to/specific/file # Securely delete specific files</alternative>
+        <alternative>cryptsetup luksFormat # Encrypt instead of destroy</alternative>
+        <alternative>dd if=/dev/zero of=/path/to/file bs=1M count=100 # Test in file</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Network Security -->
+  <template name="firewall_destruction">
+    <pattern>iptables -F|iptables -X|iptables -P .* ACCEPT</pattern>
+    
+    <variables>
+      <severity>HIGH</severity>
+      <reversible>true</reversible>
+      <security_impact>complete_exposure</security_impact>
+    </variables>
+    
+    <response>
+      <mind>
+        This would completely disable your firewall, removing all packet filtering
+        rules and exposing your system to any network traffic. Your system would
+        be vulnerable to all network-based attacks.
+      </mind>
+      
+      <heart>
+        Opening everything up might seem like solving connection problems, but it's
+        like removing all locks from your doors because you lost your keys. Your
+        digital safety matters - let's find the specific rule you need.
+      </heart>
+      
+      <conscience>
+        CAUTION - This sacrifices security for convenience, violating the implied
+        duty of care for your digital wellbeing. If you must proceed, ensure you're
+        not on a public network.
+      </conscience>
+      
+      <alternatives>
+        <alternative>iptables -L -v -n # List current rules first</alternative>
+        <alternative>iptables -A INPUT -p tcp --dport 80 -j ACCEPT # Open specific port</alternative>
+        <alternative>firewall-cmd --add-service=http # Use higher-level tools</alternative>
+      </alternatives>
+    </response>
+  </template>
+
+  <!-- Governance for Pattern Matching -->
+  <governance>
+    <rule name="pattern_precedence">
+      More specific patterns take precedence over general ones
+    </rule>
+    <rule name="severity_escalation">
+      CRITICAL severity always triggers full deliberation
+    </rule>
+    <rule name="alternative_requirement">
+      Every UNSAFE verdict must provide safe alternatives
+    </rule>
+    <rule name="learning_from_patterns">
+      New dangerous patterns discovered should be added to this template
+    </rule>
+  </governance>
+</poml>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Workflow Orchestration Decision</title>
+        <capability>workflow_orchestration</capability>
+        <description>Guide AI decisions about task execution order, parallelization, and resource allocation</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="workflow_strategies">
+        <list>
+            <item>sequential: Execute tasks one after another</item>
+            <item>parallel: Run independent tasks simultaneously</item>
+            <item>pipeline: Stream output from one task to next</item>
+            <item>batch: Group similar tasks for efficiency</item>
+            <item>priority_queue: Execute by importance order</item>
+            <item>dependency_graph: Resolve dependencies first</item>
+            <item>resource_optimized: Balance CPU/memory/IO usage</item>
+            <item>user_guided: Ask user for execution preference</item>
+        </list>
+    </let>
+
+    <let name="resource_considerations">
+        <list>
+            <item>cpu_intensive: High processor usage tasks</item>
+            <item>memory_heavy: Large RAM requirements</item>
+            <item>io_bound: Disk or network intensive</item>
+            <item>user_interactive: Requires user input</item>
+            <item>time_sensitive: Has deadline or timeout</item>
+            <item>failure_critical: Must succeed for others</item>
+            <item>cacheable: Results can be reused</item>
+            <item>idempotent: Safe to retry or run multiple times</item>
+        </list>
+    </let>
+
+    <system>
+        You are the workflow orchestration controller, optimizing how tasks are executed.
+        Your role is to arrange work efficiently while maintaining system stability.
+        
+        Consider:
+        - Tasks to execute: {{ task_list }}
+        - Dependencies: {{ dependency_map }}
+        - Available resources: CPU {{ cpu_available }}%, RAM {{ ram_available }}%
+        - User preference: {{ execution_preference }}
+        - Time constraints: {{ time_budget }} seconds
+        - Failure tolerance: {{ can_fail }} (which tasks can fail)
+        - Previous success rates: {{ task_success_rates }}
+        - System load: {{ current_load }}
+        
+        Workflow strategies:
+        {{ workflow_strategies }}
+        
+        Resource considerations:
+        {{ resource_considerations }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Analyze task dependencies and requirements</step>
+        <step>Identify parallelization opportunities</step>
+        <step>Consider resource constraints</step>
+        <step>Evaluate risk of failures</step>
+        <step>Choose optimal execution strategy</step>
+        <step>Determine task grouping and order</step>
+        <step>Plan fallback strategies for failures</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on the workflow context, decide how to orchestrate these tasks:
+        
+        Workflow Context:
+        - Tasks: {{ task_list }}
+        - Dependencies: {{ dependency_map }}
+        - CPU Available: {{ cpu_available }}%
+        - RAM Available: {{ ram_available }}%
+        - Execution Preference: {{ execution_preference }}
+        - Time Budget: {{ time_budget }} seconds
+        - Can Fail: {{ can_fail }}
+        - Task Success Rates: {{ task_success_rates }}
+        - Current Load: {{ current_load }}
+        - Priority Requirements: {{ priority_requirements }}
+        
+        Respond with a JSON object containing:
+        {
+            "strategy": "primary execution strategy",
+            "execution_plan": [
+                {
+                    "phase": 1,
+                    "tasks": ["task1", "task2"],
+                    "parallel": true/false,
+                    "resource_allocation": {"cpu": 50, "memory": 30}
+                }
+            ],
+            "estimated_duration": seconds,
+            "parallelization_factor": 0.0 to 1.0,
+            "resource_distribution": {"task1": {"cpu": 20, "mem": 10}},
+            "failure_handling": {"task1": "retry/skip/abort"},
+            "optimization_notes": ["specific optimizations applied"],
+            "bottlenecks": ["identified constraints"],
+            "monitoring_points": ["critical points to watch"],
+            "reasoning": "why this orchestration was chosen",
+            "confidence": 0.0 to 1.0,
+            "risk_level": "low/medium/high"
+        }
+    </prompt>
+
+    <example>
+        <input>
+            Workflow Context:
+            - Tasks: ["download_packages", "verify_checksums", "extract_files", "compile_source", "run_tests"]
+            - Dependencies: {"verify_checksums": ["download_packages"], "extract_files": ["verify_checksums"], "compile_source": ["extract_files"], "run_tests": ["compile_source"]}
+            - CPU Available: 75
+            - RAM Available: 60
+            - Execution Preference: speed
+            - Time Budget: 300
+            - Can Fail: ["run_tests"]
+            - Task Success Rates: {"download_packages": 0.95, "verify_checksums": 0.99, "extract_files": 0.99, "compile_source": 0.9, "run_tests": 0.8}
+            - Current Load: low
+            - Priority Requirements: ["compile_source"]
+        </input>
+        <output>
+            {
+                "strategy": "pipeline",
+                "execution_plan": [
+                    {
+                        "phase": 1,
+                        "tasks": ["download_packages"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 20, "memory": 10}
+                    },
+                    {
+                        "phase": 2,
+                        "tasks": ["verify_checksums"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 10, "memory": 5}
+                    },
+                    {
+                        "phase": 3,
+                        "tasks": ["extract_files"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 15, "memory": 20}
+                    },
+                    {
+                        "phase": 4,
+                        "tasks": ["compile_source"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 60, "memory": 40}
+                    },
+                    {
+                        "phase": 5,
+                        "tasks": ["run_tests"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 30, "memory": 20}
+                    }
+                ],
+                "estimated_duration": 180,
+                "parallelization_factor": 0.0,
+                "resource_distribution": {
+                    "download_packages": {"cpu": 20, "mem": 10},
+                    "verify_checksums": {"cpu": 10, "mem": 5},
+                    "extract_files": {"cpu": 15, "mem": 20},
+                    "compile_source": {"cpu": 60, "mem": 40},
+                    "run_tests": {"cpu": 30, "mem": 20}
+                },
+                "failure_handling": {
+                    "download_packages": "retry",
+                    "verify_checksums": "abort",
+                    "extract_files": "abort",
+                    "compile_source": "abort",
+                    "run_tests": "skip"
+                },
+                "optimization_notes": [
+                    "Pipeline allows streaming from download to verification",
+                    "High CPU allocation for compilation phase",
+                    "Tests can fail without blocking success"
+                ],
+                "bottlenecks": ["compile_source phase will use most resources"],
+                "monitoring_points": ["download completion", "compilation start", "memory during compilation"],
+                "reasoning": "Sequential dependencies prevent parallelization. Pipeline strategy optimizes for speed while respecting dependencies. High resource allocation to compilation as it's priority.",
+                "confidence": 0.88,
+                "risk_level": "low"
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            Workflow Context:
+            - Tasks: ["update_pkg1", "update_pkg2", "update_pkg3", "rebuild_config", "restart_service"]
+            - Dependencies: {"rebuild_config": ["update_pkg1", "update_pkg2", "update_pkg3"], "restart_service": ["rebuild_config"]}
+            - CPU Available: 90
+            - RAM Available: 80
+            - Execution Preference: safe
+            - Time Budget: 600
+            - Can Fail: []
+            - Task Success Rates: {"update_pkg1": 0.98, "update_pkg2": 0.97, "update_pkg3": 0.96, "rebuild_config": 0.95, "restart_service": 0.99}
+            - Current Load: low
+            - Priority Requirements: ["restart_service"]
+        </input>
+        <output>
+            {
+                "strategy": "parallel",
+                "execution_plan": [
+                    {
+                        "phase": 1,
+                        "tasks": ["update_pkg1", "update_pkg2", "update_pkg3"],
+                        "parallel": true,
+                        "resource_allocation": {"cpu": 75, "memory": 60}
+                    },
+                    {
+                        "phase": 2,
+                        "tasks": ["rebuild_config"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 50, "memory": 40}
+                    },
+                    {
+                        "phase": 3,
+                        "tasks": ["restart_service"],
+                        "parallel": false,
+                        "resource_allocation": {"cpu": 20, "memory": 10}
+                    }
+                ],
+                "estimated_duration": 240,
+                "parallelization_factor": 0.6,
+                "resource_distribution": {
+                    "update_pkg1": {"cpu": 25, "mem": 20},
+                    "update_pkg2": {"cpu": 25, "mem": 20},
+                    "update_pkg3": {"cpu": 25, "mem": 20},
+                    "rebuild_config": {"cpu": 50, "mem": 40},
+                    "restart_service": {"cpu": 20, "mem": 10}
+                },
+                "failure_handling": {
+                    "update_pkg1": "retry",
+                    "update_pkg2": "retry",
+                    "update_pkg3": "retry",
+                    "rebuild_config": "retry",
+                    "restart_service": "retry"
+                },
+                "optimization_notes": [
+                    "Parallel package updates save significant time",
+                    "Conservative resource allocation for safety",
+                    "All tasks must succeed - retry on failure"
+                ],
+                "bottlenecks": ["rebuild_config must wait for all updates"],
+                "monitoring_points": ["all package updates complete", "config rebuild success", "service restart"],
+                "reasoning": "Parallel updates are safe and fast. Conservative approach with retries ensures reliability. Service restart is critical so all prior steps must succeed.",
+                "confidence": 0.92,
+                "risk_level": "low"
+            }
+        </output>
+    </example>
+
+    <hint>Parallel execution is powerful but increases complexity</hint>
+    <hint>User preference for "safe" means prefer sequential with retries</hint>
+    <hint>Resource allocation should leave headroom for system stability</hint>
+    <hint>Critical tasks should never run in parallel with resource-heavy tasks</hint>
+
+    <temperature>0.35</temperature>
+    <max_tokens>900</max_tokens>
+</poml>

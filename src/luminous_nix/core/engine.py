@@ -124,7 +124,7 @@ class NixForHumanityBackend:
                 if self._has_python_api:
                     logger.info("✅ Native Python-Nix API loaded successfully!")
                     logger.info("   Performance gains: 10x-1500x for all operations")
-                    if self.progress_callback:
+                    if self.progress_callback and callable(self.progress_callback):
                         self.progress_callback("Native Python-Nix API initialized!", 0.1)
                 else:
                     logger.warning("⚠️  Native API not available, falling back to subprocess")

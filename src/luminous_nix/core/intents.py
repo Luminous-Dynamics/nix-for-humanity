@@ -691,16 +691,6 @@ class IntentRecognizer:
                     confidence=0.85,
                     raw_text=text
                 )
-                
-        # Check list installed patterns
-        for pattern in self.list_installed_patterns:
-            if re.search(pattern, text, re.IGNORECASE):
-                return Intent(
-                    type=IntentType.LIST_INSTALLED,
-                    entities={},
-                    confidence=0.9,
-                    raw_text=text
-                )
         
         # Check network patterns
         for pattern in self.show_network_patterns:
@@ -1044,7 +1034,18 @@ class IntentRecognizer:
                     raw_text=text
                 )
         
-        # Check remove/uninstall patterns FIRST (before install)
+        # Check list installed patterns FIRST (before install patterns)
+        # This prevents "list installed packages" from matching install pattern
+        for pattern in self.list_installed_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return Intent(
+                    type=IntentType.LIST_INSTALLED,
+                    entities={},
+                    confidence=0.9,
+                    raw_text=text
+                )
+        
+        # Check remove/uninstall patterns SECOND (before install)
         # This prevents "get rid of" from matching the install pattern
         for pattern in self.remove_patterns:
             if match := re.search(pattern, text, re.IGNORECASE):
@@ -1067,7 +1068,7 @@ class IntentRecognizer:
                     raw_text=text
                 )
         
-        # Check install patterns (after remove to avoid false matches)
+        # Check install patterns (after list and remove to avoid false matches)
         for pattern in self.install_patterns:
             if match := re.search(pattern, text, re.IGNORECASE):
                 # Extract package name

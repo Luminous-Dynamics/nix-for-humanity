@@ -11,7 +11,15 @@ from .home_command import home
 from .error_command import error
 from .generation_command import generation
 from .flake_command import flake
-from .discover_command import discover
+from .discover_command import discover_group as discover
+
+# Import cache command
+try:
+    from .cache_command import cache
+    CACHE_AVAILABLE = True
+except ImportError:
+    CACHE_AVAILABLE = False
+    cache = None
 
 @click.group()
 @click.version_option(version="0.8.3", prog_name="Nix for Humanity")
@@ -32,6 +40,10 @@ cli.add_command(error)
 cli.add_command(generation)
 cli.add_command(flake)
 cli.add_command(discover)
+
+# Add cache command if available
+if CACHE_AVAILABLE and cache:
+    cli.add_command(cache)
 
 # Natural language command (default when no subcommand)
 @cli.command()
@@ -69,8 +81,13 @@ def ask(ctx, query, personality, dry_run, yes, no_visual, execute, profile):
         assistant.set_personality(personality)
     elif config.ui.default_personality:
         assistant.set_personality(config.ui.default_personality.value)
+    
+    # Handle execution mode - execute flag overrides dry_run
+    if execute:
+        assistant.dry_run = False  # Execute commands when -e is passed
+    else:
+        assistant.dry_run = dry_run  # Otherwise respect dry_run flag
         
-    assistant.dry_run = dry_run
     assistant.skip_confirmation = yes or not config.ui.confirm_actions
     assistant.visual_mode = not no_visual and config.ui.use_colors
     assistant.show_progress = config.ui.progress_indicators
@@ -78,12 +95,6 @@ def ask(ctx, query, personality, dry_run, yes, no_visual, execute, profile):
     # Process the query
     query_text = ' '.join(query)
     assistant.answer(query_text)
-    
-    # Handle auto-execution based on config
-    if execute or config.ui.confirm_actions is False:
-        # Execute detected commands
-        intent = assistant.modern_knowledge.extract_intent(query_text)
-        # ... (rest of execution logic from original CLI)
 
 def main():
     """Main entry point for the CLI"""

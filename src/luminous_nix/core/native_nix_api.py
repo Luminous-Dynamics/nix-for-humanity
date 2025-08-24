@@ -181,7 +181,8 @@ class NativeNixAPI:
         """
         start_time = time.time()
         
-        if self.nix_api_available:
+        # Try native API first if available
+        if self.nix_api_available and hasattr(self, 'nix_direct'):
             try:
                 # Use direct Nix Python bindings
                 if profile == "user":
@@ -192,9 +193,10 @@ class NativeNixAPI:
                 elapsed_ms = (time.time() - start_time) * 1000
                 return (True, f"Installed {package}", elapsed_ms)
             except Exception as e:
-                print(f"Native install failed: {e}")
+                # Native API failed, fall back to subprocess
+                pass
         
-        # Fallback to nix-env
+        # Always fallback to subprocess which works
         return self._install_subprocess(package, profile, start_time)
     
     def list_generations(self, profile: Optional[str] = None) -> Tuple[List[Dict], float]:
@@ -327,10 +329,21 @@ class NativeNixAPI:
         """Fallback install using subprocess"""
         import subprocess
         
-        if profile == "user":
-            cmd = ["nix-env", "-iA", f"nixos.{package}"]
-        else:
+        # Modern Nix uses 'nix profile' instead of 'nix-env'
+        # Check if we should use nix profile (newer) or nix-env (legacy)
+        check_cmd = ["nix", "profile", "list"]
+        try:
+            result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=1)
+            use_nix_profile = result.returncode == 0
+        except:
+            use_nix_profile = False
+        
+        if use_nix_profile:
+            # Use modern nix profile command
             cmd = ["nix", "profile", "install", f"nixpkgs#{package}"]
+        else:
+            # Fallback to nix-env for older systems
+            cmd = ["nix-env", "-iA", f"nixos.{package}"]
         
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)

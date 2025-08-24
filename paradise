@@ -1,0 +1,23 @@
+#!/bin/bash
+# 🕉️ Launch Symbolic Paradise
+
+# Beautiful ASCII art launch
+echo ""
+echo "    ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦"
+echo "   ✦                         ✦"
+echo "  ✦    )) ( ● ) ((           ✦"
+echo "  ✦   SYMBOLIC PARADISE       ✦"
+echo "  ✦                           ✦"
+echo "   ✦  Where paradoxes dance  ✦"
+echo "    ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦"
+echo ""
+sleep 1
+
+# Check Python
+if ! command -v python3 &> /dev/null; then
+    echo "⚠️  Python 3 is required"
+    exit 1
+fi
+
+# Launch paradise
+exec python3 symbolic_paradise.py "$@"

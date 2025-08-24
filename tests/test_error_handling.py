@@ -8,8 +8,7 @@ import sys
 from pathlib import Path
 
 # Add backend to path
-backend_path = Path(__file__).parent.parent
-sys.path.insert(0, str(backend_path))
+# Imports already in PYTHONPATH via proper package structure
 
 from luminous_nix.core.error_handler import (
     ErrorHandler, ErrorContext, ErrorCategory, ErrorSeverity,

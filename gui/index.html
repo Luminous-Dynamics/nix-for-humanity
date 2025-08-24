@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luminous Nix - AI-Assisted Package Discovery</title>
+    <style>
+        :root {
+            --sacred-blue: #4A90E2;
+            --growth-green: #7ED321;
+            --wisdom-gold: #F5A623;
+            --calm-gray: #F5F7FA;
+            --text-primary: #2C3E50;
+            --text-secondary: #7F8C8D;
+            --border: #E1E8ED;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--calm-gray);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--sacred-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1rem;
+            font-size: 1.2rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        #search-input:focus {
+            outline: none;
+            border-color: var(--sacred-blue);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--sacred-blue);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .search-button:hover {
+            background: #3A7BC8;
+        }
+
+        .search-examples {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .example-chip {
+            display: inline-block;
+            background: var(--calm-gray);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            margin: 0.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .example-chip:hover {
+            background: var(--sacred-blue);
+            color: white;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .package-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .package-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .package-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .package-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .package-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-tag {
+            background: var(--calm-gray);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .package-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-install {
+            background: var(--growth-green);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-install:hover {
+            background: #6FC11A;
+        }
+
+        .btn-info {
+            background: var(--calm-gray);
+            color: var(--text-primary);
+        }
+
+        .btn-info:hover {
+            background: #E5E9ED;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--sacred-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* AI Assistant */
+        .ai-assistant {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .ai-assistant.active {
+            display: block;
+        }
+
+        .ai-message {
+            background: var(--calm-gray);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Command Palette */
+        .command-palette {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 600px;
+            z-index: 1000;
+        }
+
+        .command-palette.active {
+            display: block;
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: none;
+            border-bottom: 2px solid var(--border);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .command-suggestions {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .command-item {
+            padding: 0.8rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+
+        .command-item:hover {
+            background: var(--calm-gray);
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles for keyboard navigation */
+        *:focus {
+            outline: 3px solid var(--sacred-blue);
+            outline-offset: 2px;
+        }
+
+        /* AI Testing Mode */
+        body.ai-mode * {
+            outline: 1px dashed rgba(255,0,0,0.2);
+        }
+
+        body.ai-mode *[data-testid] {
+            position: relative;
+        }
+
+        body.ai-mode *[data-testid]::after {
+            content: attr(data-testid);
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 10px;
+            background: rgba(255,0,0,0.8);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 2px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌟 Luminous Nix</h1>
+            <p class="subtitle">Natural Language Package Discovery for NixOS</p>
+        </header>
+
+        <!-- Search Section -->
+        <section class="search-section" aria-label="Package Search">
+            <div class="search-input-wrapper">
+                <input 
+                    type="search"
+                    id="search-input"
+                    placeholder="What would you like to create today?"
+                    aria-label="Search for packages using natural language"
+                    data-testid="search-input"
+                    data-ai-hint="Accepts natural language queries like 'I need a text editor'"
+                />
+                <button 
+                    class="search-button"
+                    onclick="performSearch()"
+                    aria-label="Search"
+                    data-testid="search-button"
+                >
+                    Search
+                </button>
+            </div>
+            <div class="search-examples">
+                <p>Try:</p>
+                <span class="example-chip" onclick="searchExample('I need a text editor')">I need a text editor</span>
+                <span class="example-chip" onclick="searchExample('alternative to firefox')">alternative to firefox</span>
+                <span class="example-chip" onclick="searchExample('music player')">music player</span>
+                <span class="example-chip" onclick="searchExample('python development')">python development</span>
+            </div>
+        </section>
+
+        <!-- AI Assistant -->
+        <section class="ai-assistant" id="ai-assistant" aria-label="AI Assistant">
+            <div class="ai-message">
+                💡 <span id="ai-text">How can I help you find the right packages?</span>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="results-section" aria-label="Search Results">
+            <h2>Search Results</h2>
+            <div id="results-grid" class="results-grid" role="list">
+                <!-- Results will be inserted here -->
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Searching packages...</p>
+        </div>
+    </div>
+
+    <!-- Command Palette -->
+    <div class="command-palette" id="command-palette" role="dialog" aria-label="Command Palette">
+        <input 
+            type="text"
+            class="command-input"
+            id="command-input"
+            placeholder="Type a command..."
+            aria-label="Command input"
+            data-testid="command-input"
+        />
+        <div class="command-suggestions" id="command-suggestions">
+            <div class="command-item">search: I need a text editor</div>
+            <div class="command-item">install: vim</div>
+            <div class="command-item">show: alternatives to firefox</div>
+            <div class="command-item">help: installation</div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:8000';
+        
+        // State
+        let currentResults = [];
+        let installedPackages = new Set();
+        let isCommandPaletteOpen = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupKeyboardShortcuts();
+            setupAITestingMode();
+            loadInstalledPackages();
+            
+            // Focus search on load
+            document.getElementById('search-input').focus();
+        });
+
+        // Load installed packages
+        async function loadInstalledPackages() {
+            try {
+                const response = await fetch(`${API_BASE}/api/installed`);
+                const data = await response.json();
+                if (data.success) {
+                    installedPackages = new Set(data.installed.map(p => p.name));
+                    console.log(`Loaded ${installedPackages.size} installed packages`);
+                }
+            } catch (error) {
+                console.error('Failed to load installed packages:', error);
+            }
+        }
+
+        // Search functionality
+        async function performSearch() {
+            const query = document.getElementById('search-input').value;
+            if (!query.trim()) return;
+
+            showLoading(true);
+            showResults(false);
+            
+            try {
+                // For now, use mock data - will connect to real backend
+                const results = await searchPackages(query);
+                displayResults(results);
+                showAIAssistant(query, results);
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Failed to search packages. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Connect to our real Python backend!
+        async function searchPackages(query) {
+            try {
+                const response = await fetch(`${API_BASE}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.results || [];
+            } catch (error) {
+                console.error('Search error:', error);
+                // Fallback to mock data if backend is not running
+                console.log('Falling back to mock data...');
+                
+                if (query.toLowerCase().includes('text editor')) {
+                    return [
+                        {
+                            name: 'vim',
+                            description: 'Highly configurable text editor',
+                            category: 'editor',
+                            alternatives: ['neovim', 'emacs', 'vscode'],
+                            popularity: 0.9
+                        },
+                        {
+                            name: 'neovim',
+                            description: 'Vim-fork focused on extensibility',
+                            category: 'editor',
+                            alternatives: ['vim', 'emacs', 'vscode'],
+                            popularity: 0.85
+                        }
+                    ];
+                }
+                
+                return [];
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = '';
+            
+            if (results.length === 0) {
+                grid.innerHTML = '<p>No packages found. Try a different search.</p>';
+                showResults(true);
+                return;
+            }
+            
+            results.forEach(pkg => {
+                const card = createPackageCard(pkg);
+                grid.appendChild(card);
+            });
+            
+            showResults(true);
+            currentResults = results;
+        }
+
+        // Create package card
+        function createPackageCard(pkg) {
+            const card = document.createElement('article');
+            card.className = 'package-card';
+            card.setAttribute('role', 'listitem');
+            card.setAttribute('data-package-name', pkg.name);
+            card.setAttribute('data-testid', `package-${pkg.name}`);
+            
+            const isInstalled = installedPackages.has(pkg.name);
+            
+            card.innerHTML = `
+                <h3 class="package-name">
+                    ${pkg.name} 
+                    ${isInstalled ? '<span style="color: var(--growth-green);">✓ Installed</span>' : ''}
+                </h3>
+                <p class="package-description">${pkg.description}</p>
+                <div class="package-meta">
+                    <span class="meta-tag">📦 ${pkg.category}</span>
+                    <span class="meta-tag">⭐ ${Math.round(pkg.popularity * 100)}%</span>
+                </div>
+                ${pkg.alternatives ? `
+                    <div class="package-meta">
+                        <span class="meta-tag">🔄 Alternatives: ${pkg.alternatives.slice(0,3).join(', ')}</span>
+                    </div>
+                ` : ''}
+                <div class="package-actions">
+                    ${isInstalled ? `
+                        <button 
+                            class="btn btn-installed"
+                            style="background: var(--calm-gray); color: var(--text-secondary); cursor: default;"
+                            disabled
+                        >
+                            ✓ Installed
+                        </button>
+                        <button 
+                            class="btn btn-uninstall"
+                            style="background: #e74c3c; color: white;"
+                            onclick="uninstallPackage('${pkg.name}')"
+                            aria-label="Uninstall ${pkg.name}"
+                        >
+                            Uninstall
+                        </button>
+                    ` : `
+                        <button 
+                            class="btn btn-install"
+                            onclick="installPackage('${pkg.name}')"
+                            aria-label="Install ${pkg.name}"
+                            data-testid="install-${pkg.name}"
+                        >
+                            Install
+                        </button>
+                        <button 
+                            class="btn btn-info"
+                            onclick="showInfo('${pkg.name}')"
+                            aria-label="Learn more about ${pkg.name}"
+                        >
+                            Info
+                        </button>
+                    `}
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Install package - now with REAL installation!
+        async function installPackage(packageName) {
+            // Check if we're in safe mode (add ?safe=true to URL for dry-run)
+            const params = new URLSearchParams(window.location.search);
+            const safeMode = params.get('safe') === 'true';
+            
+            const message = safeMode 
+                ? `Preview installation of ${packageName}? (Safe mode - no actual install)`
+                : `Really install ${packageName}? This will modify your system.`;
+            
+            if (confirm(message)) {
+                try {
+                    // Show loading state
+                    showLoading(true);
+                    
+                    const response = await fetch(`${API_BASE}/api/install`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            packages: [packageName],
+                            dry_run: safeMode  // Use safe mode if requested
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    showLoading(false);
+                    
+                    if (data.success) {
+                        if (safeMode) {
+                            alert(`✅ ${packageName} would be installed (safe mode)`);
+                        } else {
+                            alert(`✅ Successfully installed ${packageName}!`);
+                            // Update installed packages list
+                            installedPackages.add(packageName);
+                            // Refresh the display
+                            await loadInstalledPackages();
+                            displayResults(currentResults);
+                        }
+                    } else {
+                        const error = data.results?.[0]?.error || 'Unknown error';
+                        alert(`❌ Failed to install ${packageName}:\n${error}`);
+                    }
+                } catch (error) {
+                    showLoading(false);
+                    console.error('Install error:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            }
+        }
+
+        // Uninstall package
+        async function uninstallPackage(packageName) {
+            if (confirm(`Uninstall ${packageName}?`)) {
+                try {
+                    showLoading(true);
+                    
+                    const response = await fetch(`${API_BASE}/api/uninstall`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            packages: [packageName],
+                            dry_run: false
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    showLoading(false);
+                    
+                    if (data.success) {
+                        alert(`✅ Successfully uninstalled ${packageName}`);
+                        // Update installed packages list
+                        installedPackages.delete(packageName);
+                        // Refresh the display
+                        await loadInstalledPackages();
+                        displayResults(currentResults);
+                    } else {
+                        const error = data.results?.[0]?.error || 'Unknown error';
+                        alert(`❌ Failed to uninstall ${packageName}:\n${error}`);
+                    }
+                } catch (error) {
+                    showLoading(false);
+                    console.error('Uninstall error:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            }
+        }
+
+        // Show package info
+        function showInfo(packageName) {
+            alert(`Showing info for ${packageName}... (This would show detailed view)`);
+            // TODO: Show detailed package information
+        }
+
+        // AI Assistant
+        function showAIAssistant(query, results) {
+            const assistant = document.getElementById('ai-assistant');
+            const aiText = document.getElementById('ai-text');
+            
+            if (results.length === 0) {
+                aiText.textContent = `I couldn't find packages for "${query}". Try different keywords or browse categories.`;
+            } else if (query.toLowerCase().includes('text editor')) {
+                aiText.textContent = `I found ${results.length} text editors. VSCode is most popular for beginners, while Vim/Neovim are powerful for experienced users.`;
+            } else if (query.toLowerCase().includes('alternative')) {
+                aiText.textContent = `Here are alternatives you might like. Each has different strengths - would you like me to explain the differences?`;
+            } else {
+                aiText.textContent = `Found ${results.length} packages matching your search. Click Install to add them to your system.`;
+            }
+            
+            assistant.classList.add('active');
+        }
+
+        // Example searches
+        function searchExample(query) {
+            document.getElementById('search-input').value = query;
+            performSearch();
+        }
+
+        // UI State Management
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showResults(show) {
+            document.getElementById('results-section').classList.toggle('active', show);
+        }
+
+        function showError(message) {
+            alert(message); // TODO: Better error display
+        }
+
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+K or Cmd+K for command palette
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    toggleCommandPalette();
+                }
+                
+                // Escape to close command palette
+                if (e.key === 'Escape' && isCommandPaletteOpen) {
+                    toggleCommandPalette();
+                }
+                
+                // / to focus search
+                if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    document.getElementById('search-input').focus();
+                }
+            });
+            
+            // Enter to search
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+
+        // Command palette
+        function toggleCommandPalette() {
+            const palette = document.getElementById('command-palette');
+            isCommandPaletteOpen = !isCommandPaletteOpen;
+            
+            if (isCommandPaletteOpen) {
+                palette.classList.add('active');
+                document.getElementById('command-input').focus();
+            } else {
+                palette.classList.remove('active');
+            }
+        }
+
+        // AI Testing Mode
+        function setupAITestingMode() {
+            // Check for ?ai-mode=true in URL
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('ai-mode') === 'true') {
+                document.body.classList.add('ai-mode');
+                
+                // Expose testing interface
+                window.__AI_TESTING__ = {
+                    getCurrentState: () => ({
+                        searchQuery: document.getElementById('search-input').value,
+                        results: currentResults,
+                        commandPaletteOpen: isCommandPaletteOpen
+                    }),
+                    
+                    executeCommand: (command) => {
+                        if (command.startsWith('search:')) {
+                            const query = command.replace('search:', '').trim();
+                            document.getElementById('search-input').value = query;
+                            performSearch();
+                        } else if (command.startsWith('click:')) {
+                            const selector = command.replace('click:', '').trim();
+                            document.querySelector(selector)?.click();
+                        } else if (command.startsWith('type:')) {
+                            const text = command.replace('type:', '').trim();
+                            if (document.activeElement) {
+                                document.activeElement.value = text;
+                            }
+                        }
+                    },
+                    
+                    getElements: (selector) => {
+                        return Array.from(document.querySelectorAll(selector)).map(el => ({
+                            text: el.textContent,
+                            value: el.value,
+                            visible: el.offsetParent !== null,
+                            testId: el.dataset.testid
+                        }));
+                    }
+                };
+                
+                console.log('AI Testing Mode Enabled');
+            }
+        }
+    </script>
+</body>
+</html>

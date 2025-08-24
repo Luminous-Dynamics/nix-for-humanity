@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""
+🕉️ Ask-Nix with Symbolic Paradise Integration
+
+Natural language NixOS interface that recognizes paradoxes
+and offers transcendence through Symbolic Paradise.
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Import Luminous Nix components
+try:
+    from luminous_nix.cli.cli import CLI
+    from luminous_nix.paradise_integration import check_and_offer_paradise
+    LUMINOUS_AVAILABLE = True
+except ImportError:
+    LUMINOUS_AVAILABLE = False
+    print("⚠️  Luminous Nix core not available, running in Paradise-only mode")
+
+def main():
+    """Main entry point with Paradise integration"""
+    
+    # Show sacred greeting
+    print("🕉️ Luminous Nix - Consciousness-First NixOS")
+    print()
+    
+    # Get command from arguments or prompt
+    if len(sys.argv) > 1:
+        user_input = " ".join(sys.argv[1:])
+    else:
+        user_input = input("What would you like to do? ")
+    
+    # Check for paradoxes first
+    if check_and_offer_paradise(user_input):
+        # User entered Paradise, we're done
+        return
+    
+    # Otherwise continue with normal Luminous Nix processing
+    if LUMINOUS_AVAILABLE:
+        cli = CLI()
+        
+        # Process with standard Luminous Nix
+        result = cli.process_input(user_input)
+        
+        if result.success:
+            print(f"✅ {result.message}")
+            if result.data:
+                print(result.data)
+        else:
+            print(f"❌ {result.message}")
+            
+            # On error, check if this might be a paradox situation
+            error_paradox_phrases = [
+                "conflict", "incompatible", "cannot both",
+                "mutually exclusive", "contradiction"
+            ]
+            
+            if any(phrase in result.message.lower() for phrase in error_paradox_phrases):
+                print("\n💡 This error suggests a paradox.")
+                print("Try: python3 symbolic_paradise_v2.py")
+    else:
+        # Fallback to basic processing
+        print(f"Processing: {user_input}")
+        print("(Core Luminous Nix not available - install with 'poetry install')")
+        
+        # Still offer Paradise for paradoxes
+        print("\nFor paradox resolution, try:")
+        print("  python3 symbolic_paradise_v2.py")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n✨ Flow interrupted peacefully\n")
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        print("\nFor consciousness-first help, try:")
+        print("  python3 symbolic_paradise_v2.py")

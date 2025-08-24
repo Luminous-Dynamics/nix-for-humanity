@@ -4,14 +4,10 @@ CLI commands for Nix flake management
 """
 
 import click
-import sys
 from pathlib import Path
 from typing import Optional
 
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent))
-
-from core.flake_manager import FlakeManager
+from luminous_nix.core.flake_manager import FlakeManager
 
 @click.group()
 def flake():

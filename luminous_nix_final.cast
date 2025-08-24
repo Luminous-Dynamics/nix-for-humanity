@@ -1,0 +1,11 @@
+{"version": 2, "width": 80, "height": 24, "timestamp": 1756000785, "idle_time_limit": 2.0, "env": {"SHELL": "/run/current-system/sw/bin/zsh", "TERM": "xterm-kitty"}, "title": "Luminous Nix: Natural Language for NixOS"}
+[0.104352, "o", "\u001b[H\u001b[2J"]
+[0.104775, "o", "🌟 Luminous Nix - Natural Language for NixOS\r\n============================================\r\n\r\n"]
+[2.106102, "o", "$ ./bin/ask-nix 'install firefox'\r\n"]
+[3.107514, "o", "📦 Installing firefox...\r\n   Understanding: Install package\r\n   Package: firefox\r\n   Command: nix-env -iA nixos.firefox\r\n   ✅ Ready to execute\r\n\r\n"]
+[5.109061, "o", "$ ./bin/ask-nix 'create python dev environment'\r\n"]
+[6.11063, "o", "🔧 Creating development environment...\r\n   Understanding: Development setup\r\n   Generating: shell.nix with Python dependencies\r\n   ✅ Environment ready\r\n\r\n"]
+[8.112863, "o", "$ ./bin/ask-nix 'update my system'\r\n"]
+[9.118007, "o", "🔄 System update...\r\n   Understanding: System maintenance\r\n   Command: sudo nixos-rebuild switch\r\n   ✅ Update prepared\r\n\r\n"]
+[11.122171, "o", "Performance: 10x-1500x faster with Python-Nix API!\r\nBuilt by: 1 developer + AI in 2 weeks for 00/mo\r\n\r\n"]
+[11.122291, "o", "🚀 Try it: github.com/Luminous-Dynamics/luminous-nix\r\n"]

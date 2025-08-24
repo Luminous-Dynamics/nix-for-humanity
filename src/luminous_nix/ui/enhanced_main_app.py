@@ -368,8 +368,8 @@ class EnhancedNixForHumanityTUI(App):
             package = query.split()[-1] if len(query.split()) > 1 else "package"
             return {
                 "success": True,
-                "message": f"✅ Installing {package}... This would run: nix-env -iA nixpkgs.{package}",
-                "command": f"nix-env -iA nixpkgs.{package}"
+                "message": f"✅ Installing {package}... This would run: nix profile install nixpkgs#{package}",
+                "command": f"nix profile install nixpkgs#{package}"
             }
         elif "help" in query_lower:
             return {

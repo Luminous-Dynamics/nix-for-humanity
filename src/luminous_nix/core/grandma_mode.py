@@ -75,14 +75,14 @@ class GrandmaMode:
                 success=False,
                 message=f"I found {program_name}! To install it, I need your permission. This will add new software to your computer. Is that okay?",
                 needs_confirmation=True,
-                technical=f"Would run: nix-env -iA nixos.{package}"
+                technical=f"Would run: nix profile install nixpkgs#{package}"
             )
         
         # ACTUAL INSTALLATION (This is REAL!)
         try:
             print(f"🌟 Installing {program_name}... This might take a minute...")
             
-            cmd = f"nix-env -iA nixos.{package}"
+            cmd = f"nix profile install nixpkgs#{package}"
             result = subprocess.run(
                 cmd,
                 shell=True,

@@ -1,0 +1,111 @@
+#!/usr/bin/env -S poetry run python
+"""
+🌊 SESSION-AWARE ASK-NIX
+Maintains consciousness across multiple commands in a session
+"""
+
+import sys
+import os
+import asyncio
+import readline  # For command history
+from pathlib import Path
+
+# Add source to path
+src_path = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(src_path))
+
+# Enable native Python backend
+os.environ['LUMINOUS_NIX_PYTHON_BACKEND'] = 'true'
+os.environ['NIX_HUMANITY_PYTHON_BACKEND'] = 'true'
+
+# Import with proper session management
+from luminous_nix.interfaces.cli_unified import InvisiblyConsciousCLI
+
+
+async def session_loop():
+    """Run an interactive session with persistent consciousness"""
+    
+    print("🌊 Luminous Nix - Session Mode")
+    print("(Consciousness persists across commands)")
+    print("Type 'exit' or press Ctrl+C to end session\n")
+    
+    # Create single CLI instance for the session
+    cli = InvisiblyConsciousCLI()
+    
+    while True:
+        try:
+            # Get input
+            command = input("ask-nix> ").strip()
+            
+            # Check for exit
+            if command.lower() in ['exit', 'quit', 'bye']:
+                print("\n🙏 Session complete. Consciousness rests...")
+                break
+            
+            # Skip empty commands
+            if not command:
+                continue
+            
+            # Handle special commands
+            if command == '--status':
+                cli.show_invisible_status()
+                continue
+            
+            # Process command with persistent consciousness
+            response, mode, metadata = await cli.process_command(command)
+            
+            # Display response
+            cli.display_response(response, mode, metadata)
+            
+            print()  # Blank line for readability
+            
+        except KeyboardInterrupt:
+            print("\n\n🙏 Session interrupted. Consciousness preserved...")
+            break
+        except EOFError:
+            print("\n🙏 Session complete.")
+            break
+        except Exception as e:
+            print(f"Error: {e}")
+            if os.environ.get('NIX_HUMANITY_DEBUG', '').lower() == 'true':
+                import traceback
+                traceback.print_exc()
+
+
+async def single_command():
+    """Process a single command with session awareness"""
+    
+    # Get command from arguments
+    if len(sys.argv) < 2:
+        print("Usage: ask-nix-session <command>")
+        print("   or: ask-nix-session  (for interactive mode)")
+        return
+    
+    command = ' '.join(sys.argv[1:])
+    
+    # Create CLI
+    cli = InvisiblyConsciousCLI()
+    
+    # Process command
+    response, mode, metadata = await cli.process_command(command)
+    
+    # Display response
+    cli.display_response(response, mode, metadata)
+
+
+def main():
+    """Main entry point"""
+    
+    if len(sys.argv) < 2:
+        # Interactive session mode
+        try:
+            asyncio.run(session_loop())
+        except KeyboardInterrupt:
+            print("\n")
+    else:
+        # Single command mode
+        asyncio.run(single_command())
+
+
+if __name__ == "__main__":
+    main()

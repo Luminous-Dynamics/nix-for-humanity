@@ -41,6 +41,10 @@ class PersonaPOMLRouter:
         
         self.logger.info("💝 PersonaPOMLRouter initialized - Heart of Empathy activated")
     
+    def get_available_personas(self) -> List[str]:
+        """Get list of available personas"""
+        return list(self.persona_templates.keys())
+    
     def get_prompt(self, task: str, persona: str = 'default') -> POMLProcessor:
         """
         Get persona-specific POML processor for a task.

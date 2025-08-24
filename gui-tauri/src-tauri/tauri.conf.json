@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Luminous Nix",
+  "version": "0.1.0",
+  "identifier": "com.luminous-dynamics.nix",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Luminous Nix - Consciousness-First NixOS",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "transparent": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "connect-src": ["'self'", "ws://localhost:*", "http://localhost:*"],
+        "img-src": ["'self'", "data:", "https:"]
+      }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true,
+      "execute": true,
+      "sidecar": true,
+      "scope": [
+        {
+          "name": "nix",
+          "cmd": "nix",
+          "args": true
+        },
+        {
+          "name": "nixos-rebuild",
+          "cmd": "nixos-rebuild",
+          "args": true
+        }
+      ]
+    },
+    "fs": {
+      "readFile": true,
+      "writeFile": true,
+      "readDir": true,
+      "createDir": true,
+      "removeDir": true,
+      "removeFile": true,
+      "exists": true,
+      "scope": ["$HOME/.config/luminous-nix/**", "$HOME/.local/share/luminous-nix/**"]
+    },
+    "dialog": {
+      "open": true,
+      "save": true,
+      "message": true,
+      "ask": true,
+      "confirm": true
+    },
+    "notification": {
+      "all": true
+    },
+    "clipboard": {
+      "writeText": true,
+      "readText": true
+    },
+    "websocket": {
+      "connect": true,
+      "send": true,
+      "listen": true
+    }
+  }
+}

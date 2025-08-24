@@ -80,9 +80,9 @@ except Exception as e:
 # Test through unified backend
 print("\n\n=== Testing Through Unified Backend ===")
 try:
-    from luminous_nix.core.engine import UnifiedNixBackend, IntentType
+    from luminous_nix.core.engine import NixForHumanityBackend, IntentType
     
-    backend = UnifiedNixBackend()
+    backend = NixForHumanityBackend()
     
     test_queries = [
         "generate config for nginx web server",

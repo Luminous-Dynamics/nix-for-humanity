@@ -1,0 +1,2 @@
+{"version": 2, "width": 80, "height": 24, "timestamp": 1756000716, "idle_time_limit": 2.0, "env": {"SHELL": "/run/current-system/sw/bin/zsh", "TERM": "xterm-kitty"}, "title": "Luminous Nix Demo"}
+[0.019687, "o", "sh: line 1: /bin/bash: No such file or directory\r\n"]

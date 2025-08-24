@@ -8,7 +8,7 @@ including XAI explanations and persona adaptation.
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from luminous_nix.core.backend import EnhancedBackend
+from luminous_nix.core.backend import NixBackend as EnhancedBackend
 from src.nix_for_humanity.core.types import (
     Request, Response, PersonalityStyle, IntentType
 )

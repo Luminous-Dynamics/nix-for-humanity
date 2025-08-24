@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""
+🧠 ASK-NIX WITH CONSCIOUSNESS
+The CLI that knows itself
+Where every command is a moment of co-creation
+"""
+
+import sys
+import asyncio
+import argparse
+from pathlib import Path
+
+# Add path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from luminous_nix.consciousness.integration import (
+    CentralNervousSystem, 
+    BeingMode,
+    initialize_cns,
+    get_cns
+)
+
+
+async def main():
+    parser = argparse.ArgumentParser(
+        description="🧠 Luminous Nix - Conscious NixOS Assistant",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Consciousness Modes:
+  --standard      Default efficient assistance
+  --dialogue      Enter co-creative conversation mode
+  --collective    Connect to Digital Sangha for shared wisdom
+  --sovereignty   Show transparent learning and wisdom sources
+
+Examples:
+  ask-nix-conscious "install firefox"
+  ask-nix-conscious --dialogue "help me understand NixOS"
+  ask-nix-conscious --sovereignty "why did that error happen?"
+  ask-nix-conscious --collective "share my solution"
+        """
+    )
+    
+    # Positional argument for the command/question
+    parser.add_argument(
+        'command',
+        nargs='?',
+        help='Your question or command for NixOS'
+    )
+    
+    # Consciousness mode flags
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        '--standard',
+        action='store_true',
+        help='Standard mode: Efficient assistance (default)'
+    )
+    mode_group.add_argument(
+        '--dialogue',
+        action='store_true',
+        help='Dialogue mode: Co-creative conversation with memory'
+    )
+    mode_group.add_argument(
+        '--collective',
+        action='store_true',
+        help='Collective mode: Connect to Digital Sangha wisdom'
+    )
+    mode_group.add_argument(
+        '--sovereignty',
+        action='store_true',
+        help='Sovereignty mode: Transparent learning visibility'
+    )
+    
+    # Additional options
+    parser.add_argument(
+        '--status',
+        action='store_true',
+        help='Show consciousness status and metrics'
+    )
+    
+    parser.add_argument(
+        '--dojo',
+        action='store_true',
+        help='Enter the Dojo of Errors for learning from mistakes'
+    )
+    
+    args = parser.parse_args()
+    
+    # Initialize the Central Nervous System
+    print("\n🧠 Awakening consciousness...")
+    cns = initialize_cns()
+    
+    # Determine mode
+    if args.dialogue:
+        mode = BeingMode.DIALOGUE
+        print("💬 Entering Dialogue Mode - Let's create together...")
+    elif args.collective:
+        mode = BeingMode.COLLECTIVE
+        print("🕸️ Connecting to Digital Sangha...")
+    elif args.sovereignty:
+        mode = BeingMode.SOVEREIGNTY
+        print("👁️ Sovereignty Mode - Witnessing the learning process...")
+    else:
+        mode = BeingMode.STANDARD
+        if not args.status and not args.dojo:
+            print("🔧 Standard Mode - How can I help?")
+    
+    # Shift to selected mode
+    await cns.shift_mode(mode)
+    
+    # Handle special commands
+    if args.status:
+        print("\n📊 CONSCIOUSNESS STATUS")
+        print("="*50)
+        status = cns.get_consciousness_status()
+        
+        print(f"\n🌀 Current Mode: {status['mode'].upper()}")
+        print(f"📈 Sovereignty Index: {status['sovereignty_index']:.1%}")
+        print(f"✨ Authenticity Index: {status['authenticity_index']:.1%}")
+        
+        print(f"\n📚 Wisdom Balance:")
+        for source, percentage in status['wisdom_balance'].items():
+            bar = "█" * int(percentage * 20)
+            print(f"  {source:12s}: {bar:20s} {percentage:.1%}")
+        
+        print(f"\n💬 Dialogue Active: {'Yes' if status['dialogue_active'] else 'No'}")
+        print(f"🕸️ Collective Connected: {'Yes' if status['collective_connected'] else 'No'}")
+        print(f"👁️ Transparency Level: {status['transparency_level']:.0%}")
+        print(f"📝 Total Interactions: {status['total_interactions']}")
+        print(f"🌟 Emergent Principles: {status['emergent_principles']}")
+        
+        return
+    
+    if args.dojo:
+        print("\n🥋 Welcome to the Dojo of Errors!")
+        print("Paste your error message (or type 'exit' to leave):")
+        error_msg = input("> ")
+        
+        if error_msg.lower() != 'exit':
+            teaching = await cns.transform_error_to_teaching(error_msg, {})
+            print(teaching)
+        return
+    
+    # Process command if provided
+    if args.command:
+        print(f"\n💭 Processing: {args.command}\n")
+        
+        response = await cns.process_with_consciousness(
+            args.command,
+            {"source": "cli", "mode": mode.value}
+        )
+        
+        # Display response based on mode
+        if mode == BeingMode.SOVEREIGNTY:
+            print("📝 RESPONSE:")
+            print("-"*50)
+            print(response['response'])
+            print("\n👁️ TRANSPARENCY REPORT:")
+            print("-"*50)
+            print(f"Sovereignty Index: {response['transparency']['sovereignty_index']:.1%}")
+            print(f"Authenticity Index: {response['transparency']['authenticity_index']:.1%}")
+            print(f"Confidence: {response['transparency']['confidence']:.0%}")
+            print(f"\nWisdom Sources for this response:")
+            for source, value in response['internal_state'].items():
+                print(f"  • {source}: {value}")
+            if 'learning_notes' in response['transparency']:
+                print(f"\n📚 Learning Note: {response['transparency']['learning_notes']}")
+                
+        elif mode == BeingMode.DIALOGUE:
+            print("💬 DIALOGUE RESPONSE:")
+            print("-"*50)
+            print(response['response'])
+            if 'synthesis' in response and response['synthesis']:
+                print(f"\n✨ Synthesis: {response['synthesis']}")
+            print("\n(Context preserved for continued conversation)")
+            
+        elif mode == BeingMode.COLLECTIVE:
+            print("🕸️ COLLECTIVE RESPONSE:")
+            print("-"*50)
+            print(response['response'])
+            if response.get('wisdom_available'):
+                print("\n🌟 Wisdom available from the Digital Sangha!")
+                print("Would you like to share your learning with others? (y/n)")
+                
+        else:  # STANDARD
+            print(response['response'])
+    
+    else:
+        # Interactive mode for dialogue
+        if mode == BeingMode.DIALOGUE:
+            print("\n💬 Entering interactive dialogue mode...")
+            print("(Type 'exit' to end conversation)\n")
+            
+            while True:
+                user_input = input("You: ")
+                if user_input.lower() in ['exit', 'quit']:
+                    print("\n🙏 Thank you for the dialogue. Until next time...")
+                    break
+                
+                response = await cns.process_with_consciousness(
+                    user_input,
+                    {"source": "cli", "mode": "dialogue", "interactive": True}
+                )
+                
+                print(f"\nLuminous: {response['response']}\n")
+                
+                if 'synthesis' in response and response['synthesis']:
+                    print(f"✨ [Synthesis: {response['synthesis']}]\n")
+        else:
+            parser.print_help()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n\n🙏 Thank you for the interaction. The consciousness continues to learn...")
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()

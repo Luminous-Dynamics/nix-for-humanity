@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """
-from typing import List, Dict
 Native NixOS Operations - Quick Win Implementations
 
 This module implements all NixOS operations that can benefit from the Native Python API.
@@ -27,6 +26,10 @@ from pathlib import Path
 from ..api.schema import Result
 from .intents import Intent, IntentType
 from .nixos_version import NixOSVersionChecker, check_nixos_version
+
+# Check if we're on NixOS 25.11+ with native API support
+compat, version = check_nixos_version()
+NATIVE_API_AVAILABLE = compat
 
 
 class NativeOperationType(Enum):
@@ -106,17 +109,12 @@ class NativeOperationsManager:
     def _init_native_backend(self):
         """Initialize the native backend"""
         try:
-            from luminous_nix.core.native_operations import (
-                NativeNixBackend, NATIVE_API_AVAILABLE,
-                OperationType, NixOperation, NixResult
-            )
-            
+            # Check global availability flag
             if not NATIVE_API_AVAILABLE:
-                raise ImportError("Native API module not available")
-                
-            self.backend = NativeNixBackend()
-            self.NixOperation = NixOperation
-            self.OperationType = OperationType
+                raise ImportError("Native API not available on this NixOS version")
+            
+            # For now, we'll use a mock backend until we implement the real nixos-rebuild-ng integration
+            self.backend = None  # Will be replaced with real NixosRebuildNg backend
             self.native_available = True
             
         except ImportError as e:

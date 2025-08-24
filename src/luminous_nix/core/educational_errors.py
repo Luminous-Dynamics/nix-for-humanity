@@ -120,14 +120,14 @@ installations usually don't!""",
                 learn_more=[
                     "User packages are installed to ~/.nix-profile/",
                     "System packages are in /run/current-system/",
-                    "You can install most software without sudo using nix-env"
+                    "You can install most software without sudo using nix profile"
                 ],
                 suggestions=[
                     "For system changes, I'll show you the sudo command",
-                    "For user packages, try: 'nix-env -iA nixos.<package>'",
+                    "For user packages, try: 'nix profile install nixpkgs#<package>'",
                     "Consider using Home Manager for user configurations"
                 ],
-                example="Install for yourself: 'nix-env -iA nixos.firefox'\nInstall system-wide: Add to configuration.nix",
+                example="Install for yourself: 'nix profile install nixpkgs#firefox'\nInstall system-wide: Add to configuration.nix",
                 prevention="Use user installations when possible to avoid permission issues"
             ),
             

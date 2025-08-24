@@ -16,9 +16,9 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from luminous_nix.core.engine import NixForHumanityBackend as Engine
-from luminous_nix.core.intents import IntentEngine
+from luminous_nix.core.engine import NixForHumanityBackend as IntentEngine
 from luminous_nix.core.knowledge import KnowledgeBase
-from luminous_nix.core.executor import ExecutionEngine
+from luminous_nix.core.executor import CommandExecutor as ExecutionEngine
 from luminous_nix.core.personality import PersonalitySystem
 
 class PersonaJourney:

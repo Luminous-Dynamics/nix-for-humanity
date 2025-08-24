@@ -1,0 +1,21 @@
+**📜 Community Guidelines**
+
+**✅ DO**
+• Be kind and patient with everyone
+• Ask questions - no matter how basic
+• Share your successes AND failures
+• Help newcomers get started
+• Respect all skill levels
+• Make technology accessible
+
+**❌ DON'T**
+• No harassment or discrimination
+• No spam or unsolicited promotion
+• No "RTFM" responses
+• No gatekeeping
+• No dismissing accessibility needs
+
+**🎯 Remember**
+We're making NixOS accessible to EVERYONE - from developers to grandmothers!
+
+Questions? Ask in #help

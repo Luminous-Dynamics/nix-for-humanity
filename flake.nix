@@ -93,17 +93,7 @@
           exec ${poetryEnv}/bin/python -m nix_humanity.interfaces.tui "$@"
         '';
         
-        # Create Grandma Mode launcher
-        grandmaNix = pkgs.writeShellScriptBin "grandma-nix" ''
-          #!/usr/bin/env bash
-          set -e
-          
-          cd ${toString ./.}
-          export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
-          
-          # Launch Grandma Mode with proper Python environment
-          exec ${poetryEnv}/bin/python ${toString ./.}/bin/grandma-nix "$@"
-        '';
+        # NOTE: Removed grandma-nix - we use ONE adaptive interface!
         
         # Create main ask-nix launcher
         askNix = pkgs.writeShellScriptBin "ask-nix" ''
@@ -250,8 +240,7 @@
             # TUI launcher
             runTuiApp
             
-            # Grandma Mode and ask-nix launchers
-            grandmaNix
+            # The ONE adaptive launcher
             askNix
             
             # Development utilities
@@ -301,7 +290,7 @@
             echo "  Use poetry environment for full feature set including DoWhy"
             echo ""
             echo "📚 Available commands:"
-            echo "  grandma-nix       - REAL NixOS for non-technical users"
+            echo "  ask-nix           - Adaptive natural language NixOS (all personas)"
             echo "  ask-nix           - Natural language NixOS interface"
             echo "  run-tui-app       - Launch the beautiful TUI (no pip install needed!)"
             echo "  ask-nix-guru      - Query local LLM for NixOS expertise"
@@ -350,7 +339,7 @@
           default = self.packages.${system}.luminous-nix;
           luminous-nix = self.packages.${system}.nix-for-humanity;  # Alias for compatibility
           ask-nix-guru = askNixGuru;
-          grandma-nix = grandmaNix;
+          # grandma-nix removed - use ask-nix with adaptive personas
           ask-nix = askNix;
           run-tui-app = runTuiApp;
           ollama = pkgs.ollama;
@@ -424,11 +413,9 @@
 
         # App runner for development
         apps = {
+          # ONE adaptive interface - no fixed personas!
           default = flake-utils.lib.mkApp {
-            drv = grandmaNix;  # Default to Grandma Mode for accessibility
-          };
-          grandma-nix = flake-utils.lib.mkApp {
-            drv = grandmaNix;
+            drv = askNix;  # The ONE TRUE COMMAND - adapts fluidly to users
           };
           ask-nix = flake-utils.lib.mkApp {
             drv = askNix;

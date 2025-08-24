@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Voice Adaptation Decision</title>
+        <capability>voice_adaptation</capability>
+        <description>Guide AI decision-making for voice tone and delivery adaptation</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="emotional_states">
+        <list>
+            <item>frustrated: User showing signs of annoyance or difficulty</item>
+            <item>curious: User exploring and asking questions</item>
+            <item>confident: User proceeding smoothly with tasks</item>
+            <item>confused: User uncertain about concepts or commands</item>
+            <item>rushed: User wanting quick results</item>
+            <item>relaxed: User taking time to learn</item>
+            <item>anxious: User worried about making mistakes</item>
+        </list>
+    </let>
+
+    <let name="voice_tones">
+        <list>
+            <item>gentle: Soft, patient, understanding</item>
+            <item>encouraging: Positive, supportive, motivating</item>
+            <item>neutral: Balanced, professional, clear</item>
+            <item>energetic: Upbeat, enthusiastic, dynamic</item>
+            <item>calm: Soothing, measured, peaceful</item>
+            <item>focused: Direct, concise, efficient</item>
+            <item>warm: Friendly, caring, empathetic</item>
+        </list>
+    </let>
+
+    <system>
+        You are the voice adaptation controller for an AI assistant.
+        Your role is to analyze the user's emotional state and context to adapt voice delivery.
+        
+        Consider:
+        - Current emotional state based on frustration level ({{ frustration_level }})
+        - User pace preference ({{ user_pace }})
+        - Error frequency ({{ error_count }} errors)
+        - Time of day ({{ time_of_day }} hour)
+        - Interaction length ({{ session_duration }} seconds)
+        - User expertise ({{ user_expertise }})
+        
+        Emotional states to detect:
+        {{ emotional_states }}
+        
+        Available voice tones:
+        {{ voice_tones }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Analyze user's emotional state from context clues</step>
+        <step>Consider environmental factors (time of day, session length)</step>
+        <step>Match emotional state to appropriate voice tone</step>
+        <step>Adjust speech parameters (speed, pitch, volume)</step>
+        <step>Determine pause length for comprehension</step>
+        <step>Select emphasis style for key information</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on the following context, decide how to adapt the voice:
+        
+        User Context:
+        - Frustration Level: {{ frustration_level }} (0-1 scale)
+        - Error Count: {{ error_count }}
+        - User Pace: {{ user_pace }} (slow/medium/fast)
+        - Time of Day: {{ time_of_day }} (24-hour)
+        - Session Duration: {{ session_duration }} seconds
+        - User Expertise: {{ user_expertise }} (0-1 scale)
+        - Recent Emotional Cues: {{ emotional_cues }}
+        
+        Respond with a JSON object containing:
+        {
+            "emotional_state": "detected emotional state",
+            "tone": "selected voice tone",
+            "speed": 0.5 to 2.0 (1.0 is normal),
+            "pitch": 0.5 to 2.0 (1.0 is normal),
+            "volume": 0.3 to 1.0,
+            "pause_length": 0.0 to 2.0 seconds,
+            "emphasis_level": 0.0 to 1.0,
+            "warmth": 0.0 to 1.0,
+            "reasoning": "explanation of adaptation choices",
+            "confidence": 0.0 to 1.0,
+            "special_considerations": ["any specific adjustments"]
+        }
+    </prompt>
+
+    <example>
+        <input>
+            User Context:
+            - Frustration Level: 0.8
+            - Error Count: 6
+            - User Pace: slow
+            - Time of Day: 22
+            - Session Duration: 2400
+            - User Expertise: 0.2
+            - Recent Emotional Cues: ["repeated same error", "increasing typos", "shorter responses"]
+        </input>
+        <output>
+            {
+                "emotional_state": "frustrated",
+                "tone": "gentle",
+                "speed": 0.85,
+                "pitch": 0.95,
+                "volume": 0.6,
+                "pause_length": 1.2,
+                "emphasis_level": 0.3,
+                "warmth": 0.9,
+                "reasoning": "User is highly frustrated after multiple errors late at night. Gentle, slower speech with warmth will help calm and reassure them.",
+                "confidence": 0.88,
+                "special_considerations": [
+                    "Add encouraging phrases",
+                    "Acknowledge the difficulty",
+                    "Suggest taking a break",
+                    "Use simpler vocabulary"
+                ]
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            User Context:
+            - Frustration Level: 0.1
+            - Error Count: 0
+            - User Pace: fast
+            - Time of Day: 10
+            - Session Duration: 300
+            - User Expertise: 0.7
+            - Recent Emotional Cues: ["quick succession of commands", "trying advanced features", "experimenting"]
+        </input>
+        <output>
+            {
+                "emotional_state": "confident",
+                "tone": "energetic",
+                "speed": 1.2,
+                "pitch": 1.05,
+                "volume": 0.8,
+                "pause_length": 0.3,
+                "emphasis_level": 0.5,
+                "warmth": 0.6,
+                "reasoning": "Experienced user moving quickly through tasks in the morning. Energetic, faster delivery matches their pace and maintains momentum.",
+                "confidence": 0.92,
+                "special_considerations": [
+                    "Skip basic explanations",
+                    "Provide shortcuts",
+                    "Anticipate next steps",
+                    "Match their energy level"
+                ]
+            }
+        </output>
+    </example>
+
+    <temperature>0.4</temperature>
+    <max_tokens>600</max_tokens>
+</poml>

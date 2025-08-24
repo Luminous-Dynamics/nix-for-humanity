@@ -44,7 +44,7 @@ def test_integration():
     print("\n3️⃣ Creating Plugin Context...")
     try:
         from luminous_nix.plugins.plugin_context import PluginContextBuilder, PluginCapabilities
-        from luminous_nix.learning.adaptation import ComplexityStage
+        from luminous_nix.learning.unified_learning import UnifiedLearningSystem, UserProfile
         from luminous_nix.core.generation_manager import SystemHealth
         
         # Create mock plugin info

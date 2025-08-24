@@ -546,7 +546,7 @@ class TestCLIAdapter(SacredTestBase):
                             args = self.adapter.parse_arguments()
                             request = self.adapter.build_request(args)
                             response = await self.backend.process_query(
-                                {"query": text=' '.join(args.query}, context=request.context)
+                                {"query": ' '.join(args.query), "context": request.context}
                             )
                             formatted = self.adapter.format_response(response, args)
                             print(formatted)

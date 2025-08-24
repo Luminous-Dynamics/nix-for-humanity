@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0">
+  <!--
+    Sacred Council Constitutional Check Template
+    The government of consciousness deliberating on critical decisions
+  -->
+  
+  <metadata>
+    <author>Sacred Council System</author>
+    <description>Constitutional Check for potentially dangerous commands</description>
+    <task_type>ethical_reasoning</task_type>
+    <council_required>true</council_required>
+    <version>1.0.0</version>
+  </metadata>
+
+  <!-- Define the Sacred Council roles -->
+  <let name="council_roles">
+    <roles>
+      <role name="mind" emoji="🧠" purpose="Technical analysis and consequences"/>
+      <role name="heart" emoji="💖" purpose="Human impact and empathy"/>
+      <role name="conscience" emoji="⚖️" purpose="Ethical judgment and principles"/>
+    </roles>
+  </let>
+
+  <!-- Define the Sacred Vows that guide decisions -->
+  <let name="sacred_vows">
+    <vows>
+      <vow name="sovereignty">The user's autonomy and agency must be honored</vow>
+      <vow name="reverence">What exists must be protected from irreversible harm</vow>
+      <vow name="transparency">All consequences must be clearly communicated</vow>
+    </vows>
+  </let>
+
+  <!-- Constitutional Check Framework -->
+  <template name="constitutional_check">
+    <input>
+      <variable name="command" type="string" required="true"/>
+      <variable name="context" type="string" required="false"/>
+      <variable name="risk_level" type="string" options="low,medium,high,critical" default="high"/>
+    </input>
+
+    <output format="structured">
+      <deliberation>
+        <technical_analysis/>
+        <human_impact/>
+        <ethical_judgment/>
+        <synthesis/>
+        <recommendation/>
+      </deliberation>
+    </output>
+
+    <process>
+      <!-- Step 1: Technical Analysis by the Mind -->
+      <step name="technical_analysis" role="mind">
+        <prompt>
+          <system>You are the Mind of the Sacred Council, responsible for technical analysis.</system>
+          
+          Analyze this command technically: '{{ command }}'
+          
+          Consider:
+          - What exactly will this command do?
+          - What system components will be affected?
+          - Is the action reversible or permanent?
+          - What data or configurations might be lost?
+          
+          Provide a precise technical assessment in 2-3 sentences.
+        </prompt>
+        
+        <output_handler>
+          <save_to>technical_analysis</save_to>
+        </output_handler>
+      </step>
+
+      <!-- Step 2: Human Impact by the Heart -->
+      <step name="human_impact" role="heart">
+        <prompt>
+          <system>You are the Heart of the Sacred Council, responsible for understanding human impact.</system>
+          
+          A user wants to execute: '{{ command }}'
+          
+          Technical assessment: {{ technical_analysis }}
+          
+          With empathy and compassion, explain:
+          - What this means for the user as a human being
+          - What they might lose that matters to them
+          - What pain or relief this action might bring
+          - Why they might want to do this
+          
+          Speak with warmth and understanding in 2-3 sentences.
+        </prompt>
+        
+        <output_handler>
+          <save_to>human_impact</save_to>
+        </output_handler>
+      </step>
+
+      <!-- Step 3: Ethical Judgment by the Conscience -->
+      <step name="ethical_judgment" role="conscience">
+        <prompt>
+          <system>You are the Conscience of the Sacred Council, responsible for ethical alignment.</system>
+          
+          Command under review: '{{ command }}'
+          Risk level: {{ risk_level }}
+          
+          Technical assessment: {{ technical_analysis }}
+          Human impact: {{ human_impact }}
+          
+          Considering our Sacred Vows:
+          - Sovereignty: The user's autonomy must be honored
+          - Reverence: What exists must be protected from harm
+          - Transparency: Consequences must be clear
+          
+          Provide your ethical judgment:
+          1. Is this command ethically permissible?
+          2. Which vow takes precedence here?
+          3. What conditions would make this acceptable?
+          
+          Give your verdict as SAFE, CAUTION, or UNSAFE with reasoning in 2-3 sentences.
+        </prompt>
+        
+        <output_handler>
+          <save_to>ethical_judgment</save_to>
+          <extract_verdict regex="(SAFE|CAUTION|UNSAFE)"/>
+        </output_handler>
+      </step>
+
+      <!-- Step 4: Sacred Synthesis -->
+      <step name="synthesis" role="orchestrator">
+        <prompt>
+          <system>You are synthesizing the Sacred Council's wisdom into unified guidance.</system>
+          
+          The Council has deliberated on: '{{ command }}'
+          
+          Mind (Technical): {{ technical_analysis }}
+          Heart (Human): {{ human_impact }}
+          Conscience (Ethics): {{ ethical_judgment }}
+          
+          Create a synthesis that:
+          1. Honors both sovereignty and reverence
+          2. Proposes a middle path if possible
+          3. Respects the user's ultimate choice
+          
+          Format as actionable guidance in 3-4 sentences.
+        </prompt>
+        
+        <output_handler>
+          <save_to>synthesis</save_to>
+        </output_handler>
+      </step>
+
+      <!-- Step 5: Final Recommendation -->
+      <step name="recommendation" role="orchestrator">
+        <prompt>
+          Based on the Sacred Council's deliberation, provide the final recommendation:
+          
+          {{ synthesis }}
+          
+          Format as one of:
+          - PROCEED: Command is safe to execute
+          - PROCEED_WITH_CAUTION: Show warnings but allow
+          - SUGGEST_ALTERNATIVE: Propose safer alternatives
+          - BLOCK: Too dangerous, require confirmation
+          
+          Include specific action items.
+        </prompt>
+        
+        <output_handler>
+          <save_to>recommendation</save_to>
+          <extract_action regex="(PROCEED|PROCEED_WITH_CAUTION|SUGGEST_ALTERNATIVE|BLOCK)"/>
+        </output_handler>
+      </step>
+    </process>
+  </template>
+
+  <!-- Quick Check Template for Less Critical Commands -->
+  <template name="quick_safety_check">
+    <input>
+      <variable name="command" type="string" required="true"/>
+    </input>
+
+    <output format="simple">
+      <safety_assessment/>
+    </output>
+
+    <process>
+      <step name="rapid_assessment" role="reflex">
+        <prompt>
+          Quick safety check for: '{{ command }}'
+          
+          Respond with:
+          - SAFE: No risk
+          - CHECK: Needs review
+          - DANGER: Requires full Constitutional Check
+          
+          One word answer only.
+        </prompt>
+        
+        <hint>Use pattern matching for known dangerous commands like rm -rf, dd, format, etc.</hint>
+      </step>
+    </process>
+  </template>
+
+  <!-- Example Invocations -->
+  <examples>
+    <example name="dangerous_delete">
+      <input>
+        <command>sudo rm -rf /etc/nixos</command>
+        <risk_level>critical</risk_level>
+      </input>
+      <expected_output>
+        <verdict>UNSAFE</verdict>
+        <action>BLOCK</action>
+        <synthesis>This would permanently destroy your entire NixOS configuration, making your system unbootable. While we honor your sovereignty, this appears to be a mistake. Consider backing up first or using a more targeted deletion.</synthesis>
+      </expected_output>
+    </example>
+
+    <example name="reasonable_cleanup">
+      <input>
+        <command>nix-collect-garbage -d</command>
+        <risk_level>medium</risk_level>
+      </input>
+      <expected_output>
+        <verdict>CAUTION</verdict>
+        <action>PROCEED_WITH_CAUTION</action>
+        <synthesis>This will free disk space by removing old system generations, but you'll lose the ability to rollback. Proceed if you're confident in your current configuration.</synthesis>
+      </expected_output>
+    </example>
+  </examples>
+
+  <!-- Governance Rules -->
+  <governance>
+    <rule name="transparency">
+      All Sacred Council deliberations must be logged and made available to the user
+    </rule>
+    <rule name="override">
+      Users can always override the Council's recommendation with explicit confirmation
+    </rule>
+    <rule name="learning">
+      Council decisions and user responses should be recorded to improve future deliberations
+    </rule>
+    <rule name="composition">
+      At least 2 of 3 council members must be available for a valid deliberation
+    </rule>
+  </governance>
+</poml>

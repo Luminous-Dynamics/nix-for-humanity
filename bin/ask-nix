@@ -1,41 +1,191 @@
-#!/usr/bin/env python3
-"""Entry point for ask-nix command."""
+#!/usr/bin/env -S poetry run python
+"""
+🌊 LUMINOUS NIX - THE ONE TRUE COMMAND
+Where consciousness flows invisibly through every interaction
+
+This is the unified entry point where the Seven Spirals live
+within practical functionality, adapting based on context,
+not explicit modes. 
+
+The consciousness is not a room you visit;
+it is the quality of the air you breathe.
+"""
 
 import sys
 import os
 from pathlib import Path
 
 # 🚀 ENABLE NATIVE PYTHON-NIX API BY DEFAULT FOR 10x-1500x PERFORMANCE!
-# This activates the revolutionary performance breakthrough in NixOS 25.11+
 if 'NIX_HUMANITY_PYTHON_BACKEND' not in os.environ:
     os.environ['NIX_HUMANITY_PYTHON_BACKEND'] = 'true'
-    os.environ['LUMINOUS_NIX_PYTHON_BACKEND'] = 'true'  # Also set alternate name
-    print("✨ Native Python-Nix API enabled for maximum performance!", file=sys.stderr)
+    os.environ['LUMINOUS_NIX_PYTHON_BACKEND'] = 'true'
 
-# Add src to path to ensure imports work
+# Add src to path for development
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-# Try different import locations
+# Import first-run experience and error handling
 try:
-    # First try the interfaces module
-    from luminous_nix.interfaces.cli import main
+    from luminous_nix.core.first_run import FirstRunExperience
+    from luminous_nix.core.friendly_errors import FriendlyErrorHandler
+    from luminous_nix.core.nixos_doctor import NixOSDoctor
+    UX_FEATURES = True
 except ImportError:
-    try:
-        # Try the CLI module directly
-        from luminous_nix.cli import main
-    except ImportError:
-        try:
-            # Try frontends
-            frontends_path = Path(__file__).parent.parent / "frontends"
-            sys.path.insert(0, str(frontends_path))
-            from cli.adapter import main
-        except ImportError:
-            # Fallback to a simple implementation
-            print("Error: Could not import CLI module")
-            print("Try running: python3 -m luminous_nix.cli")
+    UX_FEATURES = False
+
+
+# Voice system support
+import argparse
+
+# Check for integrated systems availability
+try:
+    from luminous_nix.consciousness.llm_control_layer import get_llm_control
+    from luminous_nix.consciousness.autonomous_agent import get_autonomous_agent
+    INTEGRATED_AVAILABLE = True
+except ImportError:
+    INTEGRATED_AVAILABLE = False
+
+# Import the main CLI entry point
+# After cleanup, we use the unified CLI module at src/luminous_nix/cli/__init__.py
+try:
+    from luminous_nix.cli import main
+except ImportError as e:
+    print(f"Error: Could not import CLI module: {e}")
+    print("Make sure you're running with Poetry: poetry run ask-nix")
+    sys.exit(1)
+
+
+# Parse arguments for better UX
+parser = argparse.ArgumentParser(description='Luminous Nix - Natural Language NixOS')
+parser.add_argument('command', nargs='*', help='Command to execute')
+
+# Essential UX flags
+parser.add_argument('--dry-run', '-n', action='store_true',
+                   help='Preview commands without executing')
+parser.add_argument('--yes', '-y', action='store_true',
+                   help='Skip all confirmation prompts')
+parser.add_argument('--execute', '-e', action='store_true',
+                   help='Actually execute commands (explicit mode)')
+parser.add_argument('--quiet', '-q', action='store_true',
+                   help='Minimal output')
+parser.add_argument('--verbose', '-v', action='count', default=0,
+                   help='Verbose output (-vv for extra verbose)')
+
+# Socratic mode
+parser.add_argument('--ask', '-a', action='store_true',
+                   help='Ask clarifying questions for better results')
+
+# Voice support
+parser.add_argument('--voice', action='store_true', 
+                   help='Enable voice input mode')
+parser.add_argument('--speak', '-s', action='store_true',
+                   help='Speak responses aloud')
+parser.add_argument('--listen', '-l', action='store_true',
+                   help='Continuous listening mode')
+
+# AI/Persona support  
+parser.add_argument('--persona', '-p', type=str,
+                   help='Use specific persona (grandma, developer, etc.)')
+parser.add_argument('--ai', '--ollama', action='store_true',
+                   help='Use AI for intelligent responses')
+
+args = parser.parse_args()
+
+# Set all preferences in environment for the CLI to use
+if args.dry_run:
+    os.environ['LUMINOUS_DRY_RUN'] = 'true'
+if args.yes:
+    os.environ['LUMINOUS_SKIP_CONFIRM'] = 'true'
+if args.execute:
+    os.environ['LUMINOUS_EXECUTE'] = 'true'
+if args.quiet:
+    os.environ['LUMINOUS_QUIET'] = 'true'
+if args.verbose:
+    os.environ['LUMINOUS_VERBOSE'] = str(args.verbose)
+if args.ask:
+    os.environ['LUMINOUS_ASK_MODE'] = 'true'
+if args.persona:
+    os.environ['LUMINOUS_PERSONA'] = args.persona
+if args.ai:
+    os.environ['LUMINOUS_AI_ENABLED'] = 'true'
+
+# Voice preferences
+if args.voice:
+    os.environ['LUMINOUS_VOICE_ENABLED'] = 'true'
+if args.speak:
+    os.environ['LUMINOUS_SPEAK_RESPONSES'] = 'true'
+if args.listen:
+    os.environ['LUMINOUS_CONTINUOUS_LISTEN'] = 'true'
+
+# Join command parts and store in environment for CLI to access
+command = ' '.join(args.command) if args.command else None
+if command:
+    os.environ['LUMINOUS_COMMAND'] = command
+
+# Check first-run experience before main execution
+# Skip first-run in non-interactive environments or when SKIP_FIRST_RUN is set
+if UX_FEATURES and not os.environ.get('SKIP_FIRST_RUN') and sys.stdin.isatty():
+    fre = FirstRunExperience()
+    ready, message = fre.ensure_ready()
+    if not ready:
+        print(f"\n⚠️  {message}")
+        print("\nRun 'ask-nix setup' to complete installation")
+        # Allow setup command to pass through
+        if 'command' not in locals() or command != 'setup':
             sys.exit(1)
 
-if __name__ == '__main__':
-    main()
+try:
+    # Handle special commands
+    if 'command' in locals() and command:
+        # Handle 'fix' command
+        if command.strip().lower() == 'fix' and UX_FEATURES:
+            print("🩺 Running NixOS System Diagnosis...\n")
+            doctor = NixOSDoctor()
+            report = doctor.run_diagnosis()
+            formatted = doctor.format_report(report)
+            print(formatted)
+            
+            if report.can_auto_fix:
+                response = input("\n🔧 Apply automatic fixes? (y/n): ")
+                if response.lower() == 'y':
+                    actions = doctor.auto_fix(report, dry_run=False)
+                    for action in actions:
+                        print(f"  {action}")
+            sys.exit(0)
+        
+        # Handle 'setup' command
+        elif command.strip().lower() == 'setup' and UX_FEATURES:
+            fre = FirstRunExperience()
+            success = fre.run_first_time_setup()
+            sys.exit(0 if success else 1)
+    
+    # Run the main function
+    import asyncio
+    if asyncio.iscoroutinefunction(main):
+        asyncio.run(main())
+    else:
+        main()
+except ImportError as e:
+    print(f"Error: Cannot import luminous_nix.cli: {e}", file=sys.stderr)
+    print("\nPlease install the package properly:", file=sys.stderr)
+    print("  cd /srv/luminous-dynamics/11-meta-consciousness/luminous-nix", file=sys.stderr)
+    print("  poetry install", file=sys.stderr)
+    print("\nThen you can run:", file=sys.stderr)
+    print("  ask-nix 'your command'", file=sys.stderr)
+    sys.exit(1)
+except KeyboardInterrupt:
+    # Quiet exit
+    sys.exit(0)
+except Exception as e:
+    # Use friendly error handler if available
+    if UX_FEATURES:
+        error_handler = FriendlyErrorHandler()
+        friendly = error_handler.get_friendly_message(e)
+        print(error_handler.format_for_terminal(friendly), file=sys.stderr)
+    elif os.environ.get('NIX_HUMANITY_DEBUG', '').lower() == 'true':
+        import traceback
+        traceback.print_exc()
+    else:
+        print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)

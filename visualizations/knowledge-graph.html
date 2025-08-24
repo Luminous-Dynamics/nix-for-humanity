@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔱 Sacred Knowledge Graph - Learning Journey Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b69 100%);
+            color: #e0e0ff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 1rem;
+            padding: 1rem;
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        #graph-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #graph {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        /* Progress indicators */
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Learning path */
+        .learning-path {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .learning-path li {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: rgba(138, 43, 226, 0.1);
+            border-left: 3px solid #8b5cf6;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .learning-path li:hover {
+            background: rgba(138, 43, 226, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .learning-path .completed {
+            opacity: 0.7;
+            border-left-color: #10b981;
+        }
+        
+        .learning-path .current {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        /* Stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat {
+            background: rgba(138, 43, 226, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #a78bfa;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 0.25rem;
+        }
+        
+        /* Graph nodes and links */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .node:hover {
+            filter: brightness(1.5);
+        }
+        
+        .node-label {
+            font-size: 12px;
+            pointer-events: none;
+            text-anchor: middle;
+            fill: #e0e0ff;
+        }
+        
+        .link {
+            stroke: #8b5cf6;
+            stroke-opacity: 0.4;
+            stroke-width: 2;
+        }
+        
+        .link.requires {
+            stroke: #ef4444;
+            stroke-dasharray: 5, 5;
+        }
+        
+        .link.builds_on {
+            stroke: #10b981;
+        }
+        
+        .link.similar_to {
+            stroke: #f59e0b;
+            stroke-dasharray: 2, 2;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            border: 1px solid rgba(138, 43, 226, 0.5);
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔱 Sacred Knowledge Graph</h1>
+        <div class="subtitle">Your Learning Journey Through NixOS Mastery</div>
+    </header>
+    
+    <div class="container">
+        <!-- Left Panel: Learning Progress -->
+        <div class="panel">
+            <h2>📈 Learning Progress</h2>
+            
+            <div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Current Level</h3>
+                <div id="level-name" style="font-size: 1.2rem; color: #f59e0b;">Novice</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="level-progress" style="width: 15%;"></div>
+                </div>
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="stat-value" id="concepts-mastered">0</div>
+                    <div class="stat-label">Concepts Mastered</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="success-rate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="total-sessions">0</div>
+                    <div class="stat-label">Learning Sessions</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="velocity">0</div>
+                    <div class="stat-label">Learning Velocity</div>
+                </div>
+            </div>
+            
+            <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem;">Peak Learning Hours</h3>
+            <div id="peak-hours" style="color: #9ca3af; font-size: 0.9rem;">No data yet</div>
+        </div>
+        
+        <!-- Center: Knowledge Graph -->
+        <div class="panel" id="graph-container">
+            <h2>🕸️ Knowledge Network</h2>
+            
+            <div id="controls">
+                <button onclick="resetZoom()">🔄 Reset View</button>
+                <button onclick="toggleSimulation()">⏸️ Pause</button>
+                <button onclick="highlightPath()">✨ Show Path</button>
+                <button onclick="focusOnCurrent()">🎯 Current Focus</button>
+            </div>
+            
+            <div id="graph"></div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #10b981;"></div>
+                    <span>Mastered</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f59e0b;"></div>
+                    <span>Learning</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8b5cf6;"></div>
+                    <span>Available</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6b7280;"></div>
+                    <span>Locked</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: Learning Path -->
+        <div class="panel">
+            <h2>🛤️ Learning Path</h2>
+            
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Next Concept</h3>
+            <div id="next-concept" style="font-size: 1.1rem; color: #f59e0b; margin-bottom: 1rem;">
+                Package Management
+            </div>
+            
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Suggested Path</h3>
+            <ul class="learning-path" id="learning-path">
+                <li class="completed">✅ Basic Commands</li>
+                <li class="current">🔄 Package Management</li>
+                <li>📚 System Configuration</li>
+                <li>📚 Generations & Rollback</li>
+                <li>📚 Nix Language Basics</li>
+                <li>📚 Flakes</li>
+                <li>📚 Home Manager</li>
+                <li>📚 Overlays</li>
+            </ul>
+            
+            <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem;">Prerequisites</h3>
+            <div id="prerequisites" style="color: #9ca3af; font-size: 0.9rem;">
+                None - Ready to start!
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Sample data - in production, this would come from the Trinity Store
+        const graphData = {
+            nodes: [
+                { id: "basics", label: "NixOS Basics", level: 1, mastery: 0.9, category: "foundation" },
+                { id: "packages", label: "Package Management", level: 2, mastery: 0.6, category: "core" },
+                { id: "config", label: "System Configuration", level: 3, mastery: 0.3, category: "core" },
+                { id: "generations", label: "Generations", level: 3, mastery: 0.2, category: "core" },
+                { id: "garbage", label: "Garbage Collection", level: 3, mastery: 0.1, category: "maintenance" },
+                { id: "flakes", label: "Flakes", level: 4, mastery: 0, category: "advanced" },
+                { id: "home-manager", label: "Home Manager", level: 4, mastery: 0, category: "advanced" },
+                { id: "overlays", label: "Overlays", level: 5, mastery: 0, category: "advanced" },
+                { id: "nixlang", label: "Nix Language", level: 2, mastery: 0.4, category: "core" },
+                { id: "dev-shells", label: "Dev Shells", level: 3, mastery: 0.1, category: "development" },
+            ],
+            links: [
+                { source: "basics", target: "packages", type: "requires" },
+                { source: "packages", target: "config", type: "builds_on" },
+                { source: "config", target: "generations", type: "builds_on" },
+                { source: "packages", target: "garbage", type: "related" },
+                { source: "config", target: "flakes", type: "builds_on" },
+                { source: "config", target: "home-manager", type: "builds_on" },
+                { source: "nixlang", target: "overlays", type: "requires" },
+                { source: "basics", target: "nixlang", type: "requires" },
+                { source: "nixlang", target: "dev-shells", type: "builds_on" },
+                { source: "flakes", target: "dev-shells", type: "related" },
+            ]
+        };
+        
+        // Set up dimensions
+        const graphContainer = document.getElementById('graph');
+        const width = graphContainer.clientWidth;
+        const height = 600;
+        
+        // Create SVG
+        const svg = d3.select('#graph')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+        
+        // Create groups for layers
+        const g = svg.append('g');
+        const linksGroup = g.append('g');
+        const nodesGroup = g.append('g');
+        const labelsGroup = g.append('g');
+        
+        // Set up zoom
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 3])
+            .on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // Create force simulation
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force('link', d3.forceLink(graphData.links)
+                .id(d => d.id)
+                .distance(100))
+            .force('charge', d3.forceManyBody().strength(-300))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(30));
+        
+        // Create links
+        const links = linksGroup.selectAll('.link')
+            .data(graphData.links)
+            .enter().append('line')
+            .attr('class', d => `link ${d.type}`)
+            .style('stroke-width', d => d.type === 'requires' ? 3 : 2);
+        
+        // Create nodes
+        const nodes = nodesGroup.selectAll('.node')
+            .data(graphData.nodes)
+            .enter().append('circle')
+            .attr('class', 'node')
+            .attr('r', d => 10 + d.level * 3)
+            .style('fill', d => {
+                if (d.mastery > 0.7) return '#10b981';
+                if (d.mastery > 0.3) return '#f59e0b';
+                if (d.mastery > 0) return '#8b5cf6';
+                return '#6b7280';
+            })
+            .style('stroke', '#fff')
+            .style('stroke-width', 2)
+            .call(d3.drag()
+                .on('start', dragStarted)
+                .on('drag', dragged)
+                .on('end', dragEnded));
+        
+        // Add labels
+        const labels = labelsGroup.selectAll('.node-label')
+            .data(graphData.nodes)
+            .enter().append('text')
+            .attr('class', 'node-label')
+            .text(d => d.label)
+            .style('font-size', '12px');
+        
+        // Add tooltip interactions
+        const tooltip = document.getElementById('tooltip');
+        
+        nodes.on('mouseover', function(event, d) {
+            tooltip.innerHTML = `
+                <strong>${d.label}</strong><br>
+                Level: ${d.level}<br>
+                Mastery: ${(d.mastery * 100).toFixed(0)}%<br>
+                Category: ${d.category}
+            `;
+            tooltip.classList.add('show');
+        })
+        .on('mousemove', function(event) {
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+        })
+        .on('mouseout', function() {
+            tooltip.classList.remove('show');
+        });
+        
+        // Update positions on tick
+        simulation.on('tick', () => {
+            links
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+            
+            nodes
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+            
+            labels
+                .attr('x', d => d.x)
+                .attr('y', d => d.y - 15);
+        });
+        
+        // Drag functions
+        function dragStarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragEnded(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        // Control functions
+        let simulationRunning = true;
+        
+        function resetZoom() {
+            svg.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
+        }
+        
+        function toggleSimulation() {
+            if (simulationRunning) {
+                simulation.stop();
+                document.querySelector('button[onclick="toggleSimulation()"]').textContent = '▶️ Play';
+            } else {
+                simulation.restart();
+                document.querySelector('button[onclick="toggleSimulation()"]').textContent = '⏸️ Pause';
+            }
+            simulationRunning = !simulationRunning;
+        }
+        
+        function highlightPath() {
+            // Highlight the learning path
+            const pathNodes = ['basics', 'packages', 'config', 'generations'];
+            
+            nodes.style('opacity', d => pathNodes.includes(d.id) ? 1 : 0.3);
+            links.style('opacity', d => 
+                pathNodes.includes(d.source.id) && pathNodes.includes(d.target.id) ? 1 : 0.1
+            );
+            
+            setTimeout(() => {
+                nodes.style('opacity', 1);
+                links.style('opacity', d => `link ${d.type}` === 'link requires' ? 0.6 : 0.4);
+            }, 3000);
+        }
+        
+        function focusOnCurrent() {
+            // Focus on current learning node
+            const currentNode = graphData.nodes.find(n => n.id === 'packages');
+            if (currentNode) {
+                const scale = 2;
+                const translate = [width / 2 - scale * currentNode.x, height / 2 - scale * currentNode.y];
+                
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity
+                        .translate(translate[0], translate[1])
+                        .scale(scale));
+            }
+        }
+        
+        // Update stats (would come from Trinity in production)
+        function updateStats() {
+            const totalMastered = graphData.nodes.filter(n => n.mastery > 0.7).length;
+            const avgMastery = graphData.nodes.reduce((sum, n) => sum + n.mastery, 0) / graphData.nodes.length;
+            
+            document.getElementById('concepts-mastered').textContent = totalMastered;
+            document.getElementById('success-rate').textContent = Math.round(avgMastery * 100) + '%';
+            document.getElementById('total-sessions').textContent = '12';
+            document.getElementById('velocity').textContent = '2.5';
+            document.getElementById('level-progress').style.width = (avgMastery * 100) + '%';
+            
+            // Update level based on mastery
+            let level = 'Novice';
+            if (avgMastery > 0.75) level = 'Master';
+            else if (avgMastery > 0.5) level = 'Journeyman';
+            else if (avgMastery > 0.25) level = 'Apprentice';
+            document.getElementById('level-name').textContent = level;
+        }
+        
+        // Initialize stats
+        updateStats();
+        
+        // Simulate real-time updates (in production, use WebSocket)
+        setInterval(() => {
+            // Randomly increase mastery to simulate learning
+            const node = graphData.nodes[Math.floor(Math.random() * graphData.nodes.length)];
+            if (node.mastery < 1) {
+                node.mastery = Math.min(1, node.mastery + 0.05);
+                
+                // Update node color
+                nodes.style('fill', d => {
+                    if (d.mastery > 0.7) return '#10b981';
+                    if (d.mastery > 0.3) return '#f59e0b';
+                    if (d.mastery > 0) return '#8b5cf6';
+                    return '#6b7280';
+                });
+                
+                updateStats();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

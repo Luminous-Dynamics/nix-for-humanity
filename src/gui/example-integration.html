@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luminous Nix Setup Ceremony - Integration Example</title>
+    
+    <!-- Load styles -->
+    <link rel="stylesheet" href="styles/SetupCeremony.css">
+    
+    <style>
+        /* Additional page styles */
+        .page-header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            padding: var(--spacing-2xl);
+            text-align: center;
+            border-bottom: 1px solid var(--primary);
+            margin-bottom: var(--spacing-2xl);
+        }
+        
+        .page-header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+        
+        .demo-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-2xl);
+            margin-bottom: var(--spacing-2xl);
+        }
+        
+        .demo-panel {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            border: 1px solid var(--bg-tertiary);
+        }
+        
+        .demo-panel h2 {
+            color: var(--secondary);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .control-group label {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+        
+        .control-group select,
+        .control-group input {
+            flex: 2;
+            padding: var(--spacing-sm);
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+        }
+        
+        #component-preview {
+            min-height: 400px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xl);
+        }
+        
+        .code-preview {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            overflow-x: auto;
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            padding: var(--spacing-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--primary);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        .tab-container {
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+        
+        .tab-button {
+            padding: var(--spacing-md) var(--spacing-xl);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn var(--transition-base);
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Header -->
+    <header class="page-header">
+        <h1>🌟 Luminous Nix Setup Ceremony</h1>
+        <p>Modular Components Integration Example</p>
+    </header>
+
+    <!-- Main Demo Section -->
+    <div class="demo-section">
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="ceremony">Full Ceremony</button>
+                <button class="tab-button" data-tab="components">Individual Components</button>
+                <button class="tab-button" data-tab="integration">Integration Code</button>
+            </div>
+
+            <!-- Full Ceremony Tab -->
+            <div class="tab-content active" id="tab-ceremony">
+                <div class="ceremony-container" id="ceremony-root">
+                    <!-- Setup Ceremony will be injected here -->
+                </div>
+            </div>
+
+            <!-- Individual Components Tab -->
+            <div class="tab-content" id="tab-components">
+                <div class="demo-grid">
+                    <!-- Control Panel -->
+                    <div class="demo-panel">
+                        <h2>Component Controls</h2>
+                        <div class="control-panel">
+                            <div class="control-group">
+                                <label>Component Type:</label>
+                                <select id="component-type">
+                                    <option value="ProfileCard">Profile Card</option>
+                                    <option value="PackageSelector">Package Selector</option>
+                                    <option value="ConflictResolver">Conflict Resolver</option>
+                                    <option value="NaturalLanguageInput">Natural Language Input</option>
+                                    <option value="EstimationPanel">Estimation Panel</option>
+                                    <option value="ProgressIndicator">Progress Indicator</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label>Theme:</label>
+                                <select id="theme-selector">
+                                    <option value="dark">Dark (Default)</option>
+                                    <option value="light">Light</option>
+                                    <option value="high-contrast">High Contrast</option>
+                                </select>
+                            </div>
+                            
+                            <button class="btn-primary" onclick="renderComponent()">
+                                Render Component
+                            </button>
+                            
+                            <button class="btn-secondary" onclick="clearPreview()">
+                                Clear Preview
+                            </button>
+                        </div>
+                        
+                        <h3 style="margin-top: var(--spacing-xl);">Component Props</h3>
+                        <div id="props-editor">
+                            <textarea id="props-json" style="width: 100%; height: 200px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--bg-tertiary); border-radius: var(--radius-md); padding: var(--spacing-md); font-family: monospace;">
+{
+  "profile": {
+    "name": "Developer",
+    "emoji": "⚡",
+    "description": "Full development environment",
+    "packages": ["git", "vscode", "docker"],
+    "optimizations": ["performance", "flexibility"]
+  },
+  "selected": false
+}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Preview Panel -->
+                    <div class="demo-panel">
+                        <h2>Component Preview</h2>
+                        <div id="component-preview">
+                            <!-- Component will be rendered here -->
+                        </div>
+                        
+                        <h3 style="margin-top: var(--spacing-xl);">Generated HTML</h3>
+                        <div class="code-preview" id="html-preview">
+                            <!-- HTML code will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Code Tab -->
+            <div class="tab-content" id="tab-integration">
+                <div class="demo-panel">
+                    <h2>Integration Examples</h2>
+                    
+                    <h3>Quick Setup (One Line)</h3>
+                    <div class="code-preview">
+LuminousNixIntegration.quickSetup('ceremony-container');
+                    </div>
+                    
+                    <h3>Add Individual Component</h3>
+                    <div class="code-preview">
+LuminousNixIntegration.addComponent('container-id', 'ProfileCard', {
+    profile: {
+        name: 'Developer',
+        emoji: '⚡',
+        packages: ['git', 'vscode', 'docker']
+    },
+    onSelect: (profile) => console.log('Selected:', profile)
+});
+                    </div>
+                    
+                    <h3>Advanced Integration with State Management</h3>
+                    <div class="code-preview">
+// Create bridge to backend
+const bridge = LuminousNixIntegration.createBridge({
+    nixosGuiUrl: 'http://localhost:8080',
+    luminousNixUrl: 'http://localhost:8888',
+    useWebSocket: true
+});
+
+// Create state store
+const store = createSetupCeremonyStore();
+
+// Initialize ceremony with bridge and store
+const ceremony = new SetupCeremony(
+    document.getElementById('ceremony-root'),
+    bridge
+);
+
+// Subscribe to real-time updates
+bridge.on('progress:update', (progress) => {
+    console.log('Installation progress:', progress);
+});
+
+// Start the ceremony
+ceremony.start();
+                    </div>
+                    
+                    <h3>TypeScript Import</h3>
+                    <div class="code-preview">
+import { 
+    ComponentFactory,
+    SetupCeremony,
+    NixOSGuiBridge,
+    createSetupCeremonyStore 
+} from '@luminous-nix/gui';
+
+// Use TypeScript types for full type safety
+const profileCard = ComponentFactory.createProfileCard(
+    profile,
+    false,
+    (p: Profile) => handleProfileSelect(p)
+);
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span>Connected to Backend</span>
+        </div>
+        <div>
+            <span id="package-count">0</span> packages selected |
+            <span id="estimated-time">0</span> min estimated
+        </div>
+    </div>
+
+    <!-- Load TypeScript modules (compiled to JavaScript) -->
+    <script type="module">
+        // For demo purposes, we'll simulate the compiled modules
+        // In production, these would be bundled with webpack/rollup/vite
+        
+        // Simulate the global integration object
+        window.LuminousNixIntegration = {
+            quickSetup: (containerId) => {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `
+                        <div class="ceremony-welcome">
+                            <div class="welcome-header">
+                                <h1>🌟 Welcome to Setup Ceremony</h1>
+                                <p>Click "Begin Setup" to start the full experience</p>
+                            </div>
+                            <button class="btn-primary" onclick="startFullCeremony()">
+                                Begin Setup
+                            </button>
+                        </div>
+                    `;
+                }
+            },
+            
+            addComponent: (containerId, type, props) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                
+                // Render different component types
+                switch(type) {
+                    case 'ProfileCard':
+                        container.innerHTML = `
+                            <div class="profile-card">
+                                <div class="profile-emoji">${props.profile.emoji}</div>
+                                <h3 class="profile-name">${props.profile.name}</h3>
+                                <p class="profile-description">${props.profile.description}</p>
+                                <div class="profile-stats">
+                                    <span>📦 ${props.profile.packages.length} packages</span>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'PackageSelector':
+                        const packagesHtml = props.packages.map(pkg => `
+                            <div class="package-item">
+                                <input type="checkbox" id="pkg_${pkg.name}" value="${pkg.name}">
+                                <label for="pkg_${pkg.name}">
+                                    <span class="package-name">${pkg.name}</span>
+                                    <span class="package-description">${pkg.description || ''}</span>
+                                </label>
+                            </div>
+                        `).join('');
+                        
+                        container.innerHTML = `
+                            <div class="package-selector">
+                                <h3>${props.category}</h3>
+                                <div class="package-list">${packagesHtml}</div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'NaturalLanguageInput':
+                        container.innerHTML = `
+                            <div class="natural-language-input">
+                                <div class="input-wrapper">
+                                    <input type="text" class="nl-input" 
+                                           placeholder="${props.placeholder || 'Describe what you need...'}">
+                                    <button class="voice-input-btn">🎤</button>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                }
+                
+                // Show the HTML in preview
+                if (document.getElementById('html-preview')) {
+                    document.getElementById('html-preview').textContent = container.innerHTML;
+                }
+            }
+        };
+        
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                // Remove active class from all
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active to clicked
+                e.target.classList.add('active');
+                const tabId = `tab-${e.target.dataset.tab}`;
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Component rendering
+        window.renderComponent = () => {
+            const type = document.getElementById('component-type').value;
+            const propsJson = document.getElementById('props-json').value;
+            
+            try {
+                const props = JSON.parse(propsJson);
+                window.LuminousNixIntegration.addComponent('component-preview', type, props);
+            } catch (e) {
+                alert('Invalid JSON in props editor');
+            }
+        };
+        
+        window.clearPreview = () => {
+            document.getElementById('component-preview').innerHTML = '';
+            document.getElementById('html-preview').textContent = '';
+        };
+        
+        window.startFullCeremony = () => {
+            // Simulate starting the full ceremony
+            document.getElementById('ceremony-root').innerHTML = `
+                <div class="profile-selection">
+                    <h2>Choose Your Digital Personality</h2>
+                    <p>Select the profile that best matches your needs</p>
+                    <div class="profile-grid">
+                        <div class="profile-card">
+                            <div class="profile-emoji">🏠</div>
+                            <h3 class="profile-name">Home User</h3>
+                            <p class="profile-description">Perfect for family computers</p>
+                        </div>
+                        <div class="profile-card">
+                            <div class="profile-emoji">⚡</div>
+                            <h3 class="profile-name">Developer</h3>
+                            <p class="profile-description">Full development environment</p>
+                        </div>
+                        <div class="profile-card">
+                            <div class="profile-emoji">🎨</div>
+                            <h3 class="profile-name">Creative</h3>
+                            <p class="profile-description">For artists and creators</p>
+                        </div>
+                    </div>
+                    <div class="navigation">
+                        <button class="btn-primary">Continue</button>
+                    </div>
+                </div>
+            `;
+        };
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize the ceremony tab
+            window.LuminousNixIntegration.quickSetup('ceremony-root');
+            
+            // Update component type props when selection changes
+            document.getElementById('component-type').addEventListener('change', (e) => {
+                const propsEditor = document.getElementById('props-json');
+                
+                switch(e.target.value) {
+                    case 'ProfileCard':
+                        propsEditor.value = JSON.stringify({
+                            profile: {
+                                name: "Developer",
+                                emoji: "⚡",
+                                description: "Full development environment",
+                                packages: ["git", "vscode", "docker"],
+                                optimizations: ["performance", "flexibility"]
+                            },
+                            selected: false
+                        }, null, 2);
+                        break;
+                        
+                    case 'PackageSelector':
+                        propsEditor.value = JSON.stringify({
+                            category: "Essential Packages",
+                            packages: [
+                                { name: "firefox", description: "Web browser", selected: true },
+                                { name: "git", description: "Version control", selected: false },
+                                { name: "vscode", description: "Code editor", selected: false }
+                            ]
+                        }, null, 2);
+                        break;
+                        
+                    case 'NaturalLanguageInput':
+                        propsEditor.value = JSON.stringify({
+                            placeholder: "Describe what software you need...",
+                            voiceEnabled: true,
+                            suggestions: ["Video editing", "Python development", "Gaming"]
+                        }, null, 2);
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

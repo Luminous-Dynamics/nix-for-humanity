@@ -1,0 +1,38 @@
+**🌟 Welcome to Luminous Nix!**
+
+Making NixOS accessible through natural language.
+
+**What is Luminous Nix?**
+Instead of complex commands like `nix-env -iA nixos.firefox`, just say:
+```
+ask-nix "install firefox"
+```
+
+**Built Different**
+• Created by 1 developer + AI collaboration
+• 2 weeks development time
+• $200 total cost
+• Beats $4.2M enterprise solutions
+
+**Quick Start**
+```bash
+git clone https://github.com/Luminous-Dynamics/luminous-nix
+cd luminous-nix
+poetry install
+./bin/ask-nix "help"
+```
+
+**Get Involved**
+• Introduce yourself in #general
+• Get help in #help
+• Report bugs in #bugs
+• Show your configs in #showcase
+
+**Important Links**
+• GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+• Hacker News: [Launch Thread Tuesday]
+
+**Philosophy**
+"Technology should adapt to humans, not the other way around."
+
+Welcome to the revolution! 🚀

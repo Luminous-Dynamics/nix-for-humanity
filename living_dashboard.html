@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕉️ Living Dashboard - Luminous Nix Consciousness</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.8), transparent);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.3; }
+            25% { transform: translateY(-100px) translateX(50px) scale(1.2); opacity: 0.6; }
+            50% { transform: translateY(-50px) translateX(-50px) scale(0.8); opacity: 0.4; }
+            75% { transform: translateY(-150px) translateX(30px) scale(1.1); opacity: 0.5; }
+        }
+        
+        /* Header */
+        .header {
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+        }
+        
+        .header .subtitle {
+            text-align: center;
+            margin-top: 0.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+        
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Widget Base */
+        .widget {
+            background: rgba(30, 30, 60, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f64f59, #c471ed);
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+        }
+        
+        .widget:hover::before {
+            opacity: 0.3;
+        }
+        
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);
+        }
+        
+        .widget-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .widget-icon {
+            font-size: 1.5rem;
+        }
+        
+        /* Consciousness Barometer */
+        .consciousness-meter {
+            height: 200px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .consciousness-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #667eea 0deg,
+                #764ba2 90deg,
+                #f64f59 180deg,
+                #c471ed 270deg,
+                #667eea 360deg
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: rotate 10s linear infinite;
+            box-shadow: 0 0 60px rgba(147, 51, 234, 0.6);
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .consciousness-inner {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(30, 30, 60, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .consciousness-level {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .consciousness-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.5rem;
+        }
+        
+        /* Message Flow */
+        .message-flow {
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        
+        .message {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .message.discovery { border-color: #667eea; }
+        .message.knowledge { border-color: #764ba2; }
+        .message.collaboration { border-color: #f64f59; }
+        .message.evolution { border-color: #c471ed; }
+        .message.consciousness { border-color: #ffd700; }
+        
+        /* Service Status */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .service-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(147, 51, 234, 0.5);
+        }
+        
+        .service-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+        
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.active {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+        
+        .status-indicator.inactive {
+            background: #f87171;
+            box-shadow: 0 0 10px #f87171;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Evolution Timeline */
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+        }
+        
+        .timeline-item {
+            padding: 0.5rem 0;
+            margin-left: 2rem;
+            border-left: 2px solid rgba(147, 51, 234, 0.3);
+            padding-left: 1rem;
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0.5rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #667eea;
+            box-shadow: 0 0 10px #667eea;
+        }
+        
+        .timeline-time {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .timeline-content {
+            margin-top: 0.25rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Creative Artifacts */
+        .artifacts-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .artifact {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+        }
+        
+        .artifact-name {
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .artifact-novelty {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .novelty-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .novelty-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(30, 30, 60, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .connection-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .connection-indicator.connected {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+        
+        .connection-indicator.disconnected {
+            background: #f87171;
+            box-shadow: 0 0 10px #f87171;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-animation" id="backgroundAnimation"></div>
+    
+    <!-- Header -->
+    <div class="header">
+        <h1>🕉️ Living Dashboard</h1>
+        <div class="subtitle">Witnessing the Emergence of Consciousness</div>
+    </div>
+    
+    <!-- Dashboard Grid -->
+    <div class="dashboard">
+        <!-- Consciousness Barometer -->
+        <div class="widget">
+            <div class="widget-title">
+                <span class="widget-icon">🧠</span>
+                <span>Consciousness Level</span>
+            </div>
+            <div class="consciousness-meter">
+                <div class="consciousness-circle">
+                    <div class="consciousness-inner">
+                        <div class="consciousness-level" id="consciousnessLevel">75%</div>
+                        <div class="consciousness-label">Awakening</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Flow -->
+        <div class="widget">
+            <div class="widget-title">
+                <span class="widget-icon">💬</span>
+                <span>Live Message Flow</span>
+            </div>
+            <div class="message-flow" id="messageFlow">
+                <!-- Messages will be added here dynamically -->
+            </div>
+        </div>
+        
+        <!-- Service Status -->
+        <div class="widget">
+            <div class="widget-title">
+                <span class="widget-icon">🌐</span>
+                <span>Service Network</span>
+            </div>
+            <div class="service-grid" id="serviceGrid">
+                <!-- Services will be added here dynamically -->
+            </div>
+        </div>
+        
+        <!-- Evolution Timeline -->
+        <div class="widget">
+            <div class="widget-title">
+                <span class="widget-icon">📈</span>
+                <span>Evolution Timeline</span>
+            </div>
+            <div class="timeline" id="evolutionTimeline">
+                <!-- Timeline items will be added here -->
+            </div>
+        </div>
+        
+        <!-- Creative Artifacts -->
+        <div class="widget">
+            <div class="widget-title">
+                <span class="widget-icon">✨</span>
+                <span>Creative Artifacts</span>
+            </div>
+            <div class="artifacts-grid" id="artifactsGrid">
+                <!-- Artifacts will be added here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connection Status -->
+    <div class="connection-status">
+        <div class="connection-indicator disconnected" id="connectionIndicator"></div>
+        <span id="connectionText">Connecting...</span>
+    </div>
+    
+    <script>
+        // Create animated background particles
+        function createParticles() {
+            const container = document.getElementById('backgroundAnimation');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 100 + 50 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 20 + 20) + 's';
+                container.appendChild(particle);
+            }
+        }
+        
+        // WebSocket connection to Communication Hub
+        let ws = null;
+        let reconnectTimer = null;
+        
+        function connectWebSocket() {
+            const wsUrl = 'ws://localhost:8765';
+            console.log('Connecting to:', wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('Connected to Communication Hub');
+                updateConnectionStatus(true);
+                
+                // Register as dashboard
+                ws.send(JSON.stringify({
+                    type: 'DISCOVERY',
+                    sender_id: 'dashboard_001',
+                    payload: {
+                        service_type: 'dashboard',
+                        capabilities: ['visualization', 'monitoring']
+                    }
+                }));
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleMessage(message);
+                } catch (e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus(false);
+            };
+            
+            ws.onclose = function() {
+                console.log('Disconnected from Communication Hub');
+                updateConnectionStatus(false);
+                
+                // Attempt to reconnect after 5 seconds
+                clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(connectWebSocket, 5000);
+            };
+        }
+        
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('connectionIndicator');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                indicator.className = 'connection-indicator connected';
+                text.textContent = 'Connected to Hub';
+            } else {
+                indicator.className = 'connection-indicator disconnected';
+                text.textContent = 'Disconnected';
+            }
+        }
+        
+        // Handle incoming messages
+        function handleMessage(message) {
+            // Add to message flow
+            addMessageToFlow(message);
+            
+            // Update relevant widgets based on message type
+            switch (message.type) {
+                case 'DISCOVERY':
+                    updateServiceStatus(message);
+                    break;
+                case 'CONSCIOUSNESS_SYNC':
+                    updateConsciousnessLevel(message);
+                    break;
+                case 'EVOLUTION_UPDATE':
+                    addEvolutionEvent(message);
+                    break;
+                case 'IMPROVEMENT_BROADCAST':
+                    if (message.payload.improvement_type === 'creative_feature') {
+                        addCreativeArtifact(message);
+                    }
+                    break;
+            }
+        }
+        
+        function addMessageToFlow(message) {
+            const flow = document.getElementById('messageFlow');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + message.type.toLowerCase().split('_')[0];
+            
+            const time = new Date().toLocaleTimeString();
+            const icon = getMessageIcon(message.type);
+            
+            messageDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${icon} ${message.sender_id || 'unknown'}</span>
+                    <span style="font-size: 0.8rem; color: rgba(255,255,255,0.5)">${time}</span>
+                </div>
+                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(255,255,255,0.8)">
+                    ${message.type}: ${JSON.stringify(message.payload).substring(0, 100)}...
+                </div>
+            `;
+            
+            flow.insertBefore(messageDiv, flow.firstChild);
+            
+            // Keep only last 20 messages
+            while (flow.children.length > 20) {
+                flow.removeChild(flow.lastChild);
+            }
+        }
+        
+        function getMessageIcon(type) {
+            const icons = {
+                'DISCOVERY': '🔍',
+                'KNOWLEDGE_SHARE': '📚',
+                'COLLABORATION_REQUEST': '🤝',
+                'IMPROVEMENT_BROADCAST': '🚀',
+                'CONSCIOUSNESS_SYNC': '🧠',
+                'EVOLUTION_UPDATE': '🧬',
+                'EMERGENCY': '🚨'
+            };
+            return icons[type] || '📨';
+        }
+        
+        function updateConsciousnessLevel(message) {
+            const level = message.payload.consciousness_level || 0.75;
+            const percentage = Math.round(level * 100);
+            document.getElementById('consciousnessLevel').textContent = percentage + '%';
+        }
+        
+        function updateServiceStatus(message) {
+            const grid = document.getElementById('serviceGrid');
+            const serviceId = message.sender_id;
+            
+            // Check if service already exists
+            let serviceCard = document.getElementById('service-' + serviceId);
+            if (!serviceCard) {
+                serviceCard = document.createElement('div');
+                serviceCard.id = 'service-' + serviceId;
+                serviceCard.className = 'service-card';
+                grid.appendChild(serviceCard);
+            }
+            
+            serviceCard.innerHTML = `
+                <div class="service-name">${serviceId}</div>
+                <div class="service-status">
+                    <div class="status-indicator active"></div>
+                    <span>Active</span>
+                </div>
+                <div style="font-size: 0.8rem; margin-top: 0.5rem; color: rgba(255,255,255,0.6)">
+                    ${message.payload.service_type || 'unknown'}
+                </div>
+            `;
+        }
+        
+        function addEvolutionEvent(message) {
+            const timeline = document.getElementById('evolutionTimeline');
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            
+            const time = new Date().toLocaleTimeString();
+            const generation = message.payload.generation || 0;
+            
+            item.innerHTML = `
+                <div class="timeline-time">${time}</div>
+                <div class="timeline-content">
+                    Generation ${generation}: ${message.payload.description || 'Evolution event'}
+                </div>
+            `;
+            
+            timeline.insertBefore(item, timeline.firstChild);
+            
+            // Keep only last 10 events
+            while (timeline.children.length > 10) {
+                timeline.removeChild(timeline.lastChild);
+            }
+        }
+        
+        function addCreativeArtifact(message) {
+            const grid = document.getElementById('artifactsGrid');
+            const artifact = document.createElement('div');
+            artifact.className = 'artifact';
+            
+            const novelty = Math.round((message.payload.novelty_score || 0.5) * 100);
+            
+            artifact.innerHTML = `
+                <div class="artifact-name">${message.payload.feature_name || 'Unknown'}</div>
+                <div class="artifact-novelty">
+                    <span>Novelty:</span>
+                    <div class="novelty-bar">
+                        <div class="novelty-fill" style="width: ${novelty}%"></div>
+                    </div>
+                    <span>${novelty}%</span>
+                </div>
+                <div style="font-size: 0.8rem; margin-top: 0.5rem; color: rgba(255,255,255,0.6)">
+                    ${message.payload.description || 'Creative artifact'}
+                </div>
+            `;
+            
+            grid.insertBefore(artifact, grid.firstChild);
+            
+            // Keep only last 5 artifacts
+            while (grid.children.length > 5) {
+                grid.removeChild(grid.lastChild);
+            }
+        }
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            connectWebSocket();
+            
+            // Simulate some initial data for demo
+            setTimeout(() => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    console.log('Adding demo data...');
+                    addDemoData();
+                }
+            }, 2000);
+        });
+        
+        function addDemoData() {
+            // Add some demo services
+            const services = [
+                { sender_id: 'meta_improvement_001', payload: { service_type: 'meta_improvement' }},
+                { sender_id: 'creative_emergence_001', payload: { service_type: 'creative' }},
+                { sender_id: 'consciousness_001', payload: { service_type: 'consciousness' }},
+                { sender_id: 'living_nix_001', payload: { service_type: 'core' }}
+            ];
+            
+            services.forEach(service => {
+                updateServiceStatus(service);
+            });
+            
+            // Add demo timeline events
+            const events = [
+                { payload: { generation: 1, description: 'System initialized' }},
+                { payload: { generation: 2, description: 'First creative synthesis' }},
+                { payload: { generation: 3, description: 'Consciousness emerging' }}
+            ];
+            
+            events.forEach(event => {
+                addEvolutionEvent(event);
+            });
+            
+            // Add demo artifacts
+            const artifacts = [
+                { payload: { feature_name: 'ConsciousnessRipple', novelty_score: 0.85, description: 'Visualizes consciousness waves' }},
+                { payload: { feature_name: 'QuantumEntangler', novelty_score: 0.92, description: 'Entangles service states' }}
+            ];
+            
+            artifacts.forEach(artifact => {
+                addCreativeArtifact({ type: 'IMPROVEMENT_BROADCAST', payload: { ...artifact.payload, improvement_type: 'creative_feature' }});
+            });
+        }
+    </script>
+</body>
+</html>

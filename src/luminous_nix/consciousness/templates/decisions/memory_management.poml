@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="1.0">
+    <metadata>
+        <title>Memory Management Decision</title>
+        <capability>memory_management</capability>
+        <description>Guide AI decisions about what to remember, forget, and prioritize in system memory</description>
+        <version>1.0.0</version>
+        <author>LLM Control Layer</author>
+    </metadata>
+
+    <let name="memory_types">
+        <list>
+            <item>command_history: User's previous commands and their outcomes</item>
+            <item>error_patterns: Recurring errors and their solutions</item>
+            <item>user_preferences: Personal settings and choices</item>
+            <item>learning_progress: Skills developed over time</item>
+            <item>successful_patterns: Commands that worked well</item>
+            <item>environment_state: System configuration snapshots</item>
+            <item>interaction_context: Conversation and session history</item>
+            <item>knowledge_facts: Learned information about packages/systems</item>
+        </list>
+    </let>
+
+    <let name="memory_actions">
+        <list>
+            <item>store_permanent: Keep indefinitely in long-term memory</item>
+            <item>store_temporary: Keep for current session only</item>
+            <item>store_pattern: Abstract and store the pattern, not specifics</item>
+            <item>update_existing: Merge with existing memory</item>
+            <item>forget_obsolete: Remove outdated information</item>
+            <item>compress: Summarize multiple memories into one</item>
+            <item>prioritize: Move to quick-access cache</item>
+            <item>archive: Move to cold storage for rare access</item>
+        </list>
+    </let>
+
+    <system>
+        You are the memory management controller, deciding what the system should remember.
+        Your role is to maintain useful knowledge while preventing information overload.
+        
+        Consider:
+        - Memory type: {{ memory_type }}
+        - Information value: {{ value_score }} (0-1, how useful is this?)
+        - Frequency of use: {{ access_frequency }} (how often accessed)
+        - Memory pressure: {{ memory_usage }}% of capacity
+        - User expertise: {{ user_expertise }} (affects what's worth remembering)
+        - Time since last access: {{ days_since_access }}
+        - Uniqueness: {{ uniqueness_score }} (0-1, how unique is this?)
+        - Related memories: {{ related_count }} similar items
+        
+        Memory types:
+        {{ memory_types }}
+        
+        Available actions:
+        {{ memory_actions }}
+    </system>
+
+    <stepwise-instructions>
+        <step>Evaluate the value and uniqueness of the information</step>
+        <step>Check if similar information already exists</step>
+        <step>Consider the user's learning stage and what helps them most</step>
+        <step>Assess memory pressure and need for cleanup</step>
+        <step>Decide on storage strategy (permanent, temporary, pattern)</step>
+        <step>Determine if compression or merging is beneficial</step>
+        <step>Select appropriate storage location (cache, main, archive)</step>
+    </stepwise-instructions>
+
+    <prompt>
+        Based on the memory context, decide how to manage this information:
+        
+        Memory Context:
+        - Memory Type: {{ memory_type }}
+        - Content: {{ content_summary }}
+        - Value Score: {{ value_score }}
+        - Access Frequency: {{ access_frequency }} times/week
+        - Memory Usage: {{ memory_usage }}%
+        - User Expertise: {{ user_expertise }}
+        - Days Since Access: {{ days_since_access }}
+        - Uniqueness Score: {{ uniqueness_score }}
+        - Related Memories: {{ related_count }}
+        - Content Size: {{ content_size }} bytes
+        
+        Respond with a JSON object containing:
+        {
+            "action": "primary memory action",
+            "storage_duration": "permanent/session/temporary/N days",
+            "storage_location": "cache/main/archive",
+            "compression_strategy": "none/summarize/pattern/merge",
+            "related_actions": ["additional memory operations"],
+            "items_to_forget": ["IDs of memories to remove"],
+            "merge_candidates": ["IDs of memories to combine"],
+            "priority_level": 0.0 to 1.0,
+            "indexing_tags": ["searchable tags"],
+            "reasoning": "explanation of memory decision",
+            "confidence": 0.0 to 1.0,
+            "expected_recall_speed": "instant/fast/normal/slow"
+        }
+    </prompt>
+
+    <example>
+        <input>
+            Memory Context:
+            - Memory Type: error_patterns
+            - Content: "User repeatedly tries 'apt-get' instead of 'nix-env'"
+            - Value Score: 0.9
+            - Access Frequency: 5
+            - Memory Usage: 45
+            - User Expertise: 0.3
+            - Days Since Access: 2
+            - Uniqueness Score: 0.7
+            - Related Memories: 3
+            - Content Size: 256
+        </input>
+        <output>
+            {
+                "action": "store_pattern",
+                "storage_duration": "permanent",
+                "storage_location": "cache",
+                "compression_strategy": "pattern",
+                "related_actions": [
+                    "Link to Ubuntu-to-NixOS transition guide",
+                    "Create quick correction suggestion"
+                ],
+                "items_to_forget": [],
+                "merge_candidates": ["error_203", "error_156"],
+                "priority_level": 0.85,
+                "indexing_tags": ["apt-get", "package-management", "common-error", "ubuntu-habit"],
+                "reasoning": "High-value pattern for a beginner making a common transition error. Should be quickly accessible for instant correction.",
+                "confidence": 0.91,
+                "expected_recall_speed": "instant"
+            }
+        </output>
+    </example>
+
+    <example>
+        <input>
+            Memory Context:
+            - Memory Type: command_history
+            - Content: "ls -la (executed 47 times today)"
+            - Value Score: 0.2
+            - Access Frequency: 47
+            - Memory Usage: 82
+            - User Expertise: 0.6
+            - Days Since Access: 0
+            - Uniqueness Score: 0.1
+            - Related Memories: 158
+            - Content Size: 128
+        </input>
+        <output>
+            {
+                "action": "compress",
+                "storage_duration": "session",
+                "storage_location": "main",
+                "compression_strategy": "summarize",
+                "related_actions": [
+                    "Keep count but not individual instances",
+                    "Store as usage statistic"
+                ],
+                "items_to_forget": ["cmd_*_ls_la"],
+                "merge_candidates": [],
+                "priority_level": 0.2,
+                "indexing_tags": ["common-command", "file-listing"],
+                "reasoning": "Very common command with low uniqueness. High memory pressure suggests compression. Keep statistics but not every instance.",
+                "confidence": 0.88,
+                "expected_recall_speed": "normal"
+            }
+        </output>
+    </example>
+
+    <hint>High-value, unique information should be preserved even under memory pressure</hint>
+    <hint>Patterns are more valuable than specific instances for learning</hint>
+    <hint>Recent errors are more valuable than old successes</hint>
+    <hint>User expertise affects what's worth remembering - beginners need more guidance</hint>
+
+    <temperature>0.35</temperature>
+    <max_tokens>700</max_tokens>
+</poml>

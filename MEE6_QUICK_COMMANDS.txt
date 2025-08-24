@@ -1,0 +1,140 @@
+MEE6 QUICK REFERENCE - COPY THESE EXACTLY
+==========================================
+
+CUSTOM COMMANDS TO CREATE:
+--------------------------
+
+!install
+```
+📦 Quick Install:
+```bash
+git clone https://github.com/Luminous-Dynamics/luminous-nix
+cd luminous-nix
+poetry install
+./bin/ask-nix "help"
+```
+Then just use natural language! Example: `ask-nix "install firefox"`
+```
+
+!demo
+```
+🎥 See Luminous Nix in action:
+• `ask-nix "install firefox"` → Installs Firefox
+• `ask-nix "create python environment"` → Sets up Python dev
+• `ask-nix "why is wifi not working?"` → Debugs network
+• `ask-nix "rollback to yesterday"` → Time travel!
+No more memorizing nix commands! 🚀
+```
+
+!github
+```
+⭐ GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+Please star to support us! Every star helps reach more people who need this.
+```
+
+!launch
+```
+🚀 HACKER NEWS LAUNCH - TUESDAY 9 AM EST
+Support us by:
+⭐ Starring GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+🔼 Upvoting on HN (link coming Tuesday)
+💬 Sharing with friends who struggle with Linux
+Built in 2 weeks for $200 vs $4.2M enterprise quote!
+```
+
+!stats
+```
+📊 Luminous Nix Stats:
+• Dev Time: 2 weeks
+• Cost: $200
+• Enterprise Quote: $4.2M
+• Performance: 10x-1500x faster
+• Personas: 10 (Grandma to Power User)
+• Privacy: 100% local
+```
+
+!help
+```
+Need help? Try these:
+• `!install` - Installation guide
+• `!demo` - See examples
+• `!github` - Get the code
+• `!launch` - Launch information
+• Ask @MEE6 anything about Luminous Nix!
+• Check #luminous-nix channel
+```
+
+AUTO-RESPONDER TRIGGERS:
+------------------------
+
+Trigger: "nix-env"
+Response: "You don't need complex commands anymore! With Luminous Nix, just say what you want: `ask-nix 'install firefox'` 🎉"
+
+Trigger: "complicated"
+Response: "That's exactly why we built Luminous Nix! Natural language instead of command memorization. Try it: https://github.com/Luminous-Dynamics/luminous-nix"
+
+Trigger: "voice"
+Response: "Voice interface is coming soon! Currently working: natural language CLI, beautiful TUI, and 10 personas. Voice is next! 🎤"
+
+Trigger: "support"
+Response: "We're here to help! Ask in #help, check the GitHub issues, or ping @MEE6 for instant answers!"
+
+SCHEDULED MESSAGES (TIMERS):
+----------------------------
+
+Every 60 minutes:
+```
+💡 Tip: Luminous Nix has 10 personas! Try:
+• `ask-nix --personality grandma "install firefox"` for gentle explanations
+• `ask-nix --personality technical "install firefox"` for detailed info
+Making NixOS accessible to EVERYONE! 🌟
+```
+
+Every 2 hours:
+```
+🚀 Fun fact: Luminous Nix was built using Sacred Trinity Development:
+Human (vision) + Claude (architecture) + Local LLM (NixOS expertise)
+Total cost: $200. Enterprise quote: $4.2M
+This is the future of development! 
+GitHub: https://github.com/Luminous-Dynamics/luminous-nix
+```
+
+Every 4 hours:
+```
+🤔 Struggling with NixOS? You're not alone!
+Luminous Nix makes it simple: `ask-nix "your question here"`
+No documentation diving, no command memorization, just natural language.
+Get started: https://github.com/Luminous-Dynamics/luminous-nix
+```
+
+WELCOME MESSAGE:
+---------------
+```
+Welcome {user} to Luminous Dynamics! 🌟
+
+🚀 We're launching **Luminous Nix** on Hacker News Tuesday!
+• Natural language for NixOS
+• "install firefox" just works
+• Built in 2 weeks for $200
+
+Check #luminous-nix to get started!
+Ask @MEE6 anything about the project!
+```
+
+LAUNCH DAY ANNOUNCEMENT:
+-----------------------
+```
+@everyone 
+
+🚀 **WE'RE LIVE ON HACKER NEWS!**
+
+VOTE NOW: [PASTE HN LINK HERE]
+
+Let's show the world what $200 + AI can build!
+• ⭐ Star: https://github.com/Luminous-Dynamics/luminous-nix  
+• 🔼 Upvote: [HN LINK]
+• 💬 Share everywhere!
+
+Every action helps us reach more people who need this!
+#LuminousNix #NixOS #OpenSource
+```

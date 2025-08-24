@@ -16,11 +16,23 @@ from .executor import SafeExecutor
 from .knowledge import KnowledgeBase
 from .error_handler import ErrorHandler
 from .native_nix_api import NativeNixAPI, get_native_api
+from .flake_executor import FlakeExecutor
+from .home_executor import HomeExecutor
+from .config_executor import ConfigExecutor
 from .sacred_utils import (
     MindfulOperation, KairosMode, SacredTimer, 
     consciousness_field, check_consciousness,
     with_sacred_pause, SacredMessages
 )
+
+# Import SKG integration
+try:
+    from ..knowledge.skg_integration import get_skg_integration
+    SKG_AVAILABLE = True
+except ImportError:
+    SKG_AVAILABLE = False
+    import logging
+    logging.warning("SKG not available - continuing without knowledge graph")
 
 
 @dataclass
@@ -67,13 +79,16 @@ class LuminousNixCore:
         self.executor = SafeExecutor()
         self.knowledge = KnowledgeBase()
         self.error_handler = ErrorHandler()
+        self.flake_executor = FlakeExecutor()  # New: Flake support
+        self.home_executor = HomeExecutor()    # New: Home Manager support
+        self.config_executor = ConfigExecutor()  # New: Config file parsing
         
         # Initialize native API for NixOS 25.11
         self.native_api = get_native_api()
         self.use_native = self.native_api.has_native_api()
         
         # Set executor mindful mode based on config
-        self.mindful_mode = config.get('mindful_mode', True)
+        self.mindful_mode = self.config.get('mindful_mode', True)
         self.executor.set_mindful_mode(self.mindful_mode)
         
         if self.use_native:
@@ -93,6 +108,16 @@ class LuminousNixCore:
         
         # Kairos timer for session
         self.session_timer = SacredTimer(KairosMode.FLOW)
+        
+        # Initialize SKG if available
+        self.skg = None
+        if SKG_AVAILABLE:
+            try:
+                self.skg = get_skg_integration()
+                print("🧠 Symbiotic Knowledge Graph activated - system is learning!")
+            except Exception as e:
+                print(f"⚠️  SKG initialization failed: {e}")
+                self.skg = None
     
     def process_query(self, query: Query) -> Response:
         """
@@ -102,6 +127,11 @@ class LuminousNixCore:
         """
         import time
         
+        # Begin SKG interaction tracking
+        interaction_context = None
+        if self.skg:
+            interaction_context = self.skg.begin_interaction(query.text)
+        
         # Check consciousness field before processing
         if self.mindful_mode and consciousness_field.needs_pause():
             consciousness_field.sacred_pause(1.0)
@@ -109,7 +139,32 @@ class LuminousNixCore:
         start_time = time.time()
         
         try:
-            # 1. Recognize intent
+            # 1. Recognize intent (use SimpleIntentRecognizer for better pattern matching)
+            from luminous_nix.nlp import SimpleIntentRecognizer, IntentType as NLPIntentType
+            simple_recognizer = SimpleIntentRecognizer()
+            nlp_intent = simple_recognizer.recognize(query.text)
+            
+            # Record intent in SKG
+            if self.skg and nlp_intent:
+                self.skg.record_intent(
+                    nlp_intent.type.value,
+                    nlp_intent.entities,
+                    nlp_intent.confidence
+                )
+            
+            # Check if it's a flake-related intent first
+            if nlp_intent.type in [NLPIntentType.FLAKE, NLPIntentType.DEVELOP]:
+                return self._handle_flake_intent(nlp_intent, query)
+            
+            # Check if it's a home manager intent
+            if nlp_intent.type == NLPIntentType.HOME:
+                return self._handle_home_intent(nlp_intent, query)
+            
+            # Check if it's a config parse intent
+            if nlp_intent.type == NLPIntentType.CONFIG_PARSE:
+                return self._handle_config_intent(nlp_intent, query)
+            
+            # Otherwise, use the original recognizer for backward compatibility
             intent = self.intent_recognizer.recognize(query.text)
             
             if not intent:
@@ -179,25 +234,152 @@ class LuminousNixCore:
                 }
                 consciousness_field.update_user_state(indicators)
             
+            # Complete SKG interaction
+            if self.skg:
+                self._complete_skg_interaction(response, elapsed_ms)
+            
             return response
             
         except Exception as e:
             self.metrics['failures'] += 1
             
-            # Mindful error handling
+            # Record error in SKG
+            error_response = None
             if self.mindful_mode:
                 error_message = SacredMessages.get_random('ERROR_TEACHINGS')
-                return Response(
+                error_response = Response(
                     success=False,
                     message=f"{error_message}\nTechnical details: {str(e)}",
                     error=str(e)
                 )
             else:
-                return Response(
+                error_response = Response(
                     success=False,
                     message="An error occurred",
                     error=str(e)
                 )
+            
+            # Complete SKG interaction with error
+            if self.skg and error_response:
+                elapsed_ms = (time.time() - start_time) * 1000
+                self._complete_skg_interaction(error_response, elapsed_ms)
+            
+            return error_response
+    
+    def _handle_flake_intent(self, nlp_intent, query: Query) -> Response:
+        """Handle flake-related intents"""
+        try:
+            # Execute flake operation
+            result = self.flake_executor.execute(
+                intent_type=nlp_intent.type.value,
+                query=query.text,
+                entities=nlp_intent.entities
+            )
+            
+            # Convert FlakeResult to Response
+            return Response(
+                success=result.success,
+                message=result.message,
+                command=result.command,
+                explanation=result.explanation or f"Flake operation: {nlp_intent.type.value}",
+                error=result.error if not result.success else None
+            )
+        except Exception as e:
+            return Response(
+                success=False,
+                message=f"Flake operation failed: {str(e)}",
+                error=str(e)
+            )
+    
+    def _handle_home_intent(self, nlp_intent, query: Query) -> Response:
+        """Handle Home Manager related intents"""
+        try:
+            # Execute home manager operation
+            result = self.home_executor.execute(
+                intent_type=nlp_intent.type.value,
+                query=query.text,
+                entities=nlp_intent.entities
+            )
+            
+            # Convert HomeResult to Response
+            data = {}
+            if result.dotfiles:
+                data['dotfiles'] = result.dotfiles
+            if result.themes:
+                data['themes'] = result.themes
+            if result.actions:
+                data['actions'] = result.actions
+            
+            return Response(
+                success=result.success,
+                message=result.message,
+                command=result.command,
+                explanation=result.explanation or "Home Manager operation completed",
+                error=result.error if not result.success else None,
+                data=data if data else None
+            )
+        except Exception as e:
+            return Response(
+                success=False,
+                message=f"Home Manager operation failed: {str(e)}",
+                error=str(e)
+            )
+    
+    def _handle_config_intent(self, nlp_intent, query: Query) -> Response:
+        """Handle configuration file parsing intents"""
+        try:
+            # Execute config parsing operation
+            result = self.config_executor.execute(
+                intent_type=nlp_intent.type.value,
+                query=query.text,
+                entities=nlp_intent.entities
+            )
+            
+            # Build response data
+            data = {
+                'statistics': result.statistics,
+                'validation_errors': result.validation_errors,
+                'suggestions': result.suggestions,
+                'improvements': result.improvements
+            }
+            
+            # Learn from configuration patterns if SKG is available
+            if self.skg and result.config:
+                learning_data = self.config_executor.learn_from_config(result.config)
+                # Record patterns in SKG (using the correct method)
+                if hasattr(self.skg, 'skg'):
+                    skg_core = self.skg.skg
+                    # Record patterns using record_insight instead
+                    for pattern in learning_data['patterns']:
+                        if hasattr(skg_core, 'record_insight'):
+                            skg_core.record_insight(
+                                source='config_analysis',
+                                insight=f'Pattern detected: {pattern}',
+                                confidence=0.9
+                            )
+                    # Record antipatterns
+                    for antipattern in learning_data['antipatterns']:
+                        if hasattr(skg_core, 'record_insight'):
+                            skg_core.record_insight(
+                                source='config_analysis',
+                                insight=f'Antipattern detected: {antipattern}',
+                                confidence=1.0
+                            )
+            
+            return Response(
+                success=result.success,
+                message=result.message,
+                command=None,  # No command for parsing
+                explanation="Configuration analysis completed",
+                error=result.error if not result.success else None,
+                data=data if data else None
+            )
+        except Exception as e:
+            return Response(
+                success=False,
+                message=f"Configuration parsing failed: {str(e)}",
+                error=str(e)
+            )
     
     def _build_command(self, intent: Intent, query: Query) -> Optional[str]:
         """Build the actual Nix command to execute"""
@@ -209,11 +391,11 @@ class LuminousNixCore:
         
         # Map intent types to commands (using actual enum values)
         command_map = {
-            IntentType.INSTALL_PACKAGE: lambda: f"nix-env -iA nixos.{package}" if package else None,
-            IntentType.REMOVE_PACKAGE: lambda: f"nix-env -e {package}" if package else None,
+            IntentType.INSTALL_PACKAGE: lambda: f"nix profile install nixpkgs#{package}" if package else None,
+            IntentType.REMOVE_PACKAGE: lambda: f"nix profile remove '.*{package}.*'" if package else None,
             IntentType.SEARCH_PACKAGE: lambda: f"nix search nixpkgs {search_query}",
             IntentType.UPDATE_SYSTEM: lambda: "sudo nixos-rebuild switch",
-            IntentType.LIST_INSTALLED: lambda: "nix-env -q",
+            IntentType.LIST_INSTALLED: lambda: "nix profile list",
             IntentType.ROLLBACK: lambda: "sudo nixos-rebuild switch --rollback",
             IntentType.GARBAGE_COLLECT: lambda: "nix-collect-garbage -d",
             IntentType.HELP: lambda: None,  # No command for help
@@ -250,6 +432,7 @@ class LuminousNixCore:
                     return Response(
                         success=True,
                         message=msg,
+                        data={"packages": results},  # Add the actual data!
                         command=command,
                         explanation=f"Searched using native API in {elapsed:.1f}ms"
                     )
@@ -257,6 +440,7 @@ class LuminousNixCore:
                     return Response(
                         success=False,
                         message="No packages found",
+                        data={"packages": []},  # Empty list for consistency
                         command=command
                     )
                     
@@ -414,6 +598,60 @@ class LuminousNixCore:
         """List installed packages"""
         query = Query("list installed packages")
         return self.process_query(query)
+    
+    # SKG Integration Methods
+    
+    def _complete_skg_interaction(self, response: Response, elapsed_ms: float):
+        """Complete SKG interaction tracking"""
+        if not self.skg:
+            return
+        
+        try:
+            # Record the interaction
+            interaction_id = self.skg.complete_interaction(
+                response=response.message,
+                success=response.success,
+                command=response.command,
+                error=response.error
+            )
+            
+            # Record system qualia (subjective experience)
+            if interaction_id > 0:
+                system_state = {
+                    'computation_time': elapsed_ms,
+                    'intent_confidence': getattr(self.skg.current_context, 'confidence', 0.5) if self.skg.current_context else 0.5,
+                    'errors': 0 if response.success else 1,
+                    'user_satisfaction': 0.8 if response.success else 0.3
+                }
+                self.skg.record_system_qualia(interaction_id, system_state)
+                
+                # Update capability confidence
+                if self.skg.current_context and self.skg.current_context.intent:
+                    self.skg.update_capability_confidence(
+                        self.skg.current_context.intent,
+                        response.success
+                    )
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to complete SKG interaction: {e}")
+    
+    def get_learning_insights(self) -> List[str]:
+        """Get insights from the SKG about learning progress"""
+        if self.skg:
+            return self.skg.generate_session_insights()
+        return ["SKG not available - no insights to share"]
+    
+    def get_user_context(self) -> Dict[str, Any]:
+        """Get comprehensive user context from SKG"""
+        if self.skg:
+            return self.skg.get_user_context()
+        return {"message": "SKG not available"}
+    
+    def export_knowledge_graph(self) -> Dict[str, Any]:
+        """Export the knowledge graph for visualization"""
+        if self.skg:
+            return self.skg.export_knowledge_graph()
+        return {"error": "SKG not available"}
 
 
 # Create a singleton instance for backward compatibility

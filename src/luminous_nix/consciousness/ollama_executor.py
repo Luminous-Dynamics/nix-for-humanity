@@ -18,6 +18,8 @@ from dataclasses import dataclass
 
 from .model_dispatcher import ModelOrchestrator, TaskType
 from .hardware_profiler import HardwareProfiler
+from .ollama_optimizer import OptimizedOllamaExecutor
+from .context_enricher import ContextEnricher
 
 
 @dataclass
@@ -57,7 +59,19 @@ class OllamaExecutor:
         # Performance tracking
         self.execution_history: List[Dict[str, Any]] = []
         
+        # Initialize fixed executor with proper timeouts and circuit breaker
+        from .ollama_executor_fixed import FixedOllamaExecutor
+        self.fixed_executor = FixedOllamaExecutor()
+        
+        # Keep optimizer for fallback
+        self.optimizer = OptimizedOllamaExecutor()
+        
+        # Initialize context enricher for database-informed decisions
+        self.enricher = ContextEnricher()
+        
         self.logger.info("🌉 Ollama Executor initialized - bridging consciousness to generation")
+        self.logger.info("🚀 Optimizer enabled with caching and smart model selection")
+        self.logger.info("🧠 Context enricher connected to Data Trinity databases")
     
     async def execute_poml(self, 
                           prompt: str,
@@ -108,7 +122,8 @@ class OllamaExecutor:
                 model_tag=model_tag,
                 prompt=prompt,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                context=context
             )
             
             # Track execution
@@ -134,29 +149,139 @@ class OllamaExecutor:
         """
         Synchronous version of execute_poml for non-async contexts.
         """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            return loop.run_until_complete(
+            # Check if there's already an event loop running
+            loop = asyncio.get_running_loop()
+            # If we're here, a loop is running - create a task
+            task = asyncio.create_task(
                 self.execute_poml(prompt, poml_metadata, context)
             )
-        finally:
-            loop.close()
+            # Can't wait synchronously in an async context
+            # So we'll use a different approach - run synchronously with subprocess
+            return self._execute_sync_subprocess(prompt, poml_metadata, context)
+        except RuntimeError:
+            # No loop running, we can create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(
+                    self.execute_poml(prompt, poml_metadata, context)
+                )
+            finally:
+                loop.close()
+    
+    def _execute_sync_subprocess(self,
+                                prompt: str,
+                                poml_metadata: Dict[str, Any],
+                                context: Optional[Dict[str, Any]] = None) -> ExecutionResult:
+        """
+        Execute Ollama synchronously using the optimized executor.
+        This avoids async loop conflicts and provides caching.
+        """
+        # Get task type and complexity
+        task_type_str = poml_metadata.get('task_type', 'conversation')
+        complexity = poml_metadata.get('complexity', 'medium')
+        user_id = context.get('user_id', 'default') if context else 'default'
+        
+        # Enrich prompt with database context
+        enriched_prompt = self.enricher.enrich_prompt(
+            prompt=prompt,
+            user_id=user_id,
+            task_type=task_type_str,
+            include_history=True,
+            include_similar=True,
+            include_relationships=True
+        )
+        
+        # Log if enrichment happened
+        if enriched_prompt != prompt:
+            self.logger.info("📚 Prompt enriched with Data Trinity context")
+        
+        # Use fixed executor for reliable execution with proper timeouts
+        try:
+            result = self.fixed_executor.execute(
+                prompt=enriched_prompt,  # Use enriched prompt
+                model=None,  # Auto-select model
+                task_type=task_type_str,
+                use_cache=True,  # Enable caching for speed
+                progress_callback=lambda msg: self.logger.info(msg)
+            )
+            
+            if result.success:
+                return ExecutionResult(
+                    success=True,
+                    response=result.response,
+                    model_used=result.model_used,
+                    tokens_per_second=result.tokens_per_second,
+                    confidence=result.confidence,
+                    metadata={
+                        'method': 'fixed_executor',
+                        'cached': result.cached,
+                        'execution_time': result.execution_time,
+                        'error': result.error
+                    }
+                )
+            else:
+                return ExecutionResult(
+                    success=False,
+                    response=result.response or 'Execution failed',
+                    model_used=result.model_used or 'unknown',
+                    tokens_per_second=0,
+                    confidence=0,
+                    metadata={'error': result.error or 'execution_failed'}
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Optimized execution failed: {e}")
+            # Fallback to basic execution without cache
+            import subprocess
+            
+            try:
+                # Quick fallback with smallest model
+                result = subprocess.run(
+                    ['ollama', 'run', 'qwen3:0.6b', prompt],
+                    capture_output=True,
+                    text=True,
+                    timeout=15  # Shorter timeout for fallback
+                )
+                
+                if result.returncode == 0:
+                    return ExecutionResult(
+                        success=True,
+                        response=result.stdout.strip(),
+                        model_used='qwen3:0.6b',
+                        tokens_per_second=10,
+                        confidence=0.5,
+                        metadata={'method': 'fallback'}
+                    )
+            except:
+                pass
+            
+            return ExecutionResult(
+                success=False,
+                response=f"All execution methods failed: {str(e)}",
+                model_used='none',
+                tokens_per_second=0,
+                confidence=0,
+                metadata={'error': str(e)}
+            )
     
     async def _execute_ollama_async(self,
                                    model_tag: str,
                                    prompt: str,
                                    temperature: float,
-                                   max_tokens: int) -> ExecutionResult:
+                                   max_tokens: int,
+                                   context: Optional[Dict[str, Any]] = None) -> ExecutionResult:
         """Execute prompt through Ollama asynchronously"""
         try:
             # Build Ollama command
-            cmd = [
-                'ollama', 'run',
-                model_tag,
-                '--temperature', str(temperature),
-                '--num-predict', str(max_tokens)
-            ]
+            # Note: Ollama CLI doesn't support temperature/max_tokens flags
+            # These would need to be set via the API or model configuration
+            cmd = ['ollama', 'run', model_tag]
+            
+            # Only add format flag if explicitly requested
+            if context and context.get('format') == 'json':
+                cmd.extend(['--format', 'json'])
             
             # Execute
             process = await asyncio.create_subprocess_exec(

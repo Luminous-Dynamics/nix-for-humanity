@@ -376,7 +376,7 @@ def fix_backend_imports():
         imports_to_add = [
             "from .caching import CacheManager",
             "from .config_manager import ConfigManager", 
-            "from .learning_system import LearningSystem",
+            "from luminous_nix.learning.unified_learning import UnifiedLearningSystem as LearningSystem
             "from .personality_system import PersonalitySystem"
         ]
         

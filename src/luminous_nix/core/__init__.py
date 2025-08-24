@@ -13,8 +13,12 @@ from .personality import PersonalityManager as PersonalitySystem
 # New core API
 from .luminous_core import LuminousNixCore, Query, Response, get_core
 
+# Alias for compatibility
+NixForHumanityCore = LuminousNixCore
+
 __all__ = [
     'NixForHumanityBackend', 'IntentRecognizer', 'Intent', 'IntentType', 
     'SafeExecutor', 'KnowledgeBase', 'ErrorHandler', 'PersonalitySystem',
-    'LuminousNixCore', 'Query', 'Response', 'get_core'
+    'LuminousNixCore', 'Query', 'Response', 'get_core',
+    'NixForHumanityCore'  # Added for compatibility
 ]

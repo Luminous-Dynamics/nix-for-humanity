@@ -13,6 +13,18 @@ from pathlib import Path
 def main():
     """Launch the TUI application"""
     try:
+        # Terminal compatibility fixes
+        term = os.environ.get('TERM', '')
+        
+        # Fix for Kitty terminal
+        if 'kitty' in term.lower():
+            os.environ['TERM'] = 'xterm-256color'
+            
+        # Ensure we're in a proper TTY
+        if not sys.stdin.isatty():
+            print("Error: TUI requires an interactive terminal")
+            sys.exit(1)
+            
         # Try direct import first
         from luminous_nix.ui.main_app import NixForHumanityTUI
         

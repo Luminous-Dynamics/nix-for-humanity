@@ -28,6 +28,7 @@ class TaskType(Enum):
     SEARCH = "search"                  # Finding packages (Reflex)
     LEARNING = "learning"              # Pattern recognition (Mind)
     VISION = "vision"                  # Image understanding (Special)
+    ETHICAL_REASONING = "ethical_reasoning"  # Constitutional checks (Conscience)
 
 
 @dataclass
@@ -73,6 +74,9 @@ class ModelOrchestrator:
         # Track active models
         self.active_models: Dict[str, Any] = {}
         
+        # Configure Sacred Council (August 2025)
+        self.sacred_council = self._configure_sacred_council()
+        
         # Model selection cache
         self.selection_cache: Dict[str, str] = {}
         
@@ -81,11 +85,39 @@ class ModelOrchestrator:
     def _build_model_registry(self) -> Dict[str, ModelSpec]:
         """Build the registry of available models"""
         return {
+            # === SACRED COUNCIL MODELS (August 2025) ===
+            'deepseek-r1-8b': ModelSpec(
+                name='DeepSeek R1 8B',
+                task_types=[TaskType.CODE_GENERATION, TaskType.CONFIGURATION, 
+                           TaskType.LEARNING, TaskType.ETHICAL_REASONING],
+                min_tier=HardwareTier.JOURNEYMAN,
+                context_window=32768,
+                strengths=['transparent-reasoning', 'chain-of-thought', 'self-correction'],
+                ollama_tag='deepseek-r1:8b'
+            ),
+            'qwen3-8b': ModelSpec(
+                name='Qwen 3 8B',
+                task_types=[TaskType.CODE_GENERATION, TaskType.CONFIGURATION,
+                           TaskType.LEARNING],
+                min_tier=HardwareTier.JOURNEYMAN,
+                context_window=32768,
+                strengths=['unified-architecture', 'code-logic', 'next-gen'],
+                ollama_tag='qwen3:8b'
+            ),
+            'qwen3-0.6b': ModelSpec(
+                name='Qwen 3 0.6B',
+                task_types=[TaskType.INTENT_CLASSIFICATION, TaskType.SEARCH],
+                min_tier=HardwareTier.NOVICE,
+                context_window=8192,
+                strengths=['ultra-fast', 'minimal', 'instant'],
+                ollama_tag='qwen3:0.6b'
+            ),
+            
             # === HEART MODELS (Conversation) ===
-            # Gemma 3 models (newer, better performance)
+            # Gemma 3 models (newer, better performance with VISION)
             'gemma3-4b': ModelSpec(
-                name='Gemma 3 4B',
-                task_types=[TaskType.CONVERSATION, TaskType.ERROR_EXPLANATION],
+                name='Gemma 3 4B Multimodal',
+                task_types=[TaskType.CONVERSATION, TaskType.ERROR_EXPLANATION, TaskType.VISION],
                 min_tier=HardwareTier.APPRENTICE,
                 context_window=8192,
                 strengths=['modern', 'efficient', 'balanced'],
@@ -243,6 +275,20 @@ class ModelOrchestrator:
         
         This is where the conductor chooses which instrument plays.
         """
+        # Use Sacred Council for ethical reasoning (August 2025)
+        if task_type == TaskType.ETHICAL_REASONING:
+            if self.sacred_council.get('conscience'):
+                model_id = self.sacred_council['conscience']
+                if model_id in self.model_registry:
+                    self.logger.info(f"⚖️ Using Sacred Council Conscience: {model_id}")
+                    return self.model_registry[model_id].ollama_tag
+            # Fallback to mind model
+            if self.sacred_council.get('mind'):
+                model_id = self.sacred_council['mind']
+                if model_id in self.model_registry:
+                    self.logger.info(f"🧠 Using Sacred Council Mind for ethics: {model_id}")
+                    return self.model_registry[model_id].ollama_tag
+        
         # Check cache
         cache_key = f"{task_type.value}_{self.hardware_profile.tier.value}"
         if cache_key in self.selection_cache:
@@ -350,40 +396,67 @@ class ModelOrchestrator:
     def execute_with_model(self,
                           model_tag: str,
                           prompt: str,
-                          temperature: float = 0.7) -> Optional[str]:
+                          temperature: float = 0.7,
+                          timeout: Optional[int] = None,
+                          retry_on_timeout: bool = True) -> Optional[str]:
         """
         Execute a prompt with a specific model.
         
         This is where the selected instrument plays its part.
+        Now with better timeout handling for model loading.
         """
-        try:
-            # Ensure model is available
-            if not self.ensure_model_available(model_tag):
-                return None
-            
-            # Execute via Ollama
-            self.logger.info(f"🎵 Executing with {model_tag}")
-            
-            result = subprocess.run(
-                ['ollama', 'run', model_tag, '--temperature', str(temperature)],
-                input=prompt,
-                capture_output=True,
-                text=True,
-                timeout=120  # 2 minutes max
-            )
-            
-            if result.returncode == 0:
-                return result.stdout.strip()
+        # Check if this is the first invocation (model needs loading)
+        is_first_run = model_tag not in self.active_models
+        
+        # Determine timeout based on whether model needs loading
+        if timeout is None:
+            if is_first_run:
+                timeout = 180  # 3 minutes for first load
+                self.logger.info(f"🔄 First invocation of {model_tag}, using extended timeout")
             else:
-                self.logger.error(f"Execution failed: {result.stderr}")
-                return None
+                timeout = 60   # 1 minute for subsequent runs
+        
+        max_retries = 2 if retry_on_timeout else 1
+        
+        for attempt in range(max_retries):
+            try:
+                # Ensure model is available
+                if not self.ensure_model_available(model_tag):
+                    return None
                 
-        except subprocess.TimeoutExpired:
-            self.logger.error(f"Model execution timed out")
-            return None
-        except Exception as e:
-            self.logger.error(f"Error executing model: {e}")
-            return None
+                # Execute via Ollama
+                self.logger.info(f"🎵 Executing with {model_tag} (attempt {attempt + 1}/{max_retries})")
+                
+                result = subprocess.run(
+                    ['ollama', 'run', model_tag, '--temperature', str(temperature)],
+                    input=prompt,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout * (attempt + 1)  # Increase timeout with retries
+                )
+                
+                if result.returncode == 0:
+                    # Mark model as loaded
+                    self.active_models[model_tag] = True
+                    return result.stdout.strip()
+                else:
+                    self.logger.error(f"Execution failed: {result.stderr}")
+                    if attempt < max_retries - 1:
+                        self.logger.info("Retrying...")
+                        continue
+                    return None
+                    
+            except subprocess.TimeoutExpired:
+                self.logger.warning(f"Model execution timed out (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1 and retry_on_timeout:
+                    self.logger.info(f"Retrying with extended timeout...")
+                    continue
+                return None
+            except Exception as e:
+                self.logger.error(f"Error executing model: {e}")
+                return None
+        
+        return None
     
     def _tier_value(self, tier: HardwareTier) -> int:
         """Convert tier to numeric value for comparison"""
@@ -399,6 +472,69 @@ class ModelOrchestrator:
     def _get_fallback_model(self) -> str:
         """Get the ultimate fallback model"""
         return 'gemma:2b'  # Smallest, works everywhere
+    
+    def _configure_sacred_council(self) -> Dict[str, str]:
+        """Configure the Sacred Council based on available models"""
+        # Check what's actually installed
+        installed_models = self._get_installed_models()
+        
+        # Sacred Council configuration (August 2025)
+        council = {
+            'reflex': None,      # ⚡ Lightning responses
+            'heart': None,       # 💖 Empathetic understanding
+            'mind': None,        # 🧠 Deep reasoning
+            'conscience': None   # ⚖️ Ethical alignment
+        }
+        
+        # Prefer newer models if available
+        if 'qwen3:0.6b' in installed_models:
+            council['reflex'] = 'qwen3-0.6b'
+        elif 'gemma:2b' in installed_models:
+            council['reflex'] = 'gemma-2b'
+            
+        if 'gemma3:4b' in installed_models:
+            council['heart'] = 'gemma3-4b'
+        elif 'gemma2:9b' in installed_models:
+            council['heart'] = 'gemma2-9b'
+            
+        # Prefer qwen3:8b for stability (deepseek-r1 has CPU issues)
+        if 'qwen3:8b' in installed_models:
+            council['mind'] = 'qwen3-8b'
+        elif 'deepseek-r1:8b' in installed_models:
+            council['mind'] = 'deepseek-r1-8b'  # Use with caution - CPU issues
+        elif 'qwen2:7b' in installed_models:
+            council['mind'] = 'qwen2-7b'
+            
+        if 'mistral:7b-instruct' in installed_models:
+            council['conscience'] = 'mistral-7b-instruct'
+        elif 'gemma2:9b' in installed_models:
+            council['conscience'] = 'gemma2-9b'
+        
+        # Log configuration
+        self.logger.info("🕉️ Sacred Council Configuration:")
+        for role, model in council.items():
+            if model:
+                self.logger.info(f"  {role}: {model}")
+            else:
+                self.logger.warning(f"  {role}: Not configured")
+                
+        return council
+    
+    def _get_installed_models(self) -> List[str]:
+        """Get list of installed Ollama models"""
+        try:
+            result = subprocess.run(
+                ['ollama', 'list'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')[1:]  # Skip header
+                return [line.split()[0] for line in lines if line]
+        except Exception as e:
+            self.logger.warning(f"Could not get installed models: {e}")
+        return []
     
     def get_orchestra_status(self) -> Dict[str, Any]:
         """

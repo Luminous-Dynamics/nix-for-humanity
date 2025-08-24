@@ -11,17 +11,27 @@ from typing import Dict, Any, List, Optional
 import re
 
 # Import AI enhancement modules
+# Note: These modules are optional and may not be available
+# Set them to None for now to avoid circular imports
+XAIEngine = None
+AdvancedLearningSystem = None
+analyze_intent_recognition = None
+
+# Try to import if they exist as separate modules (not from ai package to avoid circular import)
 try:
-    # Try direct import from project root
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
-    from luminous_nix.ai import XAIEngine, AdvancedLearningSystem, analyze_intent_recognition
-    print("✅ AI enhancement modules imported successfully")
-except ImportError as e:
-    print(f"⚠️  AI enhancement modules not available: {e}")
-    XAIEngine = None
-    AdvancedLearningSystem = None
-    analyze_intent_recognition = None
+    from luminous_nix.xai import XAIEngine
+except ImportError:
+    pass
+
+try:
+    from luminous_nix.learning import AdvancedLearningSystem
+except ImportError:
+    pass
+
+try:
+    from luminous_nix.analysis import analyze_intent_recognition
+except ImportError:
+    pass
 
 
 class NLPPipeline:

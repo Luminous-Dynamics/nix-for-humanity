@@ -31,6 +31,11 @@ pkgs.mkShell {
     sqlite
     redis
     
+    # Data Trinity databases for Luminous Nix
+    # DuckDB for temporal patterns
+    python313Packages.duckdb
+    # Note: ChromaDB and Kùzu need pip install in venv
+    
     # Python for Sacred Trinity and NixOS integration
     # Primary Python (3.13) for main application
     python313
@@ -68,6 +73,34 @@ pkgs.mkShell {
     
     # For Sacred Trinity workflow
     ollama                         # Local LLM (Mistral-7B)
+    
+    # Enhanced LLM & AI Integration
+    llama-cpp                      # Direct C++ inference for faster local models
+    mistral-rs                     # Rust-based Mistral inference
+    faiss                          # Facebook's vector similarity search
+    
+    # Voice & Speech Integration
+    espeak-ng                      # Lightweight TTS
+    # Note: whisper-cpp, piper need manual build or pip install
+    
+    # Developer Experience Tools
+    asciinema                      # Terminal recording for demos
+    gum                            # Charm's beautiful CLI interactions
+    charm-freeze                   # Generate code screenshots
+    vhs                           # Programmatic terminal recordings
+    
+    # Code Quality Tools
+    ruff                          # Fast Python linter (100x faster)
+    mypy                          # Static type checking
+    bandit                        # Security vulnerability scanner
+    black                         # Code formatter
+    semgrep                       # Pattern-based static analysis
+    
+    # Enhanced CLI/TUI Tools
+    python313Packages.typer       # Modern CLI building
+    python313Packages.prompt-toolkit  # Advanced prompts
+    python313Packages.questionary    # Beautiful interactive prompts
+    python313Packages.inquirer       # Interactive CLI prompts
     
     # ActivityWatch for user behavior monitoring
     activitywatch                  # Privacy-first activity tracking
@@ -111,7 +144,11 @@ pkgs.mkShell {
   
   shellHook = ''
     # Set up library paths for Python packages
-    export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.stdenv.cc.cc.lib}/lib64:$LD_LIBRARY_PATH"
+    
+    # Explicitly set library path for Data Trinity databases
+    export LD_LIBRARY_PATH="${pkgs.gcc.cc.lib}/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="${pkgs.glibc}/lib:$LD_LIBRARY_PATH"
     
     echo "🗣️ Nix for Humanity Development Environment"
     echo "=========================================="

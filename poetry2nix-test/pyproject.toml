@@ -1,0 +1,267 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "luminous-nix"
+version = "1.0.0"
+description = "Natural language interface for NixOS - making NixOS accessible to everyone"
+readme = "README.md"
+license = "MIT"
+authors = ["Tristan Stoltz <tristan.stoltz@evolvingresonantcocreationism.com>"]
+maintainers = ["Luminous Dynamics <nix-for-humanity@luminousdynamics.org>"]
+keywords = [
+    "nixos",
+    "natural-language",
+    "ai",
+    "accessibility",
+    "symbiotic-intelligence",
+    "consciousness-first",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+packages = [{include = "luminous_nix", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11,<3.14"
+
+# Core dependencies - minimal set required for basic functionality
+# NOTE: py-nix-eval doesn't exist on PyPI - will use subprocess for now
+requests = "^2.31.0"  # HTTP client for API calls
+click = "^8.1.0"  # CLI framework
+colorama = "^0.4.6"  # Cross-platform colored output
+python-dotenv = "^1.0.0"  # Environment variable management
+jsonlines = "^3.1.0"  # For knowledge base
+
+# Tree-sitter for AST parsing (Phase A-Prime: Declarative Agent Foundation)
+tree-sitter = "^0.25.1"  # Core tree-sitter library for AST parsing
+tree-sitter-nix = "^0.1.0"  # Nix grammar for tree-sitter
+
+# Optional dependencies (from requirements-tui.txt)
+textual = "^5.3.0"
+textual-dev = {version = "^1.2.1", optional = true}
+rich = {version = "^13.7.0", optional = true}
+blessed = {version = "^1.20.0", optional = true}
+pyperclip = {version = "^1.8.2", optional = true}
+typer = {version = "^0.9.0", optional = true}  # Modern CLI building
+prompt-toolkit = {version = "^3.0.43", optional = true}  # Advanced prompts
+questionary = {version = "^2.0.1", optional = true}  # Beautiful interactive prompts
+inquirer = {version = "^3.1.0", optional = true}  # Interactive CLI prompts
+
+# Voice - Speech recognition and synthesis
+whisper-cpp-python = {version = "^0.1.0", optional = true}
+piper-tts = {version = "^1.0.0", optional = true}
+vosk = {version = "^0.3.45", optional = true}
+py-espeak-ng = {version = "^0.1.8", optional = true}  # Note: was espeak-ng
+openai-whisper = {version = "20230918", optional = true}  # OpenAI Whisper for speech recognition - pinned for torch compatibility
+
+# Web dependencies (from requirements.txt)
+flask = {version = "^3.0.0", optional = true}
+gunicorn = {version = "^21.2.0", optional = true}
+PyJWT = {version = "^2.8.0", optional = true}
+pyOpenSSL = {version = "^23.3.0", optional = true}
+websockets = {version = "^12.0", optional = true}
+flask-socketio = {version = "^5.3.0", optional = true}
+python-socketio = {version = "^5.10.0", optional = true}
+cryptography = {version = "^41.0.0", optional = true}
+
+# ML dependencies (from scripts/requirements.txt)
+# NOTE: Some ML packages are disabled due to C++ compilation issues
+# pandas = {version = "^2.3.0", optional = true}  # Disabled: pyarrow dependency issue
+numpy = {version = "^1.26.0", optional = true}  # Compatible with latest pandas
+nltk = {version = "^3.8.0", optional = true}
+# spacy = {version = "^3.5.0", optional = true}  # Disabled: blis dependency issue
+transformers = {version = "^4.55.0", optional = true}  # Latest: 4.55.0
+torch = {version = "^2.0.0", optional = true}  # Compatible with openai-whisper
+scikit-learn = {version = "^1.7.0", optional = true}  # Latest: 1.7.1
+sentence-transformers = {version = "^3.3.0", optional = true}  # Latest: 3.3.2
+beautifulsoup4 = {version = "^4.12.0", optional = true}
+lxml = {version = "^4.9.0", optional = true}
+faiss-cpu = {version = "^1.7.4", optional = true}  # Facebook AI Similarity Search for vector memory
+llama-cpp-python = {version = "^0.2.0", optional = true}  # Python bindings for llama.cpp
+
+# Additional Hugging Face ecosystem
+# tokenizers version is automatically managed by transformers dependency
+huggingface-hub = {version = "^0.34.0", optional = true}  # Compatible with transformers
+safetensors = {version = "^0.6.0", optional = true}  # Latest: 0.6.1
+
+# Advanced - For research and advanced features
+accelerate = {version = "^1.0.0", optional = true}  # Compatible version
+datasets = {version = "^3.0.0", optional = true}  # Compatible version
+peft = {version = "^0.17.0", optional = true}  # Compatible version
+trl = {version = "^0.7.0", optional = true}
+lancedb = {version = "^0.10.0", optional = true}  # Compatible version
+optimum = {version = "^1.20.0", optional = true}  # Compatible version
+evaluate = {version = "^0.4.0", optional = true}  # Compatible version
+networkx = {version = "^3.0", optional = true}
+dowhy = {version = "^0.11.0", optional = true, python = ">=3.8,<3.12"}  # Causal inference - only for Python <3.12
+shap = {version = "^0.42.0", optional = true}
+opentelemetry-api = {version = "^1.20.0", optional = true}
+opentelemetry-sdk = {version = "^1.20.0", optional = true}
+aiohttp = {version = "^3.9.0", optional = true}  # For ActivityMonitor
+pyyaml = "^6.0.2"
+jsonschema = "^4.25.0"
+duckdb = "^1.3.2"
+kuzu = "^0.11.1"
+aiofiles = "^24.1.0"
+chromadb = "^1.0.20"
+pandas = "^2.3.1"
+
+[tool.poetry.group.dev.dependencies]
+# Testing (from requirements.txt)
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-asyncio = "^0.21.0"
+pytest-mock = "^3.10.0"
+requests-mock = "^1.11.0"
+
+# Code quality
+black = "^23.11.0"
+ruff = "^0.1.5"
+mypy = "^1.7.0"
+bandit = "^1.7.5"
+semgrep = "^1.45.0"  # Pattern-based static analysis
+safety = "^3.0.0"  # Security vulnerability scanning
+
+# Type stubs
+types-colorama = "*"
+types-requests = "*"
+types-PyYAML = "*"
+
+# Documentation
+mkdocs = "^1.5.3"
+mkdocs-material = "^9.4.0"
+mkdocstrings = {extras = ["python"], version = "^0.24.0"}
+
+# Development tools
+watchdog = "^3.0.0"
+tqdm = "^4.65.0"
+ipython = "^8.17.0"
+pre-commit = "^4.3.0"
+tree-sitter = "^0.25.1"
+tree-sitter-python = "^0.23.6"
+tree-sitter-nix = "^0.1.0"
+pyyaml = "^6.0.2"
+pyttsx3 = "^2.99"
+speechrecognition = "^3.14.3"
+pocketsphinx = "^5.0.4"
+asciinema = "^2.4.0"  # Terminal recording for demos
+
+[tool.poetry.extras]
+tui = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "typer", "prompt-toolkit", "questionary", "inquirer"]
+voice = ["whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "openai-whisper"]
+web = ["flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography"]
+ml = ["numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "faiss-cpu", "llama-cpp-python"]
+advanced = ["accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
+all = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "typer", "prompt-toolkit", "questionary", "inquirer", "whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "openai-whisper", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "faiss-cpu", "llama-cpp-python", "accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
+
+[tool.poetry.urls]
+"Homepage" = "https://github.com/Luminous-Dynamics/nix-for-humanity"
+"Documentation" = "https://nix-for-humanity.luminousdynamics.org"
+"Repository" = "https://github.com/Luminous-Dynamics/nix-for-humanity.git"
+"Issues" = "https://github.com/Luminous-Dynamics/nix-for-humanity/issues"
+"Discussions" = "https://github.com/Luminous-Dynamics/nix-for-humanity/discussions"
+
+[tool.poetry.scripts]
+ask-nix = "luminous_nix.cli:main"
+nix-tui = "luminous_nix.tui.app:run"
+nix-humanity-server = "luminous_nix.web.server:main"
+
+# Note: Poetry automatically handles package discovery from the 'packages' field above
+# Package data is handled via include patterns in pyproject.toml or MANIFEST.in
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # Directories
+  \.eggs
+  | \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "S",    # bandit
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+    "RET",  # flake8-return
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "S101",  # use of assert (common in tests)
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101"]  # Allow asserts in tests
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--cov=luminous_nix",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "coverage_html_report"
