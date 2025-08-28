@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Luminous Nix Launcher - Standalone Version
+
+# Check for Python
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 is required but not installed."
+    echo "   Install with: nix-env -iA nixpkgs.python3"
+    exit 1
+fi
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Set up Python path to embedded modules
+export PYTHONPATH="$SCRIPT_DIR/lib:$PYTHONPATH"
+
+# Check if running from installed location or development
+if [ -d "$SCRIPT_DIR/lib/luminous_nix" ]; then
+    # Running from installed location with embedded libs
+    exec python3 -m luminous_nix.cli "$@"
+elif [ -f "$HOME/.local/share/luminous-nix/lib/luminous_nix/cli/__init__.py" ]; then
+    # Running from user install
+    export PYTHONPATH="$HOME/.local/share/luminous-nix/lib:$PYTHONPATH"
+    exec python3 -m luminous_nix.cli "$@"
+else
+    echo "❌ Luminous Nix modules not found."
+    echo "   Please reinstall or check installation."
+    exit 1
+fi

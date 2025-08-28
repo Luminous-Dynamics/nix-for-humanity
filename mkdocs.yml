@@ -1,0 +1,140 @@
+site_name: Luminous Nix
+site_description: Natural Language Interface for NixOS - Making NixOS Accessible to Everyone
+site_author: Luminous Dynamics
+site_url: https://luminous-dynamics.github.io/luminous-nix/
+repo_url: https://github.com/Luminous-Dynamics/luminous-nix
+repo_name: luminous-nix
+edit_uri: edit/main/docs/
+
+# Theme configuration
+theme:
+  name: material
+  # custom_dir: docs/overrides  # Uncomment when you have custom overrides
+  # favicon: assets/favicon.ico  # Uncomment when you add favicon
+  # logo: assets/logo.png        # Uncomment when you add logo
+  
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  features:
+    - navigation.instant        # Instant loading
+    - navigation.tracking       # URL tracking
+    - navigation.tabs           # Top-level tabs
+    - navigation.tabs.sticky    # Keep tabs visible
+    - navigation.sections       # Render sections
+    - navigation.expand        # Expand sections by default
+    - navigation.path          # Show breadcrumbs
+    - navigation.indexes       # Section index pages
+    - navigation.top           # Back to top button
+    - search.suggest           # Search suggestions
+    - search.highlight         # Highlight search results
+    - search.share            # Share search
+    - content.code.copy       # Copy code button
+    - content.code.annotate  # Code annotations
+    - content.tabs.link      # Link tabs
+    - toc.follow             # Follow scroll
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-\.]+'
+  - include-markdown
+  
+# Extensions
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Navigation
+nav:
+  - Home:
+    - index.md
+    - Quick Start: ../QUICKSTART.md
+    - Project Status: ../UNIFIED_VISION_AND_REALITY.md
+    
+  - User Guide:
+    - Overview: user/README.md
+    - FAQ: user/faq.md
+    
+  - Features:
+    - Status: features/FEATURE_STATUS.md
+      
+  - Development:
+    - Contributing: ../CONTRIBUTING.md
+    
+  - Reference:
+    - CLI Commands: 05-REFERENCE/01-CLI-COMMANDS.md
+    - API Reference: 05-REFERENCE/02-API-REFERENCE.md
+    - Configuration: 05-REFERENCE/CONFIGURATION.md
+
+# Extra
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Luminous-Dynamics/luminous-nix
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/luminous-nix
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX  # Add your Google Analytics ID
+
+# Custom CSS
+extra_css:
+  - stylesheets/extra.css
+
+# Custom JavaScript
+extra_javascript:
+  - javascripts/extra.js

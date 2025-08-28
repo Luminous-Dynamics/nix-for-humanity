@@ -13,7 +13,7 @@ import sys
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from luminous_nix.ai_interface import AICompanionInterface, TestResult
+from luminous_nix.extensions.ai_interface import AICompanionInterface, TestResult
 from luminous_nix.ui.main_app import NixForHumanityTUI
 from luminous_nix.core import LuminousNixCore
 
@@ -170,19 +170,19 @@ class TestSelfEvolutionReadiness:
         """Verify sandbox is not yet implemented (honesty check)."""
         # This should fail until we implement sandboxing
         with pytest.raises(AttributeError):
-            from luminous_nix.ai_interface import SandboxEnvironment
+            from luminous_nix.extensions.ai_interface import SandboxEnvironment
     
     def test_code_generation_not_yet_implemented(self):
         """Verify code generation is not yet implemented (honesty check)."""
         # This should fail until we implement code generation
         with pytest.raises(AttributeError):
-            from luminous_nix.ai_interface import CodeGenerator
+            from luminous_nix.extensions.ai_interface import CodeGenerator
     
     def test_evolution_not_yet_implemented(self):
         """Verify evolution is not yet implemented (honesty check)."""
         # This should fail until we implement evolution
         with pytest.raises(AttributeError):
-            from luminous_nix.ai_interface import EvolutionProtocol
+            from luminous_nix.extensions.ai_interface import EvolutionProtocol
 
 
 if __name__ == "__main__":

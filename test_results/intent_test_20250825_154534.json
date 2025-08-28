@@ -1,0 +1,189 @@
+{
+  "coverage": {
+    "total_intents": 49,
+    "covered": 10,
+    "coverage_percent": 20.408163265306122,
+    "uncovered": [
+      "list_wifi",
+      "validate_config",
+      "show_ip",
+      "show_network",
+      "validate_flake",
+      "generate_config",
+      "list_generations",
+      "grant_sudo",
+      "configure",
+      "explain",
+      "list_users",
+      "unmount_device",
+      "service_status",
+      "service_logs",
+      "mount_device",
+      "check_status",
+      "connect_wifi",
+      "rebuild",
+      "add_user_to_group",
+      "edit_config",
+      "start_service",
+      "enable_service",
+      "disable_service",
+      "find_large_files",
+      "browse_categories",
+      "switch_generation",
+      "show_config",
+      "stop_service",
+      "show_popular",
+      "list_services",
+      "create_user",
+      "convert_flake",
+      "find_by_command",
+      "restart_service",
+      "test_connection",
+      "change_password",
+      "create_flake",
+      "show_flake_info",
+      "discover_package"
+    ],
+    "failed_tests": []
+  },
+  "performance": {
+    "total_queries": 100,
+    "avg_ms": 0.07695704465731978,
+    "min_ms": 0.0023300526663661003,
+    "max_ms": 0.21305703558027744,
+    "p50_ms": 0.09074702393263578,
+    "p95_ms": 0.16391801182180643,
+    "p99_ms": 0.21305703558027744
+  },
+  "ambiguity": {
+    "total_ambiguous": 10,
+    "recognized_as_unknown": 10,
+    "low_confidence_count": 10,
+    "avg_confidence": 0.1,
+    "details": [
+      {
+        "query": "clean",
+        "description": "Could be garbage collect or clean something else",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "update",
+        "description": "Could be system update or package update",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "space",
+        "description": "Could be disk space or namespace",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "fix",
+        "description": "Too vague to determine",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "make it work",
+        "description": "No specific action",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "install",
+        "description": "Missing package name",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "help with",
+        "description": "Incomplete help request",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "I need",
+        "description": "Incomplete statement",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "show me",
+        "description": "Missing what to show",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      },
+      {
+        "query": "check",
+        "description": "Missing what to check",
+        "recognized_as": "unknown",
+        "confidence": 0.1,
+        "is_unknown": true
+      }
+    ]
+  },
+  "real_world": {
+    "total_queries": 15,
+    "correct": 9,
+    "accuracy": 60.0,
+    "failures": [
+      {
+        "query": "my disk is full",
+        "expected": "disk_usage",
+        "recognized": "unknown",
+        "correct": false,
+        "confidence": 0.1
+      },
+      {
+        "query": "wifi not working",
+        "expected": "show_network",
+        "recognized": "unknown",
+        "correct": false,
+        "confidence": 0.1
+      },
+      {
+        "query": "show me network settings",
+        "expected": "show_network",
+        "recognized": "unknown",
+        "correct": false,
+        "confidence": 0.1
+      },
+      {
+        "query": "how much ram do I have",
+        "expected": "check_status",
+        "recognized": "unknown",
+        "correct": false,
+        "confidence": 0.1
+      },
+      {
+        "query": "delete old stuff",
+        "expected": "garbage_collect",
+        "recognized": "remove_package",
+        "correct": false,
+        "confidence": 0.9
+      },
+      {
+        "query": "install everything I need for web development",
+        "expected": "unknown",
+        "recognized": "install_package",
+        "correct": false,
+        "confidence": 0.9
+      }
+    ]
+  },
+  "suggestions": [
+    "Pattern confusion: 'unknown' is often mistaken for 'garbage_collect' (2 times). Consider adjusting pattern priority or specificity.",
+    "Query 'wipe disk' has been corrected 1 times. Add a specific pattern for this query mapping to garbage_collect."
+  ]
+}

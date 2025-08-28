@@ -209,7 +209,7 @@ def test_tui_entry_point():
     console.print("\n[bold cyan]🚪 Testing TUI Entry Point...[/bold cyan]")
     
     try:
-        from luminous_nix.interfaces.tui import main
+        from luminous_nix.frontends.tui import main
         console.print("  ✅ TUI entry point imports correctly")
         
         # Check if nix-tui script exists

@@ -17,10 +17,10 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from luminous_nix.consciousness import POMLConsciousness
-from luminous_nix.consciousness.hardware_profiler import HardwareProfiler
-from luminous_nix.consciousness.model_dispatcher import ModelOrchestrator, TaskType
-from luminous_nix.consciousness.ollama_executor import OllamaExecutor, POMLOllamaIntegration
+# ARCHIVED: consciousness module import POMLConsciousness
+# ARCHIVED: consciousness module.hardware_profiler import HardwareProfiler
+# ARCHIVED: consciousness module.model_dispatcher import ModelOrchestrator, TaskType
+# ARCHIVED: consciousness module.ollama_executor import OllamaExecutor, POMLOllamaIntegration
 
 
 def test_hardware_detection():

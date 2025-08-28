@@ -60,6 +60,9 @@ except ImportError as e:
 parser = argparse.ArgumentParser(description='Luminous Nix - Natural Language NixOS')
 parser.add_argument('command', nargs='*', help='Command to execute')
 
+# Version flag
+parser.add_argument('--version', action='version', version='Luminous Nix v0.3.2')
+
 # Essential UX flags
 parser.add_argument('--dry-run', '-n', action='store_true',
                    help='Preview commands without executing')

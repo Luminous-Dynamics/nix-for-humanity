@@ -192,7 +192,7 @@ def test_nlp_pipeline():
     print("="*60)
     
     try:
-        from luminous_nix.ai.nlp import NLPPipeline
+        from luminous_nix.extensions.ai.nlp import NLPPipeline
         
         pipeline = NLPPipeline()
         print("✅ NLP Pipeline initialized")

@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from luminous_nix.core import NixForHumanityCore
 from luminous_nix.core.types import Query, Response, IntentType, NixConfig
 from luminous_nix.core.error_intelligence_ast import ErrorIntelligence
-from luminous_nix.nlp.intent_recognition import IntentRecognizer
+from luminous_nix.core.intent import IntentRecognizer
 from luminous_nix.nlp.safety_validator import SafetyValidator
 
 

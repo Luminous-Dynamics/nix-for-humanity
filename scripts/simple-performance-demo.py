@@ -1,1 +1,0 @@
-print("\n📋 Copy this section to README.md to showcase performance!")

@@ -45,7 +45,7 @@ from luminous_nix.core.progress_indicator import ProgressIndicator, ProgressStyl
 
 # Try to import voice interface
 try:
-    from luminous_nix.interfaces.voice_interface import VoiceAssistant, VoiceState
+    from luminous_nix.extensions.voice_interface import VoiceAssistant, VoiceState
     from tui.voice_widget import create_voice_widget
     VOICE_AVAILABLE = True
 except ImportError:
@@ -848,7 +848,7 @@ Features:
             try:
                 # Import enhanced interface if available
                 try:
-                    from luminous_nix.interfaces.voice_interface_enhanced import VoiceAssistant as EnhancedVoiceAssistant
+                    from luminous_nix.extensions.voice_interface_enhanced import VoiceAssistant as EnhancedVoiceAssistant
                     assistant_class = EnhancedVoiceAssistant
                 except ImportError:
                     assistant_class = VoiceAssistant

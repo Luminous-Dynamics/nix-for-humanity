@@ -1,1 +1,0 @@
-print("✅ Rewrote prepare-production-release.py with fixed syntax!")

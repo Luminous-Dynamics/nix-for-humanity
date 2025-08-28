@@ -13,9 +13,9 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from luminous_nix.consciousness.model_curator import ModelCurator, demonstrate_curator
-from luminous_nix.consciousness.hardware_profiler import HardwareProfiler
-from luminous_nix.consciousness.model_dispatcher import ModelOrchestrator
+# ARCHIVED: consciousness module.model_curator import ModelCurator, demonstrate_curator
+# ARCHIVED: consciousness module.hardware_profiler import HardwareProfiler
+# ARCHIVED: consciousness module.model_dispatcher import ModelOrchestrator
 
 
 async def main():

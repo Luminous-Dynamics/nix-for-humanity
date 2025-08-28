@@ -1,1 +1,0 @@
-    test_learning_mode()

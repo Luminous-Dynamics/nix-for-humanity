@@ -1,1 +1,0 @@
-    demonstrate_performance_monitoring()
