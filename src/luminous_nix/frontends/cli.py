@@ -1113,7 +1113,11 @@ class UnifiedNixAssistant:
             
             response = self.real_backend.process(intent)
             if response.success:
-                print(f"✅ {response.text}")
+                # Check if this is a dry-run response
+                if "DRY RUN:" in response.text:
+                    print(f"🔍 {response.text}")
+                else:
+                    print(f"✅ {response.text}")
             else:
                 print(f"❌ {response.text}")
             return
@@ -1257,6 +1261,30 @@ class UnifiedNixAssistant:
 
     def _remove_package(self, package: str):
         """Remove a specific package (fallback method)"""
+        
+        # Use real backend if available
+        if self.real_backend:
+            from luminous_nix.core.intents import Intent, IntentType
+            
+            intent = Intent(
+                type=IntentType.REMOVE_PACKAGE,
+                entities={'package': package},
+                confidence=1.0,
+                raw_text=f"remove {package}"
+            )
+            
+            response = self.real_backend.process(intent)
+            if response.success:
+                # Check if this is a dry-run response
+                if "DRY RUN:" in response.text:
+                    print(f"🔍 {response.text}")
+                else:
+                    print(f"✅ {response.text}")
+            else:
+                print(f"❌ {response.text}")
+            return
+        
+        # Original fallback implementation
         print(f"🗑️ Removing {package}...")
 
         if self.dry_run:

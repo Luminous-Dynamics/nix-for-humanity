@@ -182,7 +182,11 @@ def main():
         
         # Display response
         if response.success:
-            print(f"✅ {response.text}")
+            # Check if this is a dry-run response
+            if "DRY RUN:" in response.text:
+                print(f"🔍 {response.text}")
+            else:
+                print(f"✅ {response.text}")
         else:
             print(f"❌ {response.text}")
         

@@ -10,6 +10,9 @@ from typing import Dict, Any, Optional
 from .nix_real_executor import NixRealExecutor
 from .intents import Intent, IntentType
 from luminous_nix.api.schema import Response, Result
+from .search_cache import SearchCache
+from .config import Config
+from .smart_package_discovery import get_smart_discovery
 
 
 class RealNixBackend:
@@ -19,17 +22,22 @@ class RealNixBackend:
     No more mocks! This is the real deal.
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional[Config] = None):
         """Initialize with real executor"""
-        # Check if dry run mode
-        self.dry_run = os.getenv("LUMINOUS_DRY_RUN", "false").lower() == "true"
-        self.verbose = os.getenv("LUMINOUS_VERBOSE", "0")
+        # Use provided config or create default
+        self.config = config or Config()
         
-        # Create real executor
+        # Create real executor with config settings
         self.executor = NixRealExecutor(
-            timeout=30,
-            dry_run=self.dry_run
+            timeout=self.config.timeout,
+            dry_run=self.config.preview  # preview mode = dry run
         )
+        
+        # Initialize search cache if enabled
+        if self.config.cache_enabled:
+            self.search_cache = SearchCache()
+        else:
+            self.search_cache = None
         
         # Get system info once
         self.system_info = self.executor.get_system_info().get("info", {})
@@ -67,7 +75,7 @@ class RealNixBackend:
             )
     
     def _handle_search(self, intent: Intent) -> Response:
-        """Handle package search with real nix search"""
+        """Handle package search with smart discovery"""
         query = intent.entities.get("package", "") or intent.raw_text or ""
         
         if not query or query.lower() in ["packages", "package", ""]:
@@ -76,44 +84,102 @@ class RealNixBackend:
                 text="Please specify what to search for. Example: 'search firefox'"
             )
         
-        # Use shorter timeout for search
-        self.executor.timeout = 10
-        result = self.executor.search_packages(query)
+        # Use smart discovery first
+        discovery = get_smart_discovery()
+        smart_matches = discovery.find_packages(query)
         
-        if result.get("timeout"):
-            # Search timed out - try simpler approach
-            result = self.executor.execute(
-                "nix-env",
-                ["-qa", f"*{query}*"],
-                force_old_style=True
-            )
+        if smart_matches:
+            # Format smart results
+            message = f"Found packages for '{query}':\n"
+            results = []
             
-        if result.get("success"):
-            output = result.get("output", "")
-            if result.get("packages"):
-                # Structured output
-                packages = result["packages"]
-                if isinstance(packages, dict):
-                    # JSON search results
-                    names = [k.split(".")[-1] for k in packages.keys()][:10]
-                    message = f"Found {len(packages)} packages matching '{query}':\n"
-                    message += "\n".join(f"  • {name}" for name in names)
-                else:
-                    # Line-based results
-                    message = f"Found packages matching '{query}':\n{output}"
-            else:
-                message = f"Search results for '{query}':\n{output}"
-                
+            for match in smart_matches[:10]:  # Top 10 matches
+                message += f"  • {match.name} - {match.match_reason}\n"
+                if match.description:
+                    message += f"    {match.description[:60]}...\n"
+                results.append({
+                    "name": match.name,
+                    "description": match.description,
+                    "confidence": match.confidence,
+                    "reason": match.match_reason
+                })
+            
+            # Add suggestion if it was a typo
+            correction = discovery.suggest_correction(query)
+            if correction and correction != query.lower():
+                message += f"\n💡 Did you mean: {correction}?"
+            
             return Response(
                 success=True,
                 text=message,
-                data={"query": query, "results": result.get("packages", [])}
+                data={"query": query, "results": results, "smart_search": True}
             )
+        
+        # Quick common package lookup (< 1 second)
+        # This is a workaround until we can optimize nix-env -qa
+        common_packages = {
+            "vim": ["vim", "neovim", "vim-full", "vim-darwin", "vim-configurable"],
+            "firefox": ["firefox", "firefox-esr", "firefox-devedition", "firefox-bin"],
+            "editor": ["vim", "neovim", "emacs", "nano", "vscode", "sublime3"],
+            "browser": ["firefox", "chromium", "brave", "google-chrome", "vivaldi"],
+            "python": ["python3", "python312", "python311", "python310", "python39"],
+            "terminal": ["alacritty", "kitty", "wezterm", "terminator", "gnome-terminal"],
+            "git": ["git", "git-lfs", "gitFull", "git-interactive-rebase-tool"],
+            "docker": ["docker", "docker-compose", "docker-client", "docker-machine"],
+        }
+        
+        # Check if we have common results
+        query_lower = query.lower()
+        results = []
+        
+        for key, packages in common_packages.items():
+            if query_lower in key or key in query_lower:
+                for pkg in packages:
+                    results.append({"name": pkg, "description": f"Package: {pkg}"})
+        
+        # If no common results, try limited real search
+        if not results:
+            try:
+                # Very quick timeout to avoid hanging
+                import subprocess
+                result = subprocess.run(
+                    ["nix-env", "-qa", f"*{query}*"],
+                    capture_output=True,
+                    text=True,
+                    timeout=1  # Only 1 second timeout
+                )
+                
+                if result.returncode == 0 and result.stdout:
+                    lines = result.stdout.strip().split("\n")[:10]  # Only first 10
+                    for line in lines:
+                        if line.strip():
+                            results.append({"name": line.strip(), "description": ""})
+            except:
+                # If search fails, return helpful message
+                results = [{"name": f"Try: nix-env -qa '*{query}*'", "description": "Run this command for full results"}]
+        
+        # Format results
+        if results:
+            # Format the results nicely
+            shown = results[:15]  # Show first 15 results
+            message = f"Found {len(results)} packages matching '{query}':\n"
+            for pkg in shown:
+                name = pkg.get("name", "")
+                desc = pkg.get("description", "")
+                if desc and desc != f"Package: {name}":  # Skip default descriptions
+                    message += f"  • {name} - {desc[:60]}\n"
+                else:
+                    message += f"  • {name}\n"
+            if len(results) > 15:
+                message += f"  ... and {len(results) - 15} more"
         else:
-            return Response(
-                success=False,
-                text=f"Search failed: {result.get('error', 'Unknown error')}"
-            )
+            message = f"No packages found matching '{query}'"
+            
+        return Response(
+            success=True,
+            text=message,
+            data={"query": query, "results": results}
+        )
     
     def _handle_list(self, intent: Intent) -> Response:
         """Handle listing installed packages"""
@@ -161,11 +227,11 @@ class RealNixBackend:
                 success=False,
                 text="Please specify a package to install. Example: 'install firefox'"            )
         
-        if self.dry_run:
+        if self.config.preview:
             return Response(
                 success=True,
-                text=f"DRY RUN: Would install package '{package}'",
-                data={"package": package, "dry_run": True}
+                text=f"PREVIEW: Would install package '{package}'",
+                data={"package": package, "preview": True}
             )
         
         # Real installation
@@ -200,16 +266,39 @@ class RealNixBackend:
                 success=False,
                 text="Please specify a package to remove. Example: 'remove firefox'"            )
         
-        if self.dry_run:
+        if self.config.preview:
             return Response(
                 success=True,
-                text=f"DRY RUN: Would remove package '{package}'",
-                data={"package": package, "dry_run": True}
+                text=f"PREVIEW: Would remove package '{package}'",
+                data={"package": package, "preview": True}
             )
         
         # Real removal
         if self.executor.use_nix_profile:
-            result = self.executor.execute("nix", ["profile", "remove", package])
+            # First, list profiles to find the package
+            list_result = self.executor.execute("nix", ["profile", "list"])
+            if list_result.get("success"):
+                # Find the package in the profile list
+                package_num = None
+                for line in list_result.get("output", "").splitlines():
+                    if package in line:
+                        # Extract the profile number (first field)
+                        parts = line.split()
+                        if parts:
+                            package_num = parts[0]
+                            break
+                
+                if package_num:
+                    # Remove by profile number
+                    result = self.executor.execute("nix", ["profile", "remove", package_num])
+                else:
+                    # Package not found in profile
+                    result = {
+                        "success": False,
+                        "error": f"Package '{package}' not found in profile"
+                    }
+            else:
+                result = list_result
         else:
             result = self.executor.execute("nix-env", ["-e", package])
         
@@ -226,18 +315,17 @@ class RealNixBackend:
     
     def _handle_update(self, intent: Intent) -> Response:
         """Handle system update"""
-        if self.dry_run:
+        if self.config.preview:
             return Response(
                 success=True,
-                text="DRY RUN: Would update NixOS channels and packages",
-                data={"dry_run": True}
+                text="PREVIEW: Would update NixOS channels and packages",
+                data={"preview": True}
             )
         
         # This needs sudo usually
         return Response(
-            type=ResponseType.INFO,
-            message="System update requires elevated privileges. Please run:\n  sudo nix-channel --update\n  sudo nixos-rebuild switch",
-            success=True
+            success=True,
+            text="System update requires elevated privileges. Please run:\n  sudo nix-channel --update\n  sudo nixos-rebuild switch"
         )
     
     def _handle_info(self, intent: Intent) -> Response:
@@ -249,15 +337,13 @@ class RealNixBackend:
             result = self.executor.execute("nix-env", ["-qa", "-A", f"nixos.{package}", "--description"])
             if result.get("success"):
                 return Response(
-                    type=ResponseType.INFO,
-                    message=f"Package info for '{package}':\n{result['output']}",
-                    success=True
+                    success=True,
+                    text=f"Package info for '{package}':\n{result['output']}"
                 )
             else:
                 return Response(
-                    type=ResponseType.ERROR,
-                    message=f"Could not find info for '{package}'",
-                    success=False
+                    success=False,
+                    text=f"Could not find info for '{package}'"
                 )
         else:
             # General system info

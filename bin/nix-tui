@@ -23,5 +23,6 @@ elif '--ai-test' in sys.argv:
     asyncio.run(test_ai_tui())
 else:
     # Normal TUI mode
-    from luminous_nix.interfaces.tui import main
-    main()
+    from luminous_nix.ui.main_app import NixForHumanityTUI
+    app = NixForHumanityTUI()
+    app.run()

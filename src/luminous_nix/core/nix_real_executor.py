@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from .progress_indicator import ProgressIndicator, ProgressStyle, progress_context
+
 
 class NixRealExecutor:
     """
@@ -135,16 +137,34 @@ class NixRealExecutor:
                 "dry_run": True
             }
         
+        # Determine operation type for progress messages
+        operation_type = self._get_operation_type(cmd)
+        show_progress = operation_type != "default" and self.timeout > 5
+        
         try:
             # REAL EXECUTION HERE!
             start_time = time.time()
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-                env={**os.environ, "PAGER": "cat"}  # Disable pager for output
-            )
+            
+            if show_progress:
+                # Show progress for long operations
+                with progress_context(operation_type) as progress:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=self.timeout,
+                        env={**os.environ, "PAGER": "cat"}  # Disable pager for output
+                    )
+            else:
+                # Quick operations don't need progress
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    env={**os.environ, "PAGER": "cat"}  # Disable pager for output
+                )
+            
             elapsed = time.time() - start_time
             
             return {
@@ -182,20 +202,19 @@ class NixRealExecutor:
         """
         Search for NixOS packages (convenience method).
         
-        Uses the modern 'nix search' command with proper flags.
+        Uses faster nix-env -qa for better performance.
         """
-        args = ["search", "nixpkgs", query, "--json"]
-        result = self.execute("nix", args)
+        # Use nix-env -qa which is MUCH faster than nix search
+        # This completes in 1-2 seconds vs 30+ seconds for nix search
+        args = ["-qa", f"*{query}*"]
+        result = self.execute("nix-env", args, force_old_style=True)
         
-        # Parse JSON output if successful
+        # Parse line-based output if successful
         if result.get("success") and result.get("output"):
-            try:
-                packages = json.loads(result["output"])
-                result["packages"] = packages
-                result["count"] = len(packages)
-            except json.JSONDecodeError:
-                # Not JSON, probably error message
-                pass
+            lines = result["output"].strip().split("\n")
+            packages = [line.strip() for line in lines if line.strip()]
+            result["packages"] = packages
+            result["count"] = len(packages)
                 
         return result
     
@@ -217,6 +236,25 @@ class NixRealExecutor:
             result["count"] = len(result["packages"])
             
         return result
+    
+    def _get_operation_type(self, cmd: List[str]) -> str:
+        """Determine operation type from command for progress messages"""
+        cmd_str = " ".join(cmd).lower()
+        
+        if "search" in cmd_str or "-qa" in cmd_str:
+            return "package_search"
+        elif "install" in cmd_str or "-iA" in cmd_str:
+            return "package_install"
+        elif "remove" in cmd_str or "uninstall" in cmd_str or "-e" in cmd_str:
+            return "package_remove"
+        elif "update" in cmd_str or "upgrade" in cmd_str:
+            return "system_update"
+        elif "collect-garbage" in cmd_str or "gc" in cmd_str:
+            return "garbage_collect"
+        elif "build" in cmd_str:
+            return "package_build"
+        else:
+            return "default"
     
     def get_system_info(self) -> Dict[str, Any]:
         """Get NixOS system information"""

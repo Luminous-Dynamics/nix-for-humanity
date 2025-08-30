@@ -123,39 +123,41 @@ class SearchCache:
         return results
 
     def _perform_search(self, term: str, timeout: int) -> list[dict[str, str]]:
-        """Perform actual nix search"""
+        """Perform actual nix search using faster nix-env -qa"""
         results = []
 
         try:
-            # Try nix search first (newer)
+            # Use nix-env -qa which is much faster than nix search
             result = subprocess.run(
-                ["nix", "search", "nixpkgs", term, "--json"],
+                ["nix-env", "-qa", f"*{term}*"],
                 capture_output=True,
                 text=True,
                 timeout=timeout,
             )
 
             if result.returncode == 0 and result.stdout:
-                # Parse JSON output
-                try:
-                    data = json.loads(result.stdout)
-                    for key, info in data.items():
-                        # Extract package name from the key
-                        name = key.split(".")[-1]
-                        results.append(
-                            {
-                                "name": name,
-                                "description": info.get("description", ""),
-                                "version": info.get("version", ""),
-                            }
-                        )
-                except json.JSONDecodeError:
-                    # Fallback to line parsing
-                    results = self._parse_text_results(result.stdout)
+                # Parse line-based output
+                lines = result.stdout.strip().split("\n")
+                for line in lines[:50]:  # Limit to first 50 results
+                    if line.strip():
+                        # Extract package name and version
+                        parts = line.rsplit("-", 1)
+                        if len(parts) == 2:
+                            name = parts[0]
+                            version = parts[1]
+                        else:
+                            name = line
+                            version = ""
+                        
+                        results.append({
+                            "name": name,
+                            "description": "",  # nix-env -qa doesn't provide descriptions
+                            "version": version
+                        })
 
         except subprocess.TimeoutExpired:
             print(
-                f"⏱️ Search timed out after {timeout}s, trying fuzzy match on cached packages..."
+                f"⏱️ Search timed out after {timeout}s, using fuzzy match on cached packages..."
             )
             results = self.fuzzy_search_cached(term)
 

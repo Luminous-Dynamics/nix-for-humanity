@@ -22,6 +22,14 @@ except ImportError:
     from nl_interface_builder import InterfaceSpecification, UserContext
 
 
+class GeneratedInterface:
+    """Simple stub for generated interface results"""
+    def __init__(self, spec: InterfaceSpecification):
+        self.specification = spec
+        self.components = []
+        self.layout = {}
+
+
 class NLInterfaceBuilderV2:
     """Enhanced interface builder with hybrid NLP+LLM understanding"""
 

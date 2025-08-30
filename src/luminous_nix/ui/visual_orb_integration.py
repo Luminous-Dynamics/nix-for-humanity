@@ -13,12 +13,23 @@ from typing import Any
 from ..consciousness.consciousness_detector import ConsciousnessBarometer
 
 # Import both orb implementations
-from ..consciousness.visual_orb import (
-    ConsciousnessOrb as VisualOrb,
-)
-from ..consciousness.visual_orb import (
-    ConsciousnessQuality,
-)
+# Visual orb module not implemented yet - create stub
+try:
+    from ..consciousness.visual_orb import (
+        ConsciousnessOrb as VisualOrb,
+        ConsciousnessQuality,
+    )
+except ImportError:
+    # Create stubs until visual_orb module is implemented
+    VisualOrb = None
+    
+    class ConsciousnessQuality:
+        """Stub for ConsciousnessQuality"""
+        SUBLIME = "sublime"
+        INTEGRATED = "integrated"
+        COHERENT = "coherent"
+        EMERGING = "emerging"
+        FRAGMENTED = "fragmented"
 from .consciousness_orb import AIState, EmotionalState
 from .consciousness_orb import ConsciousnessOrb as TUIOrb
 

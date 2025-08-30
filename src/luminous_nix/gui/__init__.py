@@ -22,7 +22,7 @@ from .services import (
 
 # Production exports
 from .production_deployment import ProductionDeployment
-from .api_server import create_app
+# from .api_server import create_app  # Not implemented yet
 
 __all__ = [
     "UIGeneratorCLI",
@@ -36,5 +36,5 @@ __all__ = [
     "ABTestingService",
     "PerformanceService",
     "ProductionDeployment",
-    "create_app",
+    # "create_app",  # Not implemented yet
 ]
