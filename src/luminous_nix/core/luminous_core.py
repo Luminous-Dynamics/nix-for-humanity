@@ -403,9 +403,16 @@ class LuminousNixCore:
             )
 
     def _get_help_response(self) -> Response:
-        """Return help information"""
-        help_text = """
-Luminous Nix v0.5.1 - Natural Language NixOS Interface
+        """Return help information with beautiful formatting"""
+        # Try to use enhanced output if available
+        try:
+            from .enhanced_output import output
+            output.show_help()
+            help_text = "Help displayed above"
+        except ImportError:
+            # Fallback to text help
+            help_text = """
+Luminous Nix v0.5.3 - Natural Language NixOS Interface
 
 COMMANDS:
   search <query>    - Search for packages (e.g., 'search firefox')
@@ -426,11 +433,7 @@ OPTIONS:
   --dry-run        - Preview commands without executing
   --verbose        - Show detailed output
   
-ENVIRONMENT:
-  LUMINOUS_USE_MOCK_BACKEND=true - Use mock backend (testing only)
-  LUMINOUS_DRY_RUN=true           - Preview mode (recommended)
-
-NOTE: Real NixOS backend is now the default (v0.5.1+)
+NOTE: Real NixOS backend only (v0.5.2+) - No mocks!
 """
         return Response(
             success=True,

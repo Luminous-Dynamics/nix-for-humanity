@@ -13,6 +13,7 @@ from luminous_nix.api.schema import Response, Result
 from .search_cache import SearchCache
 from .config import Config
 from .smart_package_discovery import get_smart_discovery
+from .enhanced_output import output, show_packages, progress
 
 
 class RealNixBackend:
@@ -89,26 +90,27 @@ class RealNixBackend:
         smart_matches = discovery.find_packages(query)
         
         if smart_matches:
-            # Format smart results
-            message = f"Found packages for '{query}':\n"
+            # Format smart results with beautiful output
             results = []
             
-            for match in smart_matches[:10]:  # Top 10 matches
-                message += f"  • {match.name} - {match.match_reason}\n"
-                if match.description:
-                    message += f"    {match.description[:60]}...\n"
+            for match in smart_matches[:20]:  # Top 20 matches
                 results.append({
                     "name": match.name,
-                    "description": match.description,
-                    "confidence": match.confidence,
+                    "description": match.description or "No description available",
+                    "version": match.confidence,  # Using confidence as version placeholder
                     "reason": match.match_reason
                 })
+            
+            # Show packages in beautiful table
+            show_packages(results, title=f"🔍 Search results for '{query}'")
             
             # Add suggestion if it was a typo
             correction = discovery.suggest_correction(query)
             if correction and correction != query.lower():
-                message += f"\n💡 Did you mean: {correction}?"
+                output.suggest_commands([correction])
             
+            # Still return Response for API compatibility
+            message = f"Found {len(results)} packages for '{query}'"
             return Response(
                 success=True,
                 text=message,
