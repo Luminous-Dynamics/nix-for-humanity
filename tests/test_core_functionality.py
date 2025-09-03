@@ -15,11 +15,34 @@ from unittest.mock import Mock, patch, MagicMock
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from luminous_nix.core import NixForHumanityCore
-from luminous_nix.core.types import Query, Response, IntentType, NixConfig
-from luminous_nix.core.error_intelligence_ast import ErrorIntelligence
-from luminous_nix.core.intent import IntentRecognizer
-from luminous_nix.nlp.safety_validator import SafetyValidator
+# Import the actual modules that exist
+from luminous_nix.core.engine import NixForHumanityBackend as NixForHumanityCore
+from luminous_nix.types import BackendResponse  # Updated types location
+from luminous_nix.core.error_intelligence_ast import ASTErrorIntelligence as ErrorIntelligence
+from luminous_nix.core.intents import IntentRecognizer, IntentType, Intent  # Using intents.py
+from luminous_nix.security.validator import InputValidator  # Updated to use actual class
+
+# Create simple Query and Response types for testing
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+
+@dataclass
+class Query:
+    text: str
+    context: Optional[Dict[str, Any]] = None
+
+@dataclass
+class Response:
+    success: bool
+    result: Optional[str] = None
+    commands: Optional[List[str]] = None
+    explanation: Optional[str] = None
+    error: Optional[str] = None
+
+@dataclass
+class NixConfig:
+    packages: List[str]
+    services: Dict[str, Any]
 
 
 class TestCoreInstallFunctionality:
@@ -36,7 +59,7 @@ class TestCoreInstallFunctionality:
         
         # Test intent recognition
         intent = self.intent_recognizer.recognize(query.text)
-        assert intent.type == IntentType.INSTALL
+        assert intent.type == IntentType.INSTALL_PACKAGE
         assert "firefox" in intent.entities.get("packages", [])
     
     def test_install_multiple_packages(self):
@@ -44,7 +67,7 @@ class TestCoreInstallFunctionality:
         query = Query(text="install vim, git, and python")
         
         intent = self.intent_recognizer.recognize(query.text)
-        assert intent.type == IntentType.INSTALL
+        assert intent.type == IntentType.INSTALL_PACKAGE
         packages = intent.entities.get("packages", [])
         assert "vim" in packages
         assert "git" in packages
@@ -57,7 +80,7 @@ class TestCoreInstallFunctionality:
         # Should suggest correction
         intent = self.intent_recognizer.recognize(query.text)
         # This should be handled by error intelligence
-        assert intent.type == IntentType.INSTALL
+        assert intent.type == IntentType.INSTALL_PACKAGE
     
     @patch('subprocess.run')
     def test_install_command_generation(self, mock_run):
@@ -83,7 +106,7 @@ class TestSearchFunctionality:
         query = Query(text="search firefox")
         
         intent = self.intent_recognizer.recognize(query.text)
-        assert intent.type == IntentType.SEARCH
+        assert intent.type == IntentType.SEARCH_PACKAGE
         assert "firefox" in intent.entities.get("query", "")
     
     def test_search_by_description(self):
@@ -91,7 +114,7 @@ class TestSearchFunctionality:
         query = Query(text="find text editor")
         
         intent = self.intent_recognizer.recognize(query.text)
-        assert intent.type == IntentType.SEARCH
+        assert intent.type == IntentType.SEARCH_PACKAGE
         assert "text editor" in intent.entities.get("query", "")
     
     def test_search_programming_tools(self):
@@ -99,7 +122,7 @@ class TestSearchFunctionality:
         query = Query(text="search python development tools")
         
         intent = self.intent_recognizer.recognize(query.text)
-        assert intent.type == IntentType.SEARCH
+        assert intent.type == IntentType.SEARCH_PACKAGE
 
 
 class TestConfigurationGeneration:
@@ -121,8 +144,8 @@ class TestConfigurationGeneration:
         query = Query(text="create python development environment")
         
         intent = self.intent_recognizer.recognize(query.text)
-        # Should be either GENERATE_CONFIG or DEVELOP
-        assert intent.type in [IntentType.GENERATE_CONFIG, IntentType.DEVELOP]
+        # Should be GENERATE_CONFIG
+        assert intent.type == IntentType.GENERATE_CONFIG
 
 
 class TestRollbackFunctionality:
@@ -181,7 +204,7 @@ class TestSafetyValidation:
     """Test safety validation to prevent dangerous commands."""
     
     def setup_method(self):
-        self.validator = SafetyValidator()
+        self.validator = InputValidator()
     
     def test_safe_commands(self):
         """Test that safe commands pass validation."""
@@ -193,8 +216,8 @@ class TestSafetyValidation:
         ]
         
         for cmd in safe_commands:
-            result = self.validator.validate_query(cmd)
-            assert result["safe"], f"Command '{cmd}' should be safe"
+            result = self.validator.validate_input(cmd, input_type="nlp")
+            assert result["valid"], f"Command '{cmd}' should be safe"
     
     def test_dangerous_commands_blocked(self):
         """Test that dangerous commands are blocked."""
@@ -206,8 +229,8 @@ class TestSafetyValidation:
         ]
         
         for cmd in dangerous_commands:
-            result = self.validator.validate_query(cmd)
-            assert not result["safe"], f"Command '{cmd}' should be blocked"
+            result = self.validator.validate_input(cmd, input_type="nlp")
+            assert not result["valid"], f"Command '{cmd}' should be blocked"
 
 
 class TestPerformance:

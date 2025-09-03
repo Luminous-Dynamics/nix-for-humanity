@@ -344,7 +344,7 @@ class NixForHumanityTUI(App):
 
             if response.success:
                 # Show the main response
-                self.add_ai_message(response.text)
+                self.add_ai_message(response.message)
 
                 # Show commands if any
                 if response.commands:
@@ -361,7 +361,7 @@ class NixForHumanityTUI(App):
             else:
                 # Show error
                 self.orb.set_state(AIState.ERROR, EmotionalState.CONCERNED)
-                self.add_ai_message(f"❌ {response.text or response.error}")
+                self.add_ai_message(f"❌ {response.message or response.error}")
 
         except Exception as e:
             # Handle errors gracefully

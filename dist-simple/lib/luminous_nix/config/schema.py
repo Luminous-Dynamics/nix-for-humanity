@@ -6,14 +6,15 @@ Defines the complete configuration schema for Nix for Humanity
 with type safety and validation.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Union
-from enum import Enum
 import os
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 
 class Personality(str, Enum):
     """Available personality styles"""
+
     MINIMAL = "minimal"
     FRIENDLY = "friendly"
     ENCOURAGING = "encouraging"
@@ -23,6 +24,7 @@ class Personality(str, Enum):
 
 class ResponseFormat(str, Enum):
     """Response formatting options"""
+
     PLAIN = "plain"
     STRUCTURED = "structured"
     JSON = "json"
@@ -31,6 +33,7 @@ class ResponseFormat(str, Enum):
 
 class NLPEngine(str, Enum):
     """NLP engine types"""
+
     RULE_BASED = "rule-based"
     STATISTICAL = "statistical"
     NEURAL = "neural"
@@ -39,6 +42,7 @@ class NLPEngine(str, Enum):
 
 class DataCollection(str, Enum):
     """Data collection levels"""
+
     NONE = "none"
     MINIMAL = "minimal"
     STANDARD = "standard"
@@ -47,6 +51,7 @@ class DataCollection(str, Enum):
 
 class PrivacyMode(str, Enum):
     """Privacy modes for learning"""
+
     STRICT = "strict"
     BALANCED = "balanced"
     OPEN = "open"
@@ -55,12 +60,13 @@ class PrivacyMode(str, Enum):
 @dataclass
 class CoreConfig:
     """Core system configuration"""
+
     version: str = "0.8.3"
     backend: str = "python"  # python, nodejs, hybrid
     data_directory: str = "~/.local/share/nix-for-humanity"
     cache_directory: str = "~/.cache/nix-for-humanity"
     log_level: str = "info"  # debug, info, warn, error
-    
+
     def __post_init__(self):
         """Expand paths"""
         self.data_directory = os.path.expanduser(self.data_directory)
@@ -70,6 +76,7 @@ class CoreConfig:
 @dataclass
 class UIConfig:
     """User interface configuration"""
+
     default_personality: Personality = Personality.FRIENDLY
     response_format: ResponseFormat = ResponseFormat.STRUCTURED
     show_commands: bool = True
@@ -77,10 +84,10 @@ class UIConfig:
     use_colors: bool = True
     progress_indicators: bool = True
     theme: str = "default"  # default, dark, light, high-contrast
-    
+
     # Custom messages
-    greeting: Optional[str] = None
-    farewell: Optional[str] = None
+    greeting: str | None = None
+    farewell: str | None = None
     error_prefix: str = "Oops!"
     success_prefix: str = "Great!"
 
@@ -88,28 +95,30 @@ class UIConfig:
 @dataclass
 class NLPConfig:
     """Natural language processing configuration"""
+
     engine: NLPEngine = NLPEngine.HYBRID
     confidence_threshold: float = 0.7
     typo_correction: bool = True
     context_memory: int = 10
     learning_enabled: bool = True
-    
+
     # Advanced NLP settings
     fuzzy_match_threshold: float = 0.8
     synonym_expansion: bool = True
-    intent_patterns_file: Optional[str] = None
-    custom_vocabulary: List[str] = field(default_factory=list)
+    intent_patterns_file: str | None = None
+    custom_vocabulary: list[str] = field(default_factory=list)
 
 
 @dataclass
 class PerformanceConfig:
     """Performance tuning configuration"""
+
     fast_mode: bool = False
     cache_responses: bool = True
     parallel_processing: bool = True
     memory_limit: str = "512MB"
     timeout: int = 30
-    
+
     # Advanced performance settings
     worker_threads: int = 4
     cache_size: int = 1000
@@ -120,36 +129,44 @@ class PerformanceConfig:
 @dataclass
 class PrivacyConfig:
     """Privacy and security configuration"""
+
     data_collection: DataCollection = DataCollection.MINIMAL
     share_anonymous_stats: bool = False
     local_only: bool = True
     encrypt_data: bool = True
     auto_cleanup: bool = True
-    
+
     # Data retention
     log_retention_days: int = 30
     cache_retention_days: int = 7
     learning_retention_days: int = 365
-    
+
     # Security
-    allowed_commands: List[str] = field(default_factory=lambda: [
-        "nix-env", "nixos-rebuild", "nix-channel", "nix", "home-manager"
-    ])
-    forbidden_patterns: List[str] = field(default_factory=lambda: [
-        "rm -rf /", "dd if=", "mkfs", "> /dev/"
-    ])
+    allowed_commands: list[str] = field(
+        default_factory=lambda: [
+            "nix-env",
+            "nixos-rebuild",
+            "nix-channel",
+            "nix",
+            "home-manager",
+        ]
+    )
+    forbidden_patterns: list[str] = field(
+        default_factory=lambda: ["rm -rf /", "dd if=", "mkfs", "> /dev/"]
+    )
 
 
 @dataclass
 class LearningConfig:
     """Learning system configuration"""
+
     enabled: bool = True
     personal_preferences: bool = True
     command_patterns: bool = True
     error_recovery: bool = True
     privacy_mode: PrivacyMode = PrivacyMode.STRICT
     retention_days: int = 365
-    
+
     # Learning parameters
     min_confidence: float = 0.6
     feedback_weight: float = 0.3
@@ -160,13 +177,14 @@ class LearningConfig:
 @dataclass
 class AccessibilityConfig:
     """Accessibility configuration"""
+
     screen_reader: bool = False
     high_contrast: bool = False
     large_text: bool = False
     reduce_motion: bool = False
     keyboard_only: bool = False
     simple_language: bool = False
-    
+
     # Additional accessibility
     consistent_terminology: bool = True
     structured_output: bool = False
@@ -177,12 +195,13 @@ class AccessibilityConfig:
 @dataclass
 class VoiceConfig:
     """Voice interface configuration"""
+
     enabled: bool = False
     wake_word: str = "hey nix"
     language: str = "en-US"
     voice_feedback: bool = True
     noise_reduction: bool = True
-    
+
     # Voice parameters
     silence_threshold: float = 0.1
     speech_timeout: int = 5
@@ -194,12 +213,13 @@ class VoiceConfig:
 @dataclass
 class DevelopmentConfig:
     """Development and debugging configuration"""
+
     debug_mode: bool = False
     test_mode: bool = False
     api_logging: bool = False
     performance_profiling: bool = False
     mock_execution: bool = False
-    
+
     # Development features
     show_internal_errors: bool = False
     save_all_interactions: bool = False
@@ -210,40 +230,48 @@ class DevelopmentConfig:
 @dataclass
 class IntegrationConfig:
     """External integration configuration"""
+
     shell_integration: bool = True
-    editor_integration: Dict[str, bool] = field(default_factory=lambda: {
-        "vscode": False,
-        "vim": False,
-        "emacs": False,
-    })
-    
+    editor_integration: dict[str, bool] = field(
+        default_factory=lambda: {
+            "vscode": False,
+            "vim": False,
+            "emacs": False,
+        }
+    )
+
     # API settings
     api_enabled: bool = False
     api_port: int = 8765
     api_host: str = "localhost"
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 
 @dataclass
 class CustomAliases:
     """Custom command aliases"""
-    aliases: Dict[str, str] = field(default_factory=lambda: {
-        "up": "update system",
-        "i": "install",
-        "s": "search",
-        "r": "remove",
-    })
-    
-    shortcuts: Dict[str, List[str]] = field(default_factory=lambda: {
-        "dev-setup": ["install git vim tmux", "install docker", "install vscode"],
-        "clean": ["collect garbage", "optimize store"],
-    })
+
+    aliases: dict[str, str] = field(
+        default_factory=lambda: {
+            "up": "update system",
+            "i": "install",
+            "s": "search",
+            "r": "remove",
+        }
+    )
+
+    shortcuts: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            "dev-setup": ["install git vim tmux", "install docker", "install vscode"],
+            "clean": ["collect garbage", "optimize store"],
+        }
+    )
 
 
 @dataclass
 class ConfigSchema:
     """Complete configuration schema for Nix for Humanity"""
-    
+
     # Core sections
     core: CoreConfig = field(default_factory=CoreConfig)
     ui: UIConfig = field(default_factory=UIConfig)
@@ -256,37 +284,37 @@ class ConfigSchema:
     development: DevelopmentConfig = field(default_factory=DevelopmentConfig)
     integration: IntegrationConfig = field(default_factory=IntegrationConfig)
     aliases: CustomAliases = field(default_factory=CustomAliases)
-    
+
     # Metadata
-    profile_name: Optional[str] = None
-    last_modified: Optional[str] = None
-    
-    def validate(self) -> List[str]:
+    profile_name: str | None = None
+    last_modified: str | None = None
+
+    def validate(self) -> list[str]:
         """Validate configuration and return any errors"""
         errors = []
-        
+
         # Validate core settings
         if self.core.log_level not in ["debug", "info", "warn", "error"]:
             errors.append(f"Invalid log_level: {self.core.log_level}")
-            
+
         # Validate performance settings
         if self.performance.timeout < 1:
-            errors.append(f"Timeout must be at least 1 second")
-            
+            errors.append("Timeout must be at least 1 second")
+
         if self.performance.worker_threads < 1:
-            errors.append(f"Worker threads must be at least 1")
-            
+            errors.append("Worker threads must be at least 1")
+
         # Validate NLP settings
         if not 0 <= self.nlp.confidence_threshold <= 1:
             errors.append("Confidence threshold must be between 0 and 1")
-            
+
         # Validate privacy settings
         if self.privacy.log_retention_days < 0:
             errors.append("Log retention days must be non-negative")
-            
+
         return errors
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             "core": {
@@ -405,65 +433,71 @@ class ConfigSchema:
             "profile_name": self.profile_name,
             "last_modified": self.last_modified,
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ConfigSchema":
+    def from_dict(cls, data: dict[str, Any]) -> "ConfigSchema":
         """Create configuration from dictionary"""
         config = cls()
-        
+
         # Load core config
         if "core" in data:
             config.core = CoreConfig(**data["core"])
-            
+
         # Load UI config
         if "ui" in data:
             ui_data = data["ui"].copy()
             if "default_personality" in ui_data:
-                ui_data["default_personality"] = Personality(ui_data["default_personality"])
+                ui_data["default_personality"] = Personality(
+                    ui_data["default_personality"]
+                )
             if "response_format" in ui_data:
                 ui_data["response_format"] = ResponseFormat(ui_data["response_format"])
             config.ui = UIConfig(**ui_data)
-            
+
         # Load NLP config
         if "nlp" in data:
             nlp_data = data["nlp"].copy()
             if "engine" in nlp_data:
                 nlp_data["engine"] = NLPEngine(nlp_data["engine"])
             config.nlp = NLPConfig(**nlp_data)
-            
+
         # Load other configs similarly...
         if "performance" in data:
             config.performance = PerformanceConfig(**data["performance"])
-            
+
         if "privacy" in data:
             privacy_data = data["privacy"].copy()
             if "data_collection" in privacy_data:
-                privacy_data["data_collection"] = DataCollection(privacy_data["data_collection"])
+                privacy_data["data_collection"] = DataCollection(
+                    privacy_data["data_collection"]
+                )
             config.privacy = PrivacyConfig(**privacy_data)
-            
+
         if "learning" in data:
             learning_data = data["learning"].copy()
             if "privacy_mode" in learning_data:
-                learning_data["privacy_mode"] = PrivacyMode(learning_data["privacy_mode"])
+                learning_data["privacy_mode"] = PrivacyMode(
+                    learning_data["privacy_mode"]
+                )
             config.learning = LearningConfig(**learning_data)
-            
+
         if "accessibility" in data:
             config.accessibility = AccessibilityConfig(**data["accessibility"])
-            
+
         if "voice" in data:
             config.voice = VoiceConfig(**data["voice"])
-            
+
         if "development" in data:
             config.development = DevelopmentConfig(**data["development"])
-            
+
         if "integration" in data:
             config.integration = IntegrationConfig(**data["integration"])
-            
+
         if "aliases" in data:
             config.aliases = CustomAliases(**data["aliases"])
-            
+
         # Load metadata
         config.profile_name = data.get("profile_name")
         config.last_modified = data.get("last_modified")
-        
+
         return config

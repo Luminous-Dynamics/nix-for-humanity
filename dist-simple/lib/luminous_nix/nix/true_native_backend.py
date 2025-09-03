@@ -10,8 +10,7 @@ import asyncio
 import json
 import logging
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +21,7 @@ BINDING_TYPE = "none"
 # Try Tweag's python-nix first (if installed)
 try:
     from python_nix import Nix, NixContext
+
     NATIVE_BINDINGS_AVAILABLE = True
     BINDING_TYPE = "python-nix"
     logger.info("✅ Found python-nix bindings from Tweag!")
@@ -32,15 +32,18 @@ except ImportError:
 if not NATIVE_BINDINGS_AVAILABLE:
     try:
         from cffi import FFI
+
         ffi = FFI()
         # Define Nix C API interface
-        ffi.cdef("""
+        ffi.cdef(
+            """
             typedef void* nix_context;
             nix_context nix_context_create();
             void nix_context_destroy(nix_context ctx);
             char* nix_eval_string(nix_context ctx, const char* expr);
             int nix_search_packages(nix_context ctx, const char* query, char** results);
-        """)
+        """
+        )
         # Try to load Nix library
         try:
             libnix = ffi.dlopen("libnixmain.so")
@@ -57,7 +60,7 @@ if not NATIVE_BINDINGS_AVAILABLE:
     try:
         import ctypes
         import ctypes.util
-        
+
         # Find Nix library
         nix_lib_path = ctypes.util.find_library("nixmain")
         if nix_lib_path:
@@ -72,16 +75,16 @@ if not NATIVE_BINDINGS_AVAILABLE:
 class TrueNativeNixBackend:
     """
     Backend that uses ACTUAL native bindings when available.
-    
+
     This is what we SHOULD have for real 10-100x performance gains.
     """
-    
+
     def __init__(self):
         """Initialize with native bindings if available."""
         self.native_available = NATIVE_BINDINGS_AVAILABLE
         self.binding_type = BINDING_TYPE
         self.context = None
-        
+
         if self.native_available:
             self._init_native_context()
         else:
@@ -90,7 +93,7 @@ class TrueNativeNixBackend:
                 "  git clone https://github.com/tweag/python-nix\n"
                 "  cd python-nix && nix build"
             )
-    
+
     def _init_native_context(self):
         """Initialize native Nix context based on binding type."""
         if self.binding_type == "python-nix":
@@ -98,18 +101,18 @@ class TrueNativeNixBackend:
             self.context = NixContext()
             self.nix = Nix()
             logger.info("🚀 Using Tweag python-nix - TRUE native performance!")
-            
+
         elif self.binding_type == "cffi":
             # CFFI direct bindings
             self.context = libnix.nix_context_create()
             logger.info("🚀 Using CFFI bindings - TRUE native performance!")
-            
+
         elif self.binding_type == "ctypes":
             # ctypes bindings
             libnix_ctypes.nix_context_create.restype = ctypes.c_void_p
             self.context = libnix_ctypes.nix_context_create()
             logger.info("🚀 Using ctypes bindings - TRUE native performance!")
-    
+
     def __del__(self):
         """Cleanup native context."""
         if self.context:
@@ -117,35 +120,37 @@ class TrueNativeNixBackend:
                 libnix.nix_context_destroy(self.context)
             elif self.binding_type == "ctypes":
                 libnix_ctypes.nix_context_destroy(self.context)
-    
-    async def search_packages(self, query: str) -> List[Dict[str, Any]]:
+
+    async def search_packages(self, query: str) -> list[dict[str, Any]]:
         """
         Search packages with REAL native performance.
-        
+
         Native: ~0.01ms (direct C++ call)
         Subprocess: ~18ms (process spawn + overhead)
         Speedup: 1800x!
         """
         start_time = time.perf_counter()
-        
+
         if self.native_available and self.binding_type == "python-nix":
             # TRUE NATIVE CALL - Microsecond performance!
             try:
                 results = self.nix.search(query)
                 elapsed = time.perf_counter() - start_time
-                logger.info(f"✨ Native search completed in {elapsed*1000:.3f}ms (TRUE native!)")
+                logger.info(
+                    f"✨ Native search completed in {elapsed*1000:.3f}ms (TRUE native!)"
+                )
                 return self._parse_native_results(results)
             except Exception as e:
                 logger.error(f"Native search failed: {e}")
                 # Fall back to subprocess
-        
+
         # Fallback to subprocess (current implementation)
         return await self._subprocess_search(query, start_time)
-    
+
     async def install_package(self, package: str) -> bool:
         """
         Install package with REAL native performance.
-        
+
         Native: Direct Nix store manipulation
         Subprocess: Spawning nix-env process
         Benefit: No timeout issues, real progress tracking
@@ -158,14 +163,14 @@ class TrueNativeNixBackend:
                 return result.success
             except Exception as e:
                 logger.error(f"Native install failed: {e}")
-        
+
         # Fallback to subprocess
         return await self._subprocess_install(package)
-    
+
     async def eval_expression(self, expr: str) -> Any:
         """
         Evaluate Nix expression with REAL native performance.
-        
+
         This is where native bindings REALLY shine!
         Native: Direct AST evaluation in memory
         Subprocess: Parse + spawn + execute
@@ -173,16 +178,18 @@ class TrueNativeNixBackend:
         """
         if self.native_available:
             start_time = time.perf_counter()
-            
+
             if self.binding_type == "python-nix":
                 try:
                     result = self.nix.eval(expr)
                     elapsed = time.perf_counter() - start_time
-                    logger.info(f"✨ Native eval in {elapsed*1000:.3f}ms - no subprocess!")
+                    logger.info(
+                        f"✨ Native eval in {elapsed*1000:.3f}ms - no subprocess!"
+                    )
                     return result
                 except Exception as e:
                     logger.error(f"Native eval failed: {e}")
-            
+
             elif self.binding_type == "cffi":
                 try:
                     result_ptr = libnix.nix_eval_string(self.context, expr.encode())
@@ -192,11 +199,11 @@ class TrueNativeNixBackend:
                     return json.loads(result)
                 except Exception as e:
                     logger.error(f"CFFI eval failed: {e}")
-        
+
         # Fallback to subprocess
         return await self._subprocess_eval(expr)
-    
-    def get_performance_report(self) -> Dict[str, Any]:
+
+    def get_performance_report(self) -> dict[str, Any]:
         """Report on actual vs potential performance."""
         return {
             "native_available": self.native_available,
@@ -205,82 +212,99 @@ class TrueNativeNixBackend:
                 "search": {
                     "native": "~0.01ms" if self.native_available else "N/A",
                     "subprocess": "~18ms",
-                    "speedup": "1800x" if self.native_available else "1x"
+                    "speedup": "1800x" if self.native_available else "1x",
                 },
                 "eval": {
                     "native": "~0.1ms" if self.native_available else "N/A",
                     "subprocess": "~50ms",
-                    "speedup": "500x" if self.native_available else "1x"
+                    "speedup": "500x" if self.native_available else "1x",
                 },
                 "install": {
                     "native": "No timeout" if self.native_available else "N/A",
                     "subprocess": "Can timeout",
-                    "benefit": "100% reliability" if self.native_available else "Timeout risk"
-                }
+                    "benefit": "100% reliability"
+                    if self.native_available
+                    else "Timeout risk",
+                },
             },
             "recommendation": (
-                "✅ Using TRUE native bindings - maximum performance!" 
-                if self.native_available else
-                "⚠️ Install python-nix for 10-1000x performance gains:\n"
+                "✅ Using TRUE native bindings - maximum performance!"
+                if self.native_available
+                else "⚠️ Install python-nix for 10-1000x performance gains:\n"
                 "  git clone https://github.com/tweag/python-nix\n"
                 "  cd python-nix && nix build"
-            )
+            ),
         }
-    
+
     # Subprocess fallbacks (current implementation)
-    
-    async def _subprocess_search(self, query: str, start_time: float) -> List[Dict[str, Any]]:
+
+    async def _subprocess_search(
+        self, query: str, start_time: float
+    ) -> list[dict[str, Any]]:
         """Fallback to subprocess when native not available."""
         process = await asyncio.create_subprocess_exec(
-            'nix', 'search', 'nixpkgs', query,
+            "nix",
+            "search",
+            "nixpkgs",
+            query,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
         elapsed = time.perf_counter() - start_time
         logger.info(f"Subprocess search completed in {elapsed*1000:.3f}ms")
-        
+
         if process.returncode == 0:
             return self._parse_search_output(stdout.decode())
         return []
-    
+
     async def _subprocess_install(self, package: str) -> bool:
         """Fallback to subprocess for installation."""
         process = await asyncio.create_subprocess_exec(
-            'nix-env', '-iA', f'nixpkgs.{package}',
+            "nix-env",
+            "-iA",
+            f"nixpkgs.{package}",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
         return process.returncode == 0
-    
+
     async def _subprocess_eval(self, expr: str) -> Any:
         """Fallback to subprocess for evaluation."""
         process = await asyncio.create_subprocess_exec(
-            'nix', 'eval', '--expr', expr, '--json',
+            "nix",
+            "eval",
+            "--expr",
+            expr,
+            "--json",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        
+
         if process.returncode == 0:
             return json.loads(stdout.decode())
         return None
-    
-    def _parse_search_output(self, output: str) -> List[Dict[str, Any]]:
+
+    def _parse_search_output(self, output: str) -> list[dict[str, Any]]:
         """Parse nix search output."""
         results = []
-        for line in output.split('\n'):
-            if line.startswith('*'):
+        for line in output.split("\n"):
+            if line.startswith("*"):
                 parts = line.split()
                 if len(parts) >= 2:
-                    results.append({
-                        'name': parts[1],
-                        'description': ' '.join(parts[2:]) if len(parts) > 2 else ''
-                    })
+                    results.append(
+                        {
+                            "name": parts[1],
+                            "description": " ".join(parts[2:])
+                            if len(parts) > 2
+                            else "",
+                        }
+                    )
         return results
-    
-    def _parse_native_results(self, results: Any) -> List[Dict[str, Any]]:
+
+    def _parse_native_results(self, results: Any) -> list[dict[str, Any]]:
         """Parse native search results."""
         # This would depend on the actual native binding format
         if isinstance(results, list):
@@ -292,49 +316,49 @@ class TrueNativeNixBackend:
 async def benchmark_native_vs_subprocess():
     """Benchmark real native performance vs subprocess."""
     backend = TrueNativeNixBackend()
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("🔬 TRUE NATIVE BINDINGS PERFORMANCE TEST")
-    print("="*60)
-    
+    print("=" * 60)
+
     # Show binding status
     report = backend.get_performance_report()
     print(f"\nBinding Status: {report['binding_type']}")
     print(f"Native Available: {report['native_available']}")
-    
+
     if backend.native_available:
         print("\n✅ NATIVE BINDINGS ACTIVE - Testing real performance...")
-        
+
         # Benchmark search
         print("\n📊 Search Performance:")
-        
+
         # Native
         start = time.perf_counter()
         await backend.search_packages("firefox")
         native_time = (time.perf_counter() - start) * 1000
         print(f"  Native: {native_time:.3f}ms")
-        
+
         # Subprocess (force fallback)
         backend.native_available = False
         start = time.perf_counter()
         await backend.search_packages("firefox")
         subprocess_time = (time.perf_counter() - start) * 1000
         print(f"  Subprocess: {subprocess_time:.3f}ms")
-        
+
         print(f"  🚀 Speedup: {subprocess_time/native_time:.1f}x")
-        
+
         backend.native_available = True  # Restore
-        
+
     else:
         print("\n⚠️ NO NATIVE BINDINGS - Install python-nix for real performance!")
         print("\nExpected Performance with Native Bindings:")
         print("  Search: 1800x faster (0.01ms vs 18ms)")
         print("  Eval: 500x faster (0.1ms vs 50ms)")
         print("  Install: No timeouts (direct API vs subprocess)")
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print(json.dumps(report, indent=2))
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

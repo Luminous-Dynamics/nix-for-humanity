@@ -3,104 +3,111 @@
 CLI commands for Nix flake management
 """
 
-import click
 import sys
 from pathlib import Path
-from typing import Optional
+
+import click
 
 from luminous_nix.core.flake_manager import FlakeManager
+
 
 @click.group()
 def flake():
     """Manage Nix flakes and development environments"""
     pass
 
+
 @flake.command()
-@click.argument('description', nargs=-1, required=True)
-@click.option('--path', '-p', default=".", help="Project path (default: current directory)")
-@click.option('--force', '-f', is_flag=True, help="Overwrite existing flake.nix")
+@click.argument("description", nargs=-1, required=True)
+@click.option(
+    "--path", "-p", default=".", help="Project path (default: current directory)"
+)
+@click.option("--force", "-f", is_flag=True, help="Overwrite existing flake.nix")
 def create(description, path, force):
     """Create a new flake from natural language description
-    
+
     Examples:
         ask-nix flake create python dev environment with pytest
         ask-nix flake create rust project with debugging tools
         ask-nix flake create node.js app with typescript and prettier
     """
-    desc_text = ' '.join(description)
+    desc_text = " ".join(description)
     manager = FlakeManager()
-    
+
     # Parse the description
     intent = manager.parse_intent(desc_text)
-    
+
     # Handle force flag
     if force:
         flake_path = Path(path) / "flake.nix"
         if flake_path.exists():
-            click.echo(f"⚠️  Overwriting existing flake.nix...")
+            click.echo("⚠️  Overwriting existing flake.nix...")
             flake_path.unlink()
-    
+
     # Create the flake
     success, message = manager.create_flake(intent, Path(path))
-    
+
     if success:
         click.echo(f"✅ {message}")
-        
+
         # Show what was created
-        click.echo(f"\n📦 Created development environment:")
-        if intent['language']:
+        click.echo("\n📦 Created development environment:")
+        if intent["language"]:
             click.echo(f"   Language: {intent['language'].capitalize()}")
-        if intent['packages']:
+        if intent["packages"]:
             click.echo(f"   Packages: {', '.join(intent['packages'])}")
-        if intent['features']:
+        if intent["features"]:
             click.echo(f"   Features: {', '.join(intent['features'])}")
-        
-        click.echo(f"\n🚀 To use this environment:")
-        click.echo(f"   nix develop        # Enter the dev shell")
-        click.echo(f"   nix flake check    # Validate the flake")
-        click.echo(f"   nix flake show     # Show available outputs")
+
+        click.echo("\n🚀 To use this environment:")
+        click.echo("   nix develop        # Enter the dev shell")
+        click.echo("   nix flake check    # Validate the flake")
+        click.echo("   nix flake show     # Show available outputs")
     else:
         click.echo(f"❌ {message}", err=True)
         sys.exit(1)
 
+
 @flake.command()
-@click.option('--path', '-p', default=".", help="Project path")
+@click.option("--path", "-p", default=".", help="Project path")
 def validate(path):
     """Validate a flake.nix file
-    
+
     Checks syntax and ensures the flake is well-formed.
     """
     manager = FlakeManager()
     success, message = manager.validate_flake(Path(path))
-    
+
     if success:
         click.echo(f"✅ {message}")
     else:
         click.echo(f"❌ {message}", err=True)
         sys.exit(1)
 
+
 @flake.command()
-@click.option('--path', '-p', default=".", help="Project path")
+@click.option("--path", "-p", default=".", help="Project path")
 def info(path):
     """Show information about a flake
-    
+
     Displays description, inputs, outputs, and dev shells.
     """
     manager = FlakeManager()
     info_text = manager.show_flake_info(Path(path))
     click.echo(info_text)
 
+
 @flake.command()
-@click.option('--path', '-p', default=".", help="Project path")
-@click.option('--backup', '-b', is_flag=True, help="Create backup of original files")
+@click.option("--path", "-p", default=".", help="Project path")
+@click.option("--backup", "-b", is_flag=True, help="Create backup of original files")
 def convert(path, backup):
     """Convert shell.nix or default.nix to flake.nix
-    
+
     Automatically converts traditional Nix files to the new flake format.
     """
     manager = FlakeManager()
     project_path = Path(path)
-    
+
     # Create backups if requested
     if backup:
         for filename in ["shell.nix", "default.nix"]:
@@ -108,12 +115,13 @@ def convert(path, backup):
             if file_path.exists():
                 backup_path = project_path / f"{filename}.backup"
                 import shutil
+
                 shutil.copy2(file_path, backup_path)
                 click.echo(f"📋 Created backup: {backup_path}")
-    
+
     # Perform conversion
     success, message = manager.convert_to_flake(project_path)
-    
+
     if success:
         click.echo(f"✅ {message}")
         click.echo("\n🎉 Your project now uses Nix flakes!")
@@ -122,59 +130,73 @@ def convert(path, backup):
         click.echo(f"❌ {message}", err=True)
         sys.exit(1)
 
+
 @flake.command()
 def templates():
     """Show available flake templates
-    
+
     Lists common development environment templates.
     """
     templates = [
         {
             "name": "Python Web App",
             "command": "ask-nix flake create python web app with django postgresql redis",
-            "includes": ["Python 3.11", "Django", "PostgreSQL", "Redis", "Development tools"]
+            "includes": [
+                "Python 3.11",
+                "Django",
+                "PostgreSQL",
+                "Redis",
+                "Development tools",
+            ],
         },
         {
-            "name": "Rust CLI Tool", 
+            "name": "Rust CLI Tool",
             "command": "ask-nix flake create rust cli project with clap serde testing",
-            "includes": ["Rust stable", "Cargo", "Clippy", "Rustfmt", "Testing framework"]
+            "includes": [
+                "Rust stable",
+                "Cargo",
+                "Clippy",
+                "Rustfmt",
+                "Testing framework",
+            ],
         },
         {
             "name": "Node.js API",
             "command": "ask-nix flake create node.js api with express typescript jest",
-            "includes": ["Node.js 18", "TypeScript", "Express", "Jest", "ESLint"]
+            "includes": ["Node.js 18", "TypeScript", "Express", "Jest", "ESLint"],
         },
         {
             "name": "C++ Project",
             "command": "ask-nix flake create c++ project with cmake gdb valgrind",
-            "includes": ["GCC", "CMake", "GDB debugger", "Valgrind", "Make"]
+            "includes": ["GCC", "CMake", "GDB debugger", "Valgrind", "Make"],
         },
         {
             "name": "Go Microservice",
             "command": "ask-nix flake create go microservice with gin docker",
-            "includes": ["Go 1.21", "Gin framework", "Docker", "Golangci-lint"]
+            "includes": ["Go 1.21", "Gin framework", "Docker", "Golangci-lint"],
         },
         {
             "name": "Data Science",
             "command": "ask-nix flake create python data science with jupyter pandas numpy",
-            "includes": ["Python 3.11", "Jupyter", "Pandas", "NumPy", "Matplotlib"]
-        }
+            "includes": ["Python 3.11", "Jupyter", "Pandas", "NumPy", "Matplotlib"],
+        },
     ]
-    
+
     click.echo("📚 Available Flake Templates\n")
-    
+
     for template in templates:
         click.echo(f"🎯 {template['name']}")
         click.echo(f"   Command: {template['command']}")
         click.echo(f"   Includes: {', '.join(template['includes'])}")
         click.echo()
-    
+
     click.echo("💡 Tip: Copy any command above to create your development environment!")
+
 
 @flake.command()
 def guide():
     """Show a guide to using Nix flakes
-    
+
     Displays helpful information for getting started with flakes.
     """
     guide_text = """
@@ -232,11 +254,12 @@ Happy Flaking! 🎉
 """
     click.echo(guide_text)
 
+
 @flake.command()
-@click.argument('language')
+@click.argument("language")
 def language(language):
     """Show language-specific flake examples
-    
+
     Get detailed examples for a specific programming language.
     """
     examples = {
@@ -317,9 +340,9 @@ ask-nix flake create "go cli with cobra viper"
 
 ## Tools & Quality
 ask-nix flake create "go with golangci-lint delve"
-"""
+""",
     }
-    
+
     lang_lower = language.lower()
     if lang_lower in examples:
         click.echo(examples[lang_lower])
@@ -327,6 +350,7 @@ ask-nix flake create "go with golangci-lint delve"
         click.echo(f"❌ No examples available for '{language}'")
         click.echo("\nAvailable languages: python, javascript, rust, go")
         click.echo("\nTry: ask-nix flake language python")
+
 
 if __name__ == "__main__":
     flake()

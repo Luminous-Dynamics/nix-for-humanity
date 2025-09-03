@@ -183,21 +183,34 @@ class AdaptiveInterface(Container):
 
     def _update_component_visibility(self) -> None:
         """Show/hide components based on complexity"""
-        # Get all child widgets
-        suggestions = self.query_one("#suggestions", SuggestionsPanel)
-        history = self.query_one("#history", HistoryPanel)
-        metrics = self.query_one("#metrics", MetricsPanel)
-        advanced = self.query_one("#advanced", AdvancedPanel)
-
-        # Update visibility with smooth transitions
-        if suggestions:
-            suggestions.display = self.current_config.show_suggestions
-        if history:
-            history.display = self.current_config.show_history
-        if metrics:
-            metrics.display = self.current_config.show_metrics
-        if advanced:
-            advanced.display = self.current_config.show_advanced
+        # Get all child widgets - use try/except for components that might not exist
+        try:
+            suggestions = self.query_one("#suggestions", SuggestionsPanel)
+            if suggestions:
+                suggestions.display = self.current_config.show_suggestions
+        except:
+            pass
+        
+        try:
+            history = self.query_one("#history", HistoryPanel)
+            if history:
+                history.display = self.current_config.show_history
+        except:
+            pass
+        
+        try:
+            metrics = self.query_one("#metrics", MetricsPanel)
+            if metrics:
+                metrics.display = self.current_config.show_metrics
+        except:
+            pass
+        
+        try:
+            advanced = self.query_one("#advanced", AdvancedPanel)
+            if advanced:
+                advanced.display = self.current_config.show_advanced
+        except:
+            pass
 
 
 class CommandInput(Widget):

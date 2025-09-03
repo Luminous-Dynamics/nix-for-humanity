@@ -9,4 +9,4 @@ Provides data storage with graceful fallback:
 from .simple_store import SimpleStore, UnifiedPersistence
 from .trinity_store import TrinityStore
 
-__all__ = ['SimpleStore', 'UnifiedPersistence', 'TrinityStore']
+__all__ = ["SimpleStore", "UnifiedPersistence", "TrinityStore"]

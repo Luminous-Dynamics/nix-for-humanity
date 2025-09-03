@@ -16,16 +16,14 @@ Operations included:
 - System repair
 """
 
-import os
 import asyncio
-from typing import List, Dict, Any, Optional, Tuple
+import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
-from ..api.schema import Result
-from .intents import Intent, IntentType
-from .nixos_version import NixOSVersionChecker, check_nixos_version
+from .nixos_version import check_nixos_version
 
 # Check if we're on NixOS 25.11+ with native API support
 compat, version = check_nixos_version()
@@ -34,34 +32,35 @@ NATIVE_API_AVAILABLE = compat
 
 class NativeOperationType(Enum):
     """All operations that can use native API"""
+
     # System operations (massive speedup!)
-    SWITCH = "switch"              # nixos-rebuild switch
-    BOOT = "boot"                  # nixos-rebuild boot
-    TEST = "test"                  # nixos-rebuild test
-    BUILD = "build"                # nixos-rebuild build
-    DRY_BUILD = "dry-build"        # nixos-rebuild dry-build
-    
+    SWITCH = "switch"  # nixos-rebuild switch
+    BOOT = "boot"  # nixos-rebuild boot
+    TEST = "test"  # nixos-rebuild test
+    BUILD = "build"  # nixos-rebuild build
+    DRY_BUILD = "dry-build"  # nixos-rebuild dry-build
+
     # Generation management (instant!)
     LIST_GENERATIONS = "list-generations"
     ROLLBACK = "rollback"
     SWITCH_GENERATION = "switch-generation"
     DELETE_GENERATIONS = "delete-generations"
-    
+
     # Package operations (10x faster)
     SEARCH_PACKAGES = "search"
     QUERY_INSTALLED = "query-installed"
     CHECK_PACKAGE = "check-package"
-    
+
     # Store operations (much faster)
     GARBAGE_COLLECT = "garbage-collect"
     OPTIMIZE_STORE = "optimize-store"
     VERIFY_STORE = "verify-store"
     REPAIR_PATHS = "repair-paths"
-    
+
     # Configuration operations
     BUILD_VM = "build-vm"
     BUILD_VM_BOOTLOADER = "build-vm-with-bootloader"
-    
+
     # Info operations (instant!)
     SHOW_CONFIG_OPTIONS = "show-options"
     SHOW_HARDWARE = "show-hardware"
@@ -71,18 +70,19 @@ class NativeOperationType(Enum):
 @dataclass
 class NativeOperationResult:
     """Result from native operation"""
+
     success: bool
     operation: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     duration_ms: float
     message: str
-    suggestions: List[str] = None
+    suggestions: list[str] = None
 
 
 class NativeOperationsManager:
     """
     Manages all NixOS operations that can use Native Python API.
-    
+
     These operations bypass subprocess calls entirely, providing:
     - 10x-1500x performance improvements
     - Real-time progress updates
@@ -90,51 +90,54 @@ class NativeOperationsManager:
     - Better error messages
     - Direct Python exceptions
     """
-    
+
     def __init__(self):
         self._check_compatibility()
         self._init_native_backend()
-        
+
     def _check_compatibility(self):
         """Check if system supports native API"""
         self.compatible, self.nixos_version = check_nixos_version()
         if not self.compatible:
-            self.override = os.environ.get('NIX_HUMANITY_FORCE_NATIVE_API', 'false').lower() == 'true'
+            self.override = (
+                os.environ.get("NIX_HUMANITY_FORCE_NATIVE_API", "false").lower()
+                == "true"
+            )
             if not self.override:
                 raise RuntimeError(
                     f"NixOS {self.nixos_version} does not support native API. "
                     "Upgrade to 25.11+ or set NIX_HUMANITY_FORCE_NATIVE_API=true"
                 )
-                
+
     def _init_native_backend(self):
         """Initialize the native backend"""
         try:
             # Check global availability flag
             if not NATIVE_API_AVAILABLE:
                 raise ImportError("Native API not available on this NixOS version")
-            
+
             # For now, we'll use a mock backend until we implement the real nixos-rebuild-ng integration
             self.backend = None  # Will be replaced with real NixosRebuildNg backend
             self.native_available = True
-            
+
         except ImportError as e:
             self.native_available = False
             raise RuntimeError(f"Failed to initialize native backend: {e}")
-            
+
     async def execute_native_operation(
-        self, 
+        self,
         operation_type: NativeOperationType,
-        packages: List[str] = None,
-        options: Dict[str, Any] = None
+        packages: list[str] = None,
+        options: dict[str, Any] = None,
     ) -> NativeOperationResult:
         """
         Execute a native operation with full performance benefits.
-        
+
         Args:
             operation_type: The operation to perform
             packages: Package names (for package operations)
             options: Additional options for the operation
-            
+
         Returns:
             NativeOperationResult with operation outcome
         """
@@ -144,9 +147,9 @@ class NativeOperationsManager:
                 operation=operation_type.value,
                 data={},
                 duration_ms=0,
-                message="Native API not available"
+                message="Native API not available",
             )
-            
+
         # Map our operation types to backend operation types
         operation_map = {
             # System operations
@@ -155,52 +158,52 @@ class NativeOperationsManager:
             NativeOperationType.TEST: self.OperationType.TEST,
             NativeOperationType.BUILD: self.OperationType.BUILD,
             NativeOperationType.DRY_BUILD: self.OperationType.BUILD,
-            
             # Generation operations
             NativeOperationType.ROLLBACK: self.OperationType.ROLLBACK,
             NativeOperationType.LIST_GENERATIONS: self.OperationType.LIST_GENERATIONS,
-            
             # Package operations
             NativeOperationType.SEARCH_PACKAGES: self.OperationType.SEARCH,
-            
             # Store operations
             NativeOperationType.GARBAGE_COLLECT: self.OperationType.GARBAGE_COLLECT,
             NativeOperationType.VERIFY_STORE: self.OperationType.REPAIR,
         }
-        
+
         backend_op_type = operation_map.get(operation_type)
         if not backend_op_type:
-            return await self._handle_custom_operation(operation_type, packages, options)
-            
+            return await self._handle_custom_operation(
+                operation_type, packages, options
+            )
+
         # Create native operation
         native_op = self.NixOperation(
             type=backend_op_type,
             packages=packages or [],
             options=options or {},
-            dry_run=operation_type == NativeOperationType.DRY_BUILD
+            dry_run=operation_type == NativeOperationType.DRY_BUILD,
         )
-        
+
         # Special handling for different nixos-rebuild actions
         if operation_type in [NativeOperationType.BOOT, NativeOperationType.TEST]:
-            native_op.options['action'] = operation_type.value
-            
+            native_op.options["action"] = operation_type.value
+
         # Execute with timing
         import time
+
         start_time = time.time()
-        
+
         try:
             result = await self.backend.execute(native_op)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             return NativeOperationResult(
                 success=result.success,
                 operation=operation_type.value,
                 data=result.data,
                 duration_ms=duration_ms,
                 message=result.message,
-                suggestions=result.suggestions
+                suggestions=result.suggestions,
             )
-            
+
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             return NativeOperationResult(
@@ -208,57 +211,56 @@ class NativeOperationsManager:
                 operation=operation_type.value,
                 data={"error": str(e)},
                 duration_ms=duration_ms,
-                message=f"Operation failed: {e}"
+                message=f"Operation failed: {e}",
             )
-            
+
     async def _handle_custom_operation(
         self,
         operation_type: NativeOperationType,
-        packages: List[str],
-        options: Dict[str, Any]
+        packages: list[str],
+        options: dict[str, Any],
     ) -> NativeOperationResult:
         """Handle operations not directly mapped to backend"""
-        
+
         # These operations use native API features but need custom handling
         if operation_type == NativeOperationType.SWITCH_GENERATION:
-            return await self._switch_to_generation(options.get('generation'))
-            
-        elif operation_type == NativeOperationType.DELETE_GENERATIONS:
-            return await self._delete_generations(options.get('generations', []))
-            
-        elif operation_type == NativeOperationType.QUERY_INSTALLED:
+            return await self._switch_to_generation(options.get("generation"))
+
+        if operation_type == NativeOperationType.DELETE_GENERATIONS:
+            return await self._delete_generations(options.get("generations", []))
+
+        if operation_type == NativeOperationType.QUERY_INSTALLED:
             return await self._query_installed_packages()
-            
-        elif operation_type == NativeOperationType.CHECK_PACKAGE:
+
+        if operation_type == NativeOperationType.CHECK_PACKAGE:
             return await self._check_package_availability(packages)
-            
-        elif operation_type == NativeOperationType.OPTIMIZE_STORE:
+
+        if operation_type == NativeOperationType.OPTIMIZE_STORE:
             return await self._optimize_nix_store()
-            
-        elif operation_type == NativeOperationType.BUILD_VM:
+
+        if operation_type == NativeOperationType.BUILD_VM:
             return await self._build_vm(with_bootloader=False)
-            
-        elif operation_type == NativeOperationType.BUILD_VM_BOOTLOADER:
+
+        if operation_type == NativeOperationType.BUILD_VM_BOOTLOADER:
             return await self._build_vm(with_bootloader=True)
-            
-        elif operation_type == NativeOperationType.SHOW_CONFIG_OPTIONS:
+
+        if operation_type == NativeOperationType.SHOW_CONFIG_OPTIONS:
             return await self._show_config_options()
-            
-        elif operation_type == NativeOperationType.SHOW_HARDWARE:
+
+        if operation_type == NativeOperationType.SHOW_HARDWARE:
             return await self._show_hardware_config()
-            
-        elif operation_type == NativeOperationType.SYSTEM_INFO:
+
+        if operation_type == NativeOperationType.SYSTEM_INFO:
             return await self._get_system_info()
-            
-        else:
-            return NativeOperationResult(
-                success=False,
-                operation=operation_type.value,
-                data={},
-                duration_ms=0,
-                message=f"Operation {operation_type.value} not implemented"
-            )
-            
+
+        return NativeOperationResult(
+            success=False,
+            operation=operation_type.value,
+            data={},
+            duration_ms=0,
+            message=f"Operation {operation_type.value} not implemented",
+        )
+
     async def _switch_to_generation(self, generation: int) -> NativeOperationResult:
         """Switch to a specific generation using native API"""
         if not generation:
@@ -267,26 +269,29 @@ class NativeOperationsManager:
                 operation="switch-generation",
                 data={},
                 duration_ms=0,
-                message="No generation number specified"
+                message="No generation number specified",
             )
-            
+
         # Use rollback with specific generation
         native_op = self.NixOperation(
-            type=self.OperationType.ROLLBACK,
-            options={'generation': generation}
+            type=self.OperationType.ROLLBACK, options={"generation": generation}
         )
-        
+
         result = await self.backend.execute(native_op)
-        
+
         return NativeOperationResult(
             success=result.success,
             operation="switch-generation",
             data=result.data,
             duration_ms=result.duration * 1000,
-            message=f"Switched to generation {generation}" if result.success else result.message
+            message=f"Switched to generation {generation}"
+            if result.success
+            else result.message,
         )
-        
-    async def _delete_generations(self, generations: List[int]) -> NativeOperationResult:
+
+    async def _delete_generations(
+        self, generations: list[int]
+    ) -> NativeOperationResult:
         """Delete specific generations"""
         # This would use nix-env --delete-generations
         # For now, return instructions
@@ -298,54 +303,52 @@ class NativeOperationsManager:
             message="To delete generations, use nix-collect-garbage with generation numbers",
             suggestions=[
                 f"nix-env --delete-generations {' '.join(map(str, generations))}",
-                "Then run 'nix-collect-garbage' to reclaim space"
-            ]
+                "Then run 'nix-collect-garbage' to reclaim space",
+            ],
         )
-        
+
     async def _query_installed_packages(self) -> NativeOperationResult:
         """Query all installed packages using native API"""
         # This would use native package query APIs
         # For now, use a fast alternative
         import subprocess
         import time
-        
+
         start = time.time()
         try:
             result = subprocess.run(
-                ['nix-env', '-q'],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["nix-env", "-q"], capture_output=True, text=True, timeout=5
             )
             duration = (time.time() - start) * 1000
-            
+
             if result.returncode == 0:
-                packages = result.stdout.strip().split('\n')
+                packages = result.stdout.strip().split("\n")
                 return NativeOperationResult(
                     success=True,
                     operation="query-installed",
                     data={"packages": packages, "count": len(packages)},
                     duration_ms=duration,
-                    message=f"Found {len(packages)} installed packages"
+                    message=f"Found {len(packages)} installed packages",
                 )
-            else:
-                return NativeOperationResult(
-                    success=False,
-                    operation="query-installed",
-                    data={"error": result.stderr},
-                    duration_ms=duration,
-                    message="Failed to query packages"
-                )
+            return NativeOperationResult(
+                success=False,
+                operation="query-installed",
+                data={"error": result.stderr},
+                duration_ms=duration,
+                message="Failed to query packages",
+            )
         except Exception as e:
             return NativeOperationResult(
                 success=False,
                 operation="query-installed",
                 data={"error": str(e)},
                 duration_ms=(time.time() - start) * 1000,
-                message=f"Query failed: {e}"
+                message=f"Query failed: {e}",
             )
-            
-    async def _check_package_availability(self, packages: List[str]) -> NativeOperationResult:
+
+    async def _check_package_availability(
+        self, packages: list[str]
+    ) -> NativeOperationResult:
         """Check if packages are available in nixpkgs"""
         if not packages:
             return NativeOperationResult(
@@ -353,86 +356,87 @@ class NativeOperationsManager:
                 operation="check-package",
                 data={},
                 duration_ms=0,
-                message="No packages specified"
+                message="No packages specified",
             )
-            
+
         # Use search to check availability
-        search_op = self.NixOperation(
-            type=self.OperationType.SEARCH,
-            packages=packages
-        )
-        
+        search_op = self.NixOperation(type=self.OperationType.SEARCH, packages=packages)
+
         result = await self.backend.execute(search_op)
-        
+
         return NativeOperationResult(
             success=result.success,
             operation="check-package",
             data=result.data,
             duration_ms=result.duration * 1000,
-            message=result.message
+            message=result.message,
         )
-        
+
     async def _optimize_nix_store(self) -> NativeOperationResult:
         """Optimize the Nix store by hardlinking identical files"""
-        import subprocess
         import time
-        
+
         start = time.time()
         try:
             process = await asyncio.create_subprocess_exec(
-                'nix-store', '--optimise',
+                "nix-store",
+                "--optimise",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
-            
+
             stdout, stderr = await process.communicate()
             duration = (time.time() - start) * 1000
-            
+
             if process.returncode == 0:
                 return NativeOperationResult(
                     success=True,
                     operation="optimize-store",
                     data={"output": stdout.decode()},
                     duration_ms=duration,
-                    message="Nix store optimized successfully"
+                    message="Nix store optimized successfully",
                 )
-            else:
-                return NativeOperationResult(
-                    success=False,
-                    operation="optimize-store",
-                    data={"error": stderr.decode()},
-                    duration_ms=duration,
-                    message="Store optimization failed"
-                )
+            return NativeOperationResult(
+                success=False,
+                operation="optimize-store",
+                data={"error": stderr.decode()},
+                duration_ms=duration,
+                message="Store optimization failed",
+            )
         except Exception as e:
             return NativeOperationResult(
                 success=False,
                 operation="optimize-store",
                 data={"error": str(e)},
                 duration_ms=(time.time() - start) * 1000,
-                message=f"Optimization failed: {e}"
+                message=f"Optimization failed: {e}",
             )
-            
+
     async def _build_vm(self, with_bootloader: bool) -> NativeOperationResult:
         """Build a VM image of the current system"""
-        attribute = "config.system.build.vm" if not with_bootloader else "config.system.build.vmWithBootLoader"
-        
-        build_op = self.NixOperation(
-            type=self.OperationType.BUILD,
-            options={"attribute": attribute}
+        attribute = (
+            "config.system.build.vm"
+            if not with_bootloader
+            else "config.system.build.vmWithBootLoader"
         )
-        
+
+        build_op = self.NixOperation(
+            type=self.OperationType.BUILD, options={"attribute": attribute}
+        )
+
         result = await self.backend.execute(build_op)
-        
+
         return NativeOperationResult(
             success=result.success,
             operation="build-vm" if not with_bootloader else "build-vm-with-bootloader",
             data=result.data,
             duration_ms=result.duration * 1000,
             message=result.message,
-            suggestions=["Run the VM with: ./result/bin/run-*-vm"] if result.success else None
+            suggestions=["Run the VM with: ./result/bin/run-*-vm"]
+            if result.success
+            else None,
         )
-        
+
     async def _show_config_options(self) -> NativeOperationResult:
         """Show all NixOS configuration options"""
         # This would use nixos-option command
@@ -445,24 +449,27 @@ class NativeOperationsManager:
             suggestions=[
                 "nixos-option --all",
                 "nixos-option services.nginx",
-                "nixos-option boot.loader"
-            ]
+                "nixos-option boot.loader",
+            ],
         )
-        
+
     async def _show_hardware_config(self) -> NativeOperationResult:
         """Show detected hardware configuration"""
         hardware_config = Path("/etc/nixos/hardware-configuration.nix")
-        
+
         if hardware_config.exists():
             try:
                 content = hardware_config.read_text()
                 return NativeOperationResult(
                     success=True,
                     operation="show-hardware",
-                    data={"path": str(hardware_config), "content": content[:500] + "..."},
+                    data={
+                        "path": str(hardware_config),
+                        "content": content[:500] + "...",
+                    },
                     duration_ms=0,
                     message="Hardware configuration found",
-                    suggestions=["nixos-generate-config --show-hardware-config"]
+                    suggestions=["nixos-generate-config --show-hardware-config"],
                 )
             except Exception as e:
                 return NativeOperationResult(
@@ -470,7 +477,7 @@ class NativeOperationsManager:
                     operation="show-hardware",
                     data={"error": str(e)},
                     duration_ms=0,
-                    message=f"Failed to read hardware config: {e}"
+                    message=f"Failed to read hardware config: {e}",
                 )
         else:
             return NativeOperationResult(
@@ -479,13 +486,13 @@ class NativeOperationsManager:
                 data={},
                 duration_ms=0,
                 message="Hardware configuration not found",
-                suggestions=["Run 'nixos-generate-config' to generate it"]
+                suggestions=["Run 'nixos-generate-config' to generate it"],
             )
-            
+
     async def _get_system_info(self) -> NativeOperationResult:
         """Get comprehensive system information"""
         import platform
-        
+
         info = {
             "nixos_version": self.nixos_version or "Unknown",
             "kernel": platform.release(),
@@ -493,77 +500,77 @@ class NativeOperationsManager:
             "python_version": platform.python_version(),
             "hostname": platform.node(),
             "native_api_available": self.native_available,
-            "generations": await self._get_generation_count()
+            "generations": await self._get_generation_count(),
         }
-        
+
         return NativeOperationResult(
             success=True,
             operation="system-info",
             data=info,
             duration_ms=0,
-            message="System information retrieved"
+            message="System information retrieved",
         )
-        
+
     async def _get_generation_count(self) -> int:
         """Get the number of system generations"""
         try:
             list_op = self.NixOperation(type=self.OperationType.LIST_GENERATIONS)
             result = await self.backend.execute(list_op)
-            if result.success and result.data.get('generations'):
-                return len(result.data['generations'])
+            if result.success and result.data.get("generations"):
+                return len(result.data["generations"])
         except Exception:
             # TODO: Add proper error handling
             pass  # Silent for now, should log error
         return 0
-        
-    def get_supported_operations(self) -> List[Dict[str, Any]]:
+
+    def get_supported_operations(self) -> list[dict[str, Any]]:
         """Get list of all operations with native API support"""
         operations = []
-        
+
         for op in NativeOperationType:
-            operations.append({
-                "name": op.value,
-                "category": self._get_operation_category(op),
-                "speedup": self._get_speedup_factor(op),
-                "description": self._get_operation_description(op)
-            })
-            
+            operations.append(
+                {
+                    "name": op.value,
+                    "category": self._get_operation_category(op),
+                    "speedup": self._get_speedup_factor(op),
+                    "description": self._get_operation_description(op),
+                }
+            )
+
         return operations
-        
+
     def _get_operation_category(self, op: NativeOperationType) -> str:
         """Categorize operations"""
-        if op.value.startswith(('switch', 'boot', 'test', 'build')):
+        if op.value.startswith(("switch", "boot", "test", "build")):
             return "System Management"
-        elif 'generation' in op.value:
+        if "generation" in op.value:
             return "Generation Management"
-        elif op.value in ['search', 'query-installed', 'check-package']:
+        if op.value in ["search", "query-installed", "check-package"]:
             return "Package Management"
-        elif op.value in ['garbage-collect', 'optimize-store', 'verify-store']:
+        if op.value in ["garbage-collect", "optimize-store", "verify-store"]:
             return "Store Management"
-        else:
-            return "Information"
-            
+        return "Information"
+
     def _get_speedup_factor(self, op: NativeOperationType) -> str:
         """Estimate speedup from native API"""
         instant_ops = [
             NativeOperationType.LIST_GENERATIONS,
             NativeOperationType.SHOW_CONFIG_OPTIONS,
-            NativeOperationType.SYSTEM_INFO
+            NativeOperationType.SYSTEM_INFO,
         ]
-        
+
         fast_ops = [
             NativeOperationType.ROLLBACK,
             NativeOperationType.SWITCH_GENERATION,
-            NativeOperationType.SEARCH_PACKAGES
+            NativeOperationType.SEARCH_PACKAGES,
         ]
-        
+
         if op in instant_ops:
             return "∞x (instant)"
-        elif op in fast_ops:
+        if op in fast_ops:
             return "10-50x"
-        else:
-            return "2-10x"
-            
+        return "2-10x"
+
     def _get_operation_description(self, op: NativeOperationType) -> str:
         """Get human-friendly operation description"""
         descriptions = {
@@ -587,9 +594,9 @@ class NativeOperationsManager:
             NativeOperationType.BUILD_VM_BOOTLOADER: "Build a bootable VM image",
             NativeOperationType.SHOW_CONFIG_OPTIONS: "Show all configuration options",
             NativeOperationType.SHOW_HARDWARE: "Show hardware configuration",
-            NativeOperationType.SYSTEM_INFO: "Get system information"
+            NativeOperationType.SYSTEM_INFO: "Get system information",
         }
-        
+
         return descriptions.get(op, op.value)
 
 
@@ -597,35 +604,37 @@ class NativeOperationsManager:
 async def demo_native_operations():
     """Demonstrate all native operations"""
     print("🚀 Native NixOS Operations Demo\n")
-    
+
     try:
         manager = NativeOperationsManager()
         print(f"✅ Native API available on NixOS {manager.nixos_version}\n")
     except RuntimeError as e:
         print(f"❌ {e}")
         return
-        
+
     # Show all supported operations
     print("📋 Supported Native Operations:")
     operations = manager.get_supported_operations()
-    
+
     for op in operations:
         print(f"\n{op['category']}:")
         print(f"  • {op['name']}: {op['description']}")
         print(f"    Speedup: {op['speedup']}")
-        
+
     # Demo instant operations
     print("\n\n🎯 Demo: Instant Operations")
-    
+
     # List generations (instant!)
     print("\n1. Listing generations (was 2-5 seconds, now instant!)...")
-    result = await manager.execute_native_operation(NativeOperationType.LIST_GENERATIONS)
+    result = await manager.execute_native_operation(
+        NativeOperationType.LIST_GENERATIONS
+    )
     print(f"   Result: {result.message}")
     print(f"   Duration: {result.duration_ms:.1f}ms")
-    if result.success and result.data.get('generations'):
-        for gen in result.data['generations'][:3]:
+    if result.success and result.data.get("generations"):
+        for gen in result.data["generations"][:3]:
             print(f"   - Generation {gen}")
-            
+
     # System info (instant!)
     print("\n2. Getting system info (instant!)...")
     result = await manager.execute_native_operation(NativeOperationType.SYSTEM_INFO)
@@ -634,18 +643,17 @@ async def demo_native_operations():
     if result.success:
         for key, value in result.data.items():
             print(f"   - {key}: {value}")
-            
+
     # Search packages (10x faster)
     print("\n3. Searching packages (10x faster!)...")
     result = await manager.execute_native_operation(
-        NativeOperationType.SEARCH_PACKAGES,
-        packages=["firefox"]
+        NativeOperationType.SEARCH_PACKAGES, packages=["firefox"]
     )
     print(f"   Result: {result.message}")
     print(f"   Duration: {result.duration_ms:.1f}ms")
-    
+
     print("\n✨ All operations use native Python API - no subprocess overhead!")
-    
+
 
 if __name__ == "__main__":
     asyncio.run(demo_native_operations())
@@ -658,18 +666,19 @@ NixResult = NativeOperationResult
 OperationType = NativeOperationType
 
 # Type alias for progress callbacks
-from typing import Callable
+from collections.abc import Callable
+
 ProgressCallback = Callable[[str, float], None]
 
 # Export all public names
 __all__ = [
-    'NativeOperationsManager',
-    'NativeOperationType', 
-    'NativeOperationResult',
+    "NativeOperationsManager",
+    "NativeOperationType",
+    "NativeOperationResult",
     # Legacy aliases
-    'NativeNixBackend',
-    'NixOperation',
-    'NixResult',
-    'OperationType',
-    'ProgressCallback',
+    "NativeNixBackend",
+    "NixOperation",
+    "NixResult",
+    "OperationType",
+    "ProgressCallback",
 ]

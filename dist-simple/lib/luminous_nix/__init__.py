@@ -3,7 +3,7 @@
 A tool that makes NixOS accessible through natural conversation.
 """
 
-__version__ = "0.3.2"
+__version__ = "0.1.0-alpha"
 __author__ = "Tristan Stoltz"
 __email__ = "tristan.stoltz@gmail.com"
 
@@ -12,8 +12,8 @@ try:
     from .core.command_executor import CommandExecutor
     from .core.intents import Intent, IntentType
     from .core.responses import Response
-    from .nlp.intent_recognition import IntentRecognizer
     from .knowledge.knowledge_base import KnowledgeBase
+    from .nlp.intent_recognition import IntentRecognizer
 except ImportError:
     # Graceful degradation during restructuring
     pass
@@ -25,12 +25,12 @@ except ImportError:
     pass
 
 __all__ = [
-    '__version__',
-    'CommandExecutor', 
-    'Intent',
-    'IntentType',
-    'Response',
-    'IntentRecognizer',
-    'KnowledgeBase',
-    'CLI'
+    "__version__",
+    "CommandExecutor",
+    "Intent",
+    "IntentType",
+    "Response",
+    "IntentRecognizer",
+    "KnowledgeBase",
+    "CLI",
 ]

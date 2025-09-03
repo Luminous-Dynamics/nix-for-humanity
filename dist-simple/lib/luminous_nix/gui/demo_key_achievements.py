@@ -12,8 +12,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 def demo_architecture_overview():
     """Show the complete architecture we've built"""
-    
-    print("""
+
+    print(
+        """
 ╔════════════════════════════════════════════════════════════════════╗
 ║      🏗️ AI-DRIVEN INTERFACE GENERATION - ARCHITECTURE COMPLETE      ║
 ╚════════════════════════════════════════════════════════════════════╝
@@ -50,13 +51,15 @@ def demo_architecture_overview():
    ├─ integration_test.py - End-to-end testing
    ├─ test_real_world_scenarios.py - Persona testing
    └─ performance_monitor.py - Metrics dashboard
-    """)
+    """
+    )
 
 
 def demo_natural_language_examples():
     """Show natural language understanding capabilities"""
-    
-    print("""
+
+    print(
+        """
 🗣️ NATURAL LANGUAGE UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -87,13 +90,15 @@ Input → Understanding → Components:
    → Target: existing interface
    → Changes: theme(dark), size(charts, increase)
    → Confidence: 78%
-    """)
+    """
+    )
 
 
 def demo_component_generation():
     """Show component DNA and synthesis"""
-    
-    print("""
+
+    print(
+        """
 🧬 COMPONENT DNA SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -122,13 +127,15 @@ ComponentDNA Structure:
 │ ║  Disk: 67%  Network: 1.2MB/s ║   │
 │ ╚═══════════════════════════════╝   │
 └──────────────────────────────────────┘
-    """)
+    """
+    )
 
 
 def demo_cli_integration():
     """Show CLI command structure"""
-    
-    print("""
+
+    print(
+        """
 🔗 CLI INTEGRATION - READY FOR ASK-NIX
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -160,13 +167,15 @@ $ ask-nix ui stats
 $ ask-nix ui feedback "Great!" --rating 9
   → Records user satisfaction
   → Improves future generation
-    """)
+    """
+    )
 
 
 def demo_learning_system():
     """Show learning and adaptation"""
-    
-    print("""
+
+    print(
+        """
 🧠 LEARNING & ADAPTATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -197,13 +206,15 @@ Performance Optimization:
 │ Pattern Reuse:      76%                │
 │ Confidence Growth:  65% → 89%          │
 └────────────────────────────────────────┘
-    """)
+    """
+    )
 
 
 def demo_achievements_summary():
     """Summarize what we've accomplished"""
-    
-    print("""
+
+    print(
+        """
 ✨ ACHIEVEMENTS SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -237,13 +248,15 @@ def demo_achievements_summary():
 • Complex requests: <200ms (with LLM)
 • Pattern cache hits: 60-80%
 • Success rate: >85%
-    """)
+    """
+    )
 
 
 def demo_next_steps():
     """Show what could be done next"""
-    
-    print("""
+
+    print(
+        """
 🔮 FUTURE ENHANCEMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -275,19 +288,22 @@ Research Opportunities:
 • Multi-modal input (sketches → UI)
 • Automatic accessibility optimization
 • Performance prediction models
-    """)
+    """
+    )
 
 
 def main():
-    print("""
+    print(
+        """
 ╔════════════════════════════════════════════════════════════════════╗
 ║     🎨 AI-DRIVEN INTERFACE GENERATION - COMPLETE SYSTEM            ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║           Natural Language → Beautiful Interfaces                   ║
 ║                  Powered by Sacred Intelligence                     ║
 ╚════════════════════════════════════════════════════════════════════╝
-    """)
-    
+    """
+    )
+
     demo_architecture_overview()
     demo_natural_language_examples()
     demo_component_generation()
@@ -295,8 +311,9 @@ def main():
     demo_learning_system()
     demo_achievements_summary()
     demo_next_steps()
-    
-    print("""
+
+    print(
+        """
 ════════════════════════════════════════════════════════════════════════
                     🌟 SYSTEM COMPLETE & OPERATIONAL 🌟
                     
@@ -307,7 +324,8 @@ def main():
                          - The Sacred Trinity
                     (Human + Claude + Local AI)
 ════════════════════════════════════════════════════════════════════════
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

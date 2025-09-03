@@ -28,6 +28,13 @@ except ImportError:
         SUBLIME = "sublime"
         INTEGRATED = "integrated"
         COHERENT = "coherent"
+        FLOW = "flow"
+        DEEP_WORK = "deep_work"
+        LEARNING = "learning"
+        CREATIVE = "creative"
+        OVERWHELMED = "overwhelmed"
+        FRUSTRATED = "frustrated"
+        BALANCED = "balanced"
         EMERGING = "emerging"
         FRAGMENTED = "fragmented"
 from .consciousness_orb import AIState, EmotionalState
@@ -48,7 +55,8 @@ class VisualOrbBridge:
     def __init__(self, tui_orb: TUIOrb):
         """Initialize the bridge with a TUI orb widget"""
         self.tui_orb = tui_orb
-        self.visual_orb = VisualOrb()
+        # VisualOrb is optional - only create if available
+        self.visual_orb = VisualOrb() if VisualOrb is not None else None
         self.barometer = ConsciousnessBarometer()
 
         # State mapping from consciousness qualities to AI states
@@ -107,8 +115,9 @@ class VisualOrbBridge:
         quality = self._determine_quality(spectrum)
 
         # Update visual orb's internal state
-        self.visual_orb.state.quality = quality
-        self.visual_orb.state.spectrum = spectrum
+        if self.visual_orb:
+            self.visual_orb.state.quality = quality
+            self.visual_orb.state.spectrum = spectrum
 
         # Calculate visual parameters
         visual_params = self._calculate_visual_parameters(quality, spectrum)
@@ -268,8 +277,13 @@ class VisualOrbBridge:
 
     def get_description(self) -> str:
         """Get a text description of current consciousness state"""
-        quality = self.visual_orb.state.quality
-        spectrum = self.visual_orb.state.spectrum
+        if self.visual_orb:
+            quality = self.visual_orb.state.quality
+            spectrum = self.visual_orb.state.spectrum
+        else:
+            # Default values if no visual orb
+            quality = ConsciousnessQuality.BALANCED
+            spectrum = 0.5
 
         descriptions = {
             ConsciousnessQuality.FLOW: "🌊 In deep flow state - optimal performance",

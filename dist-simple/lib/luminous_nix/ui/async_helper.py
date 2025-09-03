@@ -6,16 +6,19 @@ in the Textual TUI framework.
 """
 
 import asyncio
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from functools import wraps
+from typing import Any
+
 
 def sync_wrapper(async_func: Callable[..., Coroutine]) -> Callable:
     """
     Wrap an async function to be called from sync context.
-    
+
     This is needed when Textual's set_interval or other sync
     callbacks need to call async functions.
     """
+
     @wraps(async_func)
     def wrapper(*args, **kwargs) -> Any:
         try:
@@ -32,13 +35,14 @@ def sync_wrapper(async_func: Callable[..., Coroutine]) -> Callable:
                 return loop.run_until_complete(async_func(*args, **kwargs))
             finally:
                 loop.close()
-    
+
     return wrapper
+
 
 def run_async_in_sync(coro: Coroutine) -> Any:
     """
     Run an async coroutine in a sync context.
-    
+
     Useful for calling async operations from sync Textual callbacks.
     """
     try:
@@ -49,30 +53,32 @@ def run_async_in_sync(coro: Coroutine) -> Any:
         # No loop running, run it blocking
         return asyncio.run(coro)
 
+
 class AsyncManager:
     """
     Manager for handling async operations in TUI.
-    
+
     Provides a clean interface for bridging async/sync worlds.
     """
-    
+
     def __init__(self):
         self._loop: asyncio.AbstractEventLoop | None = None
-        
+
     def setup(self, loop: asyncio.AbstractEventLoop | None = None):
         """Setup the async manager with an event loop."""
         self._loop = loop or asyncio.get_event_loop()
-        
+
     def run_async(self, coro: Coroutine) -> Any:
         """Run an async coroutine."""
         if self._loop and self._loop.is_running():
             return self._loop.create_task(coro)
-        else:
-            return asyncio.run(coro)
-            
+        return asyncio.run(coro)
+
     def wrap_async(self, func: Callable[..., Coroutine]) -> Callable:
         """Wrap an async function for sync calling."""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             return self.run_async(func(*args, **kwargs))
+
         return wrapper

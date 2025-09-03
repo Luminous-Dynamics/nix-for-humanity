@@ -77,7 +77,15 @@ class LuminousNixCore:
             consciousness_field.sacred_pause(1.5)
 
         # Initialize components
-        self.backend = NixForHumanityBackend()
+        # Use real backend if requested via environment variable
+        import os
+        if os.environ.get("LUMINOUS_USE_REAL_BACKEND", "").lower() in ["true", "1", "yes"]:
+            from .backend_real import RealNixBackend
+            self.backend = RealNixBackend()
+            print("✅ Using REAL NixOS backend - actual commands will be executed!")
+        else:
+            self.backend = NixForHumanityBackend()
+            
         self.intent_recognizer = IntentRecognizer()
         self.executor = SafeExecutor()
         self.knowledge = KnowledgeBase()

@@ -4,11 +4,12 @@
 try:
     from .nlp import (
         NLPPipeline,
-        process,
         extract_package_name,
+        get_explanation_for_user,
+        process,
         record_interaction_feedback,
-        get_explanation_for_user
     )
+
     # Alias for backward compatibility
     NLPEngine = NLPPipeline
     NLP_AVAILABLE = True
@@ -20,6 +21,7 @@ except ImportError:
 # Import Ollama integration
 try:
     from .ollama_client import OllamaClient, SocraticOllama
+
     OLLAMA_AVAILABLE = True
 except ImportError:
     OLLAMA_AVAILABLE = False
@@ -27,12 +29,12 @@ except ImportError:
     SocraticOllama = None
 
 __all__ = [
-    'OllamaClient',
-    'SocraticOllama',
-    'NLPEngine',
-    'NLPPipeline',
-    'process',
-    'extract_package_name',
-    'record_interaction_feedback',
-    'get_explanation_for_user'
+    "OllamaClient",
+    "SocraticOllama",
+    "NLPEngine",
+    "NLPPipeline",
+    "process",
+    "extract_package_name",
+    "record_interaction_feedback",
+    "get_explanation_for_user",
 ]

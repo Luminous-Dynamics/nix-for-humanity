@@ -10,7 +10,7 @@ from .store_trinity_bridge import StoreTrinityBridge
 from .tui_backend_bridge import TUIBackendBridge
 
 __all__ = [
-    'POMLtoCLIBridge',
-    'StoreTrinityBridge',
-    'TUIBackendBridge',
+    "POMLtoCLIBridge",
+    "StoreTrinityBridge",
+    "TUIBackendBridge",
 ]

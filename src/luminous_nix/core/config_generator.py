@@ -260,14 +260,18 @@ class NixConfigGenerator:
         user_patterns = [
             r"add (?:user|account) (\w+)",
             r"create (?:user|account) (\w+)",
-            r"user (\w+)",
+            r"(?:^|\s)user (\w+)",
         ]
         for pattern in user_patterns:
             match = re.search(pattern, text)
             if match:
-                intent["users"].append(
-                    {"name": match.group(1), "admin": "admin" in text or "sudo" in text}
-                )
+                username = match.group(1)
+                # Check if user already added
+                if not any(u["name"] == username for u in intent["users"]):
+                    intent["users"].append(
+                        {"name": username, "admin": "admin" in text or "sudo" in text}
+                    )
+                break  # Only add once
 
         # Detect hostname
         hostname_match = re.search(r"hostname (\S+)", text)
@@ -482,7 +486,7 @@ class NixConfigGenerator:
                 explanation.append("- Has firewall enabled")
 
             # Find hostname
-            hostname_match = re.search(r'hostname\s*=\s*"([^"]+)"', content)
+            hostname_match = re.search(r'hostName\s*=\s*"([^"]+)"', content)
             if hostname_match:
                 explanation.append(f"- System name: {hostname_match.group(1)}")
 

@@ -6,34 +6,34 @@ Launch the Nix for Humanity TUI with living consciousness orb,
 adaptive complexity, and beautiful animations.
 """
 
-import sys
 import os
-from pathlib import Path
+import sys
+
 
 def main():
     """Launch the TUI application"""
     try:
         # Terminal compatibility fixes
-        term = os.environ.get('TERM', '')
-        
+        term = os.environ.get("TERM", "")
+
         # Fix for Kitty terminal
-        if 'kitty' in term.lower():
-            os.environ['TERM'] = 'xterm-256color'
-            
+        if "kitty" in term.lower():
+            os.environ["TERM"] = "xterm-256color"
+
         # Ensure we're in a proper TTY
         if not sys.stdin.isatty():
             print("Error: TUI requires an interactive terminal")
             sys.exit(1)
-            
+
         # Try direct import first
         from luminous_nix.ui.main_app import NixForHumanityTUI
-        
+
         # Create and run the app with beautiful consciousness orb
         app = NixForHumanityTUI()
         app.run()
-        
+
     except ImportError as e:
-        print(f"✨ Setting up the consciousness-first TUI...")
+        print("✨ Setting up the consciousness-first TUI...")
         print(f"Error: Could not import TUI components: {e}")
         print("\nPlease ensure you're in the Nix development environment:")
         print("  nix develop")
