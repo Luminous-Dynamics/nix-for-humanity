@@ -77,14 +77,19 @@ class LuminousNixCore:
             consciousness_field.sacred_pause(1.5)
 
         # Initialize components
-        # Use real backend if requested via environment variable
+        # Default to REAL backend (v0.5.1+) - can be disabled with LUMINOUS_USE_MOCK_BACKEND=true
         import os
-        if os.environ.get("LUMINOUS_USE_REAL_BACKEND", "").lower() in ["true", "1", "yes"]:
+        use_mock = os.environ.get("LUMINOUS_USE_MOCK_BACKEND", "").lower() in ["true", "1", "yes"]
+        
+        if use_mock:
+            # Only use mock backend if explicitly requested (for testing)
+            self.backend = NixForHumanityBackend()
+            print("⚠️  Using MOCK backend (set LUMINOUS_USE_MOCK_BACKEND=false for real commands)")
+        else:
+            # Default: Use real backend (v0.5.1+ default behavior)
             from .backend_real import RealNixBackend
             self.backend = RealNixBackend()
             print("✅ Using REAL NixOS backend - actual commands will be executed!")
-        else:
-            self.backend = NixForHumanityBackend()
             
         self.intent_recognizer = IntentRecognizer()
         self.executor = SafeExecutor()
@@ -410,7 +415,7 @@ class LuminousNixCore:
     def _get_help_response(self) -> Response:
         """Return help information"""
         help_text = """
-Luminous Nix v0.4.1 - Natural Language NixOS Interface
+Luminous Nix v0.5.1 - Natural Language NixOS Interface
 
 COMMANDS:
   search <query>    - Search for packages (e.g., 'search firefox')
@@ -432,8 +437,10 @@ OPTIONS:
   --verbose        - Show detailed output
   
 ENVIRONMENT:
-  LUMINOUS_USE_REAL_BACKEND=true - Use real NixOS commands
-  LUMINOUS_DRY_RUN=true          - Preview mode
+  LUMINOUS_USE_MOCK_BACKEND=true - Use mock backend (testing only)
+  LUMINOUS_DRY_RUN=true           - Preview mode (recommended)
+
+NOTE: Real NixOS backend is now the default (v0.5.1+)
 """
         return Response(
             success=True,

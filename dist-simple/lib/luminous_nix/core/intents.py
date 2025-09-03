@@ -165,7 +165,7 @@ class IntentRecognizer:
 
         # Garbage collection patterns
         self.garbage_collect_patterns = [
-            r"\b(garbage\s+collect|gc|clean\s+up|cleanup|free\s+space|free\s+disk)",
+            r"\b(garbage\s+collect|gc|clean\s+up|cleanup|clean|free\s+space|free\s+disk)",
             r"\b(delete|remove)\s+(old|unused)\s+(packages?|generations?)",
             r"\bdelete\s+old\s+packages?\b",  # More specific pattern
             r"\bclean\s+(up\s+)?my\s+(system|disk|space)",
@@ -257,6 +257,7 @@ class IntentRecognizer:
         self.check_status_patterns = [
             r"\b(check|show|what\'?s)\s+(system\s+)?status",
             r"\bsystem\s+info(rmation)?",
+            r"\binfo\b",  # Just "info" by itself
             r"\bhow\s+is\s+my\s+system(\s+doing)?",
             r"\bhealth\s+check",
             r"\bsystem\s+health",
@@ -264,6 +265,7 @@ class IntentRecognizer:
 
         # List installed patterns
         self.list_installed_patterns = [
+            r"\blist\b",  # Just "list" by itself
             r"\b(list|show|what)\s+(packages?\s+)?(are\s+)?installed",
             r"\bwhat\s+packages\s+are\s+installed\b",  # More specific
             r"\bwhat\s+do\s+I\s+have\s+installed\b",  # More specific

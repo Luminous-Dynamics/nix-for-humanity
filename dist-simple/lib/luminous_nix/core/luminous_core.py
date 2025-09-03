@@ -77,7 +77,15 @@ class LuminousNixCore:
             consciousness_field.sacred_pause(1.5)
 
         # Initialize components
-        self.backend = NixForHumanityBackend()
+        # Use real backend if requested via environment variable
+        import os
+        if os.environ.get("LUMINOUS_USE_REAL_BACKEND", "").lower() in ["true", "1", "yes"]:
+            from .backend_real import RealNixBackend
+            self.backend = RealNixBackend()
+            print("✅ Using REAL NixOS backend - actual commands will be executed!")
+        else:
+            self.backend = NixForHumanityBackend()
+            
         self.intent_recognizer = IntentRecognizer()
         self.executor = SafeExecutor()
         self.knowledge = KnowledgeBase()
@@ -184,6 +192,10 @@ class LuminousNixCore:
             # 2. Build command based on intent
             command = self._build_command(intent, query)
 
+            # Handle special cases that don't need commands
+            if intent.type == IntentType.HELP:
+                return self._get_help_response()
+            
             if not command:
                 return Response(
                     success=False,
@@ -395,6 +407,40 @@ class LuminousNixCore:
                 error=str(e),
             )
 
+    def _get_help_response(self) -> Response:
+        """Return help information"""
+        help_text = """
+Luminous Nix v0.4.1 - Natural Language NixOS Interface
+
+COMMANDS:
+  search <query>    - Search for packages (e.g., 'search firefox')
+  install <package> - Install a package
+  remove <package>  - Remove a package
+  list             - List installed packages
+  info             - Show system information
+  clean            - Clean up old packages
+  help             - Show this help message
+
+EXAMPLES:
+  ask-nix "search text editor"
+  ask-nix "install vim"
+  ask-nix "list"
+  ask-nix "info"
+
+OPTIONS:
+  --dry-run        - Preview commands without executing
+  --verbose        - Show detailed output
+  
+ENVIRONMENT:
+  LUMINOUS_USE_REAL_BACKEND=true - Use real NixOS commands
+  LUMINOUS_DRY_RUN=true          - Preview mode
+"""
+        return Response(
+            success=True,
+            message=help_text.strip(),
+            command="help"
+        )
+    
     def _build_command(self, intent: Intent, query: Query) -> str | None:
         """Build the actual Nix command to execute"""
 
@@ -416,7 +462,8 @@ class LuminousNixCore:
             IntentType.LIST_INSTALLED: lambda: "nix profile list",
             IntentType.ROLLBACK: lambda: "sudo nixos-rebuild switch --rollback",
             IntentType.GARBAGE_COLLECT: lambda: "nix-collect-garbage -d",
-            IntentType.HELP: lambda: None,  # No command for help
+            IntentType.CHECK_STATUS: lambda: "nix-info",  # System info command
+            IntentType.HELP: lambda: "help",  # Return a placeholder for help
         }
 
         builder = command_map.get(intent.type)
