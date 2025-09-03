@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "luminous-nix"
-version = "0.5.1"
+version = "0.5.2"
 description = "Natural language interface for NixOS - making NixOS accessible to everyone"
 readme = "README.md"
 license = "MIT"

@@ -23,9 +23,9 @@ from .visual_orb_integration import VisualOrbBridge
 
 try:
     from ..api.schema import Context, Request
-    from ..core.engine import NixForHumanityBackend
+    from ..core.backend_real import RealNixBackend
 except ImportError:
-    # Fallback if old engine not available
+    # Fallback if imports not available
     pass
 
 
