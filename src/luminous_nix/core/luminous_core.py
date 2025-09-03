@@ -6,7 +6,7 @@ This replaces the non-existent LuminousNixCore that was claimed to exist
 from dataclasses import dataclass
 from typing import Any
 
-from .backend import NixForHumanityBackend
+from .backend_real import RealNixBackend
 from .config_executor import ConfigExecutor
 from .error_handler import ErrorHandler
 from .executor import SafeExecutor
@@ -77,19 +77,9 @@ class LuminousNixCore:
             consciousness_field.sacred_pause(1.5)
 
         # Initialize components
-        # Default to REAL backend (v0.5.1+) - can be disabled with LUMINOUS_USE_MOCK_BACKEND=true
-        import os
-        use_mock = os.environ.get("LUMINOUS_USE_MOCK_BACKEND", "").lower() in ["true", "1", "yes"]
-        
-        if use_mock:
-            # Only use mock backend if explicitly requested (for testing)
-            self.backend = NixForHumanityBackend()
-            print("⚠️  Using MOCK backend (set LUMINOUS_USE_MOCK_BACKEND=false for real commands)")
-        else:
-            # Default: Use real backend (v0.5.1+ default behavior)
-            from .backend_real import RealNixBackend
-            self.backend = RealNixBackend()
-            print("✅ Using REAL NixOS backend - actual commands will be executed!")
+        # v0.5.2+: Only real backend, no mocks!
+        self.backend = RealNixBackend()
+        print("✅ Using REAL NixOS backend - actual commands will be executed!")
             
         self.intent_recognizer = IntentRecognizer()
         self.executor = SafeExecutor()

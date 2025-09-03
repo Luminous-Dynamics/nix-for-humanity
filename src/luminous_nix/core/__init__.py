@@ -4,8 +4,8 @@ try:
     # Import from actual existing modules
     # Import Command from api module since it's not in core
     from ..api import Command
+    from .backend_real import RealNixBackend
     from .command_executor import CommandExecutor
-    from .engine import NixForHumanityBackend
     from .intents import Intent, IntentRecognizer
     from .knowledge import KnowledgeBase
     from .luminous_core import LuminousNixCore
@@ -13,6 +13,7 @@ try:
 
     # Legacy name support
     NixForHumanityCore = LuminousNixCore
+    NixForHumanityBackend = RealNixBackend  # Backward compatibility alias
 
     __all__ = [
         "Intent",
@@ -21,7 +22,8 @@ try:
         "KnowledgeBase",
         "Command",
         "Response",
-        "NixForHumanityBackend",
+        "RealNixBackend",
+        "NixForHumanityBackend",  # Backward compatibility
         "LuminousNixCore",
         "NixForHumanityCore",  # Legacy name
     ]

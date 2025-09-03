@@ -3,7 +3,7 @@
 A tool that makes NixOS accessible through natural conversation.
 """
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __author__ = "Tristan Stoltz"
 __email__ = "tristan.stoltz@gmail.com"
 
