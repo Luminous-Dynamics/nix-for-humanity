@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>NixOS Configuration Generation</title>
+    <description>Generate complete NixOS configurations from natural language</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-4, claude-3, codellama-34b</preferred-models>
+      <temperature>0.4</temperature>
+      <max-tokens>3000</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="requirements">{{ requirements }}</let>
+    <let name="base_config">{{ base_config | default: null }}</let>
+    <let name="target_profile">{{ target_profile | default: "general" }}</let>
+    <let name="nixos_version">{{ nixos_version | default: "24.11" }}</let>
+    <let name="hardware_info">{{ hardware_info | default: {} }}</let>
+  </variables>
+
+  <context>
+    <document src="nixos_module_options.json" />
+    <document src="configuration_templates.yaml" />
+    <document src="best_practices.md" />
+  </context>
+
+  <prompt>
+    <system>
+      You are a NixOS configuration generator expert.
+      Create complete, working NixOS configurations based on user requirements.
+      Follow NixOS best practices and ensure configurations are secure and efficient.
+      Target NixOS version: {{ nixos_version }}
+    </system>
+
+    <stepwise-instructions>
+      <step id="analyze_requirements">
+        Parse requirements to identify:
+        - System purpose (desktop, server, development, etc.)
+        - Required services and applications
+        - Hardware specifications
+        - Security requirements
+        - Performance priorities
+        - Network configuration needs
+      </step>
+
+      <step id="select_base_template">
+        <if condition="base_config != null">
+          Use provided base configuration as starting point
+        </if>
+        <elseif condition="target_profile == 'desktop'">
+          Use desktop template with GUI essentials
+        </elseif>
+        <elseif condition="target_profile == 'server'">
+          Use server template with headless optimization
+        </elseif>
+        <elseif condition="target_profile == 'development'">
+          Use development template with build tools
+        </elseif>
+        <else>
+          Start with minimal base configuration
+        </else>
+      </step>
+
+      <step id="configure_boot">
+        <if condition="hardware_info.uefi == true">
+          Configure systemd-boot for UEFI
+        </if>
+        <else>
+          Configure GRUB for BIOS
+        </else>
+        
+        Add appropriate kernel modules based on hardware
+      </step>
+
+      <step id="setup_networking">
+        Configure networking based on requirements:
+        <if condition="requirements contains 'wifi'">
+          Enable NetworkManager with wireless support
+        </if>
+        <if condition="requirements contains 'static ip'">
+          Configure static networking
+        </if>
+        <if condition="target_profile == 'server'">
+          Configure firewall rules for services
+        </if>
+      </step>
+
+      <step id="add_packages">
+        <foreach items="required_packages" as="package">
+          <if condition="package.exists_in_nixpkgs">
+            Add to environment.systemPackages
+          </if>
+          <else>
+            Add comment explaining alternative or how to add
+          </else>
+        </foreach>
+      </step>
+
+      <step id="configure_services">
+        For each required service:
+        - Enable service with appropriate settings
+        - Configure security policies
+        - Set up data directories
+        - Configure logging
+        - Add systemd dependencies
+      </step>
+
+      <step id="security_hardening">
+        <if condition="requirements contains 'security' or target_profile == 'server'">
+          Apply security hardening:
+          - Enable firewall with strict rules
+          - Configure fail2ban
+          - Set up SSH key-only authentication
+          - Enable automatic updates
+          - Configure audit logging
+        </if>
+      </step>
+
+      <step id="optimization">
+        Apply optimizations:
+        - Enable appropriate compression
+        - Configure swap/zram
+        - Set up tmpfs where beneficial
+        - Optimize systemd services
+        - Configure garbage collection
+      </step>
+
+      <step id="validation">
+        Validate configuration:
+        - Check for syntax errors
+        - Verify no conflicting options
+        - Ensure all dependencies satisfied
+        - Add helpful comments
+      </step>
+    </stepwise-instructions>
+
+    <examples>
+      <example>
+        <input>
+          Create a development workstation with Docker, VS Code, and PostgreSQL
+        </input>
+        <output>
+          { config, pkgs, ... }:
+          {
+            imports = [ ./hardware-configuration.nix ];
+            
+            # Boot configuration
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
+            
+            # Networking
+            networking.hostName = "dev-workstation";
+            networking.networkmanager.enable = true;
+            
+            # Development packages
+            environment.systemPackages = with pkgs; [
+              vscode
+              git
+              docker-compose
+              postgresql_15
+              python3
+              nodejs
+            ];
+            
+            # Services
+            virtualisation.docker.enable = true;
+            services.postgresql = {
+              enable = true;
+              package = pkgs.postgresql_15;
+              enableTCPIP = true;
+              authentication = ''
+                local all all trust
+                host all all 127.0.0.1/32 trust
+              '';
+            };
+            
+            # User configuration
+            users.users.developer = {
+              isNormalUser = true;
+              extraGroups = [ "wheel" "docker" ];
+            };
+            
+            system.stateVersion = "24.11";
+          }
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      {
+        "configuration": "string (valid Nix code)",
+        "warnings": ["string"],
+        "notes": ["string"],
+        "additional_files": {
+          "filename": "content"
+        },
+        "post_install_commands": ["string"],
+        "estimated_closure_size": "string"
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="conflicting_requirements">
+        Explain the conflict and provide alternative solutions.
+      </on-error>
+      <on-error type="missing_information">
+        Generate configuration with placeholders and detailed TODOs.
+      </on-error>
+    </error-handling>
+
+    <hint>
+      Common configuration patterns:
+      - Desktop environments: gnome, kde, xfce, sway
+      - Development: docker, podman, virtualbox, qemu
+      - Databases: postgresql, mysql, redis, mongodb
+      - Web servers: nginx, apache, caddy
+      - Always include hardware-configuration.nix import
+      - Always set system.stateVersion
+    </hint>
+  </prompt>
+</poml>

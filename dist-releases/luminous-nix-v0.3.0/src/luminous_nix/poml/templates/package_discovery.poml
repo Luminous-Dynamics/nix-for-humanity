@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>Intelligent Package Discovery</title>
+    <description>Find NixOS packages based on natural language descriptions</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-3.5-turbo, mistral-7b, llama-2</preferred-models>
+      <temperature>0.5</temperature>
+      <max-tokens>1000</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="user_query">{{ user_query }}</let>
+    <let name="category_filter">{{ category_filter | default: null }}</let>
+    <let name="max_results">{{ max_results | default: 5 }}</let>
+    <let name="include_unstable">{{ include_unstable | default: false }}</let>
+  </variables>
+
+  <context>
+    <document src="nixpkgs_database.json" />
+    <document src="package_categories.yaml" />
+    <document src="common_alternatives.yaml" />
+  </context>
+
+  <prompt>
+    <system>
+      You are a NixOS package discovery assistant.
+      Help users find the right packages based on their descriptions.
+      Consider alternative names, similar tools, and package ecosystems.
+    </system>
+
+    <stepwise-instructions>
+      <step id="understand_intent">
+        Analyze user query to determine:
+        - Desired functionality
+        - Use case context
+        - Technical requirements
+        - Platform constraints
+      </step>
+
+      <step id="search_packages">
+        <parallel>
+          <task id="exact_match">
+            Search for exact name matches
+          </task>
+          <task id="description_match">
+            Search package descriptions for keywords
+          </task>
+          <task id="category_search">
+            <if condition="category_filter != null">
+              Filter by category: {{ category_filter }}
+            </if>
+            <else>
+              Identify likely categories from intent
+            </else>
+          </task>
+        </parallel>
+      </step>
+
+      <step id="rank_results">
+        Rank packages by:
+        - Relevance to query
+        - Popularity/maintenance status
+        - Compatibility with user's system
+        - Community recommendations
+        
+        <if condition="not include_unstable">
+          Filter out unstable/broken packages
+        </if>
+      </step>
+
+      <step id="enhance_results">
+        For each package, provide:
+        - Official package name
+        - Brief description
+        - Installation command
+        - Common configuration
+        - Alternative options
+        - Dependencies to be aware of
+      </step>
+
+      <step id="smart_suggestions">
+        <if condition="results.length == 0">
+          Suggest:
+          - Alternative search terms
+          - Similar tools that might work
+          - How to request package addition
+        </if>
+        <elseif condition="query seems ambiguous">
+          Ask clarifying questions:
+          - Desktop or command-line?
+          - Specific features needed?
+          - Language/framework preference?
+        </elseif>
+      </step>
+    </stepwise-instructions>
+
+    <examples>
+      <example>
+        <input>I need something to edit PDFs</input>
+        <output>
+          {
+            "matches": [
+              {
+                "name": "okular",
+                "description": "KDE document viewer with PDF editing",
+                "install": "environment.systemPackages = [ pkgs.okular ];",
+                "category": "desktop"
+              },
+              {
+                "name": "xournalpp",
+                "description": "Handwriting note-taking with PDF annotation",
+                "install": "environment.systemPackages = [ pkgs.xournalpp ];",
+                "category": "desktop"
+              },
+              {
+                "name": "pdftk",
+                "description": "Command-line PDF manipulation",
+                "install": "environment.systemPackages = [ pkgs.pdftk ];",
+                "category": "cli"
+              }
+            ],
+            "suggestion": "For basic viewing, 'evince' is lighter weight"
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>screenshot tool</input>
+        <output>
+          {
+            "matches": [
+              {
+                "name": "flameshot",
+                "description": "Powerful screenshot tool with annotation",
+                "install": "environment.systemPackages = [ pkgs.flameshot ];",
+                "config": "services.flameshot.enable = true;"
+              },
+              {
+                "name": "spectacle",
+                "description": "KDE screenshot utility",
+                "install": "environment.systemPackages = [ pkgs.spectacle ];"
+              },
+              {
+                "name": "scrot",
+                "description": "Simple command-line screenshot",
+                "install": "environment.systemPackages = [ pkgs.scrot ];"
+              }
+            ]
+          }
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      {
+        "query_interpretation": "string",
+        "matches": [
+          {
+            "name": "string",
+            "description": "string",
+            "install_command": "string",
+            "configuration": "string?",
+            "category": "string",
+            "alternatives": ["string"],
+            "notes": "string?"
+          }
+        ],
+        "suggestions": ["string"],
+        "clarifications_needed": ["string"]
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="no_matches">
+        Suggest broader search terms and show how to search nixpkgs directly.
+      </on-error>
+      <on-error type="too_many_matches">
+        Request more specific criteria and show categories to narrow down.
+      </on-error>
+    </error-handling>
+
+    <cache duration="7200" key="query_hash" />
+
+    <hint>
+      Common package name differences from other distros:
+      - chromium (not google-chrome)
+      - firefox (not firefox-esr by default)
+      - libreoffice (not openoffice)
+      - vscode = vscode, vscodium = open source build
+    </hint>
+  </prompt>
+</poml>

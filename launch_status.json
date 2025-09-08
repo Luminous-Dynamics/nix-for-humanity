@@ -1,0 +1,19 @@
+{
+  "version": "0.3.0",
+  "launch_time": "2025-09-08T15:41:44-05:00",
+  "packages": {
+    "pypi": "ready",
+    "standalone": "ready",
+    "nixpkgs": "ready"
+  },
+  "social": {
+    "hackernews": "pending",
+    "reddit": "pending",
+    "twitter": "pending",
+    "linkedin": "pending"
+  },
+  "metrics": {
+    "github_stars_at_launch": 0,
+    "pypi_downloads_at_launch": 0
+  }
+}

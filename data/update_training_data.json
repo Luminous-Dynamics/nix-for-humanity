@@ -1,0 +1,52 @@
+[
+  {
+    "query": "update system",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "please update system",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "how to update system",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "I want to update system",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "upgrade nixos",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "please upgrade nixos",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "how to upgrade nixos",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "I want to upgrade nixos",
+    "command": "sudo nixos-rebuild switch",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "update all packages",
+    "command": "sudo nixos-rebuild switch --upgrade",
+    "category": "update_maintenance"
+  },
+  {
+    "query": "please update all packages",
+    "command": "sudo nixos-rebuild switch --upgrade",
+    "category": "update_maintenance"
+  }
+]

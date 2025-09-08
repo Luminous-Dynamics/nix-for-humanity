@@ -1,0 +1,42 @@
+{
+  "version": "0.3.1",
+  "release_date": "2025-09-10",
+  "critical_fixes": [
+    {
+      "issue": "Add home-manager support",
+      "priority": "P0",
+      "solution": "Add HomeManagerSpecialist class"
+    },
+    {
+      "issue": "Add flake operations",
+      "priority": "P0",
+      "solution": "Add FlakeSpecialist class"
+    },
+    {
+      "issue": "Fix service enable confusion",
+      "priority": "P1",
+      "solution": "Improve service vs package detection"
+    },
+    {
+      "issue": "Add garbage collection commands",
+      "priority": "P1",
+      "solution": "Add to maintenance specialist"
+    },
+    {
+      "issue": "Fix PyTorch import on NixOS",
+      "priority": "P1",
+      "solution": "Document nix-shell wrapper requirement"
+    }
+  ],
+  "performance_improvements": [
+    "Reduce cold start time to <1s",
+    "Pre-warm cache with common queries",
+    "Optimize import statements"
+  ],
+  "new_features": [
+    "Basic home-manager commands",
+    "Flake init/update/check",
+    "Generation management",
+    "Service enable/disable"
+  ]
+}

@@ -1,0 +1,2696 @@
+{
+  "metadata": {
+    "version": "0.2.2",
+    "collected_at": "2025-09-08T13:58:50.332725",
+    "total_queries": 566,
+    "sources": [
+      "forums",
+      "github",
+      "docs",
+      "synthetic",
+      "generated"
+    ]
+  },
+  "queries": [
+    {
+      "query": "how to install brave browser on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "install docker and docker-compose",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "add postgresql to my system",
+      "category": "install"
+    },
+    {
+      "query": "get vscode working on nixos",
+      "category": "install"
+    },
+    {
+      "query": "install steam for gaming",
+      "category": "install"
+    },
+    {
+      "query": "enable bluetooth on nixos",
+      "category": "config",
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "configure wifi network",
+      "category": "config"
+    },
+    {
+      "query": "setup automatic backups",
+      "category": "config"
+    },
+    {
+      "query": "enable flakes in configuration",
+      "category": "config"
+    },
+    {
+      "query": "configure zsh as default shell",
+      "category": "config"
+    },
+    {
+      "query": "setup rust development with vscode",
+      "category": "dev"
+    },
+    {
+      "query": "create isolated python environment",
+      "category": "dev"
+    },
+    {
+      "query": "nodejs with npm and yarn",
+      "category": "dev"
+    },
+    {
+      "query": "haskell development setup",
+      "category": "dev"
+    },
+    {
+      "query": "latex environment for academic writing",
+      "category": "dev"
+    },
+    {
+      "query": "how often should I update nixos",
+      "category": "update"
+    },
+    {
+      "query": "clean up old system generations",
+      "category": "update"
+    },
+    {
+      "query": "check disk usage of nix store",
+      "category": "update"
+    },
+    {
+      "query": "rollback after failed update",
+      "category": "update"
+    },
+    {
+      "query": "upgrade to unstable channel",
+      "category": "update"
+    },
+    {
+      "query": "fix broken nixos configuration",
+      "category": "error"
+    },
+    {
+      "query": "recover from failed boot",
+      "category": "error"
+    },
+    {
+      "query": "debug why package won't install",
+      "category": "error"
+    },
+    {
+      "query": "resolve channel update errors",
+      "category": "error"
+    },
+    {
+      "query": "fix permission denied errors",
+      "category": "error"
+    },
+    {
+      "query": "find package for pdf editing",
+      "category": "search"
+    },
+    {
+      "query": "search for video players",
+      "category": "search"
+    },
+    {
+      "query": "what markdown editors are available",
+      "category": "search"
+    },
+    {
+      "query": "find alternative to photoshop",
+      "category": "search"
+    },
+    {
+      "query": "search database management tools",
+      "category": "search"
+    },
+    {
+      "query": "nix-env -iA not working",
+      "category": "error"
+    },
+    {
+      "query": "home-manager installation steps",
+      "category": "install"
+    },
+    {
+      "query": "configure graphics drivers nvidia",
+      "category": "config"
+    },
+    {
+      "query": "setup printer and scanner",
+      "category": "config"
+    },
+    {
+      "query": "enable virtualbox or kvm",
+      "category": "config"
+    },
+    {
+      "query": "use nix flakes for project",
+      "category": "dev"
+    },
+    {
+      "query": "setup distributed builds",
+      "category": "config"
+    },
+    {
+      "query": "configure remote builders",
+      "category": "config"
+    },
+    {
+      "query": "enable experimental features",
+      "category": "config"
+    },
+    {
+      "query": "setup binary cache",
+      "category": "config"
+    },
+    {
+      "query": "add user to system",
+      "category": "config"
+    },
+    {
+      "query": "configure firewall rules",
+      "category": "config"
+    },
+    {
+      "query": "setup ssh server",
+      "category": "config"
+    },
+    {
+      "query": "enable docker service",
+      "category": "config"
+    },
+    {
+      "query": "configure nginx web server",
+      "category": "config"
+    },
+    {
+      "query": "list installed packages",
+      "category": "search",
+      "expected_command": "nix-env -q"
+    },
+    {
+      "query": "remove unused packages",
+      "category": "update"
+    },
+    {
+      "query": "pin package version",
+      "category": "config"
+    },
+    {
+      "query": "override package attributes",
+      "category": "config"
+    },
+    {
+      "query": "create custom package",
+      "category": "dev"
+    },
+    {
+      "query": "install firefox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.firefox"
+    },
+    {
+      "query": "search text editor",
+      "category": "search",
+      "expected_command": "nix search editor"
+    },
+    {
+      "query": "update system",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "create python development environment",
+      "category": "dev",
+      "expected_command": "nix-shell -p python3 python3Packages.pip"
+    },
+    {
+      "query": "setup rust dev shell",
+      "category": "dev",
+      "expected_command": "nix-shell -p rustc cargo"
+    },
+    {
+      "query": "nodejs development environment",
+      "category": "dev"
+    },
+    {
+      "query": "clean old generations",
+      "category": "update",
+      "expected_command": "sudo nix-collect-garbage -d"
+    },
+    {
+      "query": "check for updates",
+      "category": "update"
+    },
+    {
+      "query": "rollback to previous",
+      "category": "update"
+    },
+    {
+      "query": "i need a web browser",
+      "category": "install"
+    },
+    {
+      "query": "something to edit code",
+      "category": "search"
+    },
+    {
+      "query": "make my system faster",
+      "category": "update"
+    },
+    {
+      "query": "programming tools",
+      "category": "dev"
+    },
+    {
+      "query": "backup my configuration",
+      "category": "config"
+    },
+    {
+      "query": "how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "how to how to install brave browser on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "how to how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "please how to install brave browser on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "please how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "how to install docker and docker-compose",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "how to install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "please install docker and docker-compose",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "please install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to add postgresql to my system",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please add postgresql to my system",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to get vscode working on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please get vscode working on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to install steam for gaming",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please install steam for gaming",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "how to enable bluetooth on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "how to enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "please enable bluetooth on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "please enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure wifi network",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure wifi network",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup automatic backups",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please setup automatic backups",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to enable flakes in configuration",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please enable flakes in configuration",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure zsh as default shell",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure zsh as default shell",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup rust development with vscode",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please setup rust development with vscode",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to create isolated python environment",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please create isolated python environment",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to nodejs with npm and yarn",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please nodejs with npm and yarn",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to haskell development setup",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please haskell development setup",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to latex environment for academic writing",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please latex environment for academic writing",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to how often should I update nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please how often should I update nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to clean up old system generations",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please clean up old system generations",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to check disk usage of nix store",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please check disk usage of nix store",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to rollback after failed update",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please rollback after failed update",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to upgrade to unstable channel",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please upgrade to unstable channel",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "setup python dev shell",
+      "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+      "category": "development"
+    },
+    {
+      "query": "I need a python environment",
+      "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+      "category": "development"
+    },
+    {
+      "query": "python development",
+      "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+      "category": "development"
+    },
+    {
+      "query": "give me python tools",
+      "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+      "category": "development"
+    },
+    {
+      "query": "install python dev environment",
+      "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+      "category": "development"
+    },
+    {
+      "query": "create rust development environment",
+      "command": "nix-shell -p rustc cargo rustfmt clippy",
+      "category": "development"
+    },
+    {
+      "query": "I need a rust environment",
+      "command": "nix-shell -p rustc cargo rustfmt clippy",
+      "category": "development"
+    },
+    {
+      "query": "rust development",
+      "command": "nix-shell -p rustc cargo rustfmt clippy",
+      "category": "development"
+    },
+    {
+      "query": "please update system",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "how to update system",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "I want to update system",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "upgrade nixos",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "please upgrade nixos",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "how to upgrade nixos",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "I want to upgrade nixos",
+      "command": "sudo nixos-rebuild switch",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "update all packages",
+      "command": "sudo nixos-rebuild switch --upgrade",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "please update all packages",
+      "command": "sudo nixos-rebuild switch --upgrade",
+      "category": "update_maintenance"
+    },
+    {
+      "query": "install kitty",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kitty"
+    },
+    {
+      "query": "lua development environment",
+      "category": "dev"
+    },
+    {
+      "query": "how to update all packages",
+      "category": "update"
+    },
+    {
+      "query": "neovim installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neovim"
+    },
+    {
+      "query": "get htop on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.htop"
+    },
+    {
+      "query": "podman configuration",
+      "category": "config",
+      "expected_command": "services.podman.enable = true"
+    },
+    {
+      "query": "python3 installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.python3"
+    },
+    {
+      "query": "turn on avahi",
+      "category": "config",
+      "expected_command": "services.avahi.enable = true"
+    },
+    {
+      "query": "php ide setup",
+      "category": "dev"
+    },
+    {
+      "query": "can you install neovim",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neovim"
+    },
+    {
+      "query": "vlc installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vlc"
+    },
+    {
+      "query": "purescript compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "go compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "configure sudo access",
+      "category": "config"
+    },
+    {
+      "query": "i need lutris",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.lutris"
+    },
+    {
+      "query": "help me install zsh",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.zsh"
+    },
+    {
+      "query": "setup emacs",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.emacs"
+    },
+    {
+      "query": "configure pipewire",
+      "category": "config",
+      "expected_command": "services.pipewire.enable = true"
+    },
+    {
+      "query": "get powerline on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.powerline"
+    },
+    {
+      "query": "create csharp dev shell",
+      "category": "dev"
+    },
+    {
+      "query": "i need neofetch",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neofetch"
+    },
+    {
+      "query": "list color pickers",
+      "category": "search",
+      "expected_command": "nix search color-picker"
+    },
+    {
+      "query": "develop in lua",
+      "category": "dev"
+    },
+    {
+      "query": "mysql configuration",
+      "category": "config",
+      "expected_command": "services.mysql.enable = true"
+    },
+    {
+      "query": "how to enable nextcloud",
+      "category": "config",
+      "expected_command": "services.nextcloud.enable = true"
+    },
+    {
+      "query": "download lutris",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.lutris"
+    },
+    {
+      "query": "can you install chromium",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.chromium"
+    },
+    {
+      "query": "go programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "repair nix store",
+      "category": "update"
+    },
+    {
+      "query": "install chromium",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.chromium"
+    },
+    {
+      "query": "please undo last update",
+      "category": "update"
+    },
+    {
+      "query": "setup btop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.btop"
+    },
+    {
+      "query": "download thunderbird",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.thunderbird"
+    },
+    {
+      "query": "please optimize store",
+      "category": "update"
+    },
+    {
+      "query": "alternatives to code editor",
+      "category": "search",
+      "expected_command": "nix search code-editor"
+    },
+    {
+      "query": "typescript ide setup",
+      "category": "dev"
+    },
+    {
+      "query": "help me install kubernetes",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kubernetes"
+    },
+    {
+      "query": "develop in dart",
+      "category": "dev"
+    },
+    {
+      "query": "setup discord",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.discord"
+    },
+    {
+      "query": "sublime-text installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.sublimetext"
+    },
+    {
+      "query": "develop in php",
+      "category": "dev"
+    },
+    {
+      "query": "free disk space",
+      "category": "update"
+    },
+    {
+      "query": "create scala dev shell",
+      "category": "dev"
+    },
+    {
+      "query": "setup direnv",
+      "category": "dev"
+    },
+    {
+      "query": "purescript development environment",
+      "category": "dev"
+    },
+    {
+      "query": "setup screen",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.screen"
+    },
+    {
+      "query": "show me api testing options",
+      "category": "search",
+      "expected_command": "nix search api-testing"
+    },
+    {
+      "query": "install zsh",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.zsh"
+    },
+    {
+      "query": "install traefik",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.traefik"
+    },
+    {
+      "query": "optimize store",
+      "category": "update"
+    },
+    {
+      "query": "garbage collect",
+      "category": "update"
+    },
+    {
+      "query": "can you install caddy",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.caddy"
+    },
+    {
+      "query": "fix configuration.nix has errors",
+      "category": "error"
+    },
+    {
+      "query": "fix service won't start",
+      "category": "error"
+    },
+    {
+      "query": "how to install signal-desktop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.signaldesktop"
+    },
+    {
+      "query": "dependency hell how to fix",
+      "category": "error"
+    },
+    {
+      "query": "alternatives to screen recorder",
+      "category": "search",
+      "expected_command": "nix search screen-recorder"
+    },
+    {
+      "query": "undo last update",
+      "category": "update"
+    },
+    {
+      "query": "setup nfs service",
+      "category": "config",
+      "expected_command": "services.nfs.enable = true"
+    },
+    {
+      "query": "add go to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.go"
+    },
+    {
+      "query": "perl ide setup",
+      "category": "dev"
+    },
+    {
+      "query": "install slack",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.slack"
+    },
+    {
+      "query": "can you install kubernetes",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kubernetes"
+    },
+    {
+      "query": "what text editors are available",
+      "category": "search",
+      "expected_command": "nix search text-editor"
+    },
+    {
+      "query": "turn on networkmanager",
+      "category": "config",
+      "expected_command": "services.networkmanager.enable = true"
+    },
+    {
+      "query": "python virtual environment",
+      "category": "dev"
+    },
+    {
+      "query": "add vivaldi to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vivaldi"
+    },
+    {
+      "query": "install kubernetes",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kubernetes"
+    },
+    {
+      "query": "add docker to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "swift programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "how to refresh packages",
+      "category": "update"
+    },
+    {
+      "query": "show me backup tool options",
+      "category": "search",
+      "expected_command": "nix search backup-tool"
+    },
+    {
+      "query": "help me install gimp",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gimp"
+    },
+    {
+      "query": "help me install firefox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.firefox"
+    },
+    {
+      "query": "how to install wine",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.wine"
+    },
+    {
+      "query": "download traefik",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.traefik"
+    },
+    {
+      "query": "configure nextcloud",
+      "category": "config",
+      "expected_command": "services.nextcloud.enable = true"
+    },
+    {
+      "query": "can you install slack",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.slack"
+    },
+    {
+      "query": "julia development environment",
+      "category": "dev"
+    },
+    {
+      "query": "alternatives to terminal emulator",
+      "category": "search",
+      "expected_command": "nix search terminal-emulator"
+    },
+    {
+      "query": "how to sync channels",
+      "category": "update"
+    },
+    {
+      "query": "configure ssh",
+      "category": "config",
+      "expected_command": "services.ssh.enable = true"
+    },
+    {
+      "query": "create kotlin dev shell",
+      "category": "dev"
+    },
+    {
+      "query": "fix permission denied error",
+      "category": "error"
+    },
+    {
+      "query": "enable apache",
+      "category": "config",
+      "expected_command": "services.apache.enable = true"
+    },
+    {
+      "query": "activate mysql",
+      "category": "config",
+      "expected_command": "services.mysql.enable = true"
+    },
+    {
+      "query": "what file managers are available",
+      "category": "search",
+      "expected_command": "nix search file-manager"
+    },
+    {
+      "query": "i need gcc",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gcc"
+    },
+    {
+      "query": "use nix flakes",
+      "category": "dev"
+    },
+    {
+      "query": "download powerline",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.powerline"
+    },
+    {
+      "query": "get telegram-desktop on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.telegramdesktop"
+    },
+    {
+      "query": "rollback system",
+      "category": "update"
+    },
+    {
+      "query": "i want to code in rust",
+      "category": "dev"
+    },
+    {
+      "query": "help me install thunderbird",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.thunderbird"
+    },
+    {
+      "query": "download discord",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.discord"
+    },
+    {
+      "query": "alternatives to backup tool",
+      "category": "search",
+      "expected_command": "nix search backup-tool"
+    },
+    {
+      "query": "troubleshoot network not working",
+      "category": "error"
+    },
+    {
+      "query": "mysql installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mysql"
+    },
+    {
+      "query": "nodejs installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nodejs"
+    },
+    {
+      "query": "show me web browser options",
+      "category": "search",
+      "expected_command": "nix search web-browser"
+    },
+    {
+      "query": "enable samba",
+      "category": "config",
+      "expected_command": "services.samba.enable = true"
+    },
+    {
+      "query": "setup vscode",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vscode"
+    },
+    {
+      "query": "setup firewall service",
+      "category": "config",
+      "expected_command": "services.firewall.enable = true"
+    },
+    {
+      "query": "download redis",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.redis"
+    },
+    {
+      "query": "python compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "typescript programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "get docker on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "help me install traefik",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.traefik"
+    },
+    {
+      "query": "how to install blender",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.blender"
+    },
+    {
+      "query": "download steam",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.steam"
+    },
+    {
+      "query": "develop in rust",
+      "category": "dev"
+    },
+    {
+      "query": "add rustc to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.rustc"
+    },
+    {
+      "query": "what color pickers are available",
+      "category": "search",
+      "expected_command": "nix search color-picker"
+    },
+    {
+      "query": "how to enable apache",
+      "category": "config",
+      "expected_command": "services.apache.enable = true"
+    },
+    {
+      "query": "how to install slack",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.slack"
+    },
+    {
+      "query": "how to enable fail2ban",
+      "category": "config",
+      "expected_command": "services.fail2ban.enable = true"
+    },
+    {
+      "query": "activate cups",
+      "category": "config",
+      "expected_command": "services.cups.enable = true"
+    },
+    {
+      "query": "what note takings are available",
+      "category": "search",
+      "expected_command": "nix search note-taking"
+    },
+    {
+      "query": "krita installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.krita"
+    },
+    {
+      "query": "start bluetooth service",
+      "category": "config",
+      "expected_command": "services.bluetooth.enable = true"
+    },
+    {
+      "query": "i need btop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.btop"
+    },
+    {
+      "query": "add git to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.git"
+    },
+    {
+      "query": "setup ruby development",
+      "category": "dev"
+    },
+    {
+      "query": "gimp installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gimp"
+    },
+    {
+      "query": "configure podman",
+      "category": "config",
+      "expected_command": "services.podman.enable = true"
+    },
+    {
+      "query": "what database clients are available",
+      "category": "search",
+      "expected_command": "nix search database-client"
+    },
+    {
+      "query": "show me text editor options",
+      "category": "search",
+      "expected_command": "nix search text-editor"
+    },
+    {
+      "query": "list generations",
+      "category": "update"
+    },
+    {
+      "query": "help me install mpv",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mpv"
+    },
+    {
+      "query": "turn on timesyncd",
+      "category": "config",
+      "expected_command": "services.timesyncd.enable = true"
+    },
+    {
+      "query": "get vlc on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vlc"
+    },
+    {
+      "query": "activate avahi",
+      "category": "config",
+      "expected_command": "services.avahi.enable = true"
+    },
+    {
+      "query": "activate printing",
+      "category": "config",
+      "expected_command": "services.printing.enable = true"
+    },
+    {
+      "query": "starship installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.starship"
+    },
+    {
+      "query": "install signal-desktop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.signaldesktop"
+    },
+    {
+      "query": "please rollback system",
+      "category": "update"
+    },
+    {
+      "query": "can you install python3",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.python3"
+    },
+    {
+      "query": "start docker service",
+      "category": "config",
+      "expected_command": "services.docker.enable = true"
+    },
+    {
+      "query": "install libreoffice",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.libreoffice"
+    },
+    {
+      "query": "virtualbox installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.virtualbox"
+    },
+    {
+      "query": "download inkscape",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.inkscape"
+    },
+    {
+      "query": "setup desktop environment",
+      "category": "config"
+    },
+    {
+      "query": "haskell development environment",
+      "category": "dev"
+    },
+    {
+      "query": "add neovim to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neovim"
+    },
+    {
+      "query": "how to install obs-studio",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.obsstudio"
+    },
+    {
+      "query": "c programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "nodejs with npm",
+      "category": "dev"
+    },
+    {
+      "query": "how to install redis",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.redis"
+    },
+    {
+      "query": "setup auto login",
+      "category": "config"
+    },
+    {
+      "query": "get nginx on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nginx"
+    },
+    {
+      "query": "download obs-studio",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.obsstudio"
+    },
+    {
+      "query": "what api testings are available",
+      "category": "search",
+      "expected_command": "nix search api-testing"
+    },
+    {
+      "query": "fsharp compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "search password manager",
+      "category": "search",
+      "expected_command": "nix search password-manager"
+    },
+    {
+      "query": "wine installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.wine"
+    },
+    {
+      "query": "thunderbird installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.thunderbird"
+    },
+    {
+      "query": "how to enable printing",
+      "category": "config",
+      "expected_command": "services.printing.enable = true"
+    },
+    {
+      "query": "configure syncthing",
+      "category": "config",
+      "expected_command": "services.syncthing.enable = true"
+    },
+    {
+      "query": "develop in kotlin",
+      "category": "dev"
+    },
+    {
+      "query": "zsh installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.zsh"
+    },
+    {
+      "query": "caddy installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.caddy"
+    },
+    {
+      "query": "how to install screen",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.screen"
+    },
+    {
+      "query": "list disk usage analyzers",
+      "category": "search",
+      "expected_command": "nix search disk-usage-analyzer"
+    },
+    {
+      "query": "clojure development environment",
+      "category": "dev"
+    },
+    {
+      "query": "get rustc on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.rustc"
+    },
+    {
+      "query": "i need evolution",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.evolution"
+    },
+    {
+      "query": "start pulseaudio service",
+      "category": "config",
+      "expected_command": "services.pulseaudio.enable = true"
+    },
+    {
+      "query": "configure nginx",
+      "category": "config",
+      "expected_command": "services.nginx.enable = true"
+    },
+    {
+      "query": "postgresql configuration",
+      "category": "config",
+      "expected_command": "services.postgresql.enable = true"
+    },
+    {
+      "query": "how to switch to unstable",
+      "category": "update"
+    },
+    {
+      "query": "help me install tmux",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tmux"
+    },
+    {
+      "query": "screen installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.screen"
+    },
+    {
+      "query": "find markdown editor",
+      "category": "search",
+      "expected_command": "nix search markdown-editor"
+    },
+    {
+      "query": "how to install libreoffice",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.libreoffice"
+    },
+    {
+      "query": "set hostname",
+      "category": "config"
+    },
+    {
+      "query": "install caddy",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.caddy"
+    },
+    {
+      "query": "javascript programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "install emacs",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.emacs"
+    },
+    {
+      "query": "download kdenlive",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kdenlive"
+    },
+    {
+      "query": "activate virtualbox",
+      "category": "config",
+      "expected_command": "services.virtualbox.enable = true"
+    },
+    {
+      "query": "jupyter notebook setup",
+      "category": "dev"
+    },
+    {
+      "query": "perl compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "add mpv to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mpv"
+    },
+    {
+      "query": "switch to unstable",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "show me video player options",
+      "category": "search",
+      "expected_command": "nix search video-player"
+    },
+    {
+      "query": "start xserver service",
+      "category": "config",
+      "expected_command": "services.xserver.enable = true"
+    },
+    {
+      "query": "help me install virtualbox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.virtualbox"
+    },
+    {
+      "query": "change default shell",
+      "category": "config"
+    },
+    {
+      "query": "allow broken packages",
+      "category": "config"
+    },
+    {
+      "query": "download btop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.btop"
+    },
+    {
+      "query": "develop in javascript",
+      "category": "dev"
+    },
+    {
+      "query": "setup telegram-desktop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.telegramdesktop"
+    },
+    {
+      "query": "add fish to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.fish"
+    },
+    {
+      "query": "vscode installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vscode"
+    },
+    {
+      "query": "configure display manager",
+      "category": "config"
+    },
+    {
+      "query": "activate ssh",
+      "category": "config",
+      "expected_command": "services.ssh.enable = true"
+    },
+    {
+      "query": "change timezone",
+      "category": "config"
+    },
+    {
+      "query": "setup fish",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.fish"
+    },
+    {
+      "query": "search video player",
+      "category": "search",
+      "expected_command": "nix search video-player"
+    },
+    {
+      "query": "help with broken symlinks",
+      "category": "error"
+    },
+    {
+      "query": "download krita",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.krita"
+    },
+    {
+      "query": "i need tree",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tree"
+    },
+    {
+      "query": "help me install gcc",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gcc"
+    },
+    {
+      "query": "i need vim",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vim"
+    },
+    {
+      "query": "what system monitors are available",
+      "category": "search",
+      "expected_command": "nix search system-monitor"
+    },
+    {
+      "query": "find system monitor",
+      "category": "search",
+      "expected_command": "nix search system-monitor"
+    },
+    {
+      "query": "gh installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gh"
+    },
+    {
+      "query": "turn on postgresql",
+      "category": "config",
+      "expected_command": "services.postgresql.enable = true"
+    },
+    {
+      "query": "find music player",
+      "category": "search",
+      "expected_command": "nix search music-player"
+    },
+    {
+      "query": "setup bluetooth service",
+      "category": "config",
+      "expected_command": "services.bluetooth.enable = true"
+    },
+    {
+      "query": "download starship",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.starship"
+    },
+    {
+      "query": "i want to code in cpp",
+      "category": "dev"
+    },
+    {
+      "query": "how to update configuration",
+      "category": "update"
+    },
+    {
+      "query": "i want to code in csharp",
+      "category": "dev"
+    },
+    {
+      "query": "swift development environment",
+      "category": "dev"
+    },
+    {
+      "query": "turn on scanning",
+      "category": "config",
+      "expected_command": "services.scanning.enable = true"
+    },
+    {
+      "query": "sync channels",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "resolve graphics driver issues",
+      "category": "error"
+    },
+    {
+      "query": "activate nfs",
+      "category": "config",
+      "expected_command": "services.nfs.enable = true"
+    },
+    {
+      "query": "find code editor",
+      "category": "search",
+      "expected_command": "nix search code-editor"
+    },
+    {
+      "query": "please remove unused packages",
+      "category": "update"
+    },
+    {
+      "query": "activate scanning",
+      "category": "config",
+      "expected_command": "services.scanning.enable = true"
+    },
+    {
+      "query": "haskell programming environment",
+      "category": "dev"
+    },
+    {
+      "query": "how to install evolution",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.evolution"
+    },
+    {
+      "query": "setup r development",
+      "category": "dev"
+    },
+    {
+      "query": "show me image viewer options",
+      "category": "search",
+      "expected_command": "nix search image-viewer"
+    },
+    {
+      "query": "install neofetch",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neofetch"
+    },
+    {
+      "query": "please free disk space",
+      "category": "update"
+    },
+    {
+      "query": "get alacritty on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.alacritty"
+    },
+    {
+      "query": "clojure compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "how to upgrade to latest",
+      "category": "update"
+    },
+    {
+      "query": "please list generations",
+      "category": "update"
+    },
+    {
+      "query": "download firefox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.firefox"
+    },
+    {
+      "query": "add tree to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tree"
+    },
+    {
+      "query": "download telegram-desktop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.telegramdesktop"
+    },
+    {
+      "query": "activate libvirtd",
+      "category": "config",
+      "expected_command": "services.libvirtd.enable = true"
+    },
+    {
+      "query": "download nginx",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nginx"
+    },
+    {
+      "query": "i need podman",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.podman"
+    },
+    {
+      "query": "search image viewer",
+      "category": "search",
+      "expected_command": "nix search image-viewer"
+    },
+    {
+      "query": "please previous generation",
+      "category": "update"
+    },
+    {
+      "query": "fsharp development environment",
+      "category": "dev"
+    },
+    {
+      "query": "how to enable firewall",
+      "category": "config",
+      "expected_command": "services.firewall.enable = true"
+    },
+    {
+      "query": "add user account",
+      "category": "config"
+    },
+    {
+      "query": "configure wayland",
+      "category": "config",
+      "expected_command": "services.wayland.enable = true"
+    },
+    {
+      "query": "please garbage collect",
+      "category": "update"
+    },
+    {
+      "query": "setup alacritty",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.alacritty"
+    },
+    {
+      "query": "docker development",
+      "category": "dev"
+    },
+    {
+      "query": "get brave on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "scala ide setup",
+      "category": "dev"
+    },
+    {
+      "query": "download postgresql",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.postgresql"
+    },
+    {
+      "query": "android development tools",
+      "category": "dev"
+    },
+    {
+      "query": "signal-desktop installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.signaldesktop"
+    },
+    {
+      "query": "show me password manager options",
+      "category": "search",
+      "expected_command": "nix search password-manager"
+    },
+    {
+      "query": "setup lutris",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.lutris"
+    },
+    {
+      "query": "turn on xserver",
+      "category": "config",
+      "expected_command": "services.xserver.enable = true"
+    },
+    {
+      "query": "get krita on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.krita"
+    },
+    {
+      "query": "search disk usage analyzer",
+      "category": "search",
+      "expected_command": "nix search disk-usage-analyzer"
+    },
+    {
+      "query": "setup mysql",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mysql"
+    },
+    {
+      "query": "get python3 on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.python3"
+    },
+    {
+      "query": "troubleshoot kernel panic",
+      "category": "error"
+    },
+    {
+      "query": "please repair nix store",
+      "category": "update"
+    },
+    {
+      "query": "find note taking",
+      "category": "search",
+      "expected_command": "nix search note-taking"
+    },
+    {
+      "query": "get git on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.git"
+    },
+    {
+      "query": "help me install libreoffice",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.libreoffice"
+    },
+    {
+      "query": "create dart dev shell",
+      "category": "dev"
+    },
+    {
+      "query": "get gcc on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gcc"
+    },
+    {
+      "query": "setup kdenlive",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kdenlive"
+    },
+    {
+      "query": "i need git",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.git"
+    },
+    {
+      "query": "rust cargo workspace",
+      "category": "dev"
+    },
+    {
+      "query": "list web browsers",
+      "category": "search",
+      "expected_command": "nix search web-browser"
+    },
+    {
+      "query": "how to install virtualbox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.virtualbox"
+    },
+    {
+      "query": "setup nodejs",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nodejs"
+    },
+    {
+      "query": "add chromium to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.chromium"
+    },
+    {
+      "query": "can you install inkscape",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.inkscape"
+    },
+    {
+      "query": "create python dev shell",
+      "category": "dev"
+    },
+    {
+      "query": "i need blender",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.blender"
+    },
+    {
+      "query": "redis installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.redis"
+    },
+    {
+      "query": "download vlc",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vlc"
+    },
+    {
+      "query": "how to enable timesyncd",
+      "category": "config",
+      "expected_command": "services.timesyncd.enable = true"
+    },
+    {
+      "query": "setup vim",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vim"
+    },
+    {
+      "query": "setup gh",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gh"
+    },
+    {
+      "query": "install blender",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.blender"
+    },
+    {
+      "query": "activate fail2ban",
+      "category": "config",
+      "expected_command": "services.fail2ban.enable = true"
+    },
+    {
+      "query": "find pdf reader",
+      "category": "search",
+      "expected_command": "nix search pdf-reader"
+    },
+    {
+      "query": "can you install podman",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.podman"
+    },
+    {
+      "query": "show me screen recorder options",
+      "category": "search",
+      "expected_command": "nix search screen-recorder"
+    },
+    {
+      "query": "install brave",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "obs-studio installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.obsstudio"
+    },
+    {
+      "query": "enable pipewire",
+      "category": "config",
+      "expected_command": "services.pipewire.enable = true"
+    },
+    {
+      "query": "show me task manager options",
+      "category": "search",
+      "expected_command": "nix search task-manager"
+    },
+    {
+      "query": "get inkscape on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.inkscape"
+    },
+    {
+      "query": "download tmux",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tmux"
+    },
+    {
+      "query": "can you install mpv",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mpv"
+    },
+    {
+      "query": "i need apache",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.apache"
+    },
+    {
+      "query": "fix out of disk space",
+      "category": "error"
+    },
+    {
+      "query": "i want to code in java",
+      "category": "dev"
+    },
+    {
+      "query": "how to check for updates",
+      "category": "update"
+    },
+    {
+      "query": "add mysql to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mysql"
+    },
+    {
+      "query": "please clean old generations",
+      "category": "update"
+    },
+    {
+      "query": "configure cups",
+      "category": "config",
+      "expected_command": "services.cups.enable = true"
+    },
+    {
+      "query": "help me install neofetch",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.neofetch"
+    },
+    {
+      "query": "i need steam",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.steam"
+    },
+    {
+      "query": "help me install sublime-text",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.sublimetext"
+    },
+    {
+      "query": "what pdf readers are available",
+      "category": "search",
+      "expected_command": "nix search pdf-reader"
+    },
+    {
+      "query": "setup ocaml development",
+      "category": "dev"
+    },
+    {
+      "query": "setup postgresql",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.postgresql"
+    },
+    {
+      "query": "upgrade to latest",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "how to install nginx",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nginx"
+    },
+    {
+      "query": "debug audio not working",
+      "category": "error"
+    },
+    {
+      "query": "i need go",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.go"
+    },
+    {
+      "query": "activate docker",
+      "category": "config",
+      "expected_command": "services.docker.enable = true"
+    },
+    {
+      "query": "add mongodb to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mongodb"
+    },
+    {
+      "query": "download podman",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.podman"
+    },
+    {
+      "query": "how to install go",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.go"
+    },
+    {
+      "query": "previous generation",
+      "category": "update"
+    },
+    {
+      "query": "list screenshot tools",
+      "category": "search",
+      "expected_command": "nix search screenshot-tool"
+    },
+    {
+      "query": "how to install vim",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vim"
+    },
+    {
+      "query": "resolve boot failure",
+      "category": "error"
+    },
+    {
+      "query": "enable unfree packages",
+      "category": "config"
+    },
+    {
+      "query": "add htop to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.htop"
+    },
+    {
+      "query": "list music players",
+      "category": "search",
+      "expected_command": "nix search music-player"
+    },
+    {
+      "query": "download emacs",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.emacs"
+    },
+    {
+      "query": "search database client",
+      "category": "search",
+      "expected_command": "nix search database-client"
+    },
+    {
+      "query": "alternatives to task manager",
+      "category": "search",
+      "expected_command": "nix search task-manager"
+    },
+    {
+      "query": "help me install steam",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.steam"
+    },
+    {
+      "query": "get gimp on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gimp"
+    },
+    {
+      "query": "i need htop",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.htop"
+    },
+    {
+      "query": "install rustc",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.rustc"
+    },
+    {
+      "query": "setup vivaldi",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vivaldi"
+    },
+    {
+      "query": "develop in java",
+      "category": "dev"
+    },
+    {
+      "query": "add kitty to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kitty"
+    },
+    {
+      "query": "get vivaldi on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vivaldi"
+    },
+    {
+      "query": "develop in cpp",
+      "category": "dev"
+    },
+    {
+      "query": "configure networkmanager",
+      "category": "config",
+      "expected_command": "services.networkmanager.enable = true"
+    },
+    {
+      "query": "channel update failed how to fix",
+      "category": "error"
+    },
+    {
+      "query": "ocaml development environment",
+      "category": "dev"
+    },
+    {
+      "query": "i want to code in r",
+      "category": "dev"
+    },
+    {
+      "query": "show me screenshot tool options",
+      "category": "search",
+      "expected_command": "nix search screenshot-tool"
+    },
+    {
+      "query": "get discord on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.discord"
+    },
+    {
+      "query": "i need nodejs",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.nodejs"
+    },
+    {
+      "query": "help with nixos-rebuild failed",
+      "category": "error"
+    },
+    {
+      "query": "how to install sublime-text",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.sublimetext"
+    },
+    {
+      "query": "setup powerline",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.powerline"
+    },
+    {
+      "query": "turn on virtualbox",
+      "category": "config",
+      "expected_command": "services.virtualbox.enable = true"
+    },
+    {
+      "query": "i want to code in ruby",
+      "category": "dev"
+    },
+    {
+      "query": "can you install tmux",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tmux"
+    },
+    {
+      "query": "setup pulseaudio service",
+      "category": "config",
+      "expected_command": "services.pulseaudio.enable = true"
+    },
+    {
+      "query": "i need vscode",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.vscode"
+    },
+    {
+      "query": "julia compiler and tools",
+      "category": "dev"
+    },
+    {
+      "query": "install gh",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.gh"
+    },
+    {
+      "query": "enable resolved",
+      "category": "config",
+      "expected_command": "services.resolved.enable = true"
+    },
+    {
+      "query": "i want to code in elm",
+      "category": "dev"
+    },
+    {
+      "query": "update configuration",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "update channel",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "how to update channel",
+      "category": "update"
+    },
+    {
+      "query": "elm development environment",
+      "category": "dev"
+    },
+    {
+      "query": "help me install wine",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.wine"
+    },
+    {
+      "query": "add kdenlive to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kdenlive"
+    },
+    {
+      "query": "can you install starship",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.starship"
+    },
+    {
+      "query": "list terminal emulators",
+      "category": "search",
+      "expected_command": "nix search terminal-emulator"
+    },
+    {
+      "query": "how to enable libvirtd",
+      "category": "config",
+      "expected_command": "services.libvirtd.enable = true"
+    },
+    {
+      "query": "help with display manager crashed",
+      "category": "error"
+    },
+    {
+      "query": "list file managers",
+      "category": "search",
+      "expected_command": "nix search file-manager"
+    },
+    {
+      "query": "how to install apache",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.apache"
+    },
+    {
+      "query": "enable syncthing",
+      "category": "config",
+      "expected_command": "services.syncthing.enable = true"
+    },
+    {
+      "query": "create shell.nix file",
+      "category": "dev"
+    },
+    {
+      "query": "refresh packages",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "fix package conflicts",
+      "category": "error"
+    },
+    {
+      "query": "latex writing environment",
+      "category": "dev"
+    },
+    {
+      "query": "resolved configuration",
+      "category": "config",
+      "expected_command": "services.resolved.enable = true"
+    },
+    {
+      "query": "docker installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "download alacritty",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.alacritty"
+    },
+    {
+      "query": "can you install mongodb",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mongodb"
+    },
+    {
+      "query": "setup c development",
+      "category": "dev"
+    },
+    {
+      "query": "get postgresql on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.postgresql"
+    },
+    {
+      "query": "wayland configuration",
+      "category": "config",
+      "expected_command": "services.wayland.enable = true"
+    },
+    {
+      "query": "download mongodb",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.mongodb"
+    },
+    {
+      "query": "i need fish",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.fish"
+    },
+    {
+      "query": "help me install apache",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.apache"
+    },
+    {
+      "query": "add evolution to my system",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.evolution"
+    },
+    {
+      "query": "brave installation",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "how to install tree",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.tree"
+    },
+    {
+      "query": "how to enable nginx",
+      "category": "config",
+      "expected_command": "services.nginx.enable = true"
+    },
+    {
+      "query": "setup samba service",
+      "category": "config",
+      "expected_command": "services.samba.enable = true"
+    },
+    {
+      "query": "how to install kitty",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.kitty"
+    }
+  ]
+}

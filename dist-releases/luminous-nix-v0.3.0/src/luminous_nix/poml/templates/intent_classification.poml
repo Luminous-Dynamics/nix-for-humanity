@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>NixOS Intent Classification</title>
+    <description>Classify user requests into specific NixOS command intents</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-3.5-turbo, mistral-7b, llama-2-7b</preferred-models>
+      <temperature>0.3</temperature>
+      <max-tokens>500</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="user_request">{{ user_request }}</let>
+    <let name="available_intents">{{ available_intents }}</let>
+    <let name="context">{{ context | default: {} }}</let>
+    <let name="persona">{{ persona | default: "general" }}</let>
+  </variables>
+
+  <prompt>
+    <system>
+      You are a NixOS intent classification expert.
+      Accurately classify user requests into specific command intents.
+      Be precise and consider the full context of the request.
+    </system>
+
+    <stepwise-instructions>
+      <step id="analyze_request">
+        Parse the user request to identify:
+        - Primary action verb (install, remove, search, etc.)
+        - Target objects (packages, services, configurations)
+        - Modifiers and constraints
+      </step>
+
+      <step id="match_intent">
+        Match the parsed request to available intent types:
+        {{ available_intents }}
+        
+        Consider synonyms:
+        - "uninstall" = "remove"
+        - "find" = "search"
+        - "upgrade" = "update"
+        - "info" = "status"
+      </step>
+
+      <step id="extract_entities">
+        Identify entities in the request:
+        - Package names
+        - Service names
+        - Configuration options
+        - File paths
+        - Version constraints
+      </step>
+
+      <step id="determine_confidence">
+        Assess confidence based on:
+        - Clarity of request
+        - Match quality with intent
+        - Presence of required entities
+        - Ambiguity level
+      </step>
+    </stepwise-instructions>
+
+    <examples>
+      <example>
+        <input>install firefox</input>
+        <output>
+          {
+            "intent": "install_package",
+            "confidence": 0.95,
+            "entities": {
+              "package": "firefox"
+            }
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>show me what's installed</input>
+        <output>
+          {
+            "intent": "list_installed",
+            "confidence": 0.90,
+            "entities": {}
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>I need a markdown editor</input>
+        <output>
+          {
+            "intent": "search_package",
+            "confidence": 0.85,
+            "entities": {
+              "query": "markdown editor",
+              "category": "editors"
+            }
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>analyze disk space</input>
+        <output>
+          {
+            "intent": "analyze_disk",
+            "confidence": 0.90,
+            "entities": {}
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>show network status</input>
+        <output>
+          {
+            "intent": "show_network",
+            "confidence": 0.85,
+            "entities": {}
+          }
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      {
+        "intent": "string (from available_intents)",
+        "confidence": "float (0.0-1.0)",
+        "entities": {
+          "package": "string?",
+          "service": "string?",
+          "query": "string?",
+          "category": "string?",
+          "options": "object?"
+        },
+        "alternative_intents": [
+          {
+            "intent": "string",
+            "confidence": "float"
+          }
+        ]
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="ambiguous_request">
+        Return multiple possible intents with lower confidence scores
+      </on-error>
+      <on-error type="unknown_intent">
+        Return intent "unknown" with entities extracted for manual processing
+      </on-error>
+    </error-handling>
+
+    <persona-adjustments>
+      <if condition="persona == 'grandma'">
+        <hint>Focus on simplicity, likely basic operations</hint>
+      </if>
+      <elseif condition="persona == 'developer'">
+        <hint>Expect technical terms, development tools</hint>
+      </elseif>
+      <elseif condition="persona == 'sysadmin'">
+        <hint>System-level operations, services, configuration</hint>
+      </elseif>
+    </persona-adjustments>
+  </prompt>
+</poml>

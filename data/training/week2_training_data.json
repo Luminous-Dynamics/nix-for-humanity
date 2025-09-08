@@ -1,0 +1,798 @@
+{
+  "metadata": {
+    "version": "0.2.2",
+    "collected_at": "2025-09-08T13:57:17.129959",
+    "total_queries": 164,
+    "categories": {
+      "install": 33,
+      "config": 45,
+      "dev": 36,
+      "update": 36,
+      "error": 6,
+      "search": 8
+    }
+  },
+  "queries": [
+    {
+      "query": "how to install brave browser on nixos",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "install docker and docker-compose",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "add postgresql to my system",
+      "category": "install"
+    },
+    {
+      "query": "get vscode working on nixos",
+      "category": "install"
+    },
+    {
+      "query": "install steam for gaming",
+      "category": "install"
+    },
+    {
+      "query": "enable bluetooth on nixos",
+      "category": "config",
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "configure wifi network",
+      "category": "config"
+    },
+    {
+      "query": "setup automatic backups",
+      "category": "config"
+    },
+    {
+      "query": "enable flakes in configuration",
+      "category": "config"
+    },
+    {
+      "query": "configure zsh as default shell",
+      "category": "config"
+    },
+    {
+      "query": "setup rust development with vscode",
+      "category": "dev"
+    },
+    {
+      "query": "create isolated python environment",
+      "category": "dev"
+    },
+    {
+      "query": "nodejs with npm and yarn",
+      "category": "dev"
+    },
+    {
+      "query": "haskell development setup",
+      "category": "dev"
+    },
+    {
+      "query": "latex environment for academic writing",
+      "category": "dev"
+    },
+    {
+      "query": "how often should I update nixos",
+      "category": "update"
+    },
+    {
+      "query": "clean up old system generations",
+      "category": "update"
+    },
+    {
+      "query": "check disk usage of nix store",
+      "category": "update"
+    },
+    {
+      "query": "rollback after failed update",
+      "category": "update"
+    },
+    {
+      "query": "upgrade to unstable channel",
+      "category": "update"
+    },
+    {
+      "query": "fix broken nixos configuration",
+      "category": "error"
+    },
+    {
+      "query": "recover from failed boot",
+      "category": "error"
+    },
+    {
+      "query": "debug why package won't install",
+      "category": "error"
+    },
+    {
+      "query": "resolve channel update errors",
+      "category": "error"
+    },
+    {
+      "query": "fix permission denied errors",
+      "category": "error"
+    },
+    {
+      "query": "find package for pdf editing",
+      "category": "search"
+    },
+    {
+      "query": "search for video players",
+      "category": "search"
+    },
+    {
+      "query": "what markdown editors are available",
+      "category": "search"
+    },
+    {
+      "query": "find alternative to photoshop",
+      "category": "search"
+    },
+    {
+      "query": "search database management tools",
+      "category": "search"
+    },
+    {
+      "query": "nix-env -iA not working",
+      "category": "error"
+    },
+    {
+      "query": "home-manager installation steps",
+      "category": "install"
+    },
+    {
+      "query": "configure graphics drivers nvidia",
+      "category": "config"
+    },
+    {
+      "query": "setup printer and scanner",
+      "category": "config"
+    },
+    {
+      "query": "enable virtualbox or kvm",
+      "category": "config"
+    },
+    {
+      "query": "use nix flakes for project",
+      "category": "dev"
+    },
+    {
+      "query": "setup distributed builds",
+      "category": "config"
+    },
+    {
+      "query": "configure remote builders",
+      "category": "config"
+    },
+    {
+      "query": "enable experimental features",
+      "category": "config"
+    },
+    {
+      "query": "setup binary cache",
+      "category": "config"
+    },
+    {
+      "query": "add user to system",
+      "category": "config"
+    },
+    {
+      "query": "configure firewall rules",
+      "category": "config"
+    },
+    {
+      "query": "setup ssh server",
+      "category": "config"
+    },
+    {
+      "query": "enable docker service",
+      "category": "config"
+    },
+    {
+      "query": "configure nginx web server",
+      "category": "config"
+    },
+    {
+      "query": "list installed packages",
+      "category": "search",
+      "expected_command": "nix-env -q"
+    },
+    {
+      "query": "remove unused packages",
+      "category": "update"
+    },
+    {
+      "query": "pin package version",
+      "category": "config"
+    },
+    {
+      "query": "override package attributes",
+      "category": "config"
+    },
+    {
+      "query": "create custom package",
+      "category": "dev"
+    },
+    {
+      "query": "install firefox",
+      "category": "install",
+      "expected_command": "nix-env -iA nixos.firefox"
+    },
+    {
+      "query": "search text editor",
+      "category": "search",
+      "expected_command": "nix search editor"
+    },
+    {
+      "query": "update system",
+      "category": "update",
+      "expected_command": "sudo nixos-rebuild switch"
+    },
+    {
+      "query": "create python development environment",
+      "category": "dev",
+      "expected_command": "nix-shell -p python3 python3Packages.pip"
+    },
+    {
+      "query": "setup rust dev shell",
+      "category": "dev",
+      "expected_command": "nix-shell -p rustc cargo"
+    },
+    {
+      "query": "nodejs development environment",
+      "category": "dev"
+    },
+    {
+      "query": "clean old generations",
+      "category": "update",
+      "expected_command": "sudo nix-collect-garbage -d"
+    },
+    {
+      "query": "check for updates",
+      "category": "update"
+    },
+    {
+      "query": "rollback to previous",
+      "category": "update"
+    },
+    {
+      "query": "i need a web browser",
+      "category": "install"
+    },
+    {
+      "query": "something to edit code",
+      "category": "search"
+    },
+    {
+      "query": "make my system faster",
+      "category": "update"
+    },
+    {
+      "query": "programming tools",
+      "category": "dev"
+    },
+    {
+      "query": "backup my configuration",
+      "category": "config"
+    },
+    {
+      "query": "how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "how to how to install brave browser on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "how to how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "please how to install brave browser on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "please how to install brave browser on nixos on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.brave"
+    },
+    {
+      "query": "install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "how to install docker and docker-compose",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "how to install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "please install docker and docker-compose",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "please install docker and docker-compose on nixos",
+      "category": "install",
+      "synthetic": true,
+      "expected_command": "nix-env -iA nixos.docker"
+    },
+    {
+      "query": "add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to add postgresql to my system",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please add postgresql to my system",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please add postgresql to my system on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to get vscode working on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please get vscode working on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please get vscode working on nixos on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to install steam for gaming",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "how to install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please install steam for gaming",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "please install steam for gaming on nixos",
+      "category": "install",
+      "synthetic": true
+    },
+    {
+      "query": "enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "how to enable bluetooth on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "how to enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "please enable bluetooth on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "please enable bluetooth on nixos on nixos",
+      "category": "config",
+      "synthetic": true,
+      "expected_command": "services.blueman.enable = true"
+    },
+    {
+      "query": "configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure wifi network",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure wifi network",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure wifi network on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup automatic backups",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please setup automatic backups",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please setup automatic backups on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to enable flakes in configuration",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please enable flakes in configuration",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please enable flakes in configuration on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure zsh as default shell",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "how to configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure zsh as default shell",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "please configure zsh as default shell on nixos",
+      "category": "config",
+      "synthetic": true
+    },
+    {
+      "query": "setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup rust development with vscode",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please setup rust development with vscode",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please setup rust development with vscode on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to create isolated python environment",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please create isolated python environment",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please create isolated python environment on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to nodejs with npm and yarn",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please nodejs with npm and yarn",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please nodejs with npm and yarn on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to haskell development setup",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please haskell development setup",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please haskell development setup on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to latex environment for academic writing",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how to latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please latex environment for academic writing",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "please latex environment for academic writing on nixos",
+      "category": "dev",
+      "synthetic": true
+    },
+    {
+      "query": "how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to how often should I update nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please how often should I update nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please how often should I update nixos on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to clean up old system generations",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please clean up old system generations",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please clean up old system generations on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to check disk usage of nix store",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please check disk usage of nix store",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please check disk usage of nix store on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to rollback after failed update",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please rollback after failed update",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please rollback after failed update on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to upgrade to unstable channel",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "how to upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please upgrade to unstable channel",
+      "category": "update",
+      "synthetic": true
+    },
+    {
+      "query": "please upgrade to unstable channel on nixos",
+      "category": "update",
+      "synthetic": true
+    }
+  ]
+}

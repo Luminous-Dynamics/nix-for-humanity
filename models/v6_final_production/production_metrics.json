@@ -1,0 +1,43 @@
+{
+  "production": {
+    "total_queries": 12,
+    "avg_latency_ms": 0.5435209715056748,
+    "p95_latency_ms": 0,
+    "p99_latency_ms": 0,
+    "cache_hit_rate": 0.52,
+    "active_learning_improvements": 0,
+    "estimated_accuracy": 0.9629990369999999,
+    "uptime_seconds": 0.01997542381286621,
+    "queries_per_second": 600.7381927121254
+  },
+  "core_system": {
+    "total_queries": 25,
+    "cache_hit_rate": 0.52,
+    "specialist_rate": 0.24,
+    "transformer_rate": 0.24,
+    "ensemble_rate": 0.0,
+    "fallback_rate": 0.0,
+    "avg_latency_ms": 0.5891999999999998,
+    "cache_size": 12,
+    "estimated_accuracy": 0.9712000000000001
+  },
+  "active_learning": {
+    "total_feedback": 2,
+    "positive_rate": 0.5,
+    "corrections_applied": 2,
+    "accuracy_improvement": -0.45999999999999996,
+    "patterns_learned": 0,
+    "avg_pattern_success": null,
+    "most_used_pattern_count": null,
+    "confidence_adjustments": 2,
+    "recent_feedback_count": 2
+  },
+  "summary": {
+    "estimated_accuracy": 0.9629990369999999,
+    "avg_latency_ms": 0.5435209715056748,
+    "cache_hit_rate": 0.52,
+    "queries_per_second": 600.7381927121254,
+    "total_queries": 12,
+    "uptime_hours": 5.548728836907281e-06
+  }
+}

@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""
+🚀 REAL Luminous Nix - Actually executes NixOS commands!
+
+This is the simplified, working version that uses the real backend.
+No more mocks, no more fake responses - real NixOS integration.
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add src to path
+src_path = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(src_path))
+
+# Import the real backend and intent recognition
+from luminous_nix.core.backend_real import RealNixBackend
+from luminous_nix.core.intents import Intent, IntentType, IntentRecognizer
+
+def print_help():
+    """Print help message"""
+    print("""
+Luminous Nix v0.1.0-alpha - Natural Language NixOS (REAL VERSION)
+
+USAGE:
+    ask-nix-real <command> [options]
+
+WORKING COMMANDS:
+    help                    - Show this help
+    list                   - List installed packages
+    search <package>       - Search for packages
+    install <package>      - Install a package (dry-run by default)
+    remove <package>       - Remove a package (dry-run by default)
+    info [package]        - Show package or system info
+
+OPTIONS:
+    --execute              - Actually execute install/remove (careful!)
+    --dry-run              - Preview only (default for modify commands)
+    --verbose              - Show detailed output
+
+EXAMPLES:
+    ask-nix-real help
+    ask-nix-real list
+    ask-nix-real search firefox
+    ask-nix-real install vim --dry-run
+    ask-nix-real info
+
+STATUS: Alpha - Basic functionality only. Real NixOS commands executed!
+""")
+
+def parse_command(args):
+    """Parse command line arguments into intent"""
+    if not args:
+        return None
+    
+    command = args[0].lower()
+    
+    # Map commands to intent types
+    if command in ['help', '--help', '-h']:
+        return Intent(
+            type=IntentType.HELP,
+            entities={},
+            confidence=1.0,
+            raw_text=' '.join(args)
+        )
+    
+    elif command in ['list', 'ls', 'installed']:
+        return Intent(
+            type=IntentType.LIST_INSTALLED,
+            entities={},
+            confidence=1.0,
+            raw_text=' '.join(args)
+        )
+    
+    elif command in ['search', 'find', 'query']:
+        if len(args) > 1:
+            package = ' '.join(args[1:])
+            return Intent(
+                type=IntentType.SEARCH_PACKAGE,
+                entities={'package': package},
+                confidence=1.0,
+                raw_text=' '.join(args)
+            )
+        else:
+            print("Error: Please specify what to search for")
+            return None
+    
+    elif command in ['install', 'add', 'get']:
+        if len(args) > 1:
+            package = args[1]
+            return Intent(
+                type=IntentType.INSTALL_PACKAGE,
+                entities={'package': package},
+                confidence=1.0,
+                raw_text=' '.join(args)
+            )
+        else:
+            print("Error: Please specify a package to install")
+            return None
+    
+    elif command in ['remove', 'uninstall', 'delete']:
+        if len(args) > 1:
+            package = args[1]
+            return Intent(
+                type=IntentType.REMOVE_PACKAGE,
+                entities={'package': package},
+                confidence=1.0,
+                raw_text=' '.join(args)
+            )
+        else:
+            print("Error: Please specify a package to remove")
+            return None
+    
+    elif command in ['info', 'show', 'status']:
+        package = args[1] if len(args) > 1 else None
+        return Intent(
+            type=IntentType.CHECK_STATUS if not package else IntentType.SHOW_CONFIG,
+            entities={'package': package} if package else {},
+            confidence=1.0,
+            raw_text=' '.join(args)
+        )
+    
+    elif command in ['update', 'upgrade']:
+        return Intent(
+            type=IntentType.UPDATE_SYSTEM,
+            entities={},
+            confidence=1.0,
+            raw_text=' '.join(args)
+        )
+    
+    else:
+        # Try natural language recognition
+        recognizer = IntentRecognizer()
+        text = ' '.join(args)
+        intent = recognizer.recognize(text)
+        
+        if intent.type == IntentType.UNKNOWN:
+            print(f"Unknown command: {command}")
+            print("Try 'ask-nix-real help' for available commands")
+            return None
+        
+        return intent
+
+def main():
+    """Main entry point"""
+    args = sys.argv[1:]
+    
+    # Parse options
+    execute = '--execute' in args
+    dry_run = '--dry-run' in args or not execute
+    verbose = '--verbose' in args or '-v' in args
+    
+    # Remove option flags from args
+    args = [a for a in args if not a.startswith('--')]
+    
+    # Show help if no args
+    if not args:
+        print_help()
+        return 0
+    
+    # Parse the command
+    intent = parse_command(args)
+    if not intent:
+        return 1
+    
+    # Set environment for backend
+    if dry_run and intent.type in [IntentType.INSTALL_PACKAGE, IntentType.REMOVE_PACKAGE]:
+        os.environ['LUMINOUS_DRY_RUN'] = 'true'
+    elif execute:
+        os.environ['LUMINOUS_DRY_RUN'] = 'false'
+    
+    if verbose:
+        os.environ['LUMINOUS_VERBOSE'] = '1'
+    
+    # Create real backend and process
+    print("🔄 Processing with REAL NixOS backend...")
+    backend = RealNixBackend()
+    
+    try:
+        response = backend.process(intent)
+        
+        # Display response
+        if response.success:
+            # Check if this is a dry-run response
+            if "DRY RUN:" in response.text:
+                print(f"🔍 {response.text}")
+            else:
+                print(f"✅ {response.text}")
+        else:
+            print(f"❌ {response.text}")
+        
+        # Show data if available and verbose
+        if verbose and response.data:
+            print("\nDetails:")
+            for key, value in response.data.items():
+                if isinstance(value, list) and len(value) > 10:
+                    print(f"  {key}: {len(value)} items")
+                else:
+                    print(f"  {key}: {value}")
+        
+        return 0 if response.success else 1
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        if verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
