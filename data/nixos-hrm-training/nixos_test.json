@@ -1,0 +1,2077 @@
+[
+  {
+    "input": "install rustc and python312 but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between rustc and python312",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { rustc = super.rustc.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "rustc",
+        "python312"
+      ],
+      "example_id": "dep_0058"
+    }
+  },
+  {
+    "input": "configure networking for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable networking with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.networking.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "networking",
+      "example_id": "conf_0157"
+    }
+  },
+  {
+    "input": "error: attribute 'rustc' missing",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Package not found in current channel",
+      "Channel might be outdated",
+      "Update channel",
+      "Install package from updated channel"
+    ],
+    "output": "nix-channel --update && nix-env -iA nixpkgs.rustc",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "attribute 'rustc' missing",
+      "example_id": "err_0169"
+    }
+  },
+  {
+    "input": "both vscode and prometheus provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.vscode.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "vscode",
+        "prometheus"
+      ],
+      "example_id": "dep_0138"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0027"
+    }
+  },
+  {
+    "input": "install brave and sway but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between brave and sway",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { brave = super.brave.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "brave",
+        "sway"
+      ],
+      "example_id": "dep_0141"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0100"
+    }
+  },
+  {
+    "input": "both docker and clang provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.docker.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "docker",
+        "clang"
+      ],
+      "example_id": "dep_0068"
+    }
+  },
+  {
+    "input": "error: undefined variable 'var_61'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Variable not in scope",
+      "Check if import missing",
+      "Add proper import or definition",
+      "Verify syntax"
+    ],
+    "output": "Define variable in let binding or imports",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "undefined variable 'var_61'",
+      "example_id": "err_0061"
+    }
+  },
+  {
+    "input": "both elasticsearch and grafana provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.elasticsearch.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "elasticsearch",
+        "grafana"
+      ],
+      "example_id": "dep_0097"
+    }
+  },
+  {
+    "input": "error: undefined variable 'var_242'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Variable not in scope",
+      "Check if import missing",
+      "Add proper import or definition",
+      "Verify syntax"
+    ],
+    "output": "Define variable in let binding or imports",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "undefined variable 'var_242'",
+      "example_id": "err_0242"
+    }
+  },
+  {
+    "input": "optimize nixos for boot time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Reduce bootloader timeout",
+      "Minimize initrd modules",
+      "Disable unnecessary services",
+      "Optimize systemd dependencies"
+    ],
+    "output": "\nboot.loader.timeout = 1;\nboot.initrd.availableKernelModules = [ \"necessary_only\" ];\nsystemd.services.\"slow-service\".enable = false;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "boot time",
+      "example_id": "opt_0209"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0203"
+    }
+  },
+  {
+    "input": "resolve collision between grafana and redis",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.grafana.override { enableFeature = false; }) pkgs.redis ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "grafana",
+        "redis"
+      ],
+      "example_id": "dep_0132"
+    }
+  },
+  {
+    "input": "optimize nixos for network performance",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze network performance bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize network performance",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "network performance",
+      "example_id": "opt_0182"
+    }
+  },
+  {
+    "input": "setup development environment with audio",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure audio for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with audio\nservices.audio.enable = true;\nservices.audio.package = pkgs.audio;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.audio.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "audio",
+      "example_id": "conf_0077"
+    }
+  },
+  {
+    "input": "optimize nixos for boot time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Reduce bootloader timeout",
+      "Minimize initrd modules",
+      "Disable unnecessary services",
+      "Optimize systemd dependencies"
+    ],
+    "output": "\nboot.loader.timeout = 1;\nboot.initrd.availableKernelModules = [ \"necessary_only\" ];\nsystemd.services.\"slow-service\".enable = false;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "boot time",
+      "example_id": "opt_0229"
+    }
+  },
+  {
+    "input": "install neovim and grafana but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between neovim and grafana",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { neovim = super.neovim.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "neovim",
+        "grafana"
+      ],
+      "example_id": "dep_0062"
+    }
+  },
+  {
+    "input": "configure mysql for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable mysql with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.mysql.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "mysql",
+      "example_id": "conf_0211"
+    }
+  },
+  {
+    "input": "resolve collision between python312 and postgresql",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.python312.override { enableFeature = false; }) pkgs.postgresql ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "python312",
+        "postgresql"
+      ],
+      "example_id": "dep_0066"
+    }
+  },
+  {
+    "input": "optimize nixos for memory usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Tune kernel memory parameters",
+      "Enable zram compression",
+      "Reduce swappiness",
+      "Optimize cache pressure"
+    ],
+    "output": "\nboot.kernel.sysctl = {\n  \"vm.swappiness\" = 10;\n  \"vm.vfs_cache_pressure\" = 50;\n};\nzramSwap.enable = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "memory usage",
+      "example_id": "opt_0216"
+    }
+  },
+  {
+    "input": "resolve collision between chromium and clang",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.chromium.override { enableFeature = false; }) pkgs.clang ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "chromium",
+        "clang"
+      ],
+      "example_id": "dep_0036"
+    }
+  },
+  {
+    "input": "setup audio with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable audio service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.audio.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "audio",
+      "example_id": "conf_0189"
+    }
+  },
+  {
+    "input": "optimize nixos for compilation speed",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze compilation speed bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize compilation speed",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "compilation speed",
+      "example_id": "opt_0091"
+    }
+  },
+  {
+    "input": "optimize nixos for memory usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Tune kernel memory parameters",
+      "Enable zram compression",
+      "Reduce swappiness",
+      "Optimize cache pressure"
+    ],
+    "output": "\nboot.kernel.sysctl = {\n  \"vm.swappiness\" = 10;\n  \"vm.vfs_cache_pressure\" = 50;\n};\nzramSwap.enable = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "memory usage",
+      "example_id": "opt_0127"
+    }
+  },
+  {
+    "input": "error: undefined variable 'var_144'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Variable not in scope",
+      "Check if import missing",
+      "Add proper import or definition",
+      "Verify syntax"
+    ],
+    "output": "Define variable in let binding or imports",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "undefined variable 'var_144'",
+      "example_id": "err_0144"
+    }
+  },
+  {
+    "input": "setup development environment with ssh",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure ssh for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with ssh\nservices.ssh.enable = true;\nservices.ssh.package = pkgs.ssh;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.ssh.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "ssh",
+      "example_id": "conf_0046"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0046"
+    }
+  },
+  {
+    "input": "resolve collision between grafana and nodejs_18",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.grafana.override { enableFeature = false; }) pkgs.nodejs_18 ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "grafana",
+        "nodejs_18"
+      ],
+      "example_id": "dep_0157"
+    }
+  },
+  {
+    "input": "error: out of disk space",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "out of disk space",
+      "example_id": "err_0032"
+    }
+  },
+  {
+    "input": "error: undefined variable 'var_223'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Variable not in scope",
+      "Check if import missing",
+      "Add proper import or definition",
+      "Verify syntax"
+    ],
+    "output": "Define variable in let binding or imports",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "undefined variable 'var_223'",
+      "example_id": "err_0223"
+    }
+  },
+  {
+    "input": "setup docker with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable docker service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "\nvirtualisation.docker = {\n  enable = true;\n  \n  \n};",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "docker",
+      "example_id": "conf_0208"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0065"
+    }
+  },
+  {
+    "input": "both python311 and apache provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.python311.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "python311",
+        "apache"
+      ],
+      "example_id": "dep_0073"
+    }
+  },
+  {
+    "input": "configure networking for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable networking with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.networking.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "networking",
+      "example_id": "conf_0227"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0086"
+    }
+  },
+  {
+    "input": "setup development environment with mysql",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure mysql for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with mysql\nservices.mysql.enable = true;\nservices.mysql.package = pkgs.mysql;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.mysql.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "mysql",
+      "example_id": "conf_0034"
+    }
+  },
+  {
+    "input": "error: failed to build 'neovim'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "failed to build 'neovim'",
+      "example_id": "err_0098"
+    }
+  },
+  {
+    "input": "both hyprland and mongodb provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.hyprland.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "hyprland",
+        "mongodb"
+      ],
+      "example_id": "dep_0100"
+    }
+  },
+  {
+    "input": "both vscode and postgresql provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.vscode.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "vscode",
+        "postgresql"
+      ],
+      "example_id": "dep_0169"
+    }
+  },
+  {
+    "input": "install git and neovim but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between git and neovim",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { git = super.git.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "git",
+        "neovim"
+      ],
+      "example_id": "dep_0081"
+    }
+  },
+  {
+    "input": "install mysql and nodejs_20 but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between mysql and nodejs_20",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { mysql = super.mysql.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "mysql",
+        "nodejs_20"
+      ],
+      "example_id": "dep_0028"
+    }
+  },
+  {
+    "input": "setup bluetooth with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable bluetooth service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.bluetooth.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "bluetooth",
+      "example_id": "conf_0217"
+    }
+  },
+  {
+    "input": "optimize nixos for memory usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Tune kernel memory parameters",
+      "Enable zram compression",
+      "Reduce swappiness",
+      "Optimize cache pressure"
+    ],
+    "output": "\nboot.kernel.sysctl = {\n  \"vm.swappiness\" = 10;\n  \"vm.vfs_cache_pressure\" = 50;\n};\nzramSwap.enable = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "memory usage",
+      "example_id": "opt_0044"
+    }
+  },
+  {
+    "input": "error: undefined variable 'var_220'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Variable not in scope",
+      "Check if import missing",
+      "Add proper import or definition",
+      "Verify syntax"
+    ],
+    "output": "Define variable in let binding or imports",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "undefined variable 'var_220'",
+      "example_id": "err_0220"
+    }
+  },
+  {
+    "input": "install docker and gcc but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between docker and gcc",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { docker = super.docker.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "docker",
+        "gcc"
+      ],
+      "example_id": "dep_0227"
+    }
+  },
+  {
+    "input": "setup networking with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable networking service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.networking.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "networking",
+      "example_id": "conf_0192"
+    }
+  },
+  {
+    "input": "error: collision between 'postgresql' and 'neovim'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Two packages provide same file",
+      "Check file conflicts",
+      "Create overlay with priority",
+      "Rebuild configuration"
+    ],
+    "output": "Set package priority in overlay",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "collision between 'postgresql' and 'neovim'",
+      "example_id": "err_0218"
+    }
+  },
+  {
+    "input": "optimize nixos for compilation speed",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze compilation speed bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize compilation speed",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "compilation speed",
+      "example_id": "opt_0169"
+    }
+  },
+  {
+    "input": "error: permission denied",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "permission denied",
+      "example_id": "err_0204"
+    }
+  },
+  {
+    "input": "setup development environment with audio",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure audio for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with audio\nservices.audio.enable = true;\nservices.audio.package = pkgs.audio;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.audio.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "audio",
+      "example_id": "conf_0196"
+    }
+  },
+  {
+    "input": "error: out of disk space",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "out of disk space",
+      "example_id": "err_0244"
+    }
+  },
+  {
+    "input": "both cargo and elasticsearch provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.cargo.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "cargo",
+        "elasticsearch"
+      ],
+      "example_id": "dep_0214"
+    }
+  },
+  {
+    "input": "error: attribute 'postgresql' missing",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Package not found in current channel",
+      "Channel might be outdated",
+      "Update channel",
+      "Install package from updated channel"
+    ],
+    "output": "nix-channel --update && nix-env -iA nixpkgs.postgresql",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "attribute 'postgresql' missing",
+      "example_id": "err_0072"
+    }
+  },
+  {
+    "input": "install vscode and rustc but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between vscode and rustc",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { vscode = super.vscode.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "vscode",
+        "rustc"
+      ],
+      "example_id": "dep_0211"
+    }
+  },
+  {
+    "input": "both grafana and gnome provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.grafana.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "grafana",
+        "gnome"
+      ],
+      "example_id": "dep_0204"
+    }
+  },
+  {
+    "input": "resolve collision between docker and mysql",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.docker.override { enableFeature = false; }) pkgs.mysql ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "docker",
+        "mysql"
+      ],
+      "example_id": "dep_0108"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0195"
+    }
+  },
+  {
+    "input": "both podman and python312 provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.podman.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "podman",
+        "python312"
+      ],
+      "example_id": "dep_0105"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0174"
+    }
+  },
+  {
+    "input": "setup development environment with docker",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure docker for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with docker\nservices.docker.enable = true;\nservices.docker.package = pkgs.docker;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.docker.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "docker",
+      "example_id": "conf_0240"
+    }
+  },
+  {
+    "input": "configure firewall for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable firewall with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.firewall.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "firewall",
+      "example_id": "conf_0129"
+    }
+  },
+  {
+    "input": "configure firewall for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable firewall with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.firewall.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "firewall",
+      "example_id": "conf_0068"
+    }
+  },
+  {
+    "input": "resolve collision between python312 and hyprland",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.python312.override { enableFeature = false; }) pkgs.hyprland ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "python312",
+        "hyprland"
+      ],
+      "example_id": "dep_0133"
+    }
+  },
+  {
+    "input": "install python312 and nginx but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between python312 and nginx",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { python312 = super.python312.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "python312",
+        "nginx"
+      ],
+      "example_id": "dep_0172"
+    }
+  },
+  {
+    "input": "setup mysql with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable mysql service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.mysql.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "mysql",
+      "example_id": "conf_0178"
+    }
+  },
+  {
+    "input": "optimize nixos for memory usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Tune kernel memory parameters",
+      "Enable zram compression",
+      "Reduce swappiness",
+      "Optimize cache pressure"
+    ],
+    "output": "\nboot.kernel.sysctl = {\n  \"vm.swappiness\" = 10;\n  \"vm.vfs_cache_pressure\" = 50;\n};\nzramSwap.enable = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "memory usage",
+      "example_id": "opt_0175"
+    }
+  },
+  {
+    "input": "configure bluetooth for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable bluetooth with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.bluetooth.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "bluetooth",
+      "example_id": "conf_0205"
+    }
+  },
+  {
+    "input": "setup docker with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable docker service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "\nvirtualisation.docker = {\n  enable = true;\n  \n  \n};",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "docker",
+      "example_id": "conf_0060"
+    }
+  },
+  {
+    "input": "optimize nixos for boot time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Reduce bootloader timeout",
+      "Minimize initrd modules",
+      "Disable unnecessary services",
+      "Optimize systemd dependencies"
+    ],
+    "output": "\nboot.loader.timeout = 1;\nboot.initrd.availableKernelModules = [ \"necessary_only\" ];\nsystemd.services.\"slow-service\".enable = false;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "boot time",
+      "example_id": "opt_0011"
+    }
+  },
+  {
+    "input": "optimize nixos for network performance",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze network performance bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize network performance",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "network performance",
+      "example_id": "opt_0040"
+    }
+  },
+  {
+    "input": "optimize nixos for memory usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Tune kernel memory parameters",
+      "Enable zram compression",
+      "Reduce swappiness",
+      "Optimize cache pressure"
+    ],
+    "output": "\nboot.kernel.sysctl = {\n  \"vm.swappiness\" = 10;\n  \"vm.vfs_cache_pressure\" = 50;\n};\nzramSwap.enable = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "memory usage",
+      "example_id": "opt_0212"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0154"
+    }
+  },
+  {
+    "input": "setup development environment with redis",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure redis for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with redis\nservices.redis.enable = true;\nservices.redis.package = pkgs.redis;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.redis.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "redis",
+      "example_id": "conf_0195"
+    }
+  },
+  {
+    "input": "optimize nixos for battery life",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze battery life bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize battery life",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "battery life",
+      "example_id": "opt_0006"
+    }
+  },
+  {
+    "input": "optimize nixos for disk usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Enable automatic garbage collection",
+      "Delete old generations",
+      "Optimize nix store",
+      "Remove unnecessary packages"
+    ],
+    "output": "\nnix.gc = {\n  automatic = true;\n  dates = \"weekly\";\n  options = \"--delete-older-than 7d\";\n};\nnix.optimise.automatic = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "disk usage",
+      "example_id": "opt_0060"
+    }
+  },
+  {
+    "input": "install rustc and xfce but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between rustc and xfce",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { rustc = super.rustc.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "rustc",
+        "xfce"
+      ],
+      "example_id": "dep_0017"
+    }
+  },
+  {
+    "input": "resolve collision between gcc and apache",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Analyze collision cause",
+      "Identify conflicting files",
+      "Use override to disable conflicting feature",
+      "Install both packages safely"
+    ],
+    "output": "environment.systemPackages = [ (pkgs.gcc.override { enableFeature = false; }) pkgs.apache ];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "gcc",
+        "apache"
+      ],
+      "example_id": "dep_0124"
+    }
+  },
+  {
+    "input": "error: permission denied",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "permission denied",
+      "example_id": "err_0086"
+    }
+  },
+  {
+    "input": "both docker and firefox provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.docker.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "docker",
+        "firefox"
+      ],
+      "example_id": "dep_0076"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0144"
+    }
+  },
+  {
+    "input": "optimize nixos for disk usage",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Enable automatic garbage collection",
+      "Delete old generations",
+      "Optimize nix store",
+      "Remove unnecessary packages"
+    ],
+    "output": "\nnix.gc = {\n  automatic = true;\n  dates = \"weekly\";\n  options = \"--delete-older-than 7d\";\n};\nnix.optimise.automatic = true;",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "disk usage",
+      "example_id": "opt_0146"
+    }
+  },
+  {
+    "input": "configure postgresql for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable postgresql with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "\nservices.postgresql = {\n  enable = true;\n  package = pkgs.postgresql_15;\n  enableTCPIP = true;\n  authentication = pkgs.lib.mkOverride 10 ''\n    local all all trust\n    host all all 0.0.0.0/0 md5\n  '';\n};",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "postgresql",
+      "example_id": "conf_0115"
+    }
+  },
+  {
+    "input": "configure bluetooth for production",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable bluetooth with hardening",
+      "Configure resource limits",
+      "Set up monitoring",
+      "Enable backups"
+    ],
+    "output": "services.bluetooth.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "bluetooth",
+      "example_id": "conf_0241"
+    }
+  },
+  {
+    "input": "setup postgresql with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable postgresql service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "\nservices.postgresql = {\n  enable = true;\n  package = pkgs.postgresql_15;\n  \n  authentication = pkgs.lib.mkOverride 10 ''\n    local all all trust\n    \n  '';\n};",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "postgresql",
+      "example_id": "conf_0206"
+    }
+  },
+  {
+    "input": "both docker and apache provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.docker.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "docker",
+        "apache"
+      ],
+      "example_id": "dep_0174"
+    }
+  },
+  {
+    "input": "error: out of disk space",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "out of disk space",
+      "example_id": "err_0167"
+    }
+  },
+  {
+    "input": "setup audio with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable audio service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.audio.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "audio",
+      "example_id": "conf_0069"
+    }
+  },
+  {
+    "input": "setup audio with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable audio service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.audio.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "audio",
+      "example_id": "conf_0014"
+    }
+  },
+  {
+    "input": "setup mysql with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable mysql service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.mysql.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "mysql",
+      "example_id": "conf_0229"
+    }
+  },
+  {
+    "input": "optimize nixos for network performance",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze network performance bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize network performance",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "network performance",
+      "example_id": "opt_0079"
+    }
+  },
+  {
+    "input": "setup development environment with docker",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Configure docker for development",
+      "Disable strict security",
+      "Enable debug logging",
+      "Set up hot reload"
+    ],
+    "output": "\n# Development environment with docker\nservices.docker.enable = true;\nservices.docker.package = pkgs.docker;\n\nenvironment.systemPackages = with pkgs; [\n  git vim curl wget\n  nodejs python3 rustc\n];\n\n# Development settings\nservices.docker.extraConfig = ''\n  log_level = debug\n  reload_on_change = true\n'';",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "docker",
+      "example_id": "conf_0073"
+    }
+  },
+  {
+    "input": "error: permission denied",
+    "task_type": "error",
+    "reasoning_steps": [
+      "System-level issue detected",
+      "Check disk space",
+      "Verify permissions",
+      "Resolve underlying cause"
+    ],
+    "output": "Check system resources and permissions",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "permission denied",
+      "example_id": "err_0206"
+    }
+  },
+  {
+    "input": "error: collision between 'gnome' and 'podman'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Two packages provide same file",
+      "Check file conflicts",
+      "Create overlay with priority",
+      "Rebuild configuration"
+    ],
+    "output": "Set package priority in overlay",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "collision between 'gnome' and 'podman'",
+      "example_id": "err_0175"
+    }
+  },
+  {
+    "input": "error: collision between 'git' and 'apache'",
+    "task_type": "error",
+    "reasoning_steps": [
+      "Two packages provide same file",
+      "Check file conflicts",
+      "Create overlay with priority",
+      "Rebuild configuration"
+    ],
+    "output": "Set package priority in overlay",
+    "constraints": [
+      "find_root_cause",
+      "provide_fix",
+      "prevent_recurrence"
+    ],
+    "metadata": {
+      "error_type": "collision between 'git' and 'apache'",
+      "example_id": "err_0164"
+    }
+  },
+  {
+    "input": "both brave and chromium provide same binary",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Check if NixOS modules exist",
+      "Use module for primary package",
+      "Alternative package via nix-shell"
+    ],
+    "output": "programs.brave.enable = true; # Use NixOS module instead",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "brave",
+        "chromium"
+      ],
+      "example_id": "dep_0030"
+    }
+  },
+  {
+    "input": "install prometheus and hyprland but they conflict",
+    "task_type": "dependency",
+    "reasoning_steps": [
+      "Identify conflict between prometheus and hyprland",
+      "Check if packages provide same files",
+      "Create overlay to set priority",
+      "Apply overlay in configuration"
+    ],
+    "output": "nixpkgs.overlays = [(self: super: { prometheus = super.prometheus.overrideAttrs (old: { meta.priority = 5; }); })];",
+    "constraints": [
+      "must_coexist",
+      "no_conflicts",
+      "maintain_functionality"
+    ],
+    "metadata": {
+      "packages": [
+        "prometheus",
+        "hyprland"
+      ],
+      "example_id": "dep_0162"
+    }
+  },
+  {
+    "input": "optimize nixos for build time",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze build time bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize build time",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "build time",
+      "example_id": "opt_0249"
+    }
+  },
+  {
+    "input": "setup printing with SSL",
+    "task_type": "configuration",
+    "reasoning_steps": [
+      "Enable printing service",
+      "Configure SSL certificates",
+      "Set up firewall rules",
+      "Enable auto-start"
+    ],
+    "output": "services.printing.enable = true;",
+    "constraints": [
+      "secure",
+      "performant",
+      "maintainable"
+    ],
+    "metadata": {
+      "service": "printing",
+      "example_id": "conf_0185"
+    }
+  },
+  {
+    "input": "optimize nixos for network performance",
+    "task_type": "optimization",
+    "reasoning_steps": [
+      "Analyze network performance bottlenecks",
+      "Identify optimization opportunities",
+      "Apply targeted improvements",
+      "Measure results"
+    ],
+    "output": "# Optimize network performance",
+    "constraints": [
+      "improve_performance",
+      "maintain_stability",
+      "preserve_functionality"
+    ],
+    "metadata": {
+      "goal": "network performance",
+      "example_id": "opt_0226"
+    }
+  }
+]

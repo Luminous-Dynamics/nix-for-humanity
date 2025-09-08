@@ -18,7 +18,7 @@ The Nix for Humanity TUI (Terminal User Interface) is a beautiful, accessible, a
 - **10x Faster**: Direct Python-Nix API integration
 - **Real-time Progress**: See exactly what's happening
 - **No Timeouts**: Long operations handled gracefully
-- **Instant Feedback**: Sub-200ms response times
+- **2-5 seconds Feedback**: Sub-200ms response times
 
 ### 🧠 Intelligent Interaction
 - **Natural Language**: Speak like a human

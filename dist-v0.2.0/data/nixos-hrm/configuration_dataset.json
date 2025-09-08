@@ -1,0 +1,2302 @@
+[
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  },
+  {
+    "input": {
+      "request": "development environment",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure docker",
+      "configure vscode",
+      "configure git"
+    ],
+    "output": {
+      "components": [
+        "docker",
+        "vscode",
+        "git"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 4
+    }
+  },
+  {
+    "input": {
+      "request": "home media server",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure jellyfin",
+      "configure transmission",
+      "configure samba"
+    ],
+    "output": {
+      "components": [
+        "jellyfin",
+        "transmission",
+        "samba"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 6
+    }
+  },
+  {
+    "input": {
+      "request": "web server with database",
+      "constraints": [
+        "secure",
+        "performant"
+      ]
+    },
+    "reasoning_steps": [
+      "configure nginx",
+      "configure postgresql",
+      "configure firewall"
+    ],
+    "output": {
+      "components": [
+        "nginx",
+        "postgresql",
+        "firewall"
+      ],
+      "config_path": "/etc/nixos/configuration.nix",
+      "steps": 5
+    }
+  }
+]

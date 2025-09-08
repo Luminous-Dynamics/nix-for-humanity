@@ -1,0 +1,100 @@
+[
+  {
+    "query": "setup home manager",
+    "category": "home-manager",
+    "solution": "Follow: https://github.com/nix-community/home-manager",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "how to get spotify working",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.spotify",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "install brave",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.brave",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "i want to setup steam",
+    "category": "install",
+    "solution": "programs.steam.enable = true;",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "attribute not found",
+    "category": "error",
+    "solution": "Check package name with: nix search",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "get vscode in nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.vscode",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "permission denied nix",
+    "category": "error",
+    "solution": "Use sudo or add user to trusted-users",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "list available themes",
+    "category": "search",
+    "solution": "nix search nixpkgs theme",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "sound not working",
+    "category": "hardware",
+    "solution": "Check: sound.enable = true; hardware.pulseaudio.enable = true;",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "how to use flakes",
+    "category": "flakes",
+    "solution": "Add: nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "configure dotfiles with nix",
+    "category": "home-manager",
+    "solution": "Use home-manager for declarative dotfiles",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "i want to install steam",
+    "category": "install",
+    "solution": "programs.steam.enable = true;",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "disk space error nix",
+    "category": "error",
+    "solution": "Run: nix-collect-garbage -d",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "wifi not working nix",
+    "category": "hardware",
+    "solution": "Check: networking.wireless.enable or networking.networkmanager.enable",
+    "source": "variation",
+    "confidence": 0.81
+  }
+]

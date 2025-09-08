@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 from typing import Tuple, List, Optional
-End-to-End Test Runner for Nix for Humanity
+End-to-End Test Runner for Luminous Nix
 
 Runs comprehensive persona-based E2E tests to validate that all 10 core personas
 can successfully interact with the system according to their specific needs and
@@ -323,7 +323,7 @@ class E2ETestRunner:
     def _generate_text_report(self, report: Dict) -> str:
         """Generate human-readable text report"""
         lines = [
-            "🧪 Nix for Humanity - E2E Test Report",
+            "🧪 Luminous Nix - E2E Test Report",
             "=" * 50,
             f"Timestamp: {report['timestamp']}",
             f"Execution Time: {report['total_execution_time']:.2f} seconds",
@@ -369,7 +369,7 @@ class E2ETestRunner:
 
 def main():
     """Main function for running E2E tests"""
-    parser = argparse.ArgumentParser(description="Run Nix for Humanity E2E tests")
+    parser = argparse.ArgumentParser(description="Run Luminous Nix E2E tests")
     parser.add_argument("--output-dir", help="Directory for test reports")
     parser.add_argument("--quiet", action="store_true", help="Reduce output verbosity")
     parser.add_argument("--json-only", action="store_true", help="Output only JSON results")

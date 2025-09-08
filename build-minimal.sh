@@ -1,138 +1,199 @@
-#!/usr/bin/env bash
-# Minimal build script for Luminous Nix v0.1.0-alpha
-# Focuses on working components only
+#!/bin/bash
+# Build minimal Luminous Nix distribution
 
 set -e
 
-echo "🏗️ Building Minimal Luminous Nix v0.1.0-alpha"
+echo "🏗️  Building Minimal Luminous Nix Distribution"
 echo "============================================="
 
+# Configuration
+DIST_DIR="dist-minimal"
+PACKAGE_NAME="luminous-nix-minimal"
+VERSION=$(cat VERSION || echo "0.8.0")
+
 # Clean previous builds
-rm -rf dist-minimal
-mkdir -p dist-minimal
+rm -rf "$DIST_DIR"
+mkdir -p "$DIST_DIR/$PACKAGE_NAME"
 
-# Create standalone Python package
-echo "📦 Creating standalone Python package..."
-mkdir -p dist-minimal/luminous-nix
+echo "📦 Copying core files..."
 
-# Copy essential files
-cp -r src/luminous_nix dist-minimal/luminous-nix/
-cp bin/ask-nix-real dist-minimal/luminous-nix/ask-nix
-chmod +x dist-minimal/luminous-nix/ask-nix
+# Copy only essential source files
+mkdir -p "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix"
 
-# Create a minimal requirements file
-cat > dist-minimal/luminous-nix/requirements-minimal.txt << 'EOF'
-click>=8.0.0
-rich>=13.0.0
-EOF
+# Core modules (unified)
+cp -r src/luminous_nix/core "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/"
 
-# Create installation script
-cat > dist-minimal/install.sh << 'EOF'
-#!/bin/bash
-# Minimal installation script for Luminous Nix
+# Essential modules only
+for module in cli nix config utils api; do
+    if [ -d "src/luminous_nix/$module" ]; then
+        cp -r "src/luminous_nix/$module" "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/"
+    fi
+done
 
-echo "📦 Installing Luminous Nix v0.1.0-alpha (minimal)"
-echo "================================================="
-
-# Check for Python 3
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is required but not installed"
-    exit 1
+# AI module (for smart features)
+if [ -d "src/luminous_nix/ai" ]; then
+    mkdir -p "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/ai"
+    # Only copy essential AI files
+    cp src/luminous_nix/ai/__init__.py "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/ai/" 2>/dev/null || true
+    cp src/luminous_nix/ai/ollama_integration.py "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/ai/" 2>/dev/null || true
+    cp src/luminous_nix/ai/nlp.py "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/ai/" 2>/dev/null || true
 fi
 
-# Install to user's local bin
-INSTALL_DIR="$HOME/.local/bin"
-mkdir -p "$INSTALL_DIR"
+# Package init
+cp src/luminous_nix/__init__.py "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/"
+cp src/luminous_nix/types.py "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/" 2>/dev/null || true
 
-# Copy the script
-cp luminous-nix/ask-nix "$INSTALL_DIR/luminous-nix"
-chmod +x "$INSTALL_DIR/luminous-nix"
+# CLI entry point
+mkdir -p "$DIST_DIR/$PACKAGE_NAME/bin"
+cp bin/ask-nix "$DIST_DIR/$PACKAGE_NAME/bin/"
 
-# Install Python dependencies
-pip3 install --user -q click rich
+# Essential project files
+cp pyproject.toml "$DIST_DIR/$PACKAGE_NAME/"
+cp poetry.lock "$DIST_DIR/$PACKAGE_NAME/" 2>/dev/null || true
+cp README.md "$DIST_DIR/$PACKAGE_NAME/"
+cp LICENSE "$DIST_DIR/$PACKAGE_NAME/" 2>/dev/null || true
+cp VERSION "$DIST_DIR/$PACKAGE_NAME/" 2>/dev/null || true
 
-echo "✅ Installation complete!"
-echo ""
-echo "Add this to your PATH if needed:"
-echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
-echo ""
-echo "Usage:"
-echo "  luminous-nix help"
-echo "  luminous-nix list"
-echo "  luminous-nix \"install firefox\""
+echo "🧹 Cleaning up unnecessary files..."
+
+# Remove test files from distribution
+find "$DIST_DIR/$PACKAGE_NAME" -name "test_*.py" -delete
+find "$DIST_DIR/$PACKAGE_NAME" -name "*_test.py" -delete
+find "$DIST_DIR/$PACKAGE_NAME" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find "$DIST_DIR/$PACKAGE_NAME" -name "*.pyc" -delete
+
+# Remove the old duplicate files from core
+cd "$DIST_DIR/$PACKAGE_NAME/src/luminous_nix/core"
+# Remove old duplicates if they exist
+for file in backend_real.py executor.py command_executor.py nix_real_executor.py \
+           native_nix_api.py native_operations.py native_operations_advanced.py \
+           intent_pipeline.py intent_pipeline_enhanced.py intent_factory.py \
+           intent_improvement.py intent_secure_wrapper.py intent_security.py \
+           secure_intent_integration.py llm_intent_recognizer.py \
+           error_handler.py error_intelligence.py error_intelligence_ast.py \
+           error_intelligence_unified.py error_recovery.py error_translator.py \
+           educational_errors.py friendly_errors.py graceful_degradation.py \
+           responses.py response_adapter.py response_enhancer.py enhanced_output.py; do
+    rm -f "$file"
+done
+
+# Remove sacred/consciousness files
+for file in sacred_pause.py sacred_utils.py conscious_integration.py adaptive_behavior.py; do
+    rm -f "$file"
+done
+cd - > /dev/null
+
+echo "📝 Creating minimal pyproject.toml..."
+
+# Create a minimal pyproject.toml
+cat > "$DIST_DIR/$PACKAGE_NAME/pyproject.toml" << 'EOF'
+[tool.poetry]
+name = "luminous-nix"
+version = "0.8.0"
+description = "Natural Language Interface for NixOS - Minimal Distribution"
+authors = ["Luminous Dynamics"]
+readme = "README.md"
+packages = [{include = "luminous_nix", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+click = "^8.0"
+rich = "^13.0"
+requests = "^2.28"
+
+[tool.poetry.group.ai]
+optional = true
+
+[tool.poetry.group.ai.dependencies]
+ollama = "*"
+
+[tool.poetry.scripts]
+ask-nix = "luminous_nix.cli:main"
+luminous-nix = "luminous_nix.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 EOF
 
-chmod +x dist-minimal/install.sh
+echo "📋 Creating minimal README..."
 
-# Create README
-cat > dist-minimal/README.md << 'EOF'
-# Luminous Nix v0.1.0-alpha - Minimal Distribution
+cat > "$DIST_DIR/$PACKAGE_NAME/README.md" << 'EOF'
+# Luminous Nix - Minimal Distribution
 
-## What This Is
-
-A **REAL** natural language interface for NixOS that actually executes commands.
-No mocks, no fake responses - real NixOS integration.
-
-## What Works
-
-- ✅ List installed packages
-- ✅ Show help
-- ✅ System information
-- ✅ Dry-run package installation
-- ⚠️ Package search (slow but functional)
+**Natural Language Interface for NixOS**
 
 ## Installation
 
 ```bash
-./install.sh
+pip install luminous-nix
+# or
+poetry install
 ```
 
 ## Usage
 
 ```bash
-# List installed packages
-luminous-nix list
+# Search for packages
+ask-nix search firefox
+
+# Install packages
+ask-nix install vim
+
+# List installed
+ask-nix list
 
 # Get help
-luminous-nix help
-
-# Dry-run install
-luminous-nix "install vim" --dry-run
-
-# System info
-luminous-nix info
+ask-nix help
 ```
 
-## Known Limitations
+## Features
 
-This is alpha software with ~40% functionality implemented:
-- Voice interface not included (dependencies missing)
-- GUI not included (not connected)
-- Learning system not included (never implemented)
-- Search is slow (needs optimization)
+✅ **Core Features** (Included):
+- Natural language package management
+- Smart package discovery
+- Error intelligence
+- Progress indicators
+- Profile migration
 
-## The Truth
+❌ **Not Included** (Available separately):
+- GUI (experimental)
+- Voice interface
+- Consciousness features
+- Advanced learning systems
 
-This project was discovered to be 90% mocked. This release represents
-the first REAL implementation that actually executes NixOS commands.
+## Minimal by Design
 
-## Requirements
+This distribution includes only the essential components needed for natural language NixOS interaction. Additional features are available as extensions.
 
-- NixOS or Nix package manager
-- Python 3.8+
-- Basic command line knowledge
+## License
 
-## Support
-
-This is alpha software. Expect bugs. Report issues on GitHub.
+MIT
 EOF
 
-# Create tarball
-echo "📦 Creating distribution tarball..."
-cd dist-minimal
-tar czf luminous-nix-v0.1.0-alpha-minimal.tar.gz *
-cd ..
+echo "📦 Creating distribution archive..."
 
-echo "✅ Build complete!"
-echo "📦 Distribution: dist-minimal/luminous-nix-v0.1.0-alpha-minimal.tar.gz"
-echo "📏 Size: $(du -h dist-minimal/luminous-nix-v0.1.0-alpha-minimal.tar.gz | cut -f1)"
+cd "$DIST_DIR"
+tar -czf "$PACKAGE_NAME-$VERSION.tar.gz" "$PACKAGE_NAME"
+cd - > /dev/null
+
+# Calculate sizes
+SOURCE_SIZE=$(du -sh src/luminous_nix 2>/dev/null | cut -f1)
+DIST_SIZE=$(du -sh "$DIST_DIR/$PACKAGE_NAME" 2>/dev/null | cut -f1)
+ARCHIVE_SIZE=$(du -sh "$DIST_DIR/$PACKAGE_NAME-$VERSION.tar.gz" 2>/dev/null | cut -f1)
+
+echo ""
+echo "✅ Minimal distribution built successfully!"
+echo "========================================="
+echo "📊 Size Comparison:"
+echo "  Original: $SOURCE_SIZE"
+echo "  Minimal:  $DIST_SIZE"
+echo "  Archive:  $ARCHIVE_SIZE"
+echo ""
+echo "📦 Distribution: $DIST_DIR/$PACKAGE_NAME-$VERSION.tar.gz"
+echo ""
+echo "🚀 To install:"
+echo "  tar -xzf $DIST_DIR/$PACKAGE_NAME-$VERSION.tar.gz"
+echo "  cd $PACKAGE_NAME"
+echo "  poetry install"
+echo "  poetry run ask-nix help"

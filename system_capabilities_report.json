@@ -1,0 +1,213 @@
+{
+  "timestamp": "2025-09-07T04:43:57.321721",
+  "categories": {
+    "Core CLI": [
+      {
+        "test": "CLI Module",
+        "success": false,
+        "message": "\u274c CLI Module: No module named 'click'"
+      },
+      {
+        "test": "Core Engine",
+        "success": true,
+        "message": "\u2705 Core Engine"
+      },
+      {
+        "test": "Type System",
+        "success": false,
+        "message": "\u274c Type System: No module named 'luminous_nix.core.types'"
+      },
+      {
+        "test": "Nix Executor",
+        "success": false,
+        "message": "\u274c Nix Executor: No module named 'luminous_nix.nix.executor'"
+      },
+      {
+        "test": "Nix Parser",
+        "success": false,
+        "message": "\u274c Nix Parser: No module named 'luminous_nix.nix.parser'"
+      },
+      {
+        "test": "CLI Testing",
+        "success": false,
+        "message": "\u274c CLI test failed: No module named 'click'"
+      }
+    ],
+    "AI Integration": [
+      {
+        "test": "Enhanced AI",
+        "success": true,
+        "message": "\u2705 Enhanced AI"
+      },
+      {
+        "test": "Ollama Client",
+        "success": true,
+        "message": "\u2705 Ollama Client"
+      },
+      {
+        "test": "Corpus Builder",
+        "success": true,
+        "message": "\u2705 Corpus Builder"
+      },
+      {
+        "test": "Prompt Optimizer",
+        "success": false,
+        "message": "\u274c Prompt Optimizer: No module named 'luminous_nix.ai.prompt_optimizer'"
+      },
+      {
+        "test": "Personality Modes",
+        "success": true,
+        "message": "\u2705 Personality Modes"
+      },
+      {
+        "test": "Ollama Connection",
+        "success": false,
+        "message": "\u274c Ollama not running (start with: ollama serve)"
+      }
+    ],
+    "Living System (Phase A)": [
+      {
+        "test": "Self-Modifying Config",
+        "success": false,
+        "message": "\u274c Self-Modifying Config: No module named 'psutil'"
+      },
+      {
+        "test": "Community Knowledge",
+        "success": true,
+        "message": "\u2705 Community Knowledge"
+      },
+      {
+        "test": "Predictive Solver",
+        "success": false,
+        "message": "\u274c Predictive Solver: No module named 'psutil'"
+      },
+      {
+        "test": "Invisible Excellence",
+        "success": false,
+        "message": "\u274c Invisible Excellence: No module named 'psutil'"
+      },
+      {
+        "test": "Living System",
+        "success": false,
+        "message": "\u274c Living System test failed: No module named 'psutil'"
+      }
+    ],
+    "Advanced Features": [
+      {
+        "test": "ConfigDNA",
+        "success": true,
+        "message": "\u2705 ConfigDNA"
+      },
+      {
+        "test": "Quantum Config",
+        "success": false,
+        "message": "\u274c Quantum Config: No module named 'luminous_nix.ai.advanced_features"
+      },
+      {
+        "test": "Evolution Engine",
+        "success": false,
+        "message": "\u274c Evolution Engine: No module named 'luminous_nix.ai.advanced_features"
+      },
+      {
+        "test": "System Consciousness",
+        "success": false,
+        "message": "\u274c System Consciousness: No module named 'luminous_nix.ai.advanced_features"
+      },
+      {
+        "test": "POML v2 Integration",
+        "success": true,
+        "message": "\u2705 POML processor initialized"
+      }
+    ],
+    "User Interfaces": [
+      {
+        "test": "TUI Import",
+        "success": false,
+        "message": "\u274c TUI module not found (needs textual)"
+      },
+      {
+        "test": "Voice Interface",
+        "success": false,
+        "message": "\u274c Voice module not found"
+      },
+      {
+        "test": "Settings System",
+        "success": false,
+        "message": "\u26a0\ufe0f  Settings: cannot import name 'Settings' from 'luminous_nix.c"
+      }
+    ],
+    "Dependencies": [
+      {
+        "test": "Package: rich",
+        "success": true,
+        "message": "\u2705 rich available"
+      },
+      {
+        "test": "Package: typer",
+        "success": false,
+        "message": "\u274c typer not installed"
+      },
+      {
+        "test": "Package: pydantic",
+        "success": false,
+        "message": "\u274c pydantic not installed"
+      },
+      {
+        "test": "Package: requests",
+        "success": true,
+        "message": "\u2705 requests available"
+      },
+      {
+        "test": "Package: psutil",
+        "success": false,
+        "message": "\u274c psutil not installed"
+      },
+      {
+        "test": "Package: textual",
+        "success": false,
+        "message": "\u274c textual not installed"
+      },
+      {
+        "test": "Package: prompt_toolkit",
+        "success": false,
+        "message": "\u274c prompt_toolkit not installed"
+      },
+      {
+        "test": "Package: numpy",
+        "success": false,
+        "message": "\u274c numpy not installed"
+      },
+      {
+        "test": "Package: pandas",
+        "success": false,
+        "message": "\u274c pandas not installed"
+      },
+      {
+        "test": "Command: nix",
+        "success": true,
+        "message": "\u2705 nix available"
+      },
+      {
+        "test": "Command: nix-env",
+        "success": true,
+        "message": "\u2705 nix-env available"
+      },
+      {
+        "test": "Command: nixos-rebuild",
+        "success": false,
+        "message": "\u274c nixos-rebuild not found"
+      },
+      {
+        "test": "Command: ollama",
+        "success": true,
+        "message": "\u2705 ollama available"
+      },
+      {
+        "test": "Command: git",
+        "success": true,
+        "message": "\u2705 git available"
+      }
+    ]
+  },
+  "summary": {}
+}

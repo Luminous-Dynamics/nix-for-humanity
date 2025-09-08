@@ -1,0 +1,32 @@
+[package]
+name = "luminous-nix-gui"
+version = "1.0.0"
+description = "Beautiful NixOS management interface"
+authors = ["Luminous Dynamics"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = ["shell-open", "dialog", "fs-all", "process-all", "notification-all", "system-tray"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+
+# For NixOS integration
+nix = "0.27"
+reqwest = { version = "0.11", features = ["json"] }
+
+# For system monitoring
+sysinfo = "0.30"
+psutil = "3.2"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[[bin]]
+name = "luminous-nix-gui"
+path = "src/main.rs"

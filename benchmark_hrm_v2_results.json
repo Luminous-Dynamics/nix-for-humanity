@@ -1,0 +1,70 @@
+{
+  "timestamp": 1757315012.117117,
+  "benchmarks": {
+    "v1": {
+      "version": "HRM v1",
+      "avg_time_us": 11.061533333333333,
+      "median_time_us": 3.777,
+      "min_time_us": 3.151,
+      "max_time_us": 95.791,
+      "avg_confidence": 0.946,
+      "total_queries": 15
+    },
+    "v2_cold": {
+      "version": "HRM v2 (cold cache)",
+      "avg_time_us": 30.727066666666666,
+      "median_time_us": 19.101,
+      "min_time_us": 8.978,
+      "max_time_us": 120.829,
+      "avg_confidence": 0.9193333333333333,
+      "avg_accuracy": 0.9393333333333334,
+      "cache_hit_rate": 0.0,
+      "total_queries": 15,
+      "cache_hits": 0,
+      "cache_misses": 15,
+      "hit_rate": "0.0%",
+      "hot_cache_size": 15,
+      "total_cache_size": 15,
+      "pattern_count": 3,
+      "success_patterns": 7
+    },
+    "v2_warm": {
+      "version": "HRM v2 (warm cache)",
+      "avg_time_us": 2.5096,
+      "median_time_us": 2.308,
+      "min_time_us": 2.196,
+      "max_time_us": 4.269,
+      "avg_confidence": 0.9193333333333333,
+      "avg_accuracy": 0.9393333333333334,
+      "cache_hit_rate": 100.0,
+      "total_queries": 15,
+      "cache_hits": 15,
+      "cache_misses": 15,
+      "hit_rate": "50.0%",
+      "hot_cache_size": 15,
+      "total_cache_size": 15,
+      "pattern_count": 3,
+      "success_patterns": 7
+    },
+    "batch": {
+      "version": "HRM v2 (batch)",
+      "total_time_us": 233.432,
+      "avg_time_per_query_us": 15.562133333333332,
+      "queries_per_second": 64258.54210219679,
+      "total_queries": 15,
+      "avg_confidence": 0.9193333333333333,
+      "avg_accuracy": 0.9393333333333334
+    },
+    "accuracy": {
+      "v1_avg_accuracy": 94.6,
+      "v2_avg_accuracy": 93.93333333333334,
+      "improvement": -0.6666666666666599
+    }
+  },
+  "summary": {
+    "cold_speedup": "0.4x",
+    "warm_speedup": "4.4x",
+    "accuracy_gain": "+-0.7%",
+    "throughput": "64259 q/s"
+  }
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test suite for Nix for Humanity v1.0 core features
+Comprehensive test suite for Luminous Nix v1.0 core features
 
 Tests all 10 core features:
 1. Natural Language Understanding
@@ -22,7 +22,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 # Import v1.0 components
 from luminous_nix.core import (
-    NixForHumanityBackend,
+    LuminousNixBackend,
     IntentRecognizer,
     Intent,
     IntentType,
@@ -37,7 +37,7 @@ class TestV1CoreFeatures:
     @pytest.fixture
     def backend(self):
         """Create a test backend instance"""
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
     
     # Feature 1: Natural Language Understanding
     def test_natural_language_understanding(self, backend):
@@ -340,7 +340,7 @@ class TestV1Integration:
     
     @pytest.fixture
     def backend(self):
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
     
     def test_complete_user_journey(self, backend):
         """Test a complete user journey using multiple features"""
@@ -386,7 +386,7 @@ class TestV1Performance:
     
     @pytest.fixture
     def backend(self):
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
     
     def test_response_time_benchmarks(self, backend):
         """Ensure all operations meet <0.5s response time goal"""

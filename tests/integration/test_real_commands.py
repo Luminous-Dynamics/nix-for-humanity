@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Real integration tests for Nix for Humanity commands
+Real integration tests for Luminous Nix commands
 These tests verify actual command execution paths without mocks
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.engine import LuminousNixBackend
 from luminous_nix.core.intents import IntentRecognizer, IntentType
 from luminous_nix.core.executor import SafeExecutor
 from luminous_nix.core.knowledge import KnowledgeBase
@@ -27,7 +27,7 @@ class TestRealIntegration:
     @pytest.fixture
     def backend(self):
         """Create a real backend instance"""
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
     
     @pytest.fixture
     def recognizer(self):

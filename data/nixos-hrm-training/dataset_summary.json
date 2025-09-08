@@ -1,0 +1,12 @@
+{
+  "total_examples": 1000,
+  "train_examples": 800,
+  "val_examples": 100,
+  "test_examples": 100,
+  "task_distribution": {
+    "dependency": 250,
+    "configuration": 250,
+    "error": 250,
+    "optimization": 250
+  }
+}

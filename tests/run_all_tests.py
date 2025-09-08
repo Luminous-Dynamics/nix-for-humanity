@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test runner for Nix for Humanity
+Comprehensive test runner for Luminous Nix
 Runs unit tests, integration tests, and generates coverage reports
 """
 
@@ -152,7 +152,7 @@ def run_coverage(html=False, xml=False, min_coverage=95):
     # Run coverage for all test types
     cmd = [
         'coverage', 'run',
-        '--source', str(SRC_DIR / 'nix_for_humanity'),
+        '--source', str(SRC_DIR / 'luminous_nix'),
         '--omit', '*/tests/*,*/__pycache__/*,*/venv/*,*/tui/*',
         '-m', 'unittest', 'discover',
         '-s', str(TESTS_DIR),
@@ -306,7 +306,7 @@ def run_benchmarks():
 def main():
     """Main test runner"""
     parser = argparse.ArgumentParser(
-        description='Comprehensive test runner for Nix for Humanity'
+        description='Comprehensive test runner for Luminous Nix'
     )
     
     parser.add_argument(
@@ -377,7 +377,7 @@ def main():
     exit_code = 0
     
     # Print main header
-    print_header("Nix for Humanity Test Suite")
+    print_header("Luminous Nix Test Suite")
     print(f"Project root: {PROJECT_ROOT}")
     print(f"Source directory: {SRC_DIR}")
     print(f"Tests directory: {TESTS_DIR}")

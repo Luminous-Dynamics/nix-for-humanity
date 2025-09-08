@@ -1,0 +1,35 @@
+FROM gemma3:1b
+
+TEMPLATE """Generate NixOS configuration for: {{ .Prompt }}
+Configuration:"""
+
+SYSTEM """You are a NixOS configuration expert. Generate valid Nix configuration snippets.
+Output format: Valid Nix code that can be added to configuration.nix
+Include comments explaining each section."""
+
+PARAMETER temperature 0.5
+PARAMETER top_p 0.7
+
+MESSAGE user web server with nginx
+MESSAGE assistant # Web server configuration
+services.nginx = {
+  enable = true;
+  virtualHosts."localhost" = {
+    root = "/var/www";
+    locations."/" = {
+      index = "index.html";
+    };
+  };
+};
+networking.firewall.allowedTCPPorts = [ 80 443 ];
+
+MESSAGE user development environment for rust
+MESSAGE assistant # Rust development environment
+environment.systemPackages = with pkgs; [
+  rustc
+  cargo
+  rustfmt
+  rust-analyzer
+  pkg-config
+  openssl
+];

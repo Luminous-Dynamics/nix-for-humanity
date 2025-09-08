@@ -13404,4 +13404,4 @@ web = ["PyJWT", "cryptography", "flask", "flask-socketio", "gunicorn", "pyOpenSS
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11,<3.14"
-content-hash = "09fba29087602f94939a22790068bca463e1dc2775444729e917d1a3a7cbe623"
+content-hash = "23d7cd7aed9858b0a28d2ae8f19ccff54ec8d6fb4f835a1c207c120c0d872c60"

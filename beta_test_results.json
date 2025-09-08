@@ -1,0 +1,146 @@
+{
+  "version": "0.2.0-beta",
+  "timestamp": 1757329302.9230323,
+  "results": [
+    {
+      "query": "install firefox",
+      "expected": "install",
+      "predicted": "install",
+      "correct": true,
+      "confidence": 0.95,
+      "latency_ms": 0.04728397470898926,
+      "cached": true
+    },
+    {
+      "query": "add vim to my system",
+      "expected": "install",
+      "predicted": "install",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 4.021917004138231,
+      "cached": true
+    },
+    {
+      "query": "how do I get docker",
+      "expected": "install",
+      "predicted": "install",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 10.718367004301399,
+      "cached": true
+    },
+    {
+      "query": "enable bluetooth",
+      "expected": "configure",
+      "predicted": "configure",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.323662996990606,
+      "cached": true
+    },
+    {
+      "query": "setup nginx server",
+      "expected": "configure",
+      "predicted": "configure",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 2.662401006091386,
+      "cached": true
+    },
+    {
+      "query": "configure postgresql",
+      "expected": "configure",
+      "predicted": "configure",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.367130004335195,
+      "cached": true
+    },
+    {
+      "query": "search for text editors",
+      "expected": "search",
+      "predicted": "search",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 2.6730129902716726,
+      "cached": true
+    },
+    {
+      "query": "find python packages",
+      "expected": "search",
+      "predicted": "search",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.497500001685694,
+      "cached": true
+    },
+    {
+      "query": "what databases are available",
+      "expected": "search",
+      "predicted": "search",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.6533809907268733,
+      "cached": true
+    },
+    {
+      "query": "error collision between packages",
+      "expected": "error",
+      "predicted": "error",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.4539949847385287,
+      "cached": true
+    },
+    {
+      "query": "attribute not found",
+      "expected": "error",
+      "predicted": "error",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 3.9813080220483243,
+      "cached": true
+    },
+    {
+      "query": "update nixos",
+      "expected": "update",
+      "predicted": "install",
+      "correct": false,
+      "confidence": 0.46591636538505554,
+      "latency_ms": 5.209733993979171,
+      "cached": false
+    },
+    {
+      "query": "upgrade system",
+      "expected": "update",
+      "predicted": "update",
+      "correct": true,
+      "confidence": 0.7,
+      "latency_ms": 2.1768180013168603,
+      "cached": true
+    },
+    {
+      "query": "create python shell",
+      "expected": "shell",
+      "predicted": "install",
+      "correct": false,
+      "confidence": 0.4659169912338257,
+      "latency_ms": 3.4936610027216375,
+      "cached": false
+    },
+    {
+      "query": "rust development environment",
+      "expected": "shell",
+      "predicted": "install",
+      "correct": false,
+      "confidence": 0.46592196822166443,
+      "latency_ms": 3.272571018896997,
+      "cached": false
+    }
+  ],
+  "summary": {
+    "accuracy": 0.8,
+    "avg_latency_ms": 3.703516199796771,
+    "cache_hit_rate": 0.8
+  }
+}

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>Multi-Step System Diagnostic</title>
+    <description>Orchestrate multiple AI agents for comprehensive system diagnosis</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+  </metadata>
+
+  <variables>
+    <let name="system_state">{{ system_state }}</let>
+    <let name="issue_description">{{ issue_description }}</let>
+    <let name="diagnostic_depth">{{ diagnostic_depth | default: "standard" }}</let>
+  </variables>
+
+  <orchestration>
+    <workflow type="sequential">
+      
+      <!-- Step 1: Initial Assessment -->
+      <step id="initial_assessment">
+        <agent>error_classifier</agent>
+        <input>
+          <issue>{{ issue_description }}</issue>
+          <context>{{ system_state }}</context>
+        </input>
+        <output name="error_category" />
+        <output name="severity_level" />
+        <output name="affected_components" />
+      </step>
+
+      <!-- Step 2: Parallel Deep Analysis -->
+      <step id="deep_analysis">
+        <parallel>
+          <!-- Configuration Analysis -->
+          <agent id="config_analyzer">
+            <template>config_analysis.poml</template>
+            <input>
+              <config_content>{{ system_state.configuration }}</config_content>
+              <focus_areas>{{ affected_components }}</focus_areas>
+            </input>
+            <output name="config_issues" />
+          </agent>
+
+          <!-- Package Dependency Check -->
+          <agent id="dependency_checker">
+            <template>package_discovery.poml</template>
+            <input>
+              <check_mode>dependency_validation</check_mode>
+              <packages>{{ system_state.installed_packages }}</packages>
+            </input>
+            <output name="dependency_issues" />
+          </agent>
+
+          <!-- System Health Check -->
+          <agent id="health_checker">
+            <custom>
+              <prompt>
+                Analyze system health metrics:
+                - Resource usage patterns
+                - Service status anomalies
+                - Log error frequencies
+                - Performance bottlenecks
+              </prompt>
+            </custom>
+            <input>
+              <metrics>{{ system_state.metrics }}</metrics>
+              <logs>{{ system_state.recent_logs }}</logs>
+            </input>
+            <output name="health_issues" />
+          </agent>
+        </parallel>
+      </step>
+
+      <!-- Step 3: Solution Synthesis -->
+      <step id="solution_synthesis">
+        <agent>solution_generator</agent>
+        <input>
+          <error_category>{{ error_category }}</error_category>
+          <config_issues>{{ config_issues }}</config_issues>
+          <dependency_issues>{{ dependency_issues }}</dependency_issues>
+          <health_issues>{{ health_issues }}</health_issues>
+        </input>
+        <conditional>
+          <if condition="severity_level == 'critical'">
+            <priority>immediate_action</priority>
+            <include_rollback>true</include_rollback>
+          </if>
+          <elseif condition="severity_level == 'warning'">
+            <priority>scheduled_maintenance</priority>
+            <include_alternatives>true</include_alternatives>
+          </elseif>
+        </conditional>
+        <output name="solution_plan" />
+      </step>
+
+      <!-- Step 4: Validation -->
+      <step id="validation">
+        <agent>solution_validator</agent>
+        <input>
+          <proposed_solution>{{ solution_plan }}</proposed_solution>
+          <system_constraints>{{ system_state.constraints }}</system_constraints>
+        </input>
+        <retry on_fail="true" max_attempts="3">
+          <on_retry>
+            <modify_input>
+              <add_constraint>previous_attempt_failed</add_constraint>
+            </modify_input>
+          </on_retry>
+        </retry>
+        <output name="validated_solution" />
+      </step>
+
+      <!-- Step 5: Generate Execution Plan -->
+      <step id="execution_plan">
+        <agent>execution_planner</agent>
+        <template>config_generation.poml</template>
+        <input>
+          <solution>{{ validated_solution }}</solution>
+          <target_state>{{ system_state }}</target_state>
+        </input>
+        <output name="commands" />
+        <output name="configuration_changes" />
+        <output name="rollback_plan" />
+      </step>
+
+    </workflow>
+
+    <!-- Error Recovery -->
+    <error-recovery>
+      <on-step-failure step="deep_analysis">
+        <fallback>
+          <agent>basic_analyzer</agent>
+          <note>Falling back to basic analysis due to timeout</note>
+        </fallback>
+      </on-step-failure>
+      
+      <on-step-failure step="solution_synthesis">
+        <action>abort</action>
+        <return>
+          {
+            "status": "failed",
+            "reason": "Could not synthesize solution",
+            "partial_results": "{{ completed_steps }}",
+            "recommendation": "Manual intervention required"
+          }
+        </return>
+      </on-step-failure>
+    </error-recovery>
+
+    <!-- Final Output Assembly -->
+    <final-output>
+      <format>json</format>
+      <schema>
+        {
+          "diagnosis": {
+            "summary": "string",
+            "severity": "string",
+            "root_causes": ["string"],
+            "affected_components": ["string"]
+          },
+          "solution": {
+            "immediate_actions": ["string"],
+            "commands": ["string"],
+            "configuration_changes": "string",
+            "estimated_time": "string",
+            "risk_assessment": "string"
+          },
+          "rollback": {
+            "available": "boolean",
+            "commands": ["string"]
+          },
+          "monitoring": {
+            "success_indicators": ["string"],
+            "watch_for": ["string"]
+          }
+        }
+      </schema>
+    </final-output>
+
+  </orchestration>
+</poml>

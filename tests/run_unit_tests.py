@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run all unit tests for Nix for Humanity core components
+Run all unit tests for Luminous Nix core components
 """
 
 import sys
@@ -14,7 +14,7 @@ src_path = project_root / 'src'
 
 # Insert at beginning to prioritize our paths
 sys.path.insert(0, str(project_root))  # For frontends.* imports
-sys.path.insert(0, str(src_path))      # For nix_for_humanity.* imports
+sys.path.insert(0, str(src_path))      # For luminous_nix.* imports
 
 print(f"Added to Python path:")
 print(f"  Project root: {project_root}")

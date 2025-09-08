@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 import subprocess
-Comprehensive tests for NixForHumanityBackend
+Comprehensive tests for LuminousNixBackend
 
 Tests all backend functionality including:
 - Initialization and API detection
@@ -26,13 +26,13 @@ backend_path = os.path.join(project_root, 'luminous_nix')
 sys.path.insert(0, backend_path)
 
 # Import the module we're testing
-from luminous_nix.core.engine import NixForHumanityBackend, create_backend
+from luminous_nix.core.engine import LuminousNixBackend, create_backend
 from luminous_nix.api.schema import Request, Response, Result
 from luminous_nix.core.intents import Intent, IntentType
 
 
-class TestNixForHumanityBackend(unittest.TestCase):
-    """Test the NixForHumanityBackend class."""
+class TestLuminousNixBackend(unittest.TestCase):
+    """Test the LuminousNixBackend class."""
     
     def setUp(self):
         """Set up test fixtures."""
@@ -55,7 +55,7 @@ class TestNixForHumanityBackend(unittest.TestCase):
         
         # Create backend instance
         self.progress_callback = Mock()
-        self.backend = NixForHumanityBackend(self.progress_callback)
+        self.backend = LuminousNixBackend(self.progress_callback)
     
     def tearDown(self):
         """Clean up test fixtures."""
@@ -73,11 +73,11 @@ class TestNixForHumanityBackend(unittest.TestCase):
     def test_init_nixos_api_with_path(self):
         """Test nixos API initialization when path is found."""
         # Create a new backend with mocked path finding
-        with patch('core.backend.NixForHumanityBackend._find_nixos_rebuild_path') as mock_find:
+        with patch('core.backend.LuminousNixBackend._find_nixos_rebuild_path') as mock_find:
             mock_find.return_value = Path('/mock/path')
             
             with patch('sys.path', []) as mock_syspath:
-                backend = NixForHumanityBackend()
+                backend = LuminousNixBackend()
                 
                 # Check that path was added
                 self.assertIn('/mock/path', mock_syspath)
@@ -412,7 +412,7 @@ class TestNixForHumanityBackend(unittest.TestCase):
         progress_cb = Mock()
         backend = create_backend(progress_cb)
         
-        self.assertIsInstance(backend, NixForHumanityBackend)
+        self.assertIsInstance(backend, LuminousNixBackend)
         self.assertEqual(backend.progress_callback, progress_cb)
     
     async def test_learn_method(self):
@@ -454,7 +454,7 @@ class TestBackendAsyncIntegration(unittest.TestCase):
              patch('core.backend.SafeExecutor'), \
              patch('core.backend.KnowledgeBase'):
             
-            backend = NixForHumanityBackend()
+            backend = LuminousNixBackend()
             
             # Mock the sync process method
             with patch.object(backend, '_process_sync') as mock_sync:
