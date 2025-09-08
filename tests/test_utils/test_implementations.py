@@ -494,7 +494,8 @@ class TestBackendAPI:
                     }
             
             # Learn from interaction
-            self.learning.learn_from_interaction(
+            self.learning# learn_from_interaction removed - no learning
+# 
                 params.get('context', {}).get('user_id', 'default'),
                 {
                     'input': params.get('input'),

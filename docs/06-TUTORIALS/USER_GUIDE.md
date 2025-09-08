@@ -107,7 +107,7 @@ ask-nix --command-only "install vscode"
 - **Sub-2-second responses** - No waiting around
 - **Minimal visual clutter** - Clean, focused interface
 - **Direct answers** - Skip the explanations unless you ask
-- **Quick corrections** - Fix mistakes instantly
+- **Quick corrections** - Fix mistakes 2-5 secondsly
 
 #### Example (Maya Style)
 ```

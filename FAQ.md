@@ -36,7 +36,7 @@ poetry run ask-nix "your command"
 **A:** You're using the new Nix profile system. Luminous Nix handles this automatically! If you see this error, the fix is already implemented.
 
 ### Q: Installation is taking forever
-**A:** First time setup downloads dependencies. This is normal and only happens once. Future runs will be instant.
+**A:** First time setup downloads dependencies. This is normal and only happens once. Future runs will be 2-5 seconds.
 
 ### Q: I get "nix-shell: command not found"
 **A:** Make sure Nix is installed:

@@ -1,0 +1,93 @@
+[
+  {
+    "query": "how do I install firefox on nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.firefox",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "how do I get brave on nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.brave",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "how do I get chrome on nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.chrome",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "get home manager",
+    "category": "home-manager",
+    "solution": "Follow: https://github.com/nix-community/home-manager",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "how do I get vscode on nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.vscode",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "create nix container",
+    "category": "containers",
+    "solution": "containers.mycontainer = { ... };",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "how do I get chromium on nixos",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.chromium",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "nodejs development shell",
+    "category": "shell",
+    "solution": "nix-shell -p nodejs nodePackages.npm",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "i want to add steam",
+    "category": "install",
+    "solution": "programs.steam.enable = true;",
+    "source": "variation",
+    "confidence": 0.81
+  },
+  {
+    "query": "install docker",
+    "category": "install",
+    "solution": "nix-env -iA nixpkgs.docker",
+    "source": "synthetic",
+    "confidence": 0.7
+  },
+  {
+    "query": "graphics driver nvidia",
+    "category": "hardware",
+    "solution": "services.xserver.videoDrivers = [ \"nvidia\" ];",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "wifi not working nixos",
+    "category": "hardware",
+    "solution": "Check: networking.wireless.enable or networking.networkmanager.enable",
+    "source": "patterns",
+    "confidence": 0.9
+  },
+  {
+    "query": "setup postgresql on nix",
+    "category": "configure",
+    "solution": "services.postgresql.enable = true;",
+    "source": "variation",
+    "confidence": 0.81
+  }
+]

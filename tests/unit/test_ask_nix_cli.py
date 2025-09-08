@@ -3,7 +3,7 @@
 import subprocess
 Tests for ask-nix CLI - main entry point
 
-Tests the main CLI interface for Nix for Humanity.
+Tests the main CLI interface for Luminous Nix.
 """
 
 import unittest

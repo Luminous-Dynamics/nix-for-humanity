@@ -385,10 +385,10 @@ ask-nix voice train-wake-word "computer"
 
 Lightning-fast operations with native NixOS integration.
 
-### Native Python-Nix API
+### subprocess-based operations
 All operations now use direct API calls:
-- **10x-1500x faster** than subprocess
-- **Instant** generation listing
+- **standard speed** than subprocess
+- **2-5 seconds** generation listing
 - **Real-time** progress updates
 - **No timeouts** on long operations
 

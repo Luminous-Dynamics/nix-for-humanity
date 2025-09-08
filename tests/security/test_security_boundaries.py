@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Security Boundary Tests for Nix for Humanity
+Security Boundary Tests for Luminous Nix
 
 Tests all security boundaries to ensure the system prevents malicious input,
 protects user privacy, and maintains safe command execution.

@@ -26,7 +26,7 @@ class TestErrorIntelligenceIntegration(unittest.TestCase):
         """Create enhanced backend"""
         return EnhancedBackend({
             'learning_enabled': True,
-            'personality': PersonalityStyle.FRIENDLY
+            'personality': "friendly"
         })
     
     def test_permission_error_educational_flow(self, backend):

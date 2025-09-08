@@ -1,0 +1,639 @@
+{
+  "queries": [
+    {
+      "query": "how do I install firefox on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "install vscode in nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "add docker to my system",
+      "category": "install",
+      "solution": "services.docker.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "i want to install steam",
+      "category": "install",
+      "solution": "programs.steam.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "how to get spotify working",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.spotify",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "enable bluetooth nixos",
+      "category": "configure",
+      "solution": "hardware.bluetooth.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "setup postgresql on nixos",
+      "category": "configure",
+      "solution": "services.postgresql.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "configure nginx web server",
+      "category": "configure",
+      "solution": "services.nginx.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "enable ssh server",
+      "category": "configure",
+      "solution": "services.openssh.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "setup firewall rules",
+      "category": "configure",
+      "solution": "networking.firewall.allowedTCPPorts = [ 22 80 443 ];",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "error collision between packages",
+      "category": "error",
+      "solution": "Use priority or overlays to resolve",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "attribute not found",
+      "category": "error",
+      "solution": "Check package name with: nix search",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "cannot build derivation",
+      "category": "error",
+      "solution": "Check build logs: nix log /nix/store/...",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "permission denied nix",
+      "category": "error",
+      "solution": "Use sudo or add user to trusted-users",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "disk space error nix",
+      "category": "error",
+      "solution": "Run: nix-collect-garbage -d",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "search for text editor nixos",
+      "category": "search",
+      "solution": "nix search nixpkgs editor",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "find python packages",
+      "category": "search",
+      "solution": "nix search nixpkgs python",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "list available themes",
+      "category": "search",
+      "solution": "nix search nixpkgs theme",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "what databases are available",
+      "category": "search",
+      "solution": "nix search nixpkgs database",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "update nixos system",
+      "category": "update",
+      "solution": "sudo nixos-rebuild switch --upgrade",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "rollback to previous generation",
+      "category": "rollback",
+      "solution": "sudo nixos-rebuild switch --rollback",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "clean up old generations",
+      "category": "cleanup",
+      "solution": "sudo nix-collect-garbage -d",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "check system generation",
+      "category": "info",
+      "solution": "nixos-rebuild list-generations",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "create python dev environment",
+      "category": "shell",
+      "solution": "nix-shell -p python3 python3Packages.pip",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "setup rust development",
+      "category": "shell",
+      "solution": "nix-shell -p rustc cargo",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "nodejs development shell",
+      "category": "shell",
+      "solution": "nix-shell -p nodejs nodePackages.npm",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "c++ development environment",
+      "category": "shell",
+      "solution": "nix-shell -p gcc gnumake",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "wifi not working nixos",
+      "category": "hardware",
+      "solution": "Check: networking.wireless.enable or networking.networkmanager.enable",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "sound not working",
+      "category": "hardware",
+      "solution": "Check: sound.enable = true; hardware.pulseaudio.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "graphics driver nvidia",
+      "category": "hardware",
+      "solution": "services.xserver.videoDrivers = [ \"nvidia\" ];",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "touchpad not working",
+      "category": "hardware",
+      "solution": "services.xserver.libinput.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "how to use flakes",
+      "category": "flakes",
+      "solution": "Add: nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "create nix flake",
+      "category": "flakes",
+      "solution": "nix flake init",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "update flake inputs",
+      "category": "flakes",
+      "solution": "nix flake update",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "install home manager",
+      "category": "home-manager",
+      "solution": "Follow: https://github.com/nix-community/home-manager",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "configure dotfiles with nix",
+      "category": "home-manager",
+      "solution": "Use home-manager for declarative dotfiles",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "run docker container nixos",
+      "category": "containers",
+      "solution": "services.docker.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "create nixos container",
+      "category": "containers",
+      "solution": "containers.mycontainer = { ... };",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "run windows vm",
+      "category": "virtualization",
+      "solution": "virtualisation.virtualbox.host.enable = true;",
+      "source": "patterns",
+      "confidence": 0.9
+    },
+    {
+      "query": "enable automatic updates",
+      "category": "configure",
+      "solution": "system.autoUpgrade.enable = true;",
+      "source": "documentation",
+      "confidence": 1.0
+    },
+    {
+      "query": "set timezone",
+      "category": "configure",
+      "solution": "time.timeZone = \"America/New_York\";",
+      "source": "documentation",
+      "confidence": 1.0
+    },
+    {
+      "query": "configure user account",
+      "category": "configure",
+      "solution": "users.users.alice = { isNormalUser = true; extraGroups = [ \"wheel\" ]; };",
+      "source": "documentation",
+      "confidence": 1.0
+    },
+    {
+      "query": "enable flatpak",
+      "category": "configure",
+      "solution": "services.flatpak.enable = true;",
+      "source": "documentation",
+      "confidence": 1.0
+    },
+    {
+      "query": "setup printing",
+      "category": "configure",
+      "solution": "services.printing.enable = true;",
+      "source": "documentation",
+      "confidence": 1.0
+    },
+    {
+      "query": "how do I add firefox on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "how do I get firefox on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "how do I setup firefox on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "how do I install firefox on nix",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "how do I install firefox ",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "install firefox",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.firefox",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install chrome",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.chrome",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get chrome on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.chrome",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install chromium",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.chromium",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get chromium on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.chromium",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install brave",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.brave",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get brave on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.brave",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install vscode",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get vscode on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install vim",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vim",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get vim on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vim",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install neovim",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.neovim",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get neovim on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.neovim",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install emacs",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.emacs",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get emacs on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.emacs",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install docker",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.docker",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get docker on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.docker",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "install podman",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.podman",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "how do I get podman on nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.podman",
+      "source": "synthetic",
+      "confidence": 0.7
+    },
+    {
+      "query": "add vscode in nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "get vscode in nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "setup vscode in nixos",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "install vscode in nix",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "install vscode ",
+      "category": "install",
+      "solution": "nix-env -iA nixpkgs.vscode",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "i want to add steam",
+      "category": "install",
+      "solution": "programs.steam.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "i want to get steam",
+      "category": "install",
+      "solution": "programs.steam.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "i want to setup steam",
+      "category": "install",
+      "solution": "programs.steam.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "enable bluetooth nix",
+      "category": "configure",
+      "solution": "hardware.bluetooth.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "setup postgresql on nix",
+      "category": "configure",
+      "solution": "services.postgresql.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "setup postgresql ",
+      "category": "configure",
+      "solution": "services.postgresql.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "search for text editor nix",
+      "category": "search",
+      "solution": "nix search nixpkgs editor",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "update nix system",
+      "category": "update",
+      "solution": "sudo nixos-rebuild switch --upgrade",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "wifi not working nix",
+      "category": "hardware",
+      "solution": "Check: networking.wireless.enable or networking.networkmanager.enable",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "add home manager",
+      "category": "home-manager",
+      "solution": "Follow: https://github.com/nix-community/home-manager",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "get home manager",
+      "category": "home-manager",
+      "solution": "Follow: https://github.com/nix-community/home-manager",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "setup home manager",
+      "category": "home-manager",
+      "solution": "Follow: https://github.com/nix-community/home-manager",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "run docker container nix",
+      "category": "containers",
+      "solution": "services.docker.enable = true;",
+      "source": "variation",
+      "confidence": 0.81
+    },
+    {
+      "query": "create nix container",
+      "category": "containers",
+      "solution": "containers.mycontainer = { ... };",
+      "source": "variation",
+      "confidence": 0.81
+    }
+  ],
+  "metadata": {
+    "total": 87,
+    "sources": {
+      "patterns": 39,
+      "variations": 24,
+      "synthetic": 19,
+      "documentation": 5
+    },
+    "categories": {
+      "configure": 13,
+      "shell": 4,
+      "home-manager": 5,
+      "virtualization": 1,
+      "rollback": 1,
+      "update": 2,
+      "hardware": 5,
+      "containers": 4,
+      "install": 37,
+      "search": 5,
+      "flakes": 3,
+      "error": 5,
+      "cleanup": 1,
+      "info": 1
+    },
+    "generated_at": "2025-09-08 05:43:48"
+  }
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 from typing import Tuple, Optional
-Performance Test Runner for Nix for Humanity
+Performance Test Runner for Luminous Nix
 
 Comprehensive performance test runner that validates:
 1. Native Python-Nix Interface performance
@@ -302,7 +302,7 @@ class PerformanceTestRunner:
     def _generate_text_report(self, report: Dict) -> str:
         """Generate human-readable text report"""
         lines = [
-            "🚀 Nix for Humanity - Performance Test Report",
+            "🚀 Luminous Nix - Performance Test Report",
             "=" * 50,
             f"Timestamp: {report['timestamp']}",
             f"Execution Time: {report['total_execution_time']:.2f} seconds",
@@ -363,7 +363,7 @@ class PerformanceTestRunner:
 
 def main():
     """Main function for running performance tests"""
-    parser = argparse.ArgumentParser(description="Run Nix for Humanity performance tests")
+    parser = argparse.ArgumentParser(description="Run Luminous Nix performance tests")
     parser.add_argument("--output-dir", help="Directory for test reports")
     parser.add_argument("--quiet", action="store_true", help="Reduce output verbosity")
     parser.add_argument("--json-only", action="store_true", help="Output only JSON results")

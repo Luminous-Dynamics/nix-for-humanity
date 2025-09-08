@@ -1,0 +1,28 @@
+#!/usr/bin/env -S poetry run python
+"""Entry point for nix-tui command."""
+
+import os
+import sys
+import asyncio
+
+# Fix for Kitty terminal compatibility
+if 'kitty' in os.environ.get('TERM', '').lower():
+    # Set TERM to xterm-256color for better compatibility
+    os.environ['TERM'] = 'xterm-256color'
+    # Ensure proper terminal settings for Textual
+    os.environ['TEXTUAL_ALLOW_SCREENSAVER'] = '0'
+
+# Check for AI mode
+if '--ai' in sys.argv or os.environ.get('LUMINOUS_AI_TUI'):
+    # Run in AI-interactible mode
+    from luminous_nix.ui.ai_interactible_tui import AICLI
+    asyncio.run(AICLI.run_interactive())
+elif '--ai-test' in sys.argv:
+    # Run AI test mode
+    from luminous_nix.ui.ai_interactible_tui import test_ai_tui
+    asyncio.run(test_ai_tui())
+else:
+    # Normal TUI mode
+    from luminous_nix.ui.main_app import NixForHumanityTUI
+    app = NixForHumanityTUI()
+    app.run()

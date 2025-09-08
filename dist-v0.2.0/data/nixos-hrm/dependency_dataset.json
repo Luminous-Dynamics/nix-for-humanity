@@ -1,0 +1,2002 @@
+[
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  },
+  {
+    "input": {
+      "packages": [
+        "nodejs_18",
+        "nodejs_20"
+      ],
+      "conflict_type": "binary collision",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "use alternatives"
+  },
+  {
+    "input": {
+      "packages": [
+        "mysql",
+        "mariadb"
+      ],
+      "conflict_type": "service port",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "configure different ports"
+  },
+  {
+    "input": {
+      "packages": [
+        "python311",
+        "python312"
+      ],
+      "conflict_type": "version",
+      "constraints": [
+        "must coexist",
+        "maintain isolation"
+      ]
+    },
+    "reasoning_steps": [
+      "identify conflict type",
+      "check compatibility matrix",
+      "generate resolution strategy",
+      "validate solution"
+    ],
+    "output": "overlay with priority"
+  }
+]

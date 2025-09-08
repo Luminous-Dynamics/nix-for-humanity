@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>NixOS Package Management Assistant</title>
+    <description>Parse and process NixOS package management requests</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-3.5-turbo, mistral-7b</preferred-models>
+      <temperature>0.4</temperature>
+      <max-tokens>800</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="query">{{ query }}</let>
+    <let name="context">{{ context | default: "" }}</let>
+    <let name="system_info">{{ system_info | default: {} }}</let>
+    <let name="installed_packages">{{ installed_packages | default: [] }}</let>
+  </variables>
+
+  <prompt>
+    <system>
+      You are a NixOS package management assistant.
+      Parse user requests and identify package operations with high accuracy.
+      Consider package names, versions, and special requirements.
+    </system>
+
+    <stepwise-instructions>
+      <step id="parse_intent">
+        Identify the primary intent:
+        1. install - Add new packages
+        2. remove - Remove existing packages
+        3. search - Find packages by name or description
+        4. update - Update packages or system
+        5. list - Show installed packages
+        6. info - Get package information
+        7. config - Configure package settings
+      </step>
+
+      <step id="extract_packages">
+        Identify package names mentioned:
+        - Look for explicit package names
+        - Identify software by common names
+        - Map common names to NixOS package names
+        
+        Common mappings:
+        - "vscode" -> "vscode" or "vscodium"
+        - "chrome" -> "chromium" or "google-chrome"
+        - "docker" -> requires virtualisation.docker.enable
+      </step>
+
+      <step id="identify_requirements">
+        Extract special requirements:
+        - Version constraints
+        - Configuration needs
+        - Service enablement
+        - User permissions
+        - Dependencies
+      </step>
+
+      <step id="check_context">
+        <if condition="context != ''">
+          Consider context information:
+          - Previous operations
+          - System constraints
+          - User preferences
+        </if>
+      </step>
+
+      <step id="validate_packages">
+        <if condition="installed_packages.length > 0">
+          Check against installed packages:
+          - Warn about already installed
+          - Identify conflicts
+          - Suggest alternatives
+        </if>
+      </step>
+    </stepwise-instructions>
+
+    <package-name-resolution>
+      <mappings>
+        <map from="vs code" to="vscode" />
+        <map from="visual studio code" to="vscode" />
+        <map from="chrome" to="chromium" />
+        <map from="firefox" to="firefox" />
+        <map from="libre office" to="libreoffice" />
+        <map from="open office" to="libreoffice" />
+        <map from="python" to="python3" />
+        <map from="node" to="nodejs" />
+      </mappings>
+    </package-name-resolution>
+
+    <examples>
+      <example>
+        <input>install firefox and thunderbird</input>
+        <output>
+          {
+            "intent": "install",
+            "packages": ["firefox", "thunderbird"],
+            "requirements": {},
+            "configuration": null,
+            "notes": []
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>set up docker for development</input>
+        <output>
+          {
+            "intent": "config",
+            "packages": ["docker", "docker-compose"],
+            "requirements": {
+              "service": "virtualisation.docker.enable = true",
+              "user_groups": ["docker"]
+            },
+            "configuration": "virtualisation.docker.enable = true;",
+            "notes": ["User needs to be added to docker group"]
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>remove old python versions</input>
+        <output>
+          {
+            "intent": "remove",
+            "packages": ["python2", "python27"],
+            "requirements": {
+              "check_dependencies": true
+            },
+            "configuration": null,
+            "notes": ["Check for packages depending on Python 2"]
+          }
+        </output>
+      </example>
+
+      <example>
+        <input>find video editing software</input>
+        <output>
+          {
+            "intent": "search",
+            "packages": [],
+            "requirements": {
+              "category": "video",
+              "keywords": ["editing", "video"]
+            },
+            "configuration": null,
+            "notes": ["Search for packages in video category"]
+          }
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      {
+        "intent": "string",
+        "packages": ["string"],
+        "requirements": {
+          "version": "string?",
+          "service": "string?",
+          "user_groups": ["string"],
+          "dependencies": ["string"],
+          "category": "string?",
+          "keywords": ["string"]
+        },
+        "configuration": "string?",
+        "notes": ["string"],
+        "warnings": ["string"]
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="unknown_package">
+        Suggest searching for the package or similar alternatives
+      </on-error>
+      <on-error type="ambiguous_intent">
+        Return most likely intent with alternatives
+      </on-error>
+      <on-error type="missing_info">
+        Include clarifying questions in notes
+      </on-error>
+    </error-handling>
+
+    <cache duration="300" key="query_intent_hash" />
+  </prompt>
+</poml>

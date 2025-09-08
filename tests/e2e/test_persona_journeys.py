@@ -19,7 +19,7 @@ from luminous_nix.core.engine import NixForHumanityBackend as Engine
 from luminous_nix.core.engine import NixForHumanityBackend as IntentEngine
 from luminous_nix.core.knowledge import KnowledgeBase
 from luminous_nix.core.executor import CommandExecutor as ExecutionEngine
-from luminous_nix.core.personality import PersonalitySystem
+from luminous_nix.core.user_preferences import get_preferences
 
 class PersonaJourney:
     """Base class for persona test journeys."""
