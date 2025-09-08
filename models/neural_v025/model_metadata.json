@@ -1,0 +1,8 @@
+{
+  "version": "0.2.5",
+  "trained_at": "2025-09-08T14:00:07.149901",
+  "final_accuracy": 0.877511158325184,
+  "epochs": 10,
+  "model_type": "LSTM bidirectional",
+  "parameters": "~500K"
+}

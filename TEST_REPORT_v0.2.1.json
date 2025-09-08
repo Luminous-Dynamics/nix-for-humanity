@@ -1,0 +1,22 @@
+{
+  "version": "v0.2.1",
+  "fix": "Development environment queries",
+  "before": {
+    "accuracy": "0%",
+    "queries_tested": 15,
+    "successes": 0
+  },
+  "after": {
+    "accuracy": "100%",
+    "queries_tested": 19,
+    "successes": 19
+  },
+  "examples": [
+    "create python development environment",
+    "setup rust dev shell",
+    "nodejs development environment",
+    "make a shell.nix",
+    "c++ compiler setup"
+  ],
+  "timestamp": 1757332054.3530462
+}

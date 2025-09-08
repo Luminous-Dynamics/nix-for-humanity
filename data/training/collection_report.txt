@@ -1,0 +1,23 @@
+============================================================
+📊 Training Data Collection Report
+============================================================
+
+Total Queries Collected: 164
+
+Queries by Category:
+  config       :   45 queries (27.4%)
+  dev          :   36 queries (22.0%)
+  update       :   36 queries (22.0%)
+  install      :   33 queries (20.1%)
+  search       :    8 queries (4.9%)
+  error        :    6 queries (3.7%)
+
+Query Sources:
+  Real queries     : 64
+  Synthetic        : 100
+
+Command Coverage:
+  With commands    : 25
+  Without commands : 139
+
+============================================================

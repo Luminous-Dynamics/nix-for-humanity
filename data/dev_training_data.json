@@ -1,0 +1,52 @@
+[
+  {
+    "query": "create python development environment",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "setup python dev shell",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "I need a python environment",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "python development",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "give me python tools",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "install python dev environment",
+    "command": "nix-shell -p python3 python3Packages.pip python3Packages.virtualenv",
+    "category": "development"
+  },
+  {
+    "query": "create rust development environment",
+    "command": "nix-shell -p rustc cargo rustfmt clippy",
+    "category": "development"
+  },
+  {
+    "query": "setup rust dev shell",
+    "command": "nix-shell -p rustc cargo rustfmt clippy",
+    "category": "development"
+  },
+  {
+    "query": "I need a rust environment",
+    "command": "nix-shell -p rustc cargo rustfmt clippy",
+    "category": "development"
+  },
+  {
+    "query": "rust development",
+    "command": "nix-shell -p rustc cargo rustfmt clippy",
+    "category": "development"
+  }
+]

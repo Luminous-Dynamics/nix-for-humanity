@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>NixOS Configuration Analysis</title>
+    <description>Analyze NixOS configuration files for patterns, issues, and improvements</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-4, claude-3, mistral-large</preferred-models>
+      <temperature>0.3</temperature>
+      <max-tokens>2000</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="config_content">{{ config_content }}</let>
+    <let name="analysis_depth">{{ analysis_depth | default: "standard" }}</let>
+    <let name="focus_areas">{{ focus_areas | default: "all" }}</let>
+  </variables>
+
+  <context>
+    <document src="nixos_best_practices.md" />
+    <document src="common_patterns.yaml" />
+  </context>
+
+  <prompt>
+    <system>
+      You are a NixOS configuration expert analyzing system configurations.
+      Focus on identifying patterns, potential issues, and optimization opportunities.
+      Provide actionable recommendations based on best practices.
+    </system>
+
+    <stepwise-instructions>
+      <step id="parse">
+        Parse the NixOS configuration to identify:
+        - System profile type (desktop, server, development, etc.)
+        - Enabled services and their configurations
+        - Package selections and categories
+        - Security settings and hardening measures
+        - Performance optimizations
+      </step>
+
+      <step id="analyze_patterns">
+        <if condition="analysis_depth == 'deep'">
+          Perform deep pattern analysis including:
+          - Configuration anti-patterns
+          - Redundant or conflicting settings
+          - Missing essential configurations
+          - Deprecated options usage
+        </if>
+        <else>
+          Perform standard pattern recognition:
+          - Common configuration patterns
+          - Service dependencies
+          - Package groupings
+        </else>
+      </step>
+
+      <step id="security_check">
+        <if condition="focus_areas contains 'security' or focus_areas == 'all'">
+          Evaluate security configuration:
+          - Firewall rules completeness
+          - Service exposure risks
+          - Authentication mechanisms
+          - Encryption settings
+          - Update policies
+        </if>
+      </step>
+
+      <step id="performance_analysis">
+        <if condition="focus_areas contains 'performance' or focus_areas == 'all'">
+          Analyze performance implications:
+          - Resource-intensive services
+          - Optimization opportunities
+          - Boot time impacts
+          - Memory usage patterns
+        </if>
+      </step>
+
+      <step id="recommendations">
+        Generate prioritized recommendations:
+        <foreach items="identified_issues" as="issue">
+          - Issue: {{ issue.description }}
+          - Severity: {{ issue.severity }}
+          - Solution: {{ issue.solution }}
+          - Example: {{ issue.example_fix }}
+        </foreach>
+      </step>
+    </stepwise-instructions>
+
+    <examples>
+      <example>
+        <input>
+          Configuration with PostgreSQL and no backup strategy
+        </input>
+        <output>
+          Issue: Database service without backup configuration
+          Severity: High
+          Solution: Add automated backup service
+          Example: services.postgresqlBackup.enable = true;
+        </output>
+      </example>
+
+      <example>
+        <input>
+          Desktop configuration with unnecessary server services
+        </input>
+        <output>
+          Issue: Server services enabled on desktop system
+          Severity: Medium
+          Solution: Disable unused services to reduce attack surface
+          Example: services.nginx.enable = false;
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      Return analysis as structured JSON:
+      {
+        "profile_type": "string",
+        "complexity_score": 0-100,
+        "issues": [{
+          "category": "string",
+          "severity": "low|medium|high|critical",
+          "description": "string",
+          "recommendation": "string",
+          "code_example": "string"
+        }],
+        "optimizations": ["string"],
+        "security_score": 0-100,
+        "performance_impact": "string"
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="parse_failure">
+        Return partial analysis with error details and suggestions for fixing the configuration syntax.
+      </on-error>
+      <on-error type="timeout">
+        Return completed analysis steps and indicate which analyses were not performed.
+      </on-error>
+    </error-handling>
+
+    <cache duration="3600" key="config_hash" />
+  </prompt>
+</poml>

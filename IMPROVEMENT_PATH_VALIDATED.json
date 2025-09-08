@@ -1,0 +1,108 @@
+{
+  "timestamp": "2025-09-08T06:49:14.236614",
+  "current_accuracy": {
+    "install": 1.0,
+    "search": 1.0,
+    "config": 1.0,
+    "error": 1.0,
+    "update": 0.5,
+    "dev": 1.0,
+    "overall": 0.85
+  },
+  "target_accuracy": {
+    "install": 1.0,
+    "search": 1.0,
+    "config": 1.0,
+    "error": 1.0,
+    "update": 0.95,
+    "dev": 1.0,
+    "overall": 0.95
+  },
+  "improvements_needed": [
+    {
+      "priority": 1,
+      "category": "Update/Maintenance Queries",
+      "current": "50%",
+      "target": "95%",
+      "impact": "+4.5% overall",
+      "approach": "Add specialized patterns + more training data",
+      "effort": "1-2 days"
+    },
+    {
+      "priority": 2,
+      "category": "Training Data",
+      "current": "87 queries",
+      "target": "1000+ queries",
+      "impact": "+5-7% overall",
+      "approach": "Community collection + forum scraping",
+      "effort": "1 week"
+    },
+    {
+      "priority": 3,
+      "category": "Model Architecture",
+      "current": "LSTM only",
+      "target": "LSTM + Transformer",
+      "impact": "+2-3% overall",
+      "approach": "Hybrid architecture with attention",
+      "effort": "3-5 days"
+    },
+    {
+      "priority": 4,
+      "category": "Learning System",
+      "current": "Static",
+      "target": "Active learning",
+      "impact": "+1-2% overall",
+      "approach": "Identify high-value training examples",
+      "effort": "2-3 days"
+    }
+  ],
+  "roadmap": {
+    "current_version": "v0.2.1",
+    "target_version": "v0.3.0",
+    "current_accuracy": "85%",
+    "target_accuracy": "95%",
+    "timeline": "4 weeks",
+    "milestones": [
+      {
+        "week": 1,
+        "version": "v0.2.2",
+        "goals": [
+          "Fix update queries (50% \u2192 90%)",
+          "Collect 200+ new queries",
+          "Deploy pattern improvements"
+        ],
+        "expected_accuracy": "88%"
+      },
+      {
+        "week": 2,
+        "version": "v0.2.5",
+        "goals": [
+          "Reach 500+ training queries",
+          "Train improved neural model",
+          "Add query augmentation"
+        ],
+        "expected_accuracy": "90%"
+      },
+      {
+        "week": 3,
+        "version": "v0.3.0-rc1",
+        "goals": [
+          "Implement transformer layer",
+          "Add ensemble methods",
+          "Optimize caching"
+        ],
+        "expected_accuracy": "93%"
+      },
+      {
+        "week": 4,
+        "version": "v0.3.0",
+        "goals": [
+          "Reach 1000+ queries",
+          "Active learning deployed",
+          "Final optimization"
+        ],
+        "expected_accuracy": "95%"
+      }
+    ]
+  }
+}
