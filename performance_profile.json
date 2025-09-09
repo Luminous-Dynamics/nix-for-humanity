@@ -1,0 +1,146 @@
+{
+  "timings": {
+    "system_initialization": {
+      "avg": 170.3378160018474,
+      "max": 170.3378160018474,
+      "count": 1
+    },
+    "semantic_understanding": {
+      "avg": 1.7386921681463718,
+      "max": 9.563412022544071,
+      "count": 6
+    },
+    "cache_lookup": {
+      "avg": 1.7051301741351683,
+      "max": 3.9679849869571626,
+      "count": 6
+    },
+    "analytics_tracking": {
+      "avg": 0.04480316420085728,
+      "max": 0.07539198850281537,
+      "count": 6
+    },
+    "ml_prediction": {
+      "avg": 0.14517516926086196,
+      "max": 0.28445199131965637,
+      "count": 6
+    },
+    "network_check": {
+      "avg": 1.53381500664788,
+      "max": 2.504042990040034,
+      "count": 6
+    },
+    "integrated_search": {
+      "avg": 4.050723834855792,
+      "max": 10.808671999257058,
+      "count": 6
+    },
+    "concurrent_operations": {
+      "avg": 3564.5032710162923,
+      "max": 3564.5032710162923,
+      "count": 1
+    },
+    "large_result_set": {
+      "avg": 2730.227724008728,
+      "max": 2730.227724008728,
+      "count": 1
+    },
+    "batch_analytics": {
+      "avg": 198.16930399974808,
+      "max": 198.16930399974808,
+      "count": 1
+    }
+  },
+  "memory": {
+    "system_initialization": {
+      "avg": 0.83880615234375,
+      "max": 0.83880615234375
+    },
+    "semantic_understanding": {
+      "avg": 0.0010922749837239583,
+      "max": 0.0040283203125
+    },
+    "cache_lookup": {
+      "avg": 0.01951758066813151,
+      "max": 0.04510211944580078
+    },
+    "analytics_tracking": {
+      "avg": 0.0005175272623697916,
+      "max": 0.00083160400390625
+    },
+    "ml_prediction": {
+      "avg": 0.0003420511881510417,
+      "max": 0.00070953369140625
+    },
+    "network_check": {
+      "avg": 0.023540814717610676,
+      "max": 0.039338111877441406
+    },
+    "integrated_search": {
+      "avg": 0.01705010732014974,
+      "max": 0.0895395278930664
+    },
+    "concurrent_operations": {
+      "avg": 48.82950305938721,
+      "max": 48.82950305938721
+    },
+    "large_result_set": {
+      "avg": 26.18967628479004,
+      "max": 26.18967628479004
+    },
+    "batch_analytics": {
+      "avg": 5.5895586013793945,
+      "max": 5.5895586013793945
+    }
+  },
+  "bottlenecks": [
+    {
+      "type": "timing",
+      "name": "system_initialization",
+      "severity": "medium",
+      "avg_ms": 170.3378160018474,
+      "max_ms": 170.3378160018474,
+      "recommendation": "Profile deeper to identify specific cause"
+    },
+    {
+      "type": "timing",
+      "name": "concurrent_operations",
+      "severity": "high",
+      "avg_ms": 3564.5032710162923,
+      "max_ms": 3564.5032710162923,
+      "recommendation": "Profile deeper to identify specific cause"
+    },
+    {
+      "type": "timing",
+      "name": "large_result_set",
+      "severity": "high",
+      "avg_ms": 2730.227724008728,
+      "max_ms": 2730.227724008728,
+      "recommendation": "Profile deeper to identify specific cause"
+    },
+    {
+      "type": "timing",
+      "name": "batch_analytics",
+      "severity": "medium",
+      "avg_ms": 198.16930399974808,
+      "max_ms": 198.16930399974808,
+      "recommendation": "Profile deeper to identify specific cause"
+    },
+    {
+      "type": "memory",
+      "name": "concurrent_operations",
+      "severity": "medium",
+      "avg_mb": 48.82950305938721,
+      "max_mb": 48.82950305938721,
+      "recommendation": "Medium: Consider object pooling"
+    },
+    {
+      "type": "memory",
+      "name": "large_result_set",
+      "severity": "medium",
+      "avg_mb": 26.18967628479004,
+      "max_mb": 26.18967628479004,
+      "recommendation": "Medium: Consider object pooling"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<poml version="2.0" xmlns="http://schemas.microsoft.com/poml/2024">
+  <metadata>
+    <title>NixOS Error Resolution</title>
+    <description>Diagnose and resolve NixOS errors with detailed explanations</description>
+    <author>Luminous Nix Team</author>
+    <version>1.0.0</version>
+    <model-hints>
+      <preferred-models>gpt-4, claude-3</preferred-models>
+      <temperature>0.2</temperature>
+      <max-tokens>1500</max-tokens>
+    </model-hints>
+  </metadata>
+
+  <variables>
+    <let name="error_message">{{ error_message }}</let>
+    <let name="context_lines">{{ context_lines | default: "" }}</let>
+    <let name="system_state">{{ system_state | default: {} }}</let>
+    <let name="user_level">{{ user_level | default: "intermediate" }}</let>
+  </variables>
+
+  <context>
+    <document src="nixos_error_database.yaml" />
+    <document src="common_solutions.md" />
+  </context>
+
+  <prompt>
+    <system>
+      You are a NixOS troubleshooting expert helping users resolve errors.
+      Provide clear, actionable solutions with educational explanations.
+      Adapt complexity based on user level: {{ user_level }}.
+    </system>
+
+    <stepwise-instructions>
+      <step id="parse_error">
+        Analyze the error message to identify:
+        - Error type (syntax, evaluation, build, runtime)
+        - Affected component (nix, nixos-rebuild, package, service)
+        - Root cause indicators
+        - Related file paths and line numbers
+      </step>
+
+      <step id="diagnose_cause">
+        <if condition="error_message contains 'undefined variable'">
+          <hint>Check for typos and missing imports</hint>
+          Diagnose undefined variable error:
+          - Identify the undefined symbol
+          - Check if it needs to be imported
+          - Verify correct attribute path
+        </if>
+        <elseif condition="error_message contains 'collision'">
+          <hint>Package conflicts need resolution</hint>
+          Diagnose package collision:
+          - Identify conflicting packages
+          - Determine priority requirements
+          - Suggest resolution strategies
+        </elseif>
+        <elseif condition="error_message contains 'build failed'">
+          <hint>Build failures often need dependency fixes</hint>
+          Diagnose build failure:
+          - Check build dependencies
+          - Identify missing libraries
+          - Review compiler errors
+        </elseif>
+        <else>
+          Perform general diagnosis:
+          - Pattern match against known errors
+          - Analyze stack trace if available
+          - Check system constraints
+        </else>
+      </step>
+
+      <step id="generate_solution">
+        <if condition="user_level == 'beginner'">
+          Provide beginner-friendly solution:
+          - Step-by-step instructions
+          - Explain each command
+          - Include safety warnings
+          - Provide rollback instructions
+        </if>
+        <elseif condition="user_level == 'advanced'">
+          Provide advanced solution:
+          - Direct commands
+          - Multiple solution options
+          - Performance considerations
+          - Debugging techniques
+        </elseif>
+        <else>
+          Provide standard solution:
+          - Clear fix instructions
+          - Brief explanations
+          - Common variations
+        </else>
+      </step>
+
+      <step id="education">
+        Add educational context:
+        - Explain why the error occurred
+        - How to prevent it in the future
+        - Related concepts to understand
+        - Links to documentation
+      </step>
+
+      <step id="verification">
+        Provide verification steps:
+        - How to test if the fix worked
+        - What successful output looks like
+        - Rollback procedure if needed
+      </step>
+    </stepwise-instructions>
+
+    <examples>
+      <example>
+        <input>
+          error: undefined variable 'python38' at /etc/nixos/configuration.nix:42:15
+        </input>
+        <output>
+          {
+            "diagnosis": "Python 3.8 package reference is outdated",
+            "solution": "Replace 'python38' with 'python3' or 'python311'",
+            "command": "sed -i 's/python38/python3/g' /etc/nixos/configuration.nix",
+            "explanation": "NixOS updated Python package naming. Use 'python3' for default version.",
+            "prevention": "Use 'nix search python' to find current package names"
+          }
+        </output>
+      </example>
+    </examples>
+
+    <output-format>
+      {
+        "error_type": "string",
+        "diagnosis": "string",
+        "primary_solution": {
+          "description": "string",
+          "commands": ["string"],
+          "risk_level": "safe|moderate|risky"
+        },
+        "alternative_solutions": [],
+        "explanation": "string",
+        "prevention_tips": ["string"],
+        "documentation_links": ["string"],
+        "rollback_command": "string"
+      }
+    </output-format>
+
+    <error-handling>
+      <on-error type="unknown_error">
+        Provide general debugging steps and suggest posting to NixOS forums with sanitized error details.
+      </on-error>
+      <on-error type="insufficient_context">
+        Request additional information: full error message, configuration snippet, system details.
+      </on-error>
+    </error-handling>
+
+    <hint>
+      Common error patterns:
+      - "undefined variable" → missing import or typo
+      - "infinite recursion" → circular dependency
+      - "collision between" → package conflict
+      - "assertion failed" → constraint violation
+      - "build failed" → compilation or dependency issue
+    </hint>
+  </prompt>
+</poml>

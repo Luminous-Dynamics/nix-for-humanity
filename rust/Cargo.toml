@@ -1,0 +1,92 @@
+[package]
+name = "luminous-nix-core"
+version = "0.4.0"
+edition = "2021"
+authors = ["Luminous Dynamics <luminous@sacred.dev>"]
+description = "High-performance Rust core for Luminous Nix with PyO3 Python bindings"
+license = "MIT"
+build = "build.rs"
+
+[lib]
+name = "luminous_nix_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# PyO3 for Python bindings
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
+# pyo3-asyncio removed due to version conflict
+
+# For regex patterns
+once_cell = "1.20"
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Performance
+rayon = "1.10"
+dashmap = "6.1"
+parking_lot = "0.12"
+
+# String manipulation
+regex = "1.11"
+fuzzy-matcher = "0.3"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# File system
+walkdir = "2.5"
+notify = "7.0"
+
+# Compression
+flate2 = "1.0"
+zstd = "0.13"
+
+# Hashing
+blake3 = "1.5"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# Optional: SIMD optimizations
+# simdjson not available, use simd-json instead
+simd-json = { version = "0.13", optional = true }
+
+[build-dependencies]
+pyo3-build-config = "0.22"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.6"
+tempfile = "3.14"
+
+[features]
+default = []
+simd = ["simd-json"]
+python = ["pyo3/auto-initialize"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
+
+# Benchmarks disabled until we create them
+# [[bench]]
+# name = "search_benchmark"
+# harness = false
+#
+# [[bench]]
+# name = "cache_benchmark"
+# harness = false
