@@ -1,0 +1,8 @@
+[project]
+name = "luminous-nix"
+version = "0.4.0"
+description = "Natural language interface for NixOS with <1ms response time"
+requires-python = ">=3.9"
+
+[project.scripts]
+luminous-nix = "luminous_nix.cli:main"

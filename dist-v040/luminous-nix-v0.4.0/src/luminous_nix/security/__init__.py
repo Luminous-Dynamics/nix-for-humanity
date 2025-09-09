@@ -1,0 +1,1 @@
+"""Security layer for input validation and sandboxing."""

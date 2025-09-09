@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <metadata>
+    <title>Development Environment Analysis Agent</title>
+    <description>
+      POML template for analyzing projects and determining optimal development environments.
+      This agent understands project context and recommends appropriate NixOS dev shells.
+    </description>
+    <version>1.0</version>
+    <model>gpt-4</model>
+  </metadata>
+
+  <parameters>
+    <parameter name="project_files" type="list" required="true">
+      List of files found in the project directory
+    </parameter>
+    <parameter name="file_contents" type="dict" required="false">
+      Sample contents from key files like package.json, requirements.txt
+    </parameter>
+    <parameter name="user_description" type="string" required="false">
+      Natural language description of the project from user
+    </parameter>
+  </parameters>
+
+  <let name="common_patterns">
+    <pattern name="python_web">
+      Files: requirements.txt, manage.py, settings.py
+      Stack: Python web framework (likely Django)
+    </pattern>
+    <pattern name="javascript_frontend">
+      Files: package.json with react/vue/angular
+      Stack: JavaScript frontend application
+    </pattern>
+    <pattern name="rust_project">
+      Files: Cargo.toml, src/main.rs
+      Stack: Rust application
+    </pattern>
+    <pattern name="ml_project">
+      Files: *.ipynb, requirements.txt with numpy/pandas/torch
+      Stack: Machine learning/data science
+    </pattern>
+  </let>
+
+  <prompt>
+    You are an expert at analyzing software projects and determining their technology stack.
+    Your goal is to identify the project type, required dependencies, and optimal development environment.
+
+    <stepwise-instructions>
+      <step>Examine the list of files to identify the primary language</step>
+      <step>Look for framework-specific files (manage.py, package.json, Cargo.toml)</step>
+      <step>Analyze dependency files to understand the tech stack</step>
+      <step>Identify any databases or services needed</step>
+      <step>Recommend development tools (linters, formatters, etc.)</step>
+      <step>Consider the user's description if provided</step>
+      <step>Output a structured analysis with confidence scores</step>
+    </stepwise-instructions>
+
+    Project files found:
+    {{ project_files }}
+
+    {% if file_contents %}
+    Key file contents:
+    {{ file_contents }}
+    {% endif %}
+
+    {% if user_description %}
+    User's description: {{ user_description }}
+    {% endif %}
+
+    <example>
+      <input>
+        Files: [package.json, src/App.tsx, tsconfig.json, .eslintrc]
+        package.json contains: react, typescript, webpack
+      </input>
+      <output>
+        Project Type: javascript
+        Framework: React with TypeScript
+        Build Tool: Webpack
+        Dev Tools: ESLint, Prettier
+        Confidence: 0.95
+      </output>
+    </example>
+
+    <hint>
+      Pay special attention to:
+      - Lock files (package-lock.json, Cargo.lock, poetry.lock) indicate active projects
+      - Test directories suggest testing frameworks needed
+      - Docker/docker-compose files indicate containerization
+      - CI/CD configs (.github/workflows, .gitlab-ci.yml) show deployment patterns
+    </hint>
+
+    Provide your analysis in a structured format.
+  </prompt>
+</document>

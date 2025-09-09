@@ -1,0 +1,10 @@
+/srv/luminous-dynamics/11-meta-consciousness/luminous-nix/rust/target/release/deps/notify_types-d4732e7eff7c87bc.d: /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/lib.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_full.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_mini.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/event.rs
+
+/srv/luminous-dynamics/11-meta-consciousness/luminous-nix/rust/target/release/deps/libnotify_types-d4732e7eff7c87bc.rlib: /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/lib.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_full.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_mini.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/event.rs
+
+/srv/luminous-dynamics/11-meta-consciousness/luminous-nix/rust/target/release/deps/libnotify_types-d4732e7eff7c87bc.rmeta: /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/lib.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_full.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_mini.rs /home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/event.rs
+
+/home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/lib.rs:
+/home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_full.rs:
+/home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/debouncer_mini.rs:
+/home/tstoltz/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/notify-types-1.0.1/src/event.rs:
