@@ -1,21 +1,101 @@
-MIT License
+Sacred Reciprocity License (SRL) v4.0
 
-Copyright (c) 2025 Tristan Stoltz / Luminous Dynamics
+Copyright (c) 2024 Luminous Dynamics and the Sacred Economy Community
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Preamble
+This software ("Software") is dedicated to promoting abundance, reciprocity, and the flourishing of all sentient beings. By using, copying, modifying, or distributing the Software, you agree to the terms of this License, which combine enforceable legal obligations with ethical and philosophical principles.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Grant of License
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Subject to the terms below, the authors hereby grant you a worldwide, royalty-free, non-exclusive license to:
+
+Use, copy, modify, merge, publish, and distribute the Software.
+Distribute derivative works under the same terms of this License.
+
+Note: Use of the Software constitutes acceptance of this License.
+
+2. Ethical Obligations and Reciprocity
+
+Reciprocity (Measurable Obligations):
+
+If you distribute modified Software, you must provide at least one of the following:
+- Source code of modifications or derivative works,
+- Functional documentation sufficient for independent replication of benefits, or
+- Verified contributions (monetary, services, or materials) to a community repository promoting the Software.
+
+Failure to comply constitutes material breach.
+
+Gift-Forward (Measurable Obligations):
+
+If your use generates financial, functional, or societal benefit, you must make a verifiable contribution through:
+- Publicly documented improvements to the Software, or
+- Monetary donation to a recognized community or charitable project aligned with the Software's goals, or
+- Documentation enabling at least 10 independent users to benefit from your modifications.
+
+Reporting Template for Reciprocity and Gift-Forward Contributions:
+- Contributor Name / Entity:
+- Type of Contribution: (Code / Documentation / Monetary / Other)
+- Date of Contribution:
+- Description of Contribution:
+- Verification Method: (Public repository link, bank receipt, or signed community acknowledgment)
+
+All reports should be stored for 5 years and made available to Software maintainers upon request.
+
+3. Definition and Enforcement of Harm
+
+"Harm" means any action, directly attributable to your use of the Software, that:
+- Violates international or local law, including data protection, privacy, or intellectual property statutes.
+- Exploits personal, sensitive, or proprietary data without informed consent.
+- Creates artificial scarcity, blocks fair access, or prevents modification and redistribution.
+- Causes demonstrable environmental, societal, or economic damage exceeding reasonable thresholds (e.g., measurable financial loss >$1,000 USD or significant adverse impact on >50 individuals).
+
+Enforcement: Violations of Section 3 constitute material breach and are subject to injunctive relief, specific performance, or damages enforceable internationally under applicable treaties and laws.
+
+4. Transparency and Deployment Requirements
+
+For deployments serving 100 or more users, you must:
+- Provide public documentation of modifications, deployment, and governance practices.
+- Ensure users retain access to source code and rights to fork or modify the Software.
+- Maintain verifiable records of reciprocity and gift-forward contributions using the reporting template.
+
+Failure to comply constitutes material breach.
+
+5. Attribution
+
+All copies or substantial portions of the Software must retain:
+- This copyright notice and license text.
+- The following dedication:
+  "Built with love for the Sacred Economy. May all beings flourish in abundance and joy."
+
+6. Prohibited Uses
+
+Material breach occurs if you:
+- Use the Software for unauthorized data extraction, exploitation, or surveillance.
+- Create proprietary or closed-source versions without compliance with Section 2.
+- Engage in any activity constituting Harm under Section 3.
+
+7. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+8. Limitation of Liability
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OR INABILITY TO USE THE SOFTWARE, EXCEPT FOR VIOLATIONS OF SECTIONS 2, 3, OR 4, WHICH ARE ENFORCEABLE THROUGH INJUNCTIVE OR OTHER LEGAL REMEDIES INTERNATIONALLY.
+
+9. Governing Law and Cross-Jurisdiction Enforcement
+
+This License is governed by the laws of the copyright holder's domicile and is intended to be enforceable under international treaties, including the Berne Convention and applicable cross-border intellectual property and contract law.
+
+Material breach permits legal remedies in any jurisdiction where the violator resides or operates.
+
+Disputes will first attempt mediation through a neutral community-appointed arbiter before litigation.
+
+10. Optional Compatibility Clause
+
+This Software may also be distributed under compatible ethical open-source licenses such as the Peer Production License (PPL) or Copyfair License.
+
+Additionally, for maximum compatibility and to support traditional open source adoption, this Software may optionally be used under the MIT License terms. Users choosing the MIT License option are still encouraged to honor the ethical principles outlined in this SRL.
+
+---
+
+"Built with love for the Sacred Economy. May all beings flourish in abundance and joy."
