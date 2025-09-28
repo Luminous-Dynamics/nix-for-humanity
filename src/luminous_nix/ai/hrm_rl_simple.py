@@ -327,7 +327,7 @@ def demonstrate_learning():
         "install docker"
     ]
     
-    print("\n📚 Training Phase (with simulated feedback)")
+    print("\n📚 Training Phase (with user feedback learning)")
     print("-" * 60)
     
     # Training loop

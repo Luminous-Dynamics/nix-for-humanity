@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "luminous-nix"
-version = "0.7.0"
+version = "0.8.1"
 description = "AI-powered natural language interface for NixOS using EmbeddingGemma and specialized HRM"
 readme = "README.md"
 license = "MIT"
@@ -210,7 +210,7 @@ all = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "typer", "promp
 
 [tool.poetry.scripts]
 ask-nix = "luminous_nix.cli:main"
-ask-nix-voice = "luminous_nix.voice.voice_cli:cli"
+ask-nix-voice = "luminous_nix.cli_voice:main"
 nix-tui = "luminous_nix.tui.app:run"
 nix-humanity-server = "luminous_nix.web.server:main"
 docs = "mkdocs.commands.serve:serve"

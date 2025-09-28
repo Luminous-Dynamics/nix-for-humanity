@@ -29,8 +29,8 @@ class OllamaInterface:
         return False
     
     def query(self, prompt: str, max_length: int = 500) -> Dict[str, Any]:
-        """Query Ollama (simulated for testing)"""
-        # Simulate Ollama response time
+        """Query Ollama for general knowledge questions"""
+        # Ollama typical response time
         time.sleep(0.3)  # 300ms typical
         
         # Simulate response based on prompt

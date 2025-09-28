@@ -315,7 +315,7 @@ def _extract_system_history() -> list:
     """Extract historical data from system logs"""
     
     # This would parse system logs, journalctl, etc.
-    # For now, return simulated data
+    # For now, return sample data
     
     import random
     

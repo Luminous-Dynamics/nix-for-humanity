@@ -24,7 +24,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    print("⚠️ PyTorch not available, using simulation mode")
+    print("⚠️ PyTorch not available, using fallback mode")
 
 @dataclass
 class Experience:

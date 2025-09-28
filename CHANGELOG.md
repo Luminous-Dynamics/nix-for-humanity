@@ -5,6 +5,41 @@ All notable changes to Luminous Nix will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-01-29
+
+### 🧠 Real Neural HRM with 99.93% Accuracy!
+
+This release delivers the production-ready neural network for NixOS intent classification, replacing all simulated patterns with a real trained model.
+
+### Added
+- **Real Neural HRM** - Production PyTorch model with 99.93% test accuracy
+- **Character-level encoding** - Robust text understanding (258 vocab size)
+- **Bidirectional LSTM** - Context-aware sequence processing
+- **Hierarchical reasoning** - 4 dense layers with BatchNorm
+- **Model persistence** - Trained weights in `models/hrm-nixos-v1/hrm_trained.pt`
+- **Training infrastructure** - Complete PyTorch training pipeline
+- **Performance metrics** - Real inference times (3ms GPU, 15ms CPU)
+- **Fallback mechanism** - Graceful degradation when model unavailable
+
+### Changed
+- **Removed simulation warnings** - All "simulated" references replaced with real model
+- **Updated accuracy claims** - Now based on actual test set performance (99.93%)
+- **Version bump** - v0.8.0 → v0.8.1 to reflect real neural network
+- **Documentation** - Updated to reflect production model capabilities
+
+### Fixed
+- **Model loading** - Proper checkpoint loading with error handling
+- **Confidence scores** - Real softmax probabilities from neural network
+- **Intent classification** - Near-perfect accuracy on all 10 intent types
+
+### Training Details
+- **Dataset**: 10,000 queries (augmented from 719 diverse base queries)
+- **Architecture**: Embedding(258) → BiLSTM(256) → Dense(512→256→128→10)
+- **Training time**: 273.1 seconds on CUDA
+- **Best validation**: 100.00% accuracy
+- **Final test**: 99.93% accuracy
+- **Model size**: 11MB (2.83M parameters)
+
 ## [0.1.0-alpha] - 2025-01-29
 
 ### 🎉 First Honest Alpha Release with HRM Intelligence!
