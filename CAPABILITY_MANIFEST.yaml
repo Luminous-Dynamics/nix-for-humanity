@@ -1,0 +1,265 @@
+# Capability Manifest - Security Policy for Voice Interface
+# Defines which operations are allowed via voice vs requiring additional authorization
+
+# Tier Definitions:
+# Tier 0: Read-only queries (search, list, help) - SAFE
+# Tier 1: Display config/status (show, info) - SAFE
+# Tier 2: System changes (install, remove, update) - NEEDS APPROVAL
+# Tier 3: Critical operations (enable services, network changes) - NEEDS APPROVAL
+# Tier 4: Destructive operations (format, delete, SSH) - NEEDS APPROVAL + SUDO
+
+voice_interface:
+  # Operations allowed via voice alone (no additional authorization)
+  # SECURE DEFAULTS: Tier 0-1 for beta launch
+  allowed_tiers:
+    - 0  # Search, list, help - completely safe
+    - 1  # Status, show config - read-only display (safe)
+
+  # Operations that require modal approval + confirmation code
+  forbidden_tiers:
+    - 2  # Install, remove - system changes
+    - 3  # Enable services - critical changes
+    - 4  # Format, SSH - destructive
+
+  # Approval ceremony configuration
+  approval_ceremony:
+    enabled: true
+    timeout_seconds: 30
+    code_format: "two_word"  # e.g., "alpha seven"
+    require_typed_code: true  # Must type code in modal, not speak it
+
+  # Security settings (ENHANCED for production)
+  security:
+    redact_secrets: true  # Prevent reading secrets aloud
+    audit_logging: true   # Log all voice interactions
+    audit_hash_chain: true  # NEW: Tamper protection with hash-chaining
+    max_command_length: 100  # Prevent injection attacks
+    rate_limit_per_minute: 20  # Prevent abuse
+
+    # NEW: Quality gates for audio
+    min_asr_confidence: 0.85  # Minimum ASR confidence for commands
+    max_noise_level: 0.30     # Maximum background noise
+    min_vad_score: 0.65       # Minimum voice activity detection
+
+    # NEW: Hotword protection
+    disable_wake_during_tts: true  # Prevent triggering during TTS output
+    force_ptt_for_tier_2_plus: true  # Require push-to-talk for Tier 2+
+
+# Tier 0 Operations (Voice Allowed)
+tier_0_operations:
+  - search
+  - list
+  - help
+  - find
+  - show-packages
+  - query
+  - lookup
+
+# Tier 1 Operations (Voice Allowed)
+tier_1_operations:
+  - show-config
+  - status
+  - info
+  - version
+  - check-health
+  - generations
+
+# Tier 2 Operations (Modal Required)
+tier_2_operations:
+  - install
+  - remove
+  - uninstall
+  - update
+  - upgrade
+  - build
+  - rollback
+
+# Tier 3 Operations (Modal Required)
+tier_3_operations:
+  - enable-service
+  - disable-service
+  - start-service
+  - stop-service
+  - configure-network
+  - add-user
+  - modify-system
+
+# Tier 4 Operations (Modal + Sudo Required)
+tier_4_operations:
+  - format
+  - delete-all
+  - reset-system
+  - enable-ssh
+  - open-port
+  - modify-firewall
+  - wipe-data
+
+# ============================================================================
+# ADVANCED SECURITY FEATURES (Optional - Future Enhancements)
+# ============================================================================
+
+# Tier 2: Optional Voice Approval (Convenience Feature)
+# IMPORTANT: Typed approval is ALWAYS the primary method
+# Voice approval is a convenience for low-risk Tier 2 operations only
+tier_2_voice_approval:
+  enabled: false  # Disabled by default for maximum security
+  require_push_to_talk: true  # MUST hold PTT key (spacebar)
+  require_passphrase: true  # User-set passphrase required
+  require_on_screen_nonce: true  # Visual nonce NEVER spoken aloud
+  asr_confidence_threshold: 0.82  # Minimum ASR confidence
+  vad_noise_max: 0.35  # Maximum noise level
+  max_attempts: 3  # Failed attempts before lockout
+  lockout_seconds: 300  # 5 minute lockout after failed attempts
+
+  # Passphrase requirements
+  passphrase:
+    min_words: 2
+    max_words: 4
+    hash_algorithm: "argon2id"  # Cryptographic hash
+    store_phonetics: true  # Help with ASR misrecognition
+    never_echo: true  # NEVER speak passphrase aloud
+
+  # Security notes:
+  # - Passphrase is PREPENDED to approval phrase
+  # - Format: "<passphrase> approve <nonce>"
+  # - Example: "silver phoenix approve delta seven"
+  # - Nonce is DISPLAYED, never spoken
+  # - Single-use tokens bound to diff_id
+  # - All conditions must be true or fallback to typed approval
+
+# Tier 3/4: Hardware-Backed Approval (Maximum Security)
+# For service changes, system modifications, and destructive operations
+tier_3_4_hardware_approval:
+  enabled: false  # Disabled by default (requires hardware setup)
+  allow_hotword_initiation: true  # Hotword can START flow
+  require_local_session: true  # Must be at console (not SSH)
+  require_hardware_uv: true  # FIDO2/WebAuthn user verification
+  require_final_confirm: true  # Final click/typed "approve" after key touch
+  disallow_remote: true  # Never allow over remote TTY
+  token_ttl_seconds: 30  # Single-use token expires in 30s
+
+  # Hardware key options
+  security_keys:
+    webauthn:
+      enabled: false  # WebAuthn via browser/phone passkey
+      rp_id: "luminous.local"  # Relying party ID
+      origins: ["https://app.luminous.local"]
+      require_user_verification: true  # Touch + biometric
+
+    native_fido2:
+      enabled: false  # Native FIDO2 via libfido2 (YubiKey, etc.)
+      require_user_verification: true
+      allowed_aaguid: []  # Optional allowlist of key types
+
+  # Presence detection
+  presence:
+    check_unlocked_screen: true
+    check_local_session: true
+    check_recent_auth: true  # PAM recent auth < 2 minutes
+    presence_file: "/run/user/${UID}/luminous-presence"
+
+  # Token binding
+  bind_token_fields:
+    - diff_id
+    - policy_hash
+    - executor_hash
+    - nonce
+    - timestamp
+
+  # Security notes:
+  # - Hotword MAY initiate, but cannot complete
+  # - Approval requires: local presence + hardware UV + typed confirm
+  # - Token cryptographically bound to exact operation (diff_id)
+  # - No auto-approve on key insert (prevents coercion)
+  # - All assertions logged with AAGUID, counter, metadata
+
+# Push-to-Talk Configuration
+push_to_talk:
+  enabled: false  # Set true or use VOICE_PTT_ONLY=1 env var
+  key: "space"  # Keyboard key to hold (spacebar)
+  disable_hotword_when_active: true  # PTT overrides hotword
+  visual_feedback: true  # Show mic icon state
+  audio_feedback: false  # Beep on press/release (optional)
+  listen_duration_seconds: 6  # Active listen window
+
+  # Use cases for PTT mode:
+  # - Noisy environments (office, cafe, home with kids)
+  # - Shared spaces (prevent accidental activation)
+  # - Streaming/recording (prevent false triggers from audio)
+  # - High-security mode (explicit intent required)
+
+# Audit & Privacy (ENHANCED for production)
+audit:
+  enabled: true
+  hash_chain: true  # NEW: Hash-chaining for tamper detection
+  log_file: "/var/log/luminous-voice/voice-audit.jsonl"  # Secure path
+  file_permissions: "0600"  # Owner read/write only
+  fields_logged:
+    - timestamp
+    - session_id
+    - event_type
+    - tier
+    - command  # User command text (NOT raw audio)
+    - decision
+    - approval_code_issued  # Code issued (not the actual passphrase)
+    - approval_granted
+    - redacted
+    - secret_types
+    - vad_score
+    - asr_confidence
+    - device_id
+
+  # Privacy protections
+  never_log:
+    - raw_audio  # NEVER store audio recordings
+    - user_passphrase  # NEVER store passphrase plaintext
+    - full_transcripts  # Only log commands, not conversations
+    - secrets  # Redacted before logging
+
+  retention_days: 90  # Auto-delete logs older than 90 days
+  encrypt_at_rest: false  # Optional: encrypt audit logs
+
+# Rate Limiting & Abuse Protection
+rate_limits:
+  commands_per_minute: 20
+  approvals_per_minute: 5
+  failed_approvals_before_lockout: 3
+  lockout_duration_seconds: 300
+
+  # Flood protection
+  burst_detection:
+    enabled: true
+    window_seconds: 10
+    max_commands_in_window: 30
+    response: "too_many_requests"  # Speak refusal, log event
+
+# Environment Variable Overrides (Panic Switches)
+# These can override YAML settings for quick configuration changes
+env_overrides:
+  # Panic switches for instant lockdown
+  VOICE_DISABLED: "voice_interface.enabled"  # Completely disable voice
+  VOICE_TIER_MAX: "voice_interface.allowed_tiers"  # Limit to specific tier
+  VOICE_PTT_REQUIRED: "push_to_talk.enabled"  # Force push-to-talk
+  VOICE_APPROVALS_DISABLED: "tier_2_voice_approval.enabled"  # Typed only
+
+  # Quality & security gates
+  VOICE_MIN_ASR_CONF: "voice_interface.security.min_asr_confidence"
+  VOICE_MAX_NOISE: "voice_interface.security.max_noise_level"
+  VOICE_REDACT_SECRETS: "voice_interface.security.redact_secrets"
+
+  # Audit settings
+  VOICE_AUDIT_LOG: "audit.log_file"
+  VOICE_AUDIT_DIR: "audit.log_dir"
+  VOICE_HASH_CHAIN: "audit.hash_chain"
+
+# Security Policy Version
+policy_version: "1.0.0"
+last_updated: "2025-11-12"
+
+# IMPORTANT NOTES:
+# 1. Voice approvals (Tier 2) are OPTIONAL convenience features
+# 2. Typed approvals are ALWAYS the primary and most secure method
+# 3. Hardware approvals (Tier 3/4) require additional setup
+# 4. All approval methods are single-use, time-limited, and audited
+# 5. Never speak approval codes, passphrases, or secrets aloud
+# 6. PTT mode provides the best security for noisy/shared environments
