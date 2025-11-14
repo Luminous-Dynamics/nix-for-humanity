@@ -204,9 +204,7 @@ class NixOSIntegration:
         if "disk space" in error_lower:
             return "Low disk space. Run 'nix-collect-garbage -d' to free up space."
 
-        return (
-            "Check the NixOS manual or ask the community for help with this error."
-        )
+        return "Check the NixOS manual or ask the community for help with this error."
 
     async def get_system_info(self) -> dict[str, Any]:
         """Get current system information"""

@@ -14,20 +14,24 @@ Features:
 __version__ = "1.0.0"
 
 # Core components
-from .sacred_voice_interface import (
-    SacredVoiceInterface,
-    VoiceConfig,
-    FlowState,
-    InterruptionLevel,
-    create_voice_interface
-)
+try:
+    from .sacred_voice_interface import (
+        SacredVoiceInterface,
+        VoiceConfig,
+        FlowState,
+        InterruptionLevel,
+        create_voice_interface,
+    )
+except ImportError:
+    # sacred_voice_interface module not yet implemented
+    SacredVoiceInterface = None
+    VoiceConfig = None
+    FlowState = None
+    InterruptionLevel = None
+    create_voice_interface = None
 
 # NLP Bridge
-from .voice_nlp_bridge import (
-    VoiceNLPBridge,
-    VoiceContext,
-    create_voice_bridge
-)
+from .voice_nlp_bridge import VoiceNLPBridge, VoiceContext, create_voice_bridge
 
 # CLI Integration
 from .voice_cli_integration import (
@@ -35,47 +39,44 @@ from .voice_cli_integration import (
     start_voice_mode,
     add_voice_to_cli,
     load_voice_config,
-    save_voice_config
+    save_voice_config,
 )
 
-# TUI Integration  
+# TUI Integration
 from .voice_tui_integration import (
     VoiceStatusWidget,
     VoiceControlPanel,
     VoiceHistoryWidget,
     VoiceTUIIntegration,
     integrate_voice_with_tui,
-    VOICE_TUI_CSS
+    VOICE_TUI_CSS,
 )
 
 # Export main interface
 __all__ = [
     # Core
-    'SacredVoiceInterface',
-    'VoiceConfig',
-    'FlowState',
-    'InterruptionLevel',
-    'create_voice_interface',
-    
+    "SacredVoiceInterface",
+    "VoiceConfig",
+    "FlowState",
+    "InterruptionLevel",
+    "create_voice_interface",
     # Bridge
-    'VoiceNLPBridge',
-    'VoiceContext', 
-    'create_voice_bridge',
-    
+    "VoiceNLPBridge",
+    "VoiceContext",
+    "create_voice_bridge",
     # CLI
-    'voice_cli_group',
-    'start_voice_mode',
-    'add_voice_to_cli',
-    'load_voice_config',
-    'save_voice_config',
-    
+    "voice_cli_group",
+    "start_voice_mode",
+    "add_voice_to_cli",
+    "load_voice_config",
+    "save_voice_config",
     # TUI
-    'VoiceStatusWidget',
-    'VoiceControlPanel',
-    'VoiceHistoryWidget',
-    'VoiceTUIIntegration',
-    'integrate_voice_with_tui',
-    'VOICE_TUI_CSS',
+    "VoiceStatusWidget",
+    "VoiceControlPanel",
+    "VoiceHistoryWidget",
+    "VoiceTUIIntegration",
+    "integrate_voice_with_tui",
+    "VOICE_TUI_CSS",
 ]
 
 
@@ -84,6 +85,7 @@ def is_voice_available() -> bool:
     try:
         import speech_recognition
         import pyttsx3
+
         return True
     except ImportError:
         return False
@@ -92,30 +94,33 @@ def is_voice_available() -> bool:
 def get_voice_status() -> dict:
     """Get voice system status"""
     status = {
-        'core_available': False,
-        'whisper_available': False,
-        'piper_available': False,
-        'speech_recognition': False,
-        'text_to_speech': False,
+        "core_available": False,
+        "whisper_available": False,
+        "piper_available": False,
+        "speech_recognition": False,
+        "text_to_speech": False,
     }
-    
+
     try:
         import speech_recognition
-        status['speech_recognition'] = True
-        status['core_available'] = True
+
+        status["speech_recognition"] = True
+        status["core_available"] = True
     except ImportError:
         pass
-    
+
     try:
         import pyttsx3
-        status['text_to_speech'] = True
+
+        status["text_to_speech"] = True
     except ImportError:
         pass
-    
+
     try:
         import whisper
-        status['whisper_available'] = True
+
+        status["whisper_available"] = True
     except ImportError:
         pass
-    
+
     return status

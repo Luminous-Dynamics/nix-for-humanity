@@ -6,12 +6,12 @@ Through simple rules, sophisticated behavior emerges.
 """
 
 import json
+import logging
 import random
 import subprocess
 import time
 from dataclasses import dataclass
 from typing import Any
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -114,12 +114,23 @@ class SafeExecutor:
             # Simple command building
             if command.startswith("nix"):
                 cmd = [command] + args
-                
+
                 # Add --json for supported commands (10x performance)
-                json_commands = ['search', 'list', 'show', 'eval', 'flake', 'profile', 'store', 'show-derivation']
-                if any(jcmd in command or jcmd in ' '.join(args) for jcmd in json_commands):
-                    if '--json' not in args:
-                        cmd.append('--json')
+                json_commands = [
+                    "search",
+                    "list",
+                    "show",
+                    "eval",
+                    "flake",
+                    "profile",
+                    "store",
+                    "show-derivation",
+                ]
+                if any(
+                    jcmd in command or jcmd in " ".join(args) for jcmd in json_commands
+                ):
+                    if "--json" not in args:
+                        cmd.append("--json")
                         logger.debug(f"Added --json flag for {command}")
             else:
                 # Let the shell handle it
@@ -133,10 +144,10 @@ class SafeExecutor:
                 text=True,
                 timeout=30,
             )
-            
+
             output = result.stdout
             # Try to parse JSON for structured data
-            if '--json' in (cmd if isinstance(cmd, list) else cmd.split()):
+            if "--json" in (cmd if isinstance(cmd, list) else cmd.split()):
                 try:
                     output = json.loads(result.stdout)
                     logger.debug("Parsed JSON output successfully")
@@ -148,7 +159,7 @@ class SafeExecutor:
                 "success": result.returncode == 0,
                 "output": output,
                 "error": result.stderr if result.returncode != 0 else None,
-                "json_output": isinstance(output, (dict, list))
+                "json_output": isinstance(output, (dict, list)),
             }
         except Exception as e:
             # Errors are teachers

@@ -128,17 +128,13 @@ class ASTNode:
             return []
         return [ASTNode(child, self.source_code) for child in self.node.named_children]
 
-    def find_children_by_type(
-        self, node_type: str | NixNodeType
-    ) -> list["ASTNode"]:
+    def find_children_by_type(self, node_type: str | NixNodeType) -> list["ASTNode"]:
         """Find all children of a specific type"""
         if isinstance(node_type, NixNodeType):
             node_type = node_type.value
         return [child for child in self.children if child.type == node_type]
 
-    def find_descendants_by_type(
-        self, node_type: str | NixNodeType
-    ) -> list["ASTNode"]:
+    def find_descendants_by_type(self, node_type: str | NixNodeType) -> list["ASTNode"]:
         """Recursively find all descendants of a specific type"""
         if isinstance(node_type, NixNodeType):
             node_type = node_type.value

@@ -15,6 +15,7 @@ from typing import Any
 # Import the native API for massive performance gains
 try:
     from .native_nix_api import get_native_api
+
     NATIVE_API_AVAILABLE = True
 except ImportError:
     NATIVE_API_AVAILABLE = False
@@ -125,7 +126,7 @@ class CommandExecutor:
         self.dry_run = False
         self.auto_snapshot = True
         self.confirm_callback = None  # Function to call for confirmation
-        
+
         # Initialize native API for massive performance gains
         self.native_api = get_native_api() if NATIVE_API_AVAILABLE else None
 
@@ -177,7 +178,9 @@ class CommandExecutor:
             desc = f"Search for {' '.join(args)}"
             kwargs["can_rollback"] = False
             # Store query for native API
-            kwargs.setdefault("metadata", {})["query"] = " ".join(args) if args else None
+            kwargs.setdefault("metadata", {})["query"] = (
+                " ".join(args) if args else None
+            )
 
         elif type == CommandType.LIST:
             # Use modern nix profile command
@@ -276,29 +279,41 @@ class CommandExecutor:
 
         # Try native API first for massive performance gains
         executed_with_native = False
-        if self.native_api and command.type in [CommandType.INSTALL, CommandType.SEARCH, CommandType.LIST]:
+        if self.native_api and command.type in [
+            CommandType.INSTALL,
+            CommandType.SEARCH,
+            CommandType.LIST,
+        ]:
             try:
-                if command.type == CommandType.INSTALL and command.metadata.get("package"):
+                if command.type == CommandType.INSTALL and command.metadata.get(
+                    "package"
+                ):
                     # Use native API for install (standard speed!)
                     success, output, elapsed_ms = self.native_api.install_package(
                         command.metadata["package"],
-                        profile="user" if not command.requires_sudo else "system"
+                        profile="user" if not command.requires_sudo else "system",
                     )
                     result.stdout = output
                     result.return_code = 0 if success else 1
                     result.execution_time = elapsed_ms / 1000.0
-                    result.status = CommandStatus.SUCCESS if success else CommandStatus.FAILED
+                    result.status = (
+                        CommandStatus.SUCCESS if success else CommandStatus.FAILED
+                    )
                     executed_with_native = True
-                    
-                elif command.type == CommandType.SEARCH and command.metadata.get("query"):
+
+                elif command.type == CommandType.SEARCH and command.metadata.get(
+                    "query"
+                ):
                     # Use native API for search (2-3 seconds vs 2000-5000ms!)
-                    packages, elapsed_ms = self.native_api.search_packages(command.metadata["query"])
+                    packages, elapsed_ms = self.native_api.search_packages(
+                        command.metadata["query"]
+                    )
                     result.stdout = json.dumps(packages, indent=2)
                     result.return_code = 0
                     result.execution_time = elapsed_ms / 1000.0
                     result.status = CommandStatus.SUCCESS
                     executed_with_native = True
-                    
+
                 elif command.type == CommandType.LIST:
                     # Use native API for list
                     generations, elapsed_ms = self.native_api.list_generations()
@@ -307,11 +322,11 @@ class CommandExecutor:
                     result.execution_time = elapsed_ms / 1000.0
                     result.status = CommandStatus.SUCCESS
                     executed_with_native = True
-                    
-            except Exception as e:
+
+            except Exception:
                 # Native API failed, fall back to subprocess
                 executed_with_native = False
-        
+
         # Fallback to subprocess if native API not available or didn't handle this command
         if not executed_with_native:
             try:

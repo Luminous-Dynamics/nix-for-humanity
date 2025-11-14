@@ -20,32 +20,29 @@ class OllamaClient:
         # - qwen2.5:3b (1.9GB) - Fast and smart
         # - gemma3:1b (815MB) - Quick responses
         # - tinyllama:1.1b (637MB) - Optimized for conversation
-        
+
         self.models = {
             # Task-specific optimal models
-            "conversation": "mistral:7b",       # BEST for natural conversation (4.4GB)
-            "expert": "gemma3:12b",             # BEST for complex questions (8.1GB)
-            "coder": "gemma3:4b",               # Good for code/config (3.3GB)
-            "general": "qwen2.5:3b",            # Fast general purpose (1.9GB)
-            "quick": "tinyllama:1.1b",          # Quick responses (637MB)
-            "empathy": "gemma3:1b",             # User support (815MB)
-            "nixos": "nixos-commands:latest",   # NixOS specific (291MB)
-            "tiny": "qwen:0.5b",                # Ultra-fast fallback (394MB)
+            "conversation": "mistral:7b",  # BEST for natural conversation (4.4GB)
+            "expert": "gemma3:12b",  # BEST for complex questions (8.1GB)
+            "coder": "gemma3:4b",  # Good for code/config (3.3GB)
+            "general": "qwen2.5:3b",  # Fast general purpose (1.9GB)
+            "quick": "tinyllama:1.1b",  # Quick responses (637MB)
+            "empathy": "gemma3:1b",  # User support (815MB)
+            "nixos": "nixos-commands:latest",  # NixOS specific (291MB)
+            "tiny": "qwen:0.5b",  # Ultra-fast fallback (394MB)
         }
 
         # Default to conversation model for best experience
         self.default_model = self.models["conversation"]
         self.timeout = 15  # Reasonable timeout for quality responses
-    
+
     def is_available(self) -> bool:
         """Check if Ollama is installed and running"""
         try:
             # Try to list models - this is a quick check
             result = subprocess.run(
-                ["ollama", "list"],
-                capture_output=True,
-                text=True,
-                timeout=2
+                ["ollama", "list"], capture_output=True, text=True, timeout=2
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -62,19 +59,46 @@ class OllamaClient:
         query_lower = query.lower()
 
         # Conversational queries - use best conversational model
-        if any(word in query_lower for word in ["best", "recommend", "should i", "what do you think", "suggest"]):
-            return self.models["conversation"]  # mistral:7b for intelligent conversation
-        
+        if any(
+            word in query_lower
+            for word in [
+                "best",
+                "recommend",
+                "should i",
+                "what do you think",
+                "suggest",
+            ]
+        ):
+            return self.models[
+                "conversation"
+            ]  # mistral:7b for intelligent conversation
+
         # Complex reasoning - use the most powerful model
-        if any(word in query_lower for word in ["explain", "how does", "why", "compare", "difference between"]):
+        if any(
+            word in query_lower
+            for word in ["explain", "how does", "why", "compare", "difference between"]
+        ):
             return self.models["expert"]  # gemma3:12b for deep reasoning
 
         # Code/config queries - use specialized coder
-        if any(word in query_lower for word in ["config", "configuration", "code", "script", "flake", "nix expression"]):
+        if any(
+            word in query_lower
+            for word in [
+                "config",
+                "configuration",
+                "code",
+                "script",
+                "flake",
+                "nix expression",
+            ]
+        ):
             return self.models["coder"]  # gemma3:4b for code understanding
 
         # NixOS specific - use specialized model
-        if any(word in query_lower for word in ["nixos", "nix-env", "nix profile", "nixpkgs"]):
+        if any(
+            word in query_lower
+            for word in ["nixos", "nix-env", "nix profile", "nixpkgs"]
+        ):
             return self.models["nixos"]  # nixos-commands:latest
 
         # Quick actions - use fast model
@@ -82,11 +106,17 @@ class OllamaClient:
             return self.models["quick"]  # tinyllama for speed
 
         # Error/help queries - use empathetic model
-        if any(word in query_lower for word in ["error", "help", "broken", "not working", "failed"]):
+        if any(
+            word in query_lower
+            for word in ["error", "help", "broken", "not working", "failed"]
+        ):
             return self.models["empathy"]  # gemma3:1b for supportive responses
 
         # System queries - use expert
-        if any(word in query_lower for word in ["kernel", "driver", "boot", "systemd", "hardware"]):
+        if any(
+            word in query_lower
+            for word in ["kernel", "driver", "boot", "systemd", "hardware"]
+        ):
             return self.models["expert"]  # gemma3:12b for technical depth
 
         # Default to general purpose model for good balance
@@ -182,29 +212,29 @@ For example, if asked about browsers, explain the options (Firefox, Chromium, Br
         # Skip AI for now since it's not properly trained
         # Just use our improved basic parsing
         return self._basic_intent_parsing(query)
-        
+
         # Original AI code (disabled until model is trained):
         # prompt = f"""Analyze this NixOS query and return JSON with: intent, entities, confidence, suggestion.
         # Query: {query}
-        # 
+        #
         # Example response:
         # {{"intent": "install", "entities": ["firefox"], "confidence": 0.9, "suggestion": "Install Firefox browser"}}
-        # 
+        #
         # Response:"""
-        # 
+        #
         # response = self.ask(prompt, model=self.models["tiny"])
-        # 
+        #
         # if response:
         #     try:
         #         # Try to parse JSON from response
         #         import re
-        # 
+        #
         #         json_match = re.search(r"\{.*\}", response, re.DOTALL)
         #         if json_match:
         #             return json.loads(json_match.group())
         #     except:
         #         pass
-        # 
+        #
         # # Fallback to basic parsing
         # return self._basic_intent_parsing(query)
 
@@ -243,12 +273,16 @@ For example, if asked about browsers, explain the options (Firefox, Chromium, Br
     def _extract_package_name(self, query: str, action: str) -> list[str]:
         """Extract package name from query"""
         query_lower = query.lower()
-        
+
         # Check for common descriptions FIRST - before word extraction
         # This catches phrases anywhere in the query
-        if "web browser" in query_lower or ("browser" in query_lower and "web" not in ["how", "do", "i"]):
+        if "web browser" in query_lower or (
+            "browser" in query_lower and "web" not in ["how", "do", "i"]
+        ):
             return ["firefox"]
-        elif "text editor" in query_lower or ("editor" in query_lower and "text" not in ["how", "do", "i"]):
+        elif "text editor" in query_lower or (
+            "editor" in query_lower and "text" not in ["how", "do", "i"]
+        ):
             return ["vim"]
         elif "terminal" in query_lower:
             return ["alacritty"]
@@ -268,7 +302,7 @@ For example, if asked about browsers, explain the options (Firefox, Chromium, Br
             return ["vscode"]
         elif "email" in query_lower and "client" in query_lower:
             return ["thunderbird"]
-        
+
         # If no description matches, try word extraction
         words = query.split()
         packages = []
@@ -278,10 +312,23 @@ For example, if asked about browsers, explain the options (Firefox, Chromium, Br
             idx = words.index(action)
             # Get everything after the action word
             remaining = words[idx + 1 :]
-            
+
             # Filter out articles and common words
-            ignore = {"a", "an", "the", "some", "for", "to", "please", "how", "do", "i", "can", "you"}
-            
+            ignore = {
+                "a",
+                "an",
+                "the",
+                "some",
+                "for",
+                "to",
+                "please",
+                "how",
+                "do",
+                "i",
+                "can",
+                "you",
+            }
+
             # Build the remaining text and check again for descriptions
             remaining_text = " ".join(remaining).lower()
             if "text editor" in remaining_text:
@@ -292,7 +339,7 @@ For example, if asked about browsers, explain the options (Firefox, Chromium, Br
                 return ["vlc"]
             elif "music player" in remaining_text:
                 return ["spotify"]
-            
+
             # Otherwise take the first non-ignored word
             for word in remaining:
                 if word not in ignore:

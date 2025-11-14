@@ -15,6 +15,7 @@ from dataclasses import dataclass
 @dataclass
 class RedactionResult:
     """Result of secret redaction"""
+
     text: str
     was_redacted: bool
     secret_types: list[str]
@@ -36,28 +37,27 @@ class SecretRedactor:
     # Regex patterns for common secret formats
     PATTERNS = {
         # Original patterns
-        'jwt': r'eyJ[^\s.]{20,500}\.[^\s.]{20,500}\.[^\s.]{20,500}',
-        'api_key': r'\b[a-zA-Z0-9]{32,64}\b',
-        'ssh_key': r'-----BEGIN .* PRIVATE KEY-----',
-        'hex_64': r'\b[0-9a-f]{64}\b',
-        'age_key': r'AGE-SECRET-KEY-[0-9A-Z]+',
-        'password_field': r'password[=:\s]+[^\s]+',
-        'password_multilingual': r'(?:mot de passe|passwort|contraseña|senha|parola|пароль)[=:\s]+[^\s]+',
-        'token': r'token[=:\s]+[a-zA-Z0-9_-]{20,}',
-        'email_token': r'[\w\.-]+@[\w\.-]+\.[a-z]{2,}[:\s]+\S+',
-        'bearer': r'Bearer\s+[a-zA-Z0-9_-]+',
-        'secret': r'secret[=:\s]+[^\s]+',
-
+        "jwt": r"eyJ[^\s.]{20,500}\.[^\s.]{20,500}\.[^\s.]{20,500}",
+        "api_key": r"\b[a-zA-Z0-9]{32,64}\b",
+        "ssh_key": r"-----BEGIN .* PRIVATE KEY-----",
+        "hex_64": r"\b[0-9a-f]{64}\b",
+        "age_key": r"AGE-SECRET-KEY-[0-9A-Z]+",
+        "password_field": r"password[=:\s]+[^\s]+",
+        "password_multilingual": r"(?:mot de passe|passwort|contraseña|senha|parola|пароль)[=:\s]+[^\s]+",
+        "token": r"token[=:\s]+[a-zA-Z0-9_-]{20,}",
+        "email_token": r"[\w\.-]+@[\w\.-]+\.[a-z]{2,}[:\s]+\S+",
+        "bearer": r"Bearer\s+[a-zA-Z0-9_-]+",
+        "secret": r"secret[=:\s]+[^\s]+",
         # Enhanced patterns (from security audit)
-        'env_var': r'(?:^|\s)[A-Z0-9_]{3,32}=[^\s]+',  # .env style (with optional leading whitespace)
-        'base64_secret': r'[A-Za-z0-9+/]{32,}={0,2}',  # Base64-encoded secrets
-        'url_token': r'[?&](?:token|key|sig|api_key|access_token)=[^&\s]+',  # URL tokens
-        'aws_access_key': r'AKIA[0-9A-Z]{16}',  # AWS Access Key ID
-        'aws_secret_key': r'[A-Za-z0-9/+=]{40}',  # AWS Secret Access Key format
-        'gcp_api_key': r'AIza[0-9A-Za-z_-]{35}',  # Google Cloud API key
-        'github_token': r'gh[pousr]_[A-Za-z0-9]{36,}',  # GitHub tokens
-        'ssh_path': r'\.ssh/[^\s]*',  # Paths under ~/.ssh
-        'credentials_path': r'\.(?:config|aws)/[^\s]*credential[^\s]*',  # Credential files
+        "env_var": r"(?:^|\s)[A-Z0-9_]{3,32}=[^\s]+",  # .env style (with optional leading whitespace)
+        "base64_secret": r"[A-Za-z0-9+/]{32,}={0,2}",  # Base64-encoded secrets
+        "url_token": r"[?&](?:token|key|sig|api_key|access_token)=[^&\s]+",  # URL tokens
+        "aws_access_key": r"AKIA[0-9A-Z]{16}",  # AWS Access Key ID
+        "aws_secret_key": r"[A-Za-z0-9/+=]{40}",  # AWS Secret Access Key format
+        "gcp_api_key": r"AIza[0-9A-Za-z_-]{35}",  # Google Cloud API key
+        "github_token": r"gh[pousr]_[A-Za-z0-9]{36,}",  # GitHub tokens
+        "ssh_path": r"\.ssh/[^\s]*",  # Paths under ~/.ssh
+        "credentials_path": r"\.(?:config|aws)/[^\s]*credential[^\s]*",  # Credential files
     }
 
     # Generic refusal message
@@ -85,14 +85,29 @@ class SecretRedactor:
         """Convert common homoglyphs to ASCII equivalents"""
         # Map Cyrillic and other confusables to Latin
         confusables = {
-            'а': 'a', 'е': 'e', 'о': 'o', 'р': 'p', 'с': 'c', 'у': 'y', 'х': 'x',  # Cyrillic lowercase
-            'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O',  # Cyrillic uppercase
-            'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X',
+            "а": "a",
+            "е": "e",
+            "о": "o",
+            "р": "p",
+            "с": "c",
+            "у": "y",
+            "х": "x",  # Cyrillic lowercase
+            "А": "A",
+            "В": "B",
+            "Е": "E",
+            "К": "K",
+            "М": "M",
+            "Н": "H",
+            "О": "O",  # Cyrillic uppercase
+            "Р": "P",
+            "С": "C",
+            "Т": "T",
+            "Х": "X",
         }
         result = []
         for char in text:
             result.append(confusables.get(char, char))
-        return ''.join(result)
+        return "".join(result)
 
     def redact(self, text: str) -> RedactionResult:
         """
@@ -108,7 +123,7 @@ class SecretRedactor:
             return RedactionResult(text=text, was_redacted=False, secret_types=[])
 
         # Normalize Unicode and convert homoglyphs
-        normalized_text = unicodedata.normalize('NFKC', text)
+        normalized_text = unicodedata.normalize("NFKC", text)
         normalized_text = self._normalize_homoglyphs(normalized_text)
 
         redacted_text = text
@@ -119,22 +134,16 @@ class SecretRedactor:
             if pattern.search(normalized_text):
                 found_secrets.append(secret_type)
                 # Replace with generic placeholder
-                redacted_text = pattern.sub('•••', redacted_text)
+                redacted_text = pattern.sub("•••", redacted_text)
 
         # If any secrets found, return generic message
         if found_secrets:
             return RedactionResult(
-                text=self.REFUSAL_MESSAGE,
-                was_redacted=True,
-                secret_types=found_secrets
+                text=self.REFUSAL_MESSAGE, was_redacted=True, secret_types=found_secrets
             )
 
         # No secrets found, return original
-        return RedactionResult(
-            text=text,
-            was_redacted=False,
-            secret_types=[]
-        )
+        return RedactionResult(text=text, was_redacted=False, secret_types=[])
 
     def check_for_secrets(self, text: str) -> bool:
         """

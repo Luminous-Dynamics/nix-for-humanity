@@ -14,8 +14,7 @@ from .startup_posture import get_effective_config, determine_posture
 
 
 def write_posture_stamp(
-    output_path: Path = None,
-    include_timestamp: bool = True
+    output_path: Path = None, include_timestamp: bool = True
 ) -> Path:
     """
     Write security posture stamp file at service startup.
@@ -108,7 +107,9 @@ def write_posture_stamp(
     if os.getenv("VOICE_PTT_REQUIRED"):
         env_overrides.append(f"VOICE_PTT_REQUIRED={os.getenv('VOICE_PTT_REQUIRED')}")
     if os.getenv("VOICE_APPROVALS_DISABLED"):
-        env_overrides.append(f"VOICE_APPROVALS_DISABLED={os.getenv('VOICE_APPROVALS_DISABLED')}")
+        env_overrides.append(
+            f"VOICE_APPROVALS_DISABLED={os.getenv('VOICE_APPROVALS_DISABLED')}"
+        )
     if os.getenv("VOICE_MIN_ASR_CONF"):
         env_overrides.append(f"VOICE_MIN_ASR_CONF={os.getenv('VOICE_MIN_ASR_CONF')}")
     if os.getenv("VOICE_MAX_NOISE"):
@@ -119,24 +120,26 @@ def write_posture_stamp(
     else:
         lines.append("(none - using manifest defaults)")
 
-    lines.extend([
-        "",
-        "=" * 70,
-        "",
-        "This posture stamp provides immutable evidence of the security",
-        "configuration active at service startup. Attach to incident reports",
-        "and release artifacts for audit trail.",
-        "",
-        "Verification:",
-        f"  Policy Hash: {config['policy_hash']}",
-        f"  File: {output_path}",
-        "",
-        "=" * 70,
-    ])
+    lines.extend(
+        [
+            "",
+            "=" * 70,
+            "",
+            "This posture stamp provides immutable evidence of the security",
+            "configuration active at service startup. Attach to incident reports",
+            "and release artifacts for audit trail.",
+            "",
+            "Verification:",
+            f"  Policy Hash: {config['policy_hash']}",
+            f"  File: {output_path}",
+            "",
+            "=" * 70,
+        ]
+    )
 
     # Write stamp
     content = "\n".join(lines)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(content)
 
     # Set restrictive permissions

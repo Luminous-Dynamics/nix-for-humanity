@@ -5,7 +5,7 @@ Designed for Maya (16, ADHD):
 - 2-5 seconds responses (no delays)
 - MINIMAL text (just essentials)
 - NO animations or pauses
-- KEYBOARD shortcuts for everything  
+- KEYBOARD shortcuts for everything
 - BATCH operations to reduce context switches
 - VISUAL markers for quick scanning
 """
@@ -115,9 +115,7 @@ class MayaMode:
                     time_ms=elapsed,
                 )
             # Fast error - just show package that failed
-            failed = (
-                result.stderr.split("'")[1] if "'" in result.stderr else "unknown"
-            )
+            failed = result.stderr.split("'")[1] if "'" in result.stderr else "unknown"
             return MayaResponse(
                 success=False, result=f"✗ {failed} failed", cmd=cmd, time_ms=elapsed
             )
@@ -159,9 +157,9 @@ class MayaMode:
         except subprocess.TimeoutExpired:
             return MayaResponse(success=False, result="✗ timeout", time_ms=30000)
 
-    def 2-5 seconds_search(self, term: str, max_results: int = 3) -> MayaResponse:
+    def fast_search(self, term: str, max_results: int = 3) -> MayaResponse:
         """
-        2-5 seconds search - no fancy formatting.
+        Fast search (typically 2-5 seconds) - no fancy formatting.
         Just package names.
         """
         start = time.time()
@@ -293,9 +291,7 @@ class MayaMode:
                 elif op == "remove":
                     future = executor.submit(self.quick_remove, args)
                 elif op == "search":
-                    future = executor.submit(
-                        self.2-5 seconds_search, args[0] if args else ""
-                    )
+                    future = executor.submit(self.fast_search, args[0] if args else "")
                 elif op == "list":
                     future = executor.submit(
                         self.list_installed, args[0] if args else None
@@ -365,7 +361,7 @@ class MayaCLI:
             response = self.maya.quick_remove(params)
         elif cmd in ["s", "search"]:
             term = " ".join(params)
-            response = self.maya.2-5 seconds_search(term)
+            response = self.maya.fast_search(term)
         elif cmd in ["l", "list"]:
             pattern = params[0] if params else None
             response = self.maya.list_installed(pattern)

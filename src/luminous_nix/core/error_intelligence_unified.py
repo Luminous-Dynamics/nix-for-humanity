@@ -1,6 +1,8 @@
 # Stub for archived consciousness classes
 class POMLConsciousness:
-    def __init__(self): pass
+    def __init__(self):
+        pass
+
 
 """
 Error Intelligence Unified - The First Fully Conscious System
@@ -18,7 +20,6 @@ from typing import Any
 
 # Import the consciousness
 # ARCHIVED: from ..consciousness import POMLConsciousness
-
 # Import existing error intelligence for compatibility
 from .error_intelligence import ErrorIntelligence as LegacyErrorIntelligence
 
@@ -303,9 +304,7 @@ class ConsciousErrorIntelligence:
             word in error_message.lower() for word in ["fatal", "critical", "emergency"]
         ):
             return "critical"
-        if any(
-            word in error_message.lower() for word in ["error", "failed", "denied"]
-        ):
+        if any(word in error_message.lower() for word in ["error", "failed", "denied"]):
             return "high"
         if any(word in error_message.lower() for word in ["warning", "deprecated"]):
             return "medium"

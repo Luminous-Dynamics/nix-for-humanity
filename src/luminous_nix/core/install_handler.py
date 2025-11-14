@@ -4,27 +4,27 @@ Install command handler with ultra-fast performance
 
 import subprocess
 import time
-from typing import Tuple, Optional
 
 from .ultra_fast_cache import get_ultra_cache
 
+
 class InstallHandler:
     """Handle package installation with <100ms response times"""
-    
+
     def __init__(self, dry_run: bool = True):
         self.dry_run = dry_run
         self.cache = get_ultra_cache()
-    
-    def install_package(self, package: str) -> Tuple[bool, str, float]:
+
+    def install_package(self, package: str) -> tuple[bool, str, float]:
         """
         Install a package with ultra-fast response
         Returns: (success, message, elapsed_ms)
         """
         start = time.time()
-        
+
         # First check if package exists in our cache
         info, lookup_ms = self.cache.info_instant(package)
-        
+
         if not info:
             # Try common variations
             if package in ["browser", "web-browser"]:
@@ -36,7 +36,7 @@ class InstallHandler:
             elif package == "ide":
                 package = "vscode"
                 info, _ = self.cache.info_instant("vscode")
-        
+
         if info:
             # Package found in cache
             if self.dry_run:
@@ -61,11 +61,13 @@ To actually install, run without --dry-run flag"""
         else:
             # Package not in cache, search for it
             results, search_ms = self.cache.search_instant(package)
-            
+
             if results:
                 # Found similar packages
                 elapsed_ms = (time.time() - start) * 1000
-                suggestions = "\n".join([f"  • {r['name']} - {r['description']}" for r in results[:5]])
+                suggestions = "\n".join(
+                    [f"  • {r['name']} - {r['description']}" for r in results[:5]]
+                )
                 message = f"""❓ Package '{package}' not found. Did you mean one of these?
 
 {suggestions}
@@ -83,22 +85,24 @@ Try searching first:
 Or check available packages:
   luminous-nix list"""
                 return (False, message, elapsed_ms)
-    
-    def _execute_install(self, package: str, start_time: float) -> Tuple[bool, str, float]:
+
+    def _execute_install(
+        self, package: str, start_time: float
+    ) -> tuple[bool, str, float]:
         """Actually execute the install command"""
         try:
             # Use nix profile for modern Nix
             cmd = ["nix", "profile", "install", f"nixpkgs#{package}"]
-            
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=30  # 30 second timeout for actual install
+                timeout=30,  # 30 second timeout for actual install
             )
-            
+
             elapsed_ms = (time.time() - start_time) * 1000
-            
+
             if result.returncode == 0:
                 message = f"""✅ Successfully installed {package}!
 
@@ -115,7 +119,7 @@ Installation completed in {elapsed_ms:.1f}ms"""
 Try running with more permissions:
   sudo nix profile install nixpkgs#{package}"""
                 return (False, message, elapsed_ms)
-                
+
         except subprocess.TimeoutExpired:
             elapsed_ms = (time.time() - start_time) * 1000
             message = f"""⏱️ Installation is taking longer than expected.
@@ -126,7 +130,7 @@ Check progress with:
 
 Package: {package}"""
             return (False, message, elapsed_ms)
-        
+
         except Exception as e:
             elapsed_ms = (time.time() - start_time) * 1000
             message = f"""❌ Installation error: {str(e)}
@@ -135,8 +139,10 @@ Please try manually:
   nix profile install nixpkgs#{package}"""
             return (False, message, elapsed_ms)
 
+
 # Singleton
 _install_handler = None
+
 
 def get_install_handler(dry_run: bool = True) -> InstallHandler:
     """Get or create the install handler"""

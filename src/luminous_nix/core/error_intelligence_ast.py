@@ -561,9 +561,7 @@ class ASTErrorIntelligence:
         # Simplified for now
         return []
 
-    def _extract_type_info(
-        self, error_message: str
-    ) -> tuple[str | None, str | None]:
+    def _extract_type_info(self, error_message: str) -> tuple[str | None, str | None]:
         """Extract expected and actual types from error message"""
         match = re.search(r"expected (.+) but got (.+)", error_message)
         if match:

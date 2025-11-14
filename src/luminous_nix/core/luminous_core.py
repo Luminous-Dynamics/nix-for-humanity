@@ -6,15 +6,16 @@ This replaces the non-existent LuminousNixCore that was claimed to exist
 from dataclasses import dataclass
 from typing import Any
 
-from .integrated_backend import get_integrated_backend
 from .config_executor import ConfigExecutor
 from .error_handler import ErrorHandler
 from .executor import SafeExecutor
 from .flake_executor import FlakeExecutor
 from .home_executor import HomeExecutor
+from .integrated_backend import get_integrated_backend
 from .intents import Intent, IntentRecognizer, IntentType
 from .knowledge import KnowledgeBase
 from .native_nix_api import get_native_api
+
 # ARCHIVED: from .sacred_utils import (
 #     KairosMode,
 #     MindfulOperation,
@@ -77,7 +78,7 @@ class LuminousNixCore:
         # v0.5.2+: Only real backend, no mocks!
         self.backend = get_integrated_backend()
         print("✅ Using REAL NixOS backend - actual commands will be executed!")
-            
+
         self.intent_recognizer = IntentRecognizer()
         self.executor = SafeExecutor()
         self.knowledge = KnowledgeBase()
@@ -186,7 +187,7 @@ class LuminousNixCore:
             # Handle special cases that don't need commands
             if intent.type == IntentType.HELP:
                 return self._get_help_response()
-            
+
             if not command:
                 return Response(
                     success=False,
@@ -390,6 +391,7 @@ class LuminousNixCore:
         # Try to use enhanced output if available
         try:
             from .enhanced_output import output
+
             output.show_help()
             help_text = "Help displayed above"
         except ImportError:
@@ -415,15 +417,11 @@ EXAMPLES:
 OPTIONS:
   --dry-run        - Preview commands without executing
   --verbose        - Show detailed output
-  
+
 NOTE: Real NixOS backend only (v0.5.2+) - No mocks!
 """
-        return Response(
-            success=True,
-            message=help_text.strip(),
-            command="help"
-        )
-    
+        return Response(success=True, message=help_text.strip(), command="help")
+
     def _build_command(self, intent: Intent, query: Query) -> str | None:
         """Build the actual Nix command to execute"""
 

@@ -121,9 +121,7 @@ class RemoteBuilder:
     def __init__(self):
         self.ops = AdvancedNativeOperations()
 
-    async def build(
-        self, host: str, user: str | None = None
-    ) -> NativeOperationResult:
+    async def build(self, host: str, user: str | None = None) -> NativeOperationResult:
         """Build configuration on remote machine"""
         return await self.ops.execute_remote_operation(
             RemoteOperationType.BUILD_REMOTE,
@@ -131,9 +129,7 @@ class RemoteBuilder:
             options={"user": user} if user else {},
         )
 
-    async def deploy(
-        self, host: str, user: str | None = None
-    ) -> NativeOperationResult:
+    async def deploy(self, host: str, user: str | None = None) -> NativeOperationResult:
         """Deploy configuration to remote machine"""
         return await self.ops.execute_remote_operation(
             RemoteOperationType.DEPLOY_REMOTE,

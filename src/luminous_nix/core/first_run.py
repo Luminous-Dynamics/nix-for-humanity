@@ -158,9 +158,7 @@ class FirstRunExperience:
                         )
                         time.sleep(1)
                         return True
-                    console.print(
-                        f"[red]Installation failed: {result.stderr}[/red]"
-                    )
+                    console.print(f"[red]Installation failed: {result.stderr}[/red]")
                     return False
                 except Exception as e:
                     console.print(f"[red]Installation error: {e}[/red]")
@@ -217,9 +215,7 @@ class FirstRunExperience:
                         task, completed=100, description=f"✅ {model_name} ready!"
                     )
                     return True
-                progress.update(
-                    task, description=f"❌ Failed to download {model_name}"
-                )
+                progress.update(task, description=f"❌ Failed to download {model_name}")
                 return False
 
         except Exception as e:

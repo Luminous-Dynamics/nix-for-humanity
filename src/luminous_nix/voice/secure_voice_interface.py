@@ -54,11 +54,13 @@ class SecureVoiceInterface(ProductionVoiceInterface):
 
         if result.was_redacted:
             # Log redaction event
-            self._audit_log({
-                'event': 'secret_redacted',
-                'secret_types': result.secret_types,
-                'original_length': len(text),
-            })
+            self._audit_log(
+                {
+                    "event": "secret_redacted",
+                    "secret_types": result.secret_types,
+                    "original_length": len(text),
+                }
+            )
 
             # Speak generic refusal
             super().speak(result.text, wait)
@@ -78,13 +80,15 @@ class SecureVoiceInterface(ProductionVoiceInterface):
         decision = self.policy_checker.check_policy(command_text)
 
         # Audit the attempt
-        self._audit_log({
-            'event': 'command_attempt',
-            'command': command_text,
-            'tier': decision.tier,
-            'allowed': decision.allowed,
-            'reason': decision.reason,
-        })
+        self._audit_log(
+            {
+                "event": "command_attempt",
+                "command": command_text,
+                "tier": decision.tier,
+                "allowed": decision.allowed,
+                "reason": decision.reason,
+            }
+        )
 
         if not decision.allowed:
             # Tier 2+ requires approval
@@ -95,15 +99,16 @@ class SecureVoiceInterface(ProductionVoiceInterface):
                     result = simulate_tier2_approval(
                         command=command_text,
                         tier=decision.tier,
-                        capability=getattr(decision, 'capability', 'unknown'),
-                        diff_id="dry-run-" + hashlib.sha256(command_text.encode()).hexdigest()[:8],
+                        capability=getattr(decision, "capability", "unknown"),
+                        diff_id="dry-run-"
+                        + hashlib.sha256(command_text.encode()).hexdigest()[:8],
                         policy_hash="dry-run-policy",
                         nonce=decision.approval_code,
                         recovery_command="<dry-run-no-undo>",
-                        user_approved=True
+                        user_approved=True,
                     )
-                    self.speak(result['message'])
-                    return result['message'], result['success']
+                    self.speak(result["message"])
+                    return result["message"], result["success"]
 
                 # IMPORTANT: Never speak the approval code
                 self.speak("That needs a confirmation in the window.")
@@ -114,11 +119,13 @@ class SecureVoiceInterface(ProductionVoiceInterface):
                 print(f"💡 Type the code in the modal to proceed")
 
                 # Log approval request
-                self._audit_log({
-                    'event': 'approval_required',
-                    'tier': decision.tier,
-                    'approval_code_issued': decision.approval_code,
-                })
+                self._audit_log(
+                    {
+                        "event": "approval_required",
+                        "tier": decision.tier,
+                        "approval_code_issued": decision.approval_code,
+                    }
+                )
 
                 # Return blocked
                 return "", False
@@ -131,12 +138,14 @@ class SecureVoiceInterface(ProductionVoiceInterface):
         result_text, success = super().execute_command(command_text)
 
         # Log execution
-        self._audit_log({
-            'event': 'command_executed',
-            'command': command_text,
-            'tier': decision.tier,
-            'success': success,
-        })
+        self._audit_log(
+            {
+                "event": "command_executed",
+                "command": command_text,
+                "tier": decision.tier,
+                "success": success,
+            }
+        )
 
         return result_text, success
 
@@ -148,27 +157,33 @@ class SecureVoiceInterface(ProductionVoiceInterface):
 
         if not intent:
             self.speak("Invalid or expired code. Command cancelled.")
-            self._audit_log({
-                'event': 'approval_denied',
-                'reason': 'invalid_or_expired_code',
-            })
+            self._audit_log(
+                {
+                    "event": "approval_denied",
+                    "reason": "invalid_or_expired_code",
+                }
+            )
             return "", False
 
         # Code valid - execute command
         self.speak("Code confirmed. Executing command.")
-        self._audit_log({
-            'event': 'approval_granted',
-            'code_used': typed_code,
-        })
+        self._audit_log(
+            {
+                "event": "approval_granted",
+                "code_used": typed_code,
+            }
+        )
 
         # Execute with bypassed tier check (already approved)
         result_text, success = super().execute_command(command_text)
 
-        self._audit_log({
-            'event': 'approved_command_executed',
-            'command': command_text,
-            'success': success,
-        })
+        self._audit_log(
+            {
+                "event": "approved_command_executed",
+                "command": command_text,
+                "success": success,
+            }
+        )
 
         return result_text, success
 
@@ -177,14 +192,11 @@ class SecureVoiceInterface(ProductionVoiceInterface):
         now = datetime.now().timestamp()
 
         # Remove commands older than 1 minute
-        self.command_times = [
-            t for t in self.command_times
-            if now - t < 60
-        ]
+        self.command_times = [t for t in self.command_times if now - t < 60]
 
         # Check limit
         if len(self.command_times) >= self.max_commands_per_minute:
-            self._audit_log({'event': 'rate_limit_exceeded'})
+            self._audit_log({"event": "rate_limit_exceeded"})
             return False
 
         # Add current command
@@ -194,15 +206,15 @@ class SecureVoiceInterface(ProductionVoiceInterface):
     def _audit_log(self, event_data: Dict[str, Any]):
         """Append event to audit log (JSON Lines format)"""
         entry = {
-            'ts': datetime.now().isoformat(),
-            'session_id': self.session_id,
-            'source': 'voice',
-            **event_data
+            "ts": datetime.now().isoformat(),
+            "session_id": self.session_id,
+            "source": "voice",
+            **event_data,
         }
 
         try:
-            with open(self.audit_file, 'a') as f:
-                f.write(json.dumps(entry) + '\n')
+            with open(self.audit_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
         except Exception as e:
             print(f"⚠️  Audit logging error: {e}")
 
@@ -236,9 +248,7 @@ def main():
     print("  • Rate limiting: 20/minute")
     print("=" * 70)
 
-    interface = SecureVoiceInterface(
-        audit_file=Path("voice-audit.jsonl")
-    )
+    interface = SecureVoiceInterface(audit_file=Path("voice-audit.jsonl"))
 
     interface.interactive_mode()
 

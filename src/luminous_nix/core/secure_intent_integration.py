@@ -255,8 +255,7 @@ def create_secure_pipeline_for_cli(
     return SecureIntentPipeline(
         security_level=security_level,
         enable_ai=os.environ.get("LUMINOUS_AI_ENABLED", "").lower() == "true",
-        enable_learning=not os.environ.get("LUMINOUS_NO_LEARNING", "").lower()
-        == "true",
+        enable_learning=os.environ.get("LUMINOUS_NO_LEARNING", "").lower() != "true",
     )
 
 

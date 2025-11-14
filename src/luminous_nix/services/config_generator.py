@@ -16,11 +16,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NixConfig:
     """Represents a NixOS configuration"""
+
     description: str
     config: str
     packages: List[str]
     services: Dict[str, Dict]
-    
+
     def to_nix(self) -> str:
         """Convert to actual configuration.nix format"""
         return self.config
@@ -29,57 +30,67 @@ class NixConfig:
 class ConfigGenerator:
     """
     Generate real, working NixOS configurations from natural language.
-    
+
     This is a killer feature - users describe what they want,
     we generate the exact configuration they need.
     """
-    
+
     def __init__(self):
         """Initialize with configuration templates"""
         self.templates = self._load_templates()
-    
+
     def generate(self, request: str) -> NixConfig:
         """
         Generate NixOS configuration from natural language request.
-        
+
         Examples:
             "I need a web server" -> nginx configuration
             "Setup PostgreSQL" -> PostgreSQL with good defaults
             "Python development environment" -> Python with tools
         """
         request_lower = request.lower()
-        
+
         # Web server requests
-        if any(word in request_lower for word in ["web server", "nginx", "apache", "http server"]):
+        if any(
+            word in request_lower
+            for word in ["web server", "nginx", "apache", "http server"]
+        ):
             return self._generate_web_server(request)
-        
+
         # Database requests
-        if any(word in request_lower for word in ["database", "postgresql", "mysql", "postgres"]):
+        if any(
+            word in request_lower
+            for word in ["database", "postgresql", "mysql", "postgres"]
+        ):
             return self._generate_database(request)
-        
+
         # Development environment requests
-        if any(word in request_lower for word in ["development", "dev environment", "programming"]):
+        if any(
+            word in request_lower
+            for word in ["development", "dev environment", "programming"]
+        ):
             return self._generate_dev_environment(request)
-        
+
         # Docker/containers
         if any(word in request_lower for word in ["docker", "container", "podman"]):
             return self._generate_docker(request)
-        
+
         # Desktop environment
         if any(word in request_lower for word in ["desktop", "gnome", "kde", "xfce"]):
             return self._generate_desktop(request)
-        
+
         # Default: basic system
         return self._generate_basic(request)
-    
+
     def _generate_web_server(self, request: str) -> NixConfig:
         """Generate web server configuration"""
-        
+
         # Check for SSL requirement
         with_ssl = "ssl" in request.lower() or "https" in request.lower()
-        
+
         if with_ssl:
-            config = dedent("""
+            config = dedent(
+                """
                 # Web server with SSL
                 { config, pkgs, ... }:
                 
@@ -122,9 +133,11 @@ class ConfigGenerator:
                     htop
                   ];
                 }
-            """).strip()
+            """
+            ).strip()
         else:
-            config = dedent("""
+            config = dedent(
+                """
                 # Basic web server
                 { config, pkgs, ... }:
                 
@@ -151,26 +164,28 @@ class ConfigGenerator:
                     wget
                   ];
                 }
-            """).strip()
-        
+            """
+            ).strip()
+
         return NixConfig(
             description="Web server configuration" + (" with SSL" if with_ssl else ""),
             config=config,
             packages=["nginx", "curl", "wget"],
-            services={"nginx": {"enable": True}}
+            services={"nginx": {"enable": True}},
         )
-    
+
     def _generate_database(self, request: str) -> NixConfig:
         """Generate database configuration"""
-        
+
         # Determine which database
         if "mysql" in request.lower() or "mariadb" in request.lower():
             db_type = "mysql"
         else:
             db_type = "postgresql"  # Default to PostgreSQL
-        
+
         if db_type == "postgresql":
-            config = dedent("""
+            config = dedent(
+                """
                 # PostgreSQL database server
                 { config, pkgs, ... }:
                 
@@ -213,16 +228,18 @@ class ConfigGenerator:
                     pgcli  # Better PostgreSQL CLI
                   ];
                 }
-            """).strip()
-            
+            """
+            ).strip()
+
             return NixConfig(
                 description="PostgreSQL database configuration",
                 config=config,
                 packages=["postgresql_15", "pgcli"],
-                services={"postgresql": {"enable": True, "package": "postgresql_15"}}
+                services={"postgresql": {"enable": True, "package": "postgresql_15"}},
             )
         else:
-            config = dedent("""
+            config = dedent(
+                """
                 # MySQL/MariaDB database server
                 { config, pkgs, ... }:
                 
@@ -263,18 +280,19 @@ class ConfigGenerator:
                     mycli  # Better MySQL CLI
                   ];
                 }
-            """).strip()
-            
+            """
+            ).strip()
+
             return NixConfig(
                 description="MySQL/MariaDB database configuration",
                 config=config,
                 packages=["mariadb", "mycli"],
-                services={"mysql": {"enable": True, "package": "mariadb"}}
+                services={"mysql": {"enable": True, "package": "mariadb"}},
             )
-    
+
     def _generate_dev_environment(self, request: str) -> NixConfig:
         """Generate development environment configuration"""
-        
+
         # Detect language
         languages = []
         if "python" in request.lower():
@@ -285,12 +303,13 @@ class ConfigGenerator:
             languages.append("nodejs")
         if "go" in request.lower() or "golang" in request.lower():
             languages.append("go")
-        
+
         # Default to Python if no specific language
         if not languages:
             languages = ["python"]
-        
-        config = dedent("""
+
+        config = dedent(
+            """
             # Development environment
             { config, pkgs, ... }:
             
@@ -313,10 +332,11 @@ class ConfigGenerator:
                 # Container tools
                 docker
                 docker-compose
-        """).strip()
-        
+        """
+        ).strip()
+
         packages = ["git", "vim", "neovim", "gnumake", "gcc", "docker"]
-        
+
         # Add language-specific tools
         if "python" in languages:
             config += """
@@ -330,7 +350,7 @@ class ConfigGenerator:
                 python311Packages.pytest
                 poetry"""
             packages.extend(["python311", "poetry"])
-        
+
         if "rust" in languages:
             config += """
                 
@@ -341,7 +361,7 @@ class ConfigGenerator:
                 clippy
                 rust-analyzer"""
             packages.extend(["rustc", "cargo"])
-        
+
         if "nodejs" in languages:
             config += """
                 
@@ -352,7 +372,7 @@ class ConfigGenerator:
                 nodePackages.typescript
                 nodePackages.prettier"""
             packages.extend(["nodejs_20", "yarn"])
-        
+
         if "go" in languages:
             config += """
                 
@@ -361,7 +381,7 @@ class ConfigGenerator:
                 gopls
                 gotools"""
             packages.extend(["go", "gopls"])
-        
+
         config += """
               ];
               
@@ -371,18 +391,19 @@ class ConfigGenerator:
               # Add user to docker group (replace 'user' with your username)
               users.users.user.extraGroups = [ "docker" ];
             }"""
-        
+
         return NixConfig(
             description=f"Development environment for {', '.join(languages)}",
             config=config,
             packages=packages,
-            services={"docker": {"enable": True}}
+            services={"docker": {"enable": True}},
         )
-    
+
     def _generate_docker(self, request: str) -> NixConfig:
         """Generate Docker/container configuration"""
-        
-        config = dedent("""
+
+        config = dedent(
+            """
             # Docker container configuration
             { config, pkgs, ... }:
             
@@ -414,18 +435,19 @@ class ConfigGenerator:
               #   dockerCompat = true;
               # };
             }
-        """).strip()
-        
+        """
+        ).strip()
+
         return NixConfig(
             description="Docker container environment",
             config=config,
             packages=["docker", "docker-compose", "lazydocker", "dive"],
-            services={"docker": {"enable": True, "autoPrune": True}}
+            services={"docker": {"enable": True, "autoPrune": True}},
         )
-    
+
     def _generate_desktop(self, request: str) -> NixConfig:
         """Generate desktop environment configuration"""
-        
+
         # Detect desktop environment
         if "kde" in request.lower() or "plasma" in request.lower():
             de = "kde"
@@ -435,9 +457,10 @@ class ConfigGenerator:
             de = "xfce"
         else:
             de = "gnome"  # Default
-        
+
         configs = {
-            "gnome": dedent("""
+            "gnome": dedent(
+                """
                 # GNOME desktop environment
                 { config, pkgs, ... }:
                 
@@ -461,9 +484,10 @@ class ConfigGenerator:
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
                 }
-            """).strip(),
-            
-            "kde": dedent("""
+            """
+            ).strip(),
+            "kde": dedent(
+                """
                 # KDE Plasma desktop environment
                 { config, pkgs, ... }:
                 
@@ -488,9 +512,10 @@ class ConfigGenerator:
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
                 }
-            """).strip(),
-            
-            "xfce": dedent("""
+            """
+            ).strip(),
+            "xfce": dedent(
+                """
                 # XFCE desktop environment
                 { config, pkgs, ... }:
                 
@@ -514,20 +539,22 @@ class ConfigGenerator:
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
                 }
-            """).strip()
+            """
+            ).strip(),
         }
-        
+
         return NixConfig(
             description=f"{de.upper()} desktop environment",
             config=configs[de],
             packages=[de],
-            services={"xserver": {"enable": True}, "pulseaudio": {"enable": True}}
+            services={"xserver": {"enable": True}, "pulseaudio": {"enable": True}},
         )
-    
+
     def _generate_basic(self, request: str) -> NixConfig:
         """Generate basic system configuration"""
-        
-        config = dedent("""
+
+        config = dedent(
+            """
             # Basic NixOS configuration
             { config, pkgs, ... }:
             
@@ -560,15 +587,16 @@ class ConfigGenerator:
               # Enable firewall
               networking.firewall.enable = true;
             }
-        """).strip()
-        
+        """
+        ).strip()
+
         return NixConfig(
             description="Basic system configuration",
             config=config,
             packages=["vim", "htop", "git", "wget", "curl"],
-            services={"openssh": {"enable": True}}
+            services={"openssh": {"enable": True}},
         )
-    
+
     def _load_templates(self) -> Dict:
         """Load configuration templates"""
         # This could load from files in the future
