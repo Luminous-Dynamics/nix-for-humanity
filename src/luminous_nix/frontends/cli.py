@@ -1662,9 +1662,10 @@ class UnifiedNixAssistant:
                         if len(parts) >= 2:
                             print(f"  • {parts[0]} ({parts[1]})")
 
-                    if len(result.stdout.strip().split("\n")) > 10:
+                    stdout_lines = result.stdout.strip().split("\n")
+                    if len(stdout_lines) > 10:
                         print(
-                            f"  ... and {len(result.stdout.strip().split('\n')) - 10} more"
+                            f"  ... and {len(stdout_lines) - 10} more"
                         )
                 else:
                     print(f"No packages found matching '{term}'")

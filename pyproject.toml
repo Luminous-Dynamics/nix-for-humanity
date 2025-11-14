@@ -62,14 +62,14 @@ prompt-toolkit = {version = "^3.0.43"}  # Advanced prompts - needed for TUI
 questionary = {version = "^2.0.1", optional = true}  # Beautiful interactive prompts
 inquirer = {version = "^3.1.0", optional = true}  # Interactive CLI prompts
 
-# Voice - Speech recognition and synthesis (REQUIRED for full functionality)
+# Voice - Speech recognition and synthesis (OPTIONAL for voice interface)
 # whisper-cpp-python = {version = "^0.2.0", optional = true}  # Not on PyPI
 # piper-tts = {version = "^1.0.0", optional = true}  # Not on PyPI
 vosk = {version = "^0.3.45", optional = true}
 py-espeak-ng = {version = "^0.1.8", optional = true}  # Note: was espeak-ng
 openai-whisper = {version = ">=20230918", optional = true}  # OpenAI Whisper for speech recognition
-pyaudio = "^0.2.14"  # Audio I/O library - ALWAYS REQUIRED for voice interface
-sounddevice = "^0.5.1"  # Alternative audio I/O - ALWAYS REQUIRED as fallback
+pyaudio = {version = "^0.2.14", optional = true}  # Audio I/O library - requires portaudio system dependency
+sounddevice = {version = "^0.5.1", optional = true}  # Alternative audio I/O
 
 # Web dependencies (from requirements.txt)
 flask = {version = "^3.0.0", optional = true}
@@ -195,11 +195,11 @@ wandb = "^0.22.0"
 
 [tool.poetry.extras]
 tui = ["textual", "textual-dev", "blessed", "pyperclip", "typer", "questionary", "inquirer"]
-voice = ["vosk", "py-espeak-ng", "openai-whisper"]
+voice = ["vosk", "py-espeak-ng", "openai-whisper", "pyaudio", "sounddevice"]
 web = ["flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography"]
 ml = ["llama-cpp-python"]
 advanced = ["peft", "trl", "lancedb", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate"]
-all = ["textual", "textual-dev", "blessed", "pyperclip", "typer", "questionary", "inquirer", "vosk", "py-espeak-ng", "openai-whisper", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "llama-cpp-python", "peft", "trl", "lancedb", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate"]
+all = ["textual", "textual-dev", "blessed", "pyperclip", "typer", "questionary", "inquirer", "vosk", "py-espeak-ng", "openai-whisper", "pyaudio", "sounddevice", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "llama-cpp-python", "peft", "trl", "lancedb", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate"]
 
 [tool.poetry.urls]
 "Homepage" = "https://github.com/Luminous-Dynamics/nix-for-humanity"
