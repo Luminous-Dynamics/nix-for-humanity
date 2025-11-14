@@ -1,22 +1,22 @@
-# Verification Results - 2025-09-09 00:27
+# Verification Results - 2025-11-14 20:20
 
 ## Module Status
-- luminous_nix.core.native_nix_api.NativeNixAPI: ✅ Working
-- luminous_nix.core.json_optimized_nix.JSONOptimizedNix: ✅ Working
-- luminous_nix.core.integrated_backend.IntegratedBackend: ✅ Working
-- luminous_nix.core.executor.SafeExecutor: ✅ Working
-- luminous_nix.services.cache.CacheService: ✅ Working
-- luminous_nix.services.search.SearchService: ✅ Working
-- luminous_nix.ai.hrm_reasoner_v2.HRMv2NixOSReasoner: ✅ Working
+- luminous_nix.core.native_nix_api.NativeNixAPI: ❌ Not working
+- luminous_nix.core.json_optimized_nix.JSONOptimizedNix: ❌ Not working
+- luminous_nix.core.integrated_backend.IntegratedBackend: ❌ Not working
+- luminous_nix.core.executor.SafeExecutor: ❌ Not working
+- luminous_nix.services.cache.CacheService: ❌ Not working
+- luminous_nix.services.search.SearchService: ❌ Not working
+- luminous_nix.ai.hrm_reasoner_v2.HRMv2NixOSReasoner: ❌ Not working
 - luminous_nix.embeddings.gemma_encoder.GemmaEncoder: ❌ Not working
 
 ## Command Status
-- `help`: ✅ (1959ms)
-- `list`: ✅ (3240ms)
-- `search vim`: ✅ (2013ms)
-- `"install firefox" --dry-run`: ❌ (5000ms)
+- `help`: ❌ (3536ms)
+- `list`: ❌ (1335ms)
+- `search vim`: ❌ (1548ms)
+- `"install firefox" --dry-run`: ❌ (1360ms)
 
 ## Performance
-- Average response: 3053ms
+- Average response: 1945ms
 - Target: <100ms
 - Status: ❌ Not met
