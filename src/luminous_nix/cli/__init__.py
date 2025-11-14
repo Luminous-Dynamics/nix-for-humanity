@@ -77,7 +77,7 @@ except ImportError:
 
 
 @click.group()
-@click.version_option(version="0.6.0", prog_name="Luminous Nix")
+@click.version_option(version="0.8.1", prog_name="Luminous Nix")
 @click.pass_context
 def cli(ctx):
     """Luminous Nix - Natural language interface for NixOS

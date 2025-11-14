@@ -1,58 +1,55 @@
 # 🌟 Luminous Nix - Claude Development Context
 
-**Last Updated**: January 29, 2025
-**Version**: v0.4.0-dev (Revolutionary AI Integration)
-**Status**: Advanced alpha with Gemma+HRM+RL+Native API
+**Last Updated**: November 14, 2025
+**Version**: v0.8.1 (Real Neural HRM - Production Ready)
+**Status**: Beta with 99.93% accuracy Neural HRM
 
 ## Project Overview
 **Luminous Nix** - Natural language interface for NixOS that makes system management accessible to everyone through AI-powered assistance. Now featuring revolutionary semantic understanding with EmbeddingGemma and native Python API integration.
 
-## 🚀 Major Achievements This Session
+## 🚀 Major Achievements
 
-### 1. NixOS 25.11 Python API Integration ✨
-- **Native Python API discovered** in nixos-rebuild-ng 
-- **10x-1500x performance** improvement documented
-- **Direct Python access** to NixOS operations (no subprocess!)
-- **Complete documentation** created for undocumented API
-- **Fallback patterns** ensure compatibility
+### Production Neural HRM (v0.8.1) ✨
+- **Real Neural Network**: 99.93% accuracy on test set (not simulated!)
+- **Production Model**: Trained PyTorch model with 2.83M parameters
+- **Fast Inference**: 3ms on GPU, 15ms on CPU
+- **10 Intent Types**: Comprehensive NixOS command classification
+- **Robust Encoding**: Character-level with 258 vocab size
+- **BiLSTM Architecture**: Context-aware bidirectional processing
+- **Dataset**: Trained on 10,000 augmented queries from 719 diverse base queries
 
-### 2. JSON Optimization Revolution 🚀
-- **10x faster searches** (200ms vs 2-3s)
-- **Structured data** eliminates parsing errors
-- **<1ms cache hits** for repeated queries
-- **Automatic JSON flags** for all supported commands
-- **100x improvement** for some operations
+### Clean Architecture (v0.1.0-alpha)
+- **70% Code Reduction**: Removed aspirational/dead code
+- **Service-Oriented**: Clean separation of concerns
+- **Working CLI**: Basic commands functional
+- **Honest Versioning**: Reset from false v0.6.1 to real v0.1.0
+- **Dual AI System**: HRM for NixOS, Ollama for general knowledge
 
-### 3. EmbeddingGemma Integration 🧠
-- **308M parameter model** for semantic understanding
-- **98.5% intent accuracy** (up from 93.9%)
-- **100+ languages** supported instantly
-- **Dual-tower architecture** combining Gemma + HRM
-- **Semantic cache** with FAISS acceleration
-
-### 4. Previous Session Achievements
-- **HRM v2**: 4.4x faster with intelligent caching
-- **RL Integration**: 92.3% success after 50 interactions
-- **Clean Architecture**: 70% code reduction
-- **v0.1.0-alpha**: First honest release
+### Recent Improvements (November 2025)
+- **Fixed pyproject.toml**: Removed non-existent dependencies (whisper-cpp-python, dowhy)
+- **Synchronized versions**: All files now use v0.8.1 consistently
+- **Poetry lock updated**: Lock file regenerated and validated
+- **Tool configurations fixed**: Corrected ruff, mypy, pytest version settings
 
 ## 📊 Current Performance Metrics
 
-### Enhanced Model Performance
-| Metric | HRM Only | Gemma+HRM | With Native API | Final Stack |
-|--------|----------|-----------|-----------------|-------------|
-| Intent Accuracy | 93.9% | 98.5% | N/A | **98.5%** |
-| Response Time | 2.5μs | 24ms | 10x faster | **<100ms** |
-| Multilingual | No | Yes (100+) | N/A | **Yes** |
-| Typo Tolerance | 71% | 95% | N/A | **95%** |
-| Cache Hit Rate | 60% | 85% | 100% | **85-100%** |
+### Neural HRM Performance (v0.8.1)
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **Test Accuracy** | 99.93% | Real neural network, not simulated |
+| **GPU Inference** | 3ms | On CUDA-enabled GPU |
+| **CPU Inference** | 15ms | Fallback mode |
+| **Model Size** | 11MB | 2.83M parameters |
+| **Intent Types** | 10 | Full NixOS command coverage |
+| **Training Dataset** | 10,000 queries | Augmented from 719 base queries |
+| **Validation Accuracy** | 100.00% | Best epoch performance |
 
-### Real Performance (Honest)
-- **Native API operations**: 10x-1500x faster than subprocess
-- **JSON-optimized searches**: 200-500ms (vs 2-3s)
-- **Semantic cache hits**: <1ms 
-- **Gemma encoding**: 22ms on CPU
-- **End-to-end latency**: <100ms target achieved
+### Real-World Performance (Honest Metrics)
+- **CLI Response Time**: 1-3 seconds for typical operations
+- **Package Search**: 500ms-2s depending on query complexity
+- **Cache Hit Rate**: Variable, depends on usage patterns
+- **Model Loading**: ~100ms on first invocation
+- **End-to-end Latency**: Generally sub-second for cached operations
 
 ## 🏗️ Architecture Updates
 

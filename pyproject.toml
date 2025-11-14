@@ -194,12 +194,12 @@ pyinstaller = "^6.15.0"
 wandb = "^0.22.0"
 
 [tool.poetry.extras]
-tui = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "typer", "prompt-toolkit", "questionary", "inquirer"]
-voice = ["whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "openai-whisper"]
+tui = ["textual", "textual-dev", "blessed", "pyperclip", "typer", "questionary", "inquirer"]
+voice = ["vosk", "py-espeak-ng", "openai-whisper"]
 web = ["flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography"]
-ml = ["numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "faiss-cpu", "llama-cpp-python"]
-advanced = ["accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
-all = ["textual", "textual-dev", "rich", "blessed", "pyperclip", "typer", "prompt-toolkit", "questionary", "inquirer", "whisper-cpp-python", "piper-tts", "vosk", "py-espeak-ng", "openai-whisper", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "numpy", "nltk", "transformers", "torch", "scikit-learn", "sentence-transformers", "beautifulsoup4", "lxml", "huggingface-hub", "safetensors", "faiss-cpu", "llama-cpp-python", "accelerate", "datasets", "peft", "trl", "lancedb", "networkx", "dowhy", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate", "aiohttp"]
+ml = ["llama-cpp-python"]
+advanced = ["peft", "trl", "lancedb", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate"]
+all = ["textual", "textual-dev", "blessed", "pyperclip", "typer", "questionary", "inquirer", "vosk", "py-espeak-ng", "openai-whisper", "flask", "gunicorn", "PyJWT", "pyOpenSSL", "websockets", "flask-socketio", "python-socketio", "cryptography", "llama-cpp-python", "peft", "trl", "lancedb", "shap", "opentelemetry-api", "opentelemetry-sdk", "optimum", "evaluate"]
 
 [tool.poetry.urls]
 "Homepage" = "https://github.com/Luminous-Dynamics/nix-for-humanity"
@@ -236,7 +236,7 @@ extend-exclude = '''
 '''
 
 [tool.ruff]
-target-version = "0.4.0"
+target-version = "py311"
 line-length = 88
 select = [
     "E",    # pycodestyle errors
@@ -260,7 +260,7 @@ ignore = [
 "tests/*" = ["S101"]  # Allow asserts in tests
 
 [tool.mypy]
-python_version = "0.4.0"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -268,7 +268,7 @@ ignore_missing_imports = true
 files = ["src", "tests"]
 
 [tool.pytest.ini_options]
-minversion = "0.4.0"
+minversion = "7.4.0"
 addopts = [
     "-ra",
     "--strict-markers",
