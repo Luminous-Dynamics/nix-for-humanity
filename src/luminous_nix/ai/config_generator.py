@@ -141,38 +141,31 @@ class NixOSConfigGenerator:
         has_ssl = "ssl" in req.requirements or "https" in req.description.lower()
         has_php = "php" in req.requirements or "php" in req.description.lower()
 
-        # Extract regex pattern to avoid backslash in f-string
-        php_location_pattern = r'"~ \.php$"'
+        # Build SSL configuration
+        ssl_config = ""
+        if has_ssl:
+            ssl_config = dedent("""
+            enableACME = true;
+            forceSSL = true;""")
+        else:
+            ssl_config = "# No SSL configured"
 
-        config = dedent(f"""
-        # Nginx web server configuration
-        services.nginx = {{
-          enable = true;
-          recommendedProxySettings = true;
-          recommendedTlsSettings = true;
-          recommendedOptimisation = true;
-          recommendedGzipSettings = true;
-
-          virtualHosts."{domain}" = {{
-            {'''enableACME = true;
-            forceSSL = true;''' if has_ssl else '# No SSL configured'}
-            root = "/var/www/{domain}";
-
-            {f'''locations.{php_location_pattern} = {{
+        # Build PHP configuration
+        php_location_config = ""
+        if has_php:
+            php_location_config = dedent('''
+            locations."~ \\.php$" = {
               extraConfig = \'\'\'
-                fastcgi_pass unix:${{config.services.phpfpm.pools.www.socket}};
+                fastcgi_pass unix:${config.services.phpfpm.pools.www.socket};
                 fastcgi_index index.php;
               \'\'\';
-            }};''' if has_php else ''}
+            };''')
 
-            locations."/" = {{
-              index = "index.html index.htm{' index.php' if has_php else ''}";
-              tryFiles = "$uri $uri/ {'/index.php?$query_string' if has_php else '=404'}";
-            }};
-          }};
-        }};
-
-        {'''# PHP-FPM configuration
+        # Build PHP-FPM configuration
+        phpfpm_config = ""
+        if has_php:
+            phpfpm_config = dedent("""
+        # PHP-FPM configuration
         services.phpfpm.pools.www = {
           user = "nginx";
           group = "nginx";
@@ -185,16 +178,55 @@ class NixOSConfigGenerator:
             "pm.max_spare_servers" = 4;
             "pm.max_requests" = 500;
           };
-        };''' if has_php else ''}
+        };""")
 
-        {f'''# ACME (Let's Encrypt) configuration
+        # Build ACME configuration
+        acme_config = ""
+        if has_ssl:
+            acme_config = dedent(f"""
+        # ACME (Let's Encrypt) configuration
         security.acme = {{
           acceptTerms = true;
           defaults.email = "admin@{domain}";
-        }};''' if has_ssl else ''}
+        }};""")
 
+        # Build index files list
+        index_files = "index.html index.htm"
+        if has_php:
+            index_files += " index.php"
+
+        # Build try_files fallback
+        try_files_fallback = "/index.php?$query_string" if has_php else "=404"
+
+        # Build firewall ports
+        firewall_ports = "80"
+        if has_ssl:
+            firewall_ports += " 443"
+
+        # Assemble final configuration
+        config = dedent(f"""
+        # Nginx web server configuration
+        services.nginx = {{
+          enable = true;
+          recommendedProxySettings = true;
+          recommendedTlsSettings = true;
+          recommendedOptimisation = true;
+          recommendedGzipSettings = true;
+
+          virtualHosts."{domain}" = {{
+            {ssl_config}
+            root = "/var/www/{domain}";
+{php_location_config}
+            locations."/" = {{
+              index = "{index_files}";
+              tryFiles = "$uri $uri/ {try_files_fallback}";
+            }};
+          }};
+        }};
+{phpfpm_config}
+{acme_config}
         # Firewall configuration
-        networking.firewall.allowedTCPPorts = [ 80{' 443' if has_ssl else ''} ];
+        networking.firewall.allowedTCPPorts = [ {firewall_ports} ];
         """).strip()
 
         return GeneratedConfig(
