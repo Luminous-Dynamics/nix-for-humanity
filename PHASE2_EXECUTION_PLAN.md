@@ -39,7 +39,7 @@ Focus on **verification and quality** - what actually works?
    ```bash
    # Check what tests exist
    find tests/ -name "test_*.py" | head -10
-   
+
    # Run quick smoke tests
    poetry run pytest tests/test_core_imports.py -v
    poetry run pytest tests/unit/ -v --maxfail=3

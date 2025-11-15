@@ -7,6 +7,7 @@ standard Nix performance improvements by using subprocess.
 # Import from the core native API module
 try:
     from ..core.native_nix_api import NativeNixAPI, get_native_api
+
     NATIVE_API_AVAILABLE = True
 except ImportError:
     NATIVE_API_AVAILABLE = False
@@ -17,7 +18,7 @@ except ImportError:
 if NATIVE_API_AVAILABLE:
     # Create singleton instance
     _api = get_native_api()
-    
+
     # Export commonly used methods
     search_packages = _api.search_packages if _api else None
     install_package = _api.install_package if _api else None

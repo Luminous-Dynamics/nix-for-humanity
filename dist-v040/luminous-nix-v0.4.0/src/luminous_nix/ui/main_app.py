@@ -77,29 +77,29 @@ class LuminousNixTUI(App):
     Screen {
         background: $surface;
     }
-    
+
     #orb-container {
         height: 15;
         margin: 1;
         border: solid $primary;
     }
-    
+
     #conversation {
         height: 100%;
         margin: 1;
         border: solid $secondary;
         padding: 1;
     }
-    
+
     #input-container {
         height: 3;
         margin: 1;
     }
-    
+
     ConversationMessage {
         margin-bottom: 1;
     }
-    
+
     .hidden {
         display: none;
     }
@@ -445,7 +445,7 @@ All powered by subprocess-based operations for 2-5 seconds operations!"""
         help_text = """
 I can help you with:
 • Installing/removing software: "install firefox", "remove vim"
-• System updates: "update system", "check for updates" 
+• System updates: "update system", "check for updates"
 • Network issues: "my wifi isn't working", "show network status"
 • System info: "disk space", "memory usage"
 • Package search: "search for editors", "find python packages"
@@ -457,7 +457,7 @@ I can help you with:
 
 Special commands:
 • Ctrl+Z: Toggle Zen mode (minimal interface)
-• Ctrl+D: Toggle debug mode  
+• Ctrl+D: Toggle debug mode
 • "flow": Enter flow state (Easter egg!)
 • "quit": Exit the application
 

@@ -13,7 +13,7 @@ Traditional CLI tools use keyword matching and regex patterns. If you type `"I n
 ```bash
 # All of these work perfectly:
 ask-nix "install firefox"          # ✓ Intent: install (100% confidence)
-ask-nix "get me a web browser"     # ✓ Intent: install (99.8% confidence)  
+ask-nix "get me a web browser"     # ✓ Intent: install (99.8% confidence)
 ask-nix "I need firefox on my system" # ✓ Intent: install (99.6% confidence)
 ask-nix "add mozilla firefox package" # ✓ Intent: install (100% confidence)
 ```
@@ -96,17 +96,17 @@ class HierarchicalReasoningModel(nn.Module):
     def __init__(self):
         # Character-level encoding for robustness
         self.embedding = nn.Embedding(258, 128)
-        
+
         # Bidirectional LSTM captures context
-        self.lstm = nn.LSTM(128, 256, num_layers=2, 
+        self.lstm = nn.LSTM(128, 256, num_layers=2,
                            bidirectional=True, dropout=0.3)
-        
+
         # Hierarchical reasoning layers
         self.fc1 = nn.Linear(512, 512)  # High-level understanding
         self.fc2 = nn.Linear(512, 256)  # Mid-level patterns
         self.fc3 = nn.Linear(256, 128)  # Low-level features
         self.fc4 = nn.Linear(128, 10)   # Intent classification
-        
+
         # Regularization for generalization
         self.dropout = nn.Dropout(0.3)
         self.batch_norm = nn.BatchNorm1d(512)
@@ -114,7 +114,7 @@ class HierarchicalReasoningModel(nn.Module):
 
 ## Join the Revolution
 
-NixOS deserves better than cryptic commands and manual pages. With 99.93% accuracy, Luminous Nix makes NixOS accessible to everyone. 
+NixOS deserves better than cryptic commands and manual pages. With 99.93% accuracy, Luminous Nix makes NixOS accessible to everyone.
 
 **Try it. Break it. Love it. Share it.**
 
@@ -131,5 +131,5 @@ Download v0.8.1 now and experience the future of NixOS interaction.
 
 ---
 
-*Built with 🧠 and ❤️ by Tristan Stoltz*  
+*Built with 🧠 and ❤️ by Tristan Stoltz*
 *Powered by real neural networks, not keyword matching*

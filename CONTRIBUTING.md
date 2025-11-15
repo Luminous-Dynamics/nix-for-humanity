@@ -1,210 +1,229 @@
 # Contributing to Luminous Nix
 
-Thank you for your interest in contributing to Luminous Nix! This project aims to make NixOS accessible to everyone through natural language interfaces.
+Thank you for your interest in contributing to Luminous Nix!
 
-## Code of Conduct
+## Development Setup
 
-We are committed to providing a welcoming and inclusive environment for all contributors. Please:
-- Be respectful and constructive in all interactions
-- Welcome newcomers and help them get started
-- Focus on what is best for the community
-- Show empathy towards other community members
+### Prerequisites
+- Python 3.11+
+- Poetry
+- Git
 
-## How to Contribute
-
-### Reporting Issues
-
-If you find a bug or have a suggestion:
-1. Check if the issue already exists in [GitHub Issues](https://github.com/Luminous-Dynamics/luminous-nix/issues)
-2. If not, create a new issue with:
-   - Clear description of the problem or suggestion
-   - Steps to reproduce (for bugs)
-   - Your environment (NixOS version, Python version, etc.)
-   - Any relevant error messages or logs
-
-### Suggesting Features
-
-We welcome feature suggestions! Please:
-1. Open a [GitHub Discussion](https://github.com/Luminous-Dynamics/luminous-nix/discussions) first
-2. Describe the use case and problem it solves
-3. Consider how it fits with the project's philosophy
-4. Be open to feedback and alternative approaches
-
-### Contributing Code
-
-#### Setup Development Environment
+### Initial Setup
 
 ```bash
-# Clone your fork
-git clone https://github.com/YOUR-USERNAME/luminous-nix.git
+# Clone the repository
+git clone https://github.com/Luminous-Dynamics/luminous-nix.git
 cd luminous-nix
 
-# Enter Nix shell for dependencies
-nix-shell
-
-# Install Python dependencies
+# Install dependencies
 poetry install
 
-# Run tests to verify setup
-poetry run pytest tests/
+# Install pre-commit hooks
+poetry run pre-commit install
+
+# Verify setup
+poetry run pytest tests/test_core_imports.py -v
+poetry run ask-nix --version
 ```
 
-#### Development Workflow
+## Pre-commit Hooks
 
-1. **Create a branch** for your feature or fix:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+We use pre-commit hooks to maintain code quality. Hooks run automatically before each commit.
 
-2. **Make your changes** following our code style:
-   - Use meaningful variable and function names
-   - Add docstrings to all functions and classes
-   - Keep functions focused and single-purpose
-   - Write tests for new functionality
+### What the hooks do:
+- **black**: Auto-format Python code
+- **ruff**: Lint and auto-fix issues
+- **trailing-whitespace**: Remove trailing whitespace
+- **end-of-file-fixer**: Ensure files end with newline
+- **check-yaml**: Validate YAML files
+- **check-toml**: Validate TOML files
+- **pytest-quick**: Run core tests (on push only)
 
-3. **Test your changes**:
-   ```bash
-   # Run all tests
-   poetry run pytest tests/
-   
-   # Run specific test file
-   poetry run pytest tests/test_specific.py
-   
-   # Check code style
-   poetry run black --check src/
-   poetry run ruff check src/
-   ```
+### Running hooks manually:
 
-4. **Commit your changes** with clear messages:
-   ```bash
-   git add .
-   git commit -m "feat: add natural language support for X"
-   ```
-   
-   Use conventional commits:
-   - `feat:` New feature
-   - `fix:` Bug fix
-   - `docs:` Documentation changes
-   - `test:` Test additions or changes
-   - `refactor:` Code refactoring
-   - `style:` Code style changes
+```bash
+# Run all hooks on all files
+poetry run pre-commit run --all-files
 
-5. **Push and create a Pull Request**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-   Then open a PR on GitHub with:
-   - Clear description of changes
-   - Reference to any related issues
-   - Screenshots/examples if applicable
+# Run specific hook
+poetry run pre-commit run black --all-files
 
-### Contributing Documentation
+# Skip hooks for emergency commits (not recommended)
+git commit --no-verify -m "Emergency fix"
+```
 
-Documentation is crucial for accessibility! You can help by:
-- Improving existing documentation for clarity
-- Adding examples and tutorials
-- Translating documentation
-- Creating video tutorials or demos
+## Code Quality Standards
+
+### Formatting
+- Use **black** for code formatting (line length: 88)
+- All code must pass black checks
+
+### Linting
+- Use **ruff** for linting
+- Fix all auto-fixable issues
+- Document reasons for ignoring lint rules
 
 ### Testing
+- Write tests for new features
+- Maintain >80% test coverage
+- All tests must pass before merging
 
-We especially need help with:
-- Testing on different NixOS configurations
-- Testing with different hardware setups
-- Accessibility testing (screen readers, keyboard navigation)
-- Performance testing on various systems
+### Type Hints
+- Add type hints to function signatures
+- Use mypy for type checking
 
-## Project Structure
+## Development Workflow
 
-```
-luminous-nix/
-├── src/luminous_nix/     # Main source code
-│   ├── core/             # Core engine
-│   ├── nlp/              # Natural language processing
-│   ├── cli/              # Command-line interface
-│   └── ui/               # User interfaces
-├── tests/                # Test suite
-├── docs/                 # Documentation
-└── scripts/              # Utility scripts
+### 1. Create a branch
+```bash
+git checkout -b feature/your-feature-name
 ```
 
-## Code Style Guidelines
+### 2. Make changes
+- Write code
+- Write tests
+- Update documentation
 
-- **Python**: Follow PEP 8, use Black for formatting
-- **Docstrings**: Use Google style docstrings
-- **Type hints**: Add type hints to function signatures
-- **Comments**: Explain why, not what
-- **Naming**: Use descriptive names that explain purpose
+### 3. Run quality checks
+```bash
+# Format code
+poetry run black src/ tests/
+
+# Run linting
+poetry run ruff check --fix src/ tests/
+
+# Run tests
+poetry run pytest tests/
+
+# Run all pre-commit hooks
+poetry run pre-commit run --all-files
+```
+
+### 4. Commit changes
+```bash
+git add .
+git commit -m "feat: your feature description"
+# Hooks will run automatically
+```
+
+### 5. Push and create PR
+```bash
+git push origin feature/your-feature-name
+# Create pull request on GitHub
+```
+
+## Commit Message Convention
+
+Use conventional commits format:
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+Types:
+- **feat**: New feature
+- **fix**: Bug fix
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting)
+- **refactor**: Code refactoring
+- **test**: Test changes
+- **chore**: Build/tooling changes
+
+Examples:
+```
+feat: add voice interface support
+fix: resolve import error in maya_mode.py
+docs: update installation instructions
+```
+
+## Testing
+
+### Running Tests
+
+```bash
+# All tests
+poetry run pytest tests/
+
+# Specific test file
+poetry run pytest tests/test_core_imports.py
+
+# With coverage
+poetry run pytest --cov=luminous_nix --cov-report=term-missing
+
+# Verbose output
+poetry run pytest -v tests/
+```
+
+### Writing Tests
+
+- Place tests in `tests/` directory
+- Name test files `test_*.py`
+- Name test functions `test_*`
+- Use descriptive test names
 
 Example:
 ```python
-def parse_user_intent(query: str) -> IntentResult:
-    """Parse natural language query to determine user intent.
-    
-    Args:
-        query: Natural language query from user
-        
-    Returns:
-        IntentResult containing parsed intent and confidence
-        
-    Examples:
-        >>> parse_user_intent("install firefox")
-        IntentResult(action="install", target="firefox", confidence=0.95)
-    """
-    # Implementation here
+def test_executor_imports():
+    """Test that SafeExecutor imports successfully"""
+    from luminous_nix.core.executor import SafeExecutor
+    assert SafeExecutor is not None
 ```
 
-## Testing Guidelines
+## Documentation
 
-- Write tests for all new functionality
-- Maintain or improve code coverage
-- Use descriptive test names that explain what is being tested
-- Include both positive and negative test cases
-- Test edge cases and error conditions
+### Code Documentation
+- Add docstrings to public functions/classes
+- Use Google-style docstrings
+- Include examples where helpful
 
-## Areas We Need Help
+### Project Documentation
+- Update README.md for user-facing changes
+- Update CHANGELOG.md for releases
+- Add technical details to docs/
 
-### High Priority
-- **NixOS Command Coverage**: Expand support for more Nix commands
-- **Error Messages**: Improve educational error explanations
-- **Performance**: Optimize response times
-- **Testing**: Increase test coverage (currently ~8%)
+## Pull Request Process
 
-### Medium Priority
-- **Documentation**: Tutorials, guides, examples
-- **Internationalization**: Multi-language support
-- **Accessibility**: Screen reader improvements
-- **UI/UX**: Terminal UI enhancements
+1. **Before submitting:**
+   - All tests pass
+   - Code is formatted (black)
+   - No lint errors (ruff)
+   - Documentation updated
+   - Pre-commit hooks pass
 
-### Future Features
-- **Voice Interface**: Complete integration
-- **Plugin System**: Architecture for extensions
-- **Community Features**: Pattern sharing
-- **Learning System**: Improve with usage
+2. **PR Description:**
+   - Clear description of changes
+   - Link to related issues
+   - Screenshots/examples if applicable
+   - Testing instructions
+
+3. **Review Process:**
+   - Address review feedback
+   - Keep commits clean
+   - Update PR description as needed
+
+## Getting Help
+
+- **Documentation**: Check README.md and docs/
+- **Issues**: Search existing issues first
+- **Discussions**: Use GitHub Discussions for questions
+- **Examples**: Check existing code for patterns
+
+## Code of Conduct
+
+- Be respectful and inclusive
+- Welcome newcomers
+- Focus on constructive feedback
+- Assume good intentions
 
 ## Questions?
 
-- Open a [GitHub Discussion](https://github.com/Luminous-Dynamics/luminous-nix/discussions)
-- Check the [documentation](docs/README.md)
-- Review existing [issues](https://github.com/Luminous-Dynamics/luminous-nix/issues)
-
-## Recognition
-
-All contributors will be recognized in our README and release notes. We value every contribution, no matter how small!
-
-## Development Philosophy
-
-This project follows a "consciousness-first" approach:
-- **User agency**: Users should always be in control
-- **Transparency**: Clear about what will happen
-- **Education**: Help users learn while using
-- **Accessibility**: Design for all users
-- **Privacy**: Everything runs locally
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
+Feel free to open an issue or start a discussion!
 
 ---
 
-Thank you for helping make NixOS more accessible to everyone! 🌟
+**Happy contributing!** 🎉

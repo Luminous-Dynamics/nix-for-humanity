@@ -137,9 +137,7 @@ class VoiceEngine:
             logger.error(f"Piper TTS error: {e}")
             return False
 
-    async def _speak_espeak(
-        self, text: str, output_path: Path | None = None
-    ) -> bool:
+    async def _speak_espeak(self, text: str, output_path: Path | None = None) -> bool:
         """Use espeak-ng as fallback TTS"""
         try:
             args = ["espeak-ng"]

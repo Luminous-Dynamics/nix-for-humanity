@@ -35,7 +35,7 @@ class ProductionHRM(nn.Module):
         self.encoder = nn.LSTM(512, 256, batch_first=True)
         self.reasoning = nn.TransformerEncoder(...)
         self.decoder = nn.Linear(256, 10)  # 10 strategies
-    
+
     def forward(self, x):
         # Real neural network, not simulation!
         encoded, _ = self.encoder(x)
@@ -58,7 +58,7 @@ for epoch in range(100):
 torch.save(model.state_dict(), "models/hrm-production-v1.pt")
 ```
 
-**Expected Outcome**: 
+**Expected Outcome**:
 - Real .pt model file (100MB)
 - 95%+ accuracy on test set
 - <0.1ms inference time
@@ -80,17 +80,17 @@ class VoiceInterface:
         self.mic = sr.Microphone()
         self.engine = pyttsx3.init()
         self.ai = AIOrchestrator()
-        
+
     def listen(self):
         with self.mic as source:
             self.recognizer.adjust_for_ambient_noise(source)
             audio = self.recognizer.listen(source)
             return self.recognizer.recognize_whisper(audio)
-    
+
     def speak(self, text):
         self.engine.say(text)
         self.engine.runAndWait()
-    
+
     def run(self):
         self.speak("Hello! I'm Nix. How can I help?")
         while True:
@@ -133,7 +133,7 @@ class SQLiteCache:
                 hits INTEGER DEFAULT 0
             )
         """)
-        
+
     def get(self, query: str) -> Optional[str]:
         key = hashlib.md5(query.encode()).hexdigest()
         cursor = self.conn.execute(
@@ -148,7 +148,7 @@ class SQLiteCache:
             )
             return json.loads(result[0])
         return None
-    
+
     def set(self, query: str, value: Any):
         key = hashlib.md5(query.encode()).hexdigest()
         self.conn.execute(
@@ -250,31 +250,31 @@ class LuminousNixV2:
         self.cache = SQLiteCache()
         self.voice = VoiceInterface()
         self.rl = HRMwithSimpleRL()
-        
+
         # Load real HRM model
         self.ai.hrm.load_model("models/hrm-production-v1.pt")
-    
+
     def run(self, query: str, voice: bool = False):
         # Check cache first
         cached = self.cache.get(query)
         if cached:
             return cached
-        
+
         # Get solution
         if voice:
             query = self.voice.listen()
-        
+
         result = self.ai.understand_query(query)
-        
+
         # Learn from interaction
         self.rl.process_feedback(0.8, True)  # Simulated for now
-        
+
         # Cache result
         self.cache.set(query, result)
-        
+
         if voice:
             self.voice.speak(result.solution)
-        
+
         return result
 
 # Make it beautiful

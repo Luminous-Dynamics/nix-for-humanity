@@ -31,13 +31,13 @@ sys.path.insert(0, '/srv/luminous-dynamics/11-meta-consciousness/luminous-nix/sr
 try:
     from luminous_nix.core.nix_operations import NixOperations
     from luminous_nix.core.native_nix_api import get_native_api
-    
+
     # Initialize with native API
     ops = NixOperations()
     native_api = get_native_api()
-    
+
     start_time = time.time()
-    
+
     # Execute the requested operation
     if '{}' == 'search':
         result = ops.search_packages('{}')
@@ -51,17 +51,17 @@ try:
         result = ops.generate_configuration({{'packages': ['{}']}})
     else:
         result = {{'success': False, 'error': 'Unknown operation'}}
-    
+
     elapsed_ms = (time.time() - start_time) * 1000
-    
+
     # Add performance info
     result['performance_ms'] = elapsed_ms
     if native_api and native_api.has_native_api():
         result['native_api'] = True
         result['performance_note'] = '10x-1500x faster with native API!'
-    
+
     print(json.dumps(result))
-    
+
 except Exception as e:
     import traceback
     error_result = {{
@@ -73,17 +73,17 @@ except Exception as e:
 "#,
         operation, args, operation, args, operation, operation, operation, args
     );
-    
+
     // Execute Python with the native API
     let output = Command::new("python3")
         .args(&["-c", &python_code])
         .env("NIX_HUMANITY_PYTHON_BACKEND", "true")
         .output()
         .map_err(|e| format!("Failed to execute Python: {}", e))?;
-    
+
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        
+
         // Parse JSON response
         match serde_json::from_str::<serde_json::Value>(&stdout) {
             Ok(json_value) => {
@@ -107,7 +107,7 @@ except Exception as e:
 /// Search packages using the native API
 pub async fn search_with_native_api(query: String) -> Result<Vec<serde_json::Value>, String> {
     let response = call_python_backend("search", &query)?;
-    
+
     if response.success {
         if let Some(packages) = response.data["packages"].as_array() {
             Ok(packages.clone())
@@ -132,7 +132,7 @@ pub async fn health_with_native_api() -> Result<PythonResponse, String> {
 /// Generate configuration using the native API
 pub async fn generate_config_with_native_api(description: String) -> Result<String, String> {
     let response = call_python_backend("generate_config", &description)?;
-    
+
     if response.success {
         if let Some(config) = response.data["configuration"].as_str() {
             Ok(config.to_string())

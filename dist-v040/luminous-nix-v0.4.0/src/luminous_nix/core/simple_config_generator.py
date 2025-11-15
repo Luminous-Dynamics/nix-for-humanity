@@ -4,7 +4,6 @@ Simple Configuration Generator - Fallback for when AST parser is unavailable
 """
 
 
-
 class SimpleConfigGenerator:
     """
     Simple configuration generator with common templates

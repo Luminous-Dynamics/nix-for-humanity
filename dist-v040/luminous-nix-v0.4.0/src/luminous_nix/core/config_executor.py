@@ -122,9 +122,7 @@ class ConfigExecutor:
                 ],
             )
 
-    def _determine_config_path(
-        self, target: str | None, query: str
-    ) -> Path | None:
+    def _determine_config_path(self, target: str | None, query: str) -> Path | None:
         """
         Determine which configuration file to parse.
 

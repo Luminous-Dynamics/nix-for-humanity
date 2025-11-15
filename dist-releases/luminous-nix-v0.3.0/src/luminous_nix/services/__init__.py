@@ -10,9 +10,4 @@ from .cache import CacheService
 from .executor import NixExecutor
 from .config_generator import ConfigGenerator
 
-__all__ = [
-    'SearchService',
-    'CacheService', 
-    'NixExecutor',
-    'ConfigGenerator'
-]
+__all__ = ["SearchService", "CacheService", "NixExecutor", "ConfigGenerator"]

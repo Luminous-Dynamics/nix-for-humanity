@@ -10,7 +10,7 @@ Hey r/NixOS!
 Yesterday I posted v0.3.0 here - our natural language interface for NixOS with real neural networks. You gave amazing feedback, pointing out critical missing features.
 
 **Your top complaints:**
-1. "No home-manager support!" 
+1. "No home-manager support!"
 2. "Flake operations don't work"
 3. "It confuses services with packages"
 4. "How do I garbage collect?"

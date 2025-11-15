@@ -27,12 +27,12 @@ for dir in .archive-*; do
         # Create subdirectory with date from original name
         SUBDIR=$(echo "$dir" | sed 's/^\.archive-//')
         mkdir -p "$CONSOLIDATED/$SUBDIR"
-        
+
         # Move contents
         if [ "$(ls -A $dir)" ]; then
             mv "$dir"/* "$CONSOLIDATED/$SUBDIR/" 2>/dev/null || true
         fi
-        
+
         # Remove empty directory
         rmdir "$dir" 2>/dev/null || true
         echo "  ✓ Consolidated $dir"

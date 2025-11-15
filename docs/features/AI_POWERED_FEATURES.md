@@ -346,9 +346,9 @@ These features represent a breakthrough in making NixOS accessible to everyone, 
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: 2025-09-04  
-**Status**: Production Ready  
-**Author**: Claude Code (Opus 4.1) & Tristan Stoltz  
+**Version**: 1.0.0
+**Last Updated**: 2025-09-04
+**Status**: Production Ready
+**Author**: Claude Code (Opus 4.1) & Tristan Stoltz
 
 *"Technology should explain itself, configure itself, and heal itself."*

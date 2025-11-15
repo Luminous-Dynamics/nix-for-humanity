@@ -62,11 +62,11 @@ Based on comprehensive testing showing 100% success rate across all Phase 1 feat
 
 def handle_advanced_features(query: str, intent: str) -> str:
     """Handle Phase 1 advanced features"""
-    
+
     if "rollback" in query.lower() or "broke" in query.lower():
         from luminous_nix.ai.advanced_features.rollback_intelligence import RollbackIntelligence
         analyzer = RollbackIntelligence()
-        
+
         if "analyze" in query:
             return analyzer.analyze_system_failure(query)
         elif "safety" in query:
@@ -74,11 +74,11 @@ def handle_advanced_features(query: str, intent: str) -> str:
             return analyzer.analyze_generation_safety(gen)
         else:
             return analyzer.get_generation_summary(current_gen)
-            
+
     elif "storage" in query.lower() or "disk" in query.lower() or "cleanup" in query.lower():
         from luminous_nix.ai.advanced_features.storage_optimizer import StorageOptimizer
         optimizer = StorageOptimizer()
-        
+
         if "aggressive" in query:
             return optimizer.analyze_storage(aggressive=True)
         elif "optimize" in query:
@@ -86,11 +86,11 @@ def handle_advanced_features(query: str, intent: str) -> str:
             return optimizer.optimize_store(target_free_gb=target)
         else:
             return optimizer.analyze_storage()
-            
+
     elif "security" in query.lower() or "cve" in query.lower() or "audit" in query.lower():
         from luminous_nix.ai.advanced_features.security_auditor import SecurityAuditor
         auditor = SecurityAuditor()
-        
+
         if "harden" in query:
             return auditor.suggest_hardening()
         elif "check" in query:
@@ -108,7 +108,7 @@ luminous-nix rollback analyze          # Find safe rollback point
 luminous-nix rollback check <gen>      # Check generation safety
 luminous-nix rollback find-working <component>  # Find last working
 
-# Storage Optimization  
+# Storage Optimization
 luminous-nix storage analyze           # Analyze storage usage
 luminous-nix storage cleanup           # Safe cleanup
 luminous-nix storage cleanup --aggressive  # Aggressive cleanup
@@ -166,7 +166,7 @@ luminous-nix security updates          # Check for updates
 
 ## 📊 Success Metrics
 
-### Phase 1 Integration Success = 
+### Phase 1 Integration Success =
 - [ ] All 3 features accessible via CLI
 - [ ] Response time < 200ms for all commands
 - [ ] Clear error messages for edge cases

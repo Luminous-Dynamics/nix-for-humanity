@@ -70,7 +70,7 @@
         <else>
           Configure GRUB for BIOS
         </else>
-        
+
         Add appropriate kernel modules based on hardware
       </step>
 
@@ -145,15 +145,15 @@
           { config, pkgs, ... }:
           {
             imports = [ ./hardware-configuration.nix ];
-            
+
             # Boot configuration
             boot.loader.systemd-boot.enable = true;
             boot.loader.efi.canTouchEfiVariables = true;
-            
+
             # Networking
             networking.hostName = "dev-workstation";
             networking.networkmanager.enable = true;
-            
+
             # Development packages
             environment.systemPackages = with pkgs; [
               vscode
@@ -163,7 +163,7 @@
               python3
               nodejs
             ];
-            
+
             # Services
             virtualisation.docker.enable = true;
             services.postgresql = {
@@ -175,13 +175,13 @@
                 host all all 127.0.0.1/32 trust
               '';
             };
-            
+
             # User configuration
             users.users.developer = {
               isNormalUser = true;
               extraGroups = [ "wheel" "docker" ];
             };
-            
+
             system.stateVersion = "24.11";
           }
         </output>

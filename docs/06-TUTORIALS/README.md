@@ -99,7 +99,7 @@ ask-nix --voice
 2. Personality Modes → Learning Mode
 3. Troubleshooting
 
-### For Developers  
+### For Developers
 1. Quick Start → Python Backend → Creating Plugins
 2. Contributing Your First PR → Testing Guide
 3. Documentation Guide

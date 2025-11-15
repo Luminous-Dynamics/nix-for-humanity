@@ -16,7 +16,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "vivaldi": "vivaldi",
     "tor": "tor-browser-bundle-bin",
     "tor-browser": "tor-browser-bundle-bin",
-    
     # Editors & IDEs
     "vim": "vim",
     "neovim": "neovim",
@@ -37,7 +36,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "webstorm": "jetbrains.webstorm",
     "goland": "jetbrains.goland",
     "rider": "jetbrains.rider",
-    
     # Terminal & Shell
     "alacritty": "alacritty",
     "kitty": "kitty",
@@ -51,7 +49,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "oh-my-zsh": "oh-my-zsh",
     "starship": "starship",
     "zellij": "zellij",
-    
     # Development Tools
     "git": "git",
     "docker": "docker",
@@ -65,7 +62,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "ansible": "ansible",
     "vagrant": "vagrant",
     "virtualbox": "virtualbox",
-    
     # Programming Languages
     "python": "python3",
     "python3": "python3",
@@ -92,7 +88,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "clang": "clang",
     "cmake": "cmake",
     "make": "gnumake",
-    
     # Databases
     "postgres": "postgresql",
     "postgresql": "postgresql",
@@ -106,14 +101,12 @@ EXTENDED_PACKAGE_ALIASES = {
     "cassandra": "cassandra",
     "elasticsearch": "elasticsearch",
     "neo4j": "neo4j",
-    
     # Web Servers
     "nginx": "nginx",
     "apache": "apacheHttpd",
     "httpd": "apacheHttpd",
     "caddy": "caddy",
     "traefik": "traefik",
-    
     # Utilities
     "curl": "curl",
     "wget": "wget",
@@ -143,7 +136,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "rsync": "rsync",
     "scp": "openssh",
     "ssh": "openssh",
-    
     # Media & Graphics
     "vlc": "vlc",
     "mpv": "mpv",
@@ -160,7 +152,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "slack": "slack",
     "teams": "teams",
     "zoom": "zoom-us",
-    
     # System Tools
     "gparted": "gparted",
     "gnome-disks": "gnome.gnome-disk-utility",
@@ -172,7 +163,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "screenfetch": "screenfetch",
     "lm-sensors": "lm_sensors",
     "sensors": "lm_sensors",
-    
     # Security Tools
     "nmap": "nmap",
     "wireshark": "wireshark",
@@ -191,7 +181,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "keepassxc": "keepassxc",
     "bitwarden": "bitwarden",
     "1password": "_1password-gui",
-    
     # Office & Productivity
     "libreoffice": "libreoffice",
     "office": "libreoffice",
@@ -200,7 +189,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "signal": "signal-desktop",
     "telegram": "telegram-desktop",
     "whatsapp": "whatsapp-for-linux",
-    
     # File Managers
     "nautilus": "gnome.nautilus",
     "dolphin": "dolphin",
@@ -210,7 +198,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "lf": "lf",
     "mc": "mc",
     "midnight-commander": "mc",
-    
     # Package Managers & Build Tools
     "flatpak": "flatpak",
     "snap": "snapd",
@@ -226,7 +213,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "bazel": "bazel",
     "meson": "meson",
     "ninja": "ninja",
-    
     # Cloud Tools
     "aws": "awscli2",
     "aws-cli": "awscli2",
@@ -235,7 +221,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "az": "azure-cli",
     "doctl": "doctl",
     "linode": "linode-cli",
-    
     # Monitoring & Logging
     "prometheus": "prometheus",
     "grafana": "grafana",
@@ -243,7 +228,6 @@ EXTENDED_PACKAGE_ALIASES = {
     "datadog": "datadog-agent",
     "nagios": "nagios",
     "zabbix": "zabbix",
-    
     # AI/ML Tools
     "ollama": "ollama",
     "stable-diffusion": "stable-diffusion",
@@ -256,61 +240,64 @@ EXTENDED_PACKAGE_ALIASES = {
     "scikit-learn": "python3Packages.scikit-learn",
 }
 
+
 def get_package_name(alias: str) -> str:
     """
     Get the actual package name from an alias
-    
+
     Args:
         alias: Common name or alias
-    
+
     Returns:
         Actual NixOS package name
     """
     # Check exact match first
     if alias in EXTENDED_PACKAGE_ALIASES:
         return EXTENDED_PACKAGE_ALIASES[alias]
-    
+
     # Check lowercase match
     alias_lower = alias.lower()
     if alias_lower in EXTENDED_PACKAGE_ALIASES:
         return EXTENDED_PACKAGE_ALIASES[alias_lower]
-    
+
     # Check if it's already a valid package name
     if "." in alias or "-" in alias:
         return alias
-    
+
     # Default to the alias itself
     return alias
+
 
 def suggest_similar(alias: str, max_suggestions: int = 5) -> list:
     """
     Suggest similar package names
-    
+
     Args:
         alias: User input
         max_suggestions: Maximum number of suggestions
-    
+
     Returns:
         List of similar package names
     """
     from difflib import get_close_matches
-    
+
     alias_lower = alias.lower()
     all_aliases = list(EXTENDED_PACKAGE_ALIASES.keys())
-    
+
     # Find close matches
     matches = get_close_matches(alias_lower, all_aliases, n=max_suggestions, cutoff=0.6)
-    
+
     # Map to actual package names
     return [(match, EXTENDED_PACKAGE_ALIASES[match]) for match in matches]
+
 
 def get_category_packages(category: str) -> dict:
     """
     Get all packages in a category
-    
+
     Args:
         category: Category name (browsers, editors, etc.)
-    
+
     Returns:
         Dictionary of aliases and package names
     """
@@ -324,12 +311,18 @@ def get_category_packages(category: str) -> dict:
         "media": ["vlc", "mpv", "obs", "gimp", "inkscape", "blender"],
         "security": ["nmap", "wireshark", "metasploit", "openssl", "gpg"],
     }
-    
+
     if category.lower() in categories:
         packages = categories[category.lower()]
         return {pkg: EXTENDED_PACKAGE_ALIASES.get(pkg, pkg) for pkg in packages}
-    
+
     return {}
 
+
 # Export for easy import
-__all__ = ['EXTENDED_PACKAGE_ALIASES', 'get_package_name', 'suggest_similar', 'get_category_packages']
+__all__ = [
+    "EXTENDED_PACKAGE_ALIASES",
+    "get_package_name",
+    "suggest_similar",
+    "get_category_packages",
+]

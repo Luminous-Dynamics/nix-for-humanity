@@ -12,7 +12,7 @@ theme:
   # custom_dir: docs/overrides  # Uncomment when you have custom overrides
   # favicon: assets/favicon.ico  # Uncomment when you add favicon
   # logo: assets/logo.png        # Uncomment when you add logo
-  
+
   palette:
     # Light mode
     - scheme: default
@@ -21,7 +21,7 @@ theme:
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    
+
     # Dark mode
     - scheme: slate
       primary: indigo
@@ -29,7 +29,7 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  
+
   features:
     - navigation.instant        # Instant loading
     - navigation.tracking       # URL tracking
@@ -53,7 +53,7 @@ plugins:
   - search:
       separator: '[\s\-\.]+'
   - include-markdown
-  
+
 # Extensions
 markdown_extensions:
   # Python Markdown
@@ -66,7 +66,7 @@ markdown_extensions:
   - toc:
       permalink: true
       toc_depth: 3
-  
+
   # Python Markdown Extensions
   - pymdownx.arithmatex:
       generic: true
@@ -102,17 +102,17 @@ nav:
     - index.md
     - Quick Start: ../QUICKSTART.md
     - Project Status: ../UNIFIED_VISION_AND_REALITY.md
-    
+
   - User Guide:
     - Overview: user/README.md
     - FAQ: user/faq.md
-    
+
   - Features:
     - Status: features/FEATURE_STATUS.md
-      
+
   - Development:
     - Contributing: ../CONTRIBUTING.md
-    
+
   - Reference:
     - CLI Commands: 05-REFERENCE/01-CLI-COMMANDS.md
     - API Reference: 05-REFERENCE/02-API-REFERENCE.md

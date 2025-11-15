@@ -122,7 +122,7 @@ intelligence:
   semantic_nlu: true
   predictive_ml: true
   collaborative: false  # Set to true to join P2P network
-  
+
 # Performance tuning (optional)
 performance:
   cache_size: 1000

@@ -83,16 +83,16 @@ poetry run pyinstaller \
 # Check if build succeeded
 if [ -f "dist/luminous-nix" ]; then
     echo "✅ Build successful!"
-    
+
     # Get file size
     SIZE=$(du -h dist/luminous-nix | cut -f1)
     echo "📊 Executable size: $SIZE"
-    
+
     # Test the executable
     echo "🧪 Testing executable..."
     ./dist/luminous-nix --version || echo "Version check failed (might be normal)"
     ./dist/luminous-nix help | head -5
-    
+
     echo ""
     echo "🎉 Standalone executable ready!"
     echo "================================"

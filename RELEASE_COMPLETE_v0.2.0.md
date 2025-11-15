@@ -204,6 +204,6 @@ Then create the GitHub release and announce to the world!
 
 ---
 
-*Release Prepared: January 29, 2025*  
-*Ready to Ship: YES*  
+*Release Prepared: January 29, 2025*
+*Ready to Ship: YES*
 *Confidence: 100%*

@@ -26,7 +26,7 @@ We now understand we have:
 ```
 Services (Clean, Tested, Ready)
 ├── SearchService      - Find packages
-├── CacheService       - Cache results  
+├── CacheService       - Cache results
 ├── NixExecutor        - Execute commands
 ├── ConfigGenerator    - Generate configs
 ├── SemanticSearch     - Search by meaning

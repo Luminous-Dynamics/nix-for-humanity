@@ -1,5 +1,5 @@
 //! Luminous Nix Core - High-performance Rust implementation with Python bindings
-//! 
+//!
 //! This module provides the performance-critical components of Luminous Nix:
 //! - Ultra-fast fuzzy search (10-100x faster than Python)
 //! - Lock-free concurrent cache
@@ -67,9 +67,9 @@ impl FastSearcher {
     pub fn load_packages(&mut self, json_str: &str) -> PyResult<usize> {
         let packages: Vec<Package> = serde_json::from_str(json_str)
             .map_err(|e| PyValueError::new_err(format!("JSON parse error: {}", e)))?;
-        
+
         let count = packages.len();
-        
+
         // Build search index
         let index = DashMap::new();
         for (idx, pkg) in packages.iter().enumerate() {
@@ -79,7 +79,7 @@ impl FastSearcher {
                     .or_insert_with(Vec::new)
                     .push(idx);
             }
-            
+
             // Index by description words
             for word in pkg.description.split_whitespace() {
                 if word.len() > 3 {  // Skip short words
@@ -89,10 +89,10 @@ impl FastSearcher {
                 }
             }
         }
-        
+
         self.packages = Arc::new(packages);
         self.index = Arc::new(index);
-        
+
         Ok(count)
     }
 
@@ -100,7 +100,7 @@ impl FastSearcher {
     pub fn search(&self, query: &str, limit: usize) -> PyResult<Vec<HashMap<String, String>>> {
         let query_lower = query.to_lowercase();
         let mut results = Vec::new();
-        
+
         // First try exact matches in index
         if let Some(indices) = self.index.get(&query_lower) {
             for &idx in indices.iter().take(limit) {
@@ -115,7 +115,7 @@ impl FastSearcher {
                 }
             }
         }
-        
+
         // If not enough exact matches, use fuzzy matching
         if results.len() < limit {
             let mut scored: Vec<(i64, &Package)> = self.packages
@@ -125,10 +125,10 @@ impl FastSearcher {
                         .map(|score| (score, pkg))
                 })
                 .collect();
-            
+
             // Sort by score (highest first)
             scored.sort_by(|a, b| b.0.cmp(&a.0));
-            
+
             for (score, pkg) in scored.iter().take(limit - results.len()) {
                 let mut map = HashMap::new();
                 map.insert("name".to_string(), pkg.name.clone());
@@ -139,19 +139,19 @@ impl FastSearcher {
                 results.push(map);
             }
         }
-        
+
         Ok(results)
     }
 
     /// Batch search multiple queries in parallel
     pub fn batch_search(&self, queries: Vec<String>, limit: usize) -> PyResult<Vec<Vec<HashMap<String, String>>>> {
         use rayon::prelude::*;
-        
+
         let results: Vec<_> = queries
             .par_iter()
             .map(|query| self.search(query, limit).unwrap_or_default())
             .collect();
-        
+
         Ok(results)
     }
 }
@@ -190,7 +190,7 @@ impl SmartCache {
             use flate2::write::GzEncoder;
             use flate2::Compression;
             use std::io::Write;
-            
+
             let mut encoder = GzEncoder::new(Vec::new(), Compression::fast());
             encoder.write_all(value)
                 .map_err(|e| PyValueError::new_err(format!("Compression error: {}", e)))?;
@@ -199,21 +199,21 @@ impl SmartCache {
         } else {
             value.to_vec()
         };
-        
+
         let cached = CachedValue {
             data,
             compressed,
             access_count: 0,
             last_access: std::time::Instant::now(),
         };
-        
+
         self.cache.insert(key, cached);
-        
+
         // Evict if over size limit
         if self.cache.len() > self.max_size {
             self.evict_lru();
         }
-        
+
         Ok(())
     }
 
@@ -222,11 +222,11 @@ impl SmartCache {
         if let Some(mut entry) = self.cache.get_mut(key) {
             entry.access_count += 1;
             entry.last_access = std::time::Instant::now();
-            
+
             let data = if entry.compressed {
                 use flate2::read::GzDecoder;
                 use std::io::Read;
-                
+
                 let mut decoder = GzDecoder::new(&entry.data[..]);
                 let mut decompressed = Vec::new();
                 decoder.read_to_end(&mut decompressed)
@@ -235,7 +235,7 @@ impl SmartCache {
             } else {
                 entry.data.clone()
             };
-            
+
             Ok(Some(data))
         } else {
             Ok(None)
@@ -248,9 +248,9 @@ impl SmartCache {
             .iter()
             .map(|entry| (entry.key().clone(), entry.last_access))
             .collect();
-        
+
         entries.sort_by_key(|(_k, time)| *time);
-        
+
         // Remove oldest 10%
         let to_remove = self.max_size / 10;
         for (key, _) in entries.iter().take(to_remove) {
@@ -263,13 +263,13 @@ impl SmartCache {
         let mut stats = HashMap::new();
         stats.insert("size".to_string(), self.cache.len());
         stats.insert("max_size".to_string(), self.max_size);
-        
+
         let compressed_count = self.cache
             .iter()
             .filter(|entry| entry.compressed)
             .count();
         stats.insert("compressed".to_string(), compressed_count);
-        
+
         Ok(stats)
     }
 }
@@ -293,15 +293,15 @@ impl JsonOptimizer {
     #[cfg(feature = "simd")]
     pub fn parse_fast(&mut self, json_str: &str) -> PyResult<()> {
         use simdjson::BorrowedValue;
-        
+
         let mut parser = simdjson::Parser::default();
         let value = parser.parse(json_str.as_bytes())
             .map_err(|e| PyValueError::new_err(format!("SIMD JSON parse error: {}", e)))?;
-        
+
         // Convert to serde_json::Value
         let converted = serde_json::to_value(value)
             .map_err(|e| PyValueError::new_err(format!("Conversion error: {}", e)))?;
-        
+
         *self.parser.write() = converted;
         Ok(())
     }
@@ -315,7 +315,7 @@ impl JsonOptimizer {
     pub fn parse(&mut self, json_str: &str) -> PyResult<()> {
         let value: serde_json::Value = serde_json::from_str(json_str)
             .map_err(|e| PyValueError::new_err(format!("JSON parse error: {}", e)))?;
-        
+
         *self.parser.write() = value;
         Ok(())
     }
@@ -324,7 +324,7 @@ impl JsonOptimizer {
     pub fn get_field(&self, path: Vec<String>) -> PyResult<Option<String>> {
         let value = self.parser.read();
         let mut current = &*value;
-        
+
         for key in path {
             match current {
                 serde_json::Value::Object(map) => {
@@ -348,7 +348,7 @@ impl JsonOptimizer {
                 _ => return Ok(None),
             }
         }
-        
+
         Ok(Some(current.to_string()))
     }
 }
@@ -372,10 +372,10 @@ impl PatternMatcher {
     pub fn add_pattern(&mut self, pattern: &str, intent: String) -> PyResult<()> {
         let regex = regex::Regex::new(pattern)
             .map_err(|e| PyValueError::new_err(format!("Invalid regex: {}", e)))?;
-        
+
         let mut patterns = Arc::make_mut(&mut self.patterns);
         patterns.push((regex, intent));
-        
+
         Ok(())
     }
 
@@ -392,12 +392,12 @@ impl PatternMatcher {
     /// Batch match multiple queries
     pub fn batch_match(&self, queries: Vec<String>) -> PyResult<Vec<Option<String>>> {
         use rayon::prelude::*;
-        
+
         let results: Vec<_> = queries
             .par_iter()
             .map(|query| self.match_intent(query).unwrap_or(None))
             .collect();
-        
+
         Ok(results)
     }
 }
@@ -413,10 +413,10 @@ fn fuzzy_search(query: &str, candidates: Vec<String>, limit: usize) -> PyResult<
                 .map(|score| (candidate, score))
         })
         .collect();
-    
+
     results.sort_by(|a, b| b.1.cmp(&a.1));
     results.truncate(limit);
-    
+
     Ok(results)
 }
 
@@ -424,12 +424,12 @@ fn fuzzy_search(query: &str, candidates: Vec<String>, limit: usize) -> PyResult<
 #[pyfunction]
 fn batch_search(queries: Vec<String>, candidates: Vec<String>, limit: usize) -> PyResult<Vec<Vec<(String, i64)>>> {
     use rayon::prelude::*;
-    
+
     let results: Vec<_> = queries
         .par_iter()
         .map(|query| fuzzy_search(query, candidates.clone(), limit).unwrap_or_default())
         .collect();
-    
+
     Ok(results)
 }
 
@@ -437,13 +437,13 @@ fn batch_search(queries: Vec<String>, candidates: Vec<String>, limit: usize) -> 
 #[pyfunction]
 fn parse_nix_output(output: &str, format: &str) -> PyResult<HashMap<String, Vec<String>>> {
     let mut result = HashMap::new();
-    
+
     match format {
         "search" => {
             // Parse package search output
             let mut packages = Vec::new();
             let mut descriptions = Vec::new();
-            
+
             for line in output.lines() {
                 if line.starts_with("* ") {
                     packages.push(line[2..].to_string());
@@ -451,7 +451,7 @@ fn parse_nix_output(output: &str, format: &str) -> PyResult<HashMap<String, Vec<
                     descriptions.push(line.trim().to_string());
                 }
             }
-            
+
             result.insert("packages".to_string(), packages);
             result.insert("descriptions".to_string(), descriptions);
         }
@@ -462,7 +462,7 @@ fn parse_nix_output(output: &str, format: &str) -> PyResult<HashMap<String, Vec<
                 .filter(|line| !line.is_empty())
                 .map(|line| line.to_string())
                 .collect();
-            
+
             result.insert("installed".to_string(), packages);
         }
         _ => {
@@ -471,11 +471,11 @@ fn parse_nix_output(output: &str, format: &str) -> PyResult<HashMap<String, Vec<
                 .lines()
                 .map(|line| line.to_string())
                 .collect();
-            
+
             result.insert("output".to_string(), lines);
         }
     }
-    
+
     Ok(result)
 }
 
@@ -491,7 +491,7 @@ mod tests {
             "firefox-developer-edition".to_string(),
             "chromium".to_string(),
         ];
-        
+
         let results = fuzzy_search("firfox", candidates, 3).unwrap();
         assert!(!results.is_empty());
         assert_eq!(results[0].0, "firefox");
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn test_smart_cache() {
         let cache = SmartCache::new(100, 1024);
-        
+
         cache.set("test".to_string(), b"hello world").unwrap();
         let value = cache.get("test").unwrap();
         assert_eq!(value, Some(b"hello world".to_vec()));

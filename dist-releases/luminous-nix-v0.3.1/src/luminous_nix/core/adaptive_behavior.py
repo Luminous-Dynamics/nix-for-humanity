@@ -1,7 +1,7 @@
 """
 Adaptive behavior system - Learn from users, don't categorize them.
 
-This replaces the static persona system with dynamic adaptation based on 
+This replaces the static persona system with dynamic adaptation based on
 observed behavior patterns. Every user is unique.
 """
 

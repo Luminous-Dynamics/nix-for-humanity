@@ -85,7 +85,7 @@ submit.luminousnix.org  # "Help us learn from your queries"
 # Step 1: Generate synthetic dataset NOW
 def generate_synthetic_training_data():
     packages = get_all_nixpkgs()  # ~80,000 packages
-    
+
     templates = [
         "install {pkg}",
         "how to install {pkg}",
@@ -98,7 +98,7 @@ def generate_synthetic_training_data():
         "error with {pkg}",
         "{pkg} version"
     ]
-    
+
     # Generate 10,000 queries immediately
     for pkg in random.sample(packages, 1000):
         for template in templates:
@@ -119,21 +119,21 @@ class HRMWithLearning:
     def predict(self, query):
         # 1. Get prediction
         result = self.model.predict(query)
-        
+
         # 2. Track confidence
         if result.confidence < 0.6:
             self.low_confidence_queries.append(query)
-        
+
         # 3. Request feedback on uncertain predictions
         if result.confidence < 0.4:
             result.message += "\n🤔 I'm not certain. Did this work? [y/n]"
             result.needs_feedback = True
-        
+
         # 4. Log everything
         self.log_interaction(query, result)
-        
+
         return result
-    
+
     def process_feedback(self, query, result, worked):
         # Store for retraining
         self.feedback_buffer.append({
@@ -142,7 +142,7 @@ class HRMWithLearning:
             'worked': worked,
             'confidence': result.confidence
         })
-        
+
         # Retrain periodically
         if len(self.feedback_buffer) >= 100:
             self.retrain_incremental()
@@ -159,21 +159,21 @@ class ThreeTierCache:
         self.l1_memory = LRUCache(100)      # <0.1ms
         self.l2_sqlite = SQLiteCache(10000)  # <1ms
         self.l3_pattern = PatternCache()     # <5ms
-    
+
     def get(self, query):
         # Check L1 (memory)
         if query in self.l1_memory:
             return self.l1_memory[query]
-        
+
         # Check L2 (SQLite)
         if result := self.l2_sqlite.get(query):
             self.l1_memory[query] = result
             return result
-        
+
         # Check L3 (patterns)
         if pattern_match := self.l3_pattern.match(query):
             return self.apply_pattern(pattern_match, query)
-        
+
         # Miss - compute and cache
         result = self.model.predict(query)
         self.cache_all_levels(query, result)
@@ -186,15 +186,15 @@ class ThreeTierCache:
 def recalibrate_confidence():
     # Collect prediction-outcome pairs
     data = load_feedback_data()
-    
+
     # Compute calibration curve
     predicted_conf = [d.confidence for d in data]
     actual_success = [d.worked for d in data]
-    
+
     # Fit isotonic regression
     calibrator = IsotonicRegression()
     calibrator.fit(predicted_conf, actual_success)
-    
+
     # Apply to model
     model.calibrator = calibrator
 ```
@@ -204,21 +204,21 @@ def recalibrate_confidence():
 def enhance_error_messages(error, context):
     # Use HRM to explain error
     explanation = hrm.explain_error(error)
-    
+
     # Suggest alternatives
     alternatives = hrm.suggest_alternatives(context)
-    
+
     # Provide educational context
     education = hrm.get_educational_content(error)
-    
+
     return f"""
     ❌ {error}
-    
+
     💡 What this means: {explanation}
-    
+
     🔧 Try these alternatives:
     {alternatives}
-    
+
     📚 Learn more: {education}
     """
 ```
@@ -234,17 +234,17 @@ class HRMMetrics:
             'query_success_rate': self.successful_queries / self.total_queries,
             'time_to_solution': self.average_time_to_success(),
             'retry_rate': self.queries_needing_retry / self.total_queries,
-            
+
             # Model Performance
             'accuracy': self.correct_predictions / self.total_predictions,
             'confidence_calibration': self.calibration_error(),
             'cache_hit_rate': self.cache_hits / self.total_queries,
-            
+
             # Learning Metrics
             'improvement_rate': self.weekly_accuracy_delta(),
             'new_patterns_learned': self.count_new_patterns(),
             'feedback_incorporation': self.feedback_used / self.feedback_received,
-            
+
             # User Trust
             'uncertainty_admissions': self.said_dont_know / self.total_queries,
             'explanation_quality': self.explanation_ratings.mean()
@@ -324,7 +324,7 @@ class HRMMetrics:
 ### Start Simple, Evolve Fast
 ```
 Week 1: Synthetic data + basic model = 70% accuracy
-Week 2: + real data + cache = 80% accuracy + instant responses  
+Week 2: + real data + cache = 80% accuracy + instant responses
 Week 3: + feedback loop = 85% accuracy + continuous improvement
 Month 2: + calibration = 90% accuracy + trusted confidence
 Month 3: + meta-learning = 95% accuracy + few-shot adaptation

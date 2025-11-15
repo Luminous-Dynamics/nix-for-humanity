@@ -5,10 +5,9 @@ This is where we provide massive value - turning natural language
 into actual working NixOS configurations.
 """
 
-from typing import Dict, List, Optional
+import logging
 from dataclasses import dataclass
 from textwrap import dedent
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +18,8 @@ class NixConfig:
 
     description: str
     config: str
-    packages: List[str]
-    services: Dict[str, Dict]
+    packages: list[str]
+    services: dict[str, dict]
 
     def to_nix(self) -> str:
         """Convert to actual configuration.nix format"""
@@ -93,39 +92,39 @@ class ConfigGenerator:
                 """
                 # Web server with SSL
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable nginx web server
                   services.nginx = {
                     enable = true;
-                    
+
                     # Recommended settings
                     recommendedGzipSettings = true;
                     recommendedOptimisation = true;
                     recommendedProxySettings = true;
                     recommendedTlsSettings = true;
-                    
+
                     # Virtual hosts
                     virtualHosts."example.com" = {
                       enableACME = true;  # Automatic SSL with Let's Encrypt
                       forceSSL = true;
-                      
+
                       locations."/" = {
                         root = "/var/www/example.com";
                         index = "index.html index.htm";
                       };
                     };
                   };
-                  
+
                   # Open firewall for web traffic
                   networking.firewall.allowedTCPPorts = [ 80 443 ];
-                  
+
                   # Let's Encrypt settings
                   security.acme = {
                     acceptTerms = true;
                     defaults.email = "admin@example.com";  # Change this!
                   };
-                  
+
                   # Install useful web tools
                   environment.systemPackages = with pkgs; [
                     curl
@@ -140,12 +139,12 @@ class ConfigGenerator:
                 """
                 # Basic web server
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable nginx web server
                   services.nginx = {
                     enable = true;
-                    
+
                     # Virtual host
                     virtualHosts."localhost" = {
                       locations."/" = {
@@ -154,10 +153,10 @@ class ConfigGenerator:
                       };
                     };
                   };
-                  
+
                   # Open firewall for web traffic
                   networking.firewall.allowedTCPPorts = [ 80 ];
-                  
+
                   # Install useful web tools
                   environment.systemPackages = with pkgs; [
                     curl
@@ -188,13 +187,13 @@ class ConfigGenerator:
                 """
                 # PostgreSQL database server
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable PostgreSQL
                   services.postgresql = {
                     enable = true;
                     package = pkgs.postgresql_15;
-                    
+
                     # Good defaults for development
                     settings = {
                       shared_buffers = "256MB";
@@ -205,7 +204,7 @@ class ConfigGenerator:
                       default_statistics_target = 100;
                       random_page_cost = 1.1;
                     };
-                    
+
                     # Enable local connections
                     authentication = pkgs.lib.mkOverride 10 ''
                       # TYPE  DATABASE  USER  ADDRESS     METHOD
@@ -213,7 +212,7 @@ class ConfigGenerator:
                       host    all       all   127.0.0.1/32  trust
                       host    all       all   ::1/128     trust
                     '';
-                    
+
                     # Create a database
                     initialScript = pkgs.writeText "backend-initScript" ''
                       CREATE USER myapp WITH PASSWORD 'myapp';
@@ -221,7 +220,7 @@ class ConfigGenerator:
                       GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp;
                     '';
                   };
-                  
+
                   # PostgreSQL tools
                   environment.systemPackages = with pkgs; [
                     postgresql_15
@@ -242,13 +241,13 @@ class ConfigGenerator:
                 """
                 # MySQL/MariaDB database server
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable MariaDB (MySQL compatible)
                   services.mysql = {
                     enable = true;
                     package = pkgs.mariadb;
-                    
+
                     # Good defaults
                     settings = {
                       mysqld = {
@@ -257,12 +256,12 @@ class ConfigGenerator:
                         max_connections = 100;
                       };
                     };
-                    
+
                     # Initial databases
                     initialDatabases = [
                       { name = "myapp"; }
                     ];
-                    
+
                     # Initial users
                     ensureUsers = [
                       {
@@ -273,7 +272,7 @@ class ConfigGenerator:
                       }
                     ];
                   };
-                  
+
                   # MySQL tools
                   environment.systemPackages = with pkgs; [
                     mariadb
@@ -312,23 +311,23 @@ class ConfigGenerator:
             """
             # Development environment
             { config, pkgs, ... }:
-            
+
             {
               # Development tools
               environment.systemPackages = with pkgs; [
                 # Version control
                 git
                 git-lfs
-                
+
                 # Editors
                 vim
                 neovim
-                
+
                 # Build tools
                 gnumake
                 gcc
                 pkg-config
-                
+
                 # Container tools
                 docker
                 docker-compose
@@ -340,7 +339,7 @@ class ConfigGenerator:
         # Add language-specific tools
         if "python" in languages:
             config += """
-                
+
                 # Python development
                 python311
                 python311Packages.pip
@@ -353,7 +352,7 @@ class ConfigGenerator:
 
         if "rust" in languages:
             config += """
-                
+
                 # Rust development
                 rustc
                 cargo
@@ -364,7 +363,7 @@ class ConfigGenerator:
 
         if "nodejs" in languages:
             config += """
-                
+
                 # Node.js development
                 nodejs_20
                 nodePackages.npm
@@ -375,7 +374,7 @@ class ConfigGenerator:
 
         if "go" in languages:
             config += """
-                
+
                 # Go development
                 go
                 gopls
@@ -384,10 +383,10 @@ class ConfigGenerator:
 
         config += """
               ];
-              
+
               # Enable Docker
               virtualisation.docker.enable = true;
-              
+
               # Add user to docker group (replace 'user' with your username)
               users.users.user.extraGroups = [ "docker" ];
             }"""
@@ -406,7 +405,7 @@ class ConfigGenerator:
             """
             # Docker container configuration
             { config, pkgs, ... }:
-            
+
             {
               # Enable Docker
               virtualisation.docker = {
@@ -416,7 +415,7 @@ class ConfigGenerator:
                   dates = "weekly";
                 };
               };
-              
+
               # Container tools
               environment.systemPackages = with pkgs; [
                 docker
@@ -425,10 +424,10 @@ class ConfigGenerator:
                 dive        # Explore docker images
                 skopeo      # Work with container images
               ];
-              
+
               # Add your user to docker group (replace 'user' with your username)
               users.users.user.extraGroups = [ "docker" ];
-              
+
               # Optional: Enable podman as docker alternative
               # virtualisation.podman = {
               #   enable = true;
@@ -463,7 +462,7 @@ class ConfigGenerator:
                 """
                 # GNOME desktop environment
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable X11 and GNOME
                   services.xserver = {
@@ -471,7 +470,7 @@ class ConfigGenerator:
                     displayManager.gdm.enable = true;
                     desktopManager.gnome.enable = true;
                   };
-                  
+
                   # GNOME apps and utilities
                   environment.systemPackages = with pkgs; [
                     gnome.gnome-tweaks
@@ -479,7 +478,7 @@ class ConfigGenerator:
                     gnomeExtensions.dash-to-dock
                     gnomeExtensions.appindicator
                   ];
-                  
+
                   # Enable sound
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
@@ -490,7 +489,7 @@ class ConfigGenerator:
                 """
                 # KDE Plasma desktop environment
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable X11 and KDE
                   services.xserver = {
@@ -498,7 +497,7 @@ class ConfigGenerator:
                     displayManager.sddm.enable = true;
                     desktopManager.plasma5.enable = true;
                   };
-                  
+
                   # KDE apps and utilities
                   environment.systemPackages = with pkgs; [
                     kate
@@ -507,7 +506,7 @@ class ConfigGenerator:
                     ark
                     spectacle
                   ];
-                  
+
                   # Enable sound
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
@@ -518,7 +517,7 @@ class ConfigGenerator:
                 """
                 # XFCE desktop environment
                 { config, pkgs, ... }:
-                
+
                 {
                   # Enable X11 and XFCE
                   services.xserver = {
@@ -526,7 +525,7 @@ class ConfigGenerator:
                     displayManager.lightdm.enable = true;
                     desktopManager.xfce.enable = true;
                   };
-                  
+
                   # XFCE apps and utilities
                   environment.systemPackages = with pkgs; [
                     xfce.xfce4-terminal
@@ -534,7 +533,7 @@ class ConfigGenerator:
                     xfce.xfce4-screenshooter
                     xfce.xfce4-taskmanager
                   ];
-                  
+
                   # Enable sound
                   sound.enable = true;
                   hardware.pulseaudio.enable = true;
@@ -557,33 +556,33 @@ class ConfigGenerator:
             """
             # Basic NixOS configuration
             { config, pkgs, ... }:
-            
+
             {
               # Basic system packages
               environment.systemPackages = with pkgs; [
                 # Editors
                 vim
                 nano
-                
+
                 # System tools
                 htop
                 tree
                 wget
                 curl
                 git
-                
+
                 # Archive tools
                 zip
                 unzip
-                
+
                 # Network tools
                 nmap
                 traceroute
               ];
-              
+
               # Enable SSH
               services.openssh.enable = true;
-              
+
               # Enable firewall
               networking.firewall.enable = true;
             }
@@ -597,7 +596,7 @@ class ConfigGenerator:
             services={"openssh": {"enable": True}},
         )
 
-    def _load_templates(self) -> Dict:
+    def _load_templates(self) -> dict:
         """Load configuration templates"""
         # This could load from files in the future
         return {}

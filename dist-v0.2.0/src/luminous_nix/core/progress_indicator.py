@@ -374,7 +374,6 @@ class progress_context:
 
 # Demo
 if __name__ == "__main__":
-
     # Demo 1: Simple spinner
     print("Demo 1: Simple spinner")
     with progress_context("package_search") as progress:

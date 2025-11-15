@@ -96,7 +96,7 @@ const GenerationsPage: React.FC = () => {
 
   const compareGenerations = async () => {
     if (!compareGen1 || !compareGen2) return;
-    
+
     setLoading(true);
     try {
       const result = await invoke<string>('compare_generations', {

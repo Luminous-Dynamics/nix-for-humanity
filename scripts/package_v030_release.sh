@@ -117,13 +117,13 @@ from luminous_nix.ai.hrm_integrated_v6_final import HRMIntegratedV6Final
 def main():
     print("🚀 Luminous Nix v0.3.0 - Natural Language NixOS Interface")
     print("=" * 60)
-    
+
     # Initialize system
     print("Initializing system...")
     system = HRMIntegratedV6Final(enable_active_learning=True)
     print("✅ System ready! (96.3% accuracy)")
     print()
-    
+
     # Interactive loop
     print("Enter NixOS queries (or 'quit' to exit):")
     while True:
@@ -131,16 +131,16 @@ def main():
             query = input("\n> ").strip()
             if query.lower() in ['quit', 'exit', 'q']:
                 break
-            
+
             # Process query
             result = system.process_query(query)
-            
+
             # Display results
             print(f"\n📦 Category: {result.get('category', 'unknown')}")
             print(f"💻 Command: {result.get('command', 'N/A')}")
             print(f"🎯 Confidence: {result.get('confidence', 0):.1%}")
             print(f"⚡ Latency: {result.get('production_metadata', {}).get('latency_ms', 0):.1f}ms")
-            
+
             # Ask for feedback
             feedback = input("Was this correct? (y/n/skip): ").strip().lower()
             if feedback == 'n':
@@ -155,12 +155,12 @@ def main():
             elif feedback == 'y':
                 system.record_feedback(query, result, {'correct': True})
                 print("✅ Great! Confidence increased.")
-                
+
         except KeyboardInterrupt:
             break
         except Exception as e:
             print(f"Error: {e}")
-    
+
     # Display final metrics
     metrics = system.get_production_metrics()
     print("\n" + "=" * 60)

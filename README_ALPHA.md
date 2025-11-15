@@ -29,11 +29,11 @@ ask-nix "list installed"     # 1-2 seconds
 
 ## What Doesn't Work Yet
 
-❌ **TUI** - Has import errors  
-❌ **Voice Interface** - Architecture only  
-❌ **Learning System** - Not implemented  
-❌ **Native API** - Falls back to subprocess  
-❌ **Config Generation** - Templates exist but generation broken  
+❌ **TUI** - Has import errors
+❌ **Voice Interface** - Architecture only
+❌ **Learning System** - Not implemented
+❌ **Native API** - Falls back to subprocess
+❌ **Config Generation** - Templates exist but generation broken
 
 ## Installation
 
@@ -53,7 +53,7 @@ poetry run ask-nix "search firefox"
 
 **Honest metrics** (standard NixOS performance):
 - Search: 2-3 seconds
-- Install: 5-30 seconds  
+- Install: 5-30 seconds
 - List: 1-2 seconds
 - No "10,000x improvements" - that was false
 

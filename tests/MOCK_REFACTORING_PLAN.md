@@ -9,36 +9,36 @@ Transform all test files from mock-based testing to consciousness-first testing 
 1. **test_backend_comprehensive.py** - Extensive MagicMock usage
    - Status: Started refactoring
    - Mocks: MagicMock for all dependencies, AsyncMock, patch decorators
-   
+
 2. **test_executor_comprehensive.py** - Mock nixos_rebuild modules
    - Mocks: sys.modules mocking, Mock() for nix API
-   
+
 3. **test_engine_enhanced.py** - Mock all engine components
    - Mocks: Mock() for intent, knowledge, execution, personality, learning
-   
+
 4. **test_headless_engine.py** - Mock all backend services
    - Mocks: MagicMock for knowledge, feedback, plugins, learning, cache
 
 ### Medium Priority (Moderate Mock Usage)
 5. **test_cli_adapter_comprehensive.py** - Patch multiple imports
    - Mocks: patch() for core imports, Mock classes
-   
+
 6. **test_native_nix_backend.py** - Mock native API modules
    - Mocks: patch() for API availability, mock nix modules
-   
+
 7. **test_execution_engine.py** - Mock subprocess.run
    - Mocks: @patch('subprocess.run') throughout
-   
+
 8. **test_tui_app.py** - Mock textual framework
    - Mocks: MagicMock for entire textual library
 
 ### Low Priority (Minimal Mock Usage)
 9. **test_caching_layer.py** - Only 2 Mock() instances
    - Status: ✅ COMPLETED
-   
+
 10. **test_cli_adapter.py** - Only patch() for sys.argv/input
     - Mocks: Minimal, only for system interaction
-    
+
 11. **test_learning_system_edge_cases.py** - Single patch for Path.home
     - Mocks: Very minimal
 
@@ -51,10 +51,10 @@ from unittest.mock import Mock, MagicMock, patch
 def test_something(self):
     mock_service = MagicMock()
     mock_service.method.return_value = "result"
-    
+
     component = Component(mock_service)
     result = component.do_something()
-    
+
     mock_service.method.assert_called_once()
 ```
 
@@ -66,10 +66,10 @@ def test_something(self):
     # Use real test implementation with deterministic behavior
     test_service = TestService()
     test_service.add_test_data("expected", "result")
-    
+
     component = Component(test_service)
     result = component.do_something()
-    
+
     # Verify through state, not mock calls
     assert result == "result"
     assert test_service.was_called_with("expected")

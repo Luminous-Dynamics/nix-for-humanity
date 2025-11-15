@@ -4,81 +4,94 @@ Setup PyPI Package for Luminous Nix v0.3.0
 Configures the package for distribution via pip
 """
 
-import json
-import toml
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+import toml
+
 
 def update_pyproject_for_pypi():
     """Update pyproject.toml for PyPI release"""
     pyproject_path = Path("pyproject.toml")
-    
+
     # Read current config
-    with open(pyproject_path, 'r') as f:
+    with open(pyproject_path) as f:
         config = toml.load(f)
-    
+
     # Update for v0.3.0 release
-    config['tool']['poetry']['name'] = 'luminous-nix'
-    config['tool']['poetry']['version'] = '0.3.0'
-    config['tool']['poetry']['description'] = 'Natural language interface for NixOS with 96% accuracy'
-    config['tool']['poetry']['authors'] = ['Luminous Dynamics <contact@luminous-nix.org>']
-    config['tool']['poetry']['license'] = 'MIT'
-    config['tool']['poetry']['readme'] = 'README.md'
-    config['tool']['poetry']['repository'] = 'https://github.com/Luminous-Dynamics/luminous-nix'
-    config['tool']['poetry']['homepage'] = 'https://luminous-nix.org'
-    config['tool']['poetry']['keywords'] = [
-        'nixos', 'natural-language', 'ai', 'machine-learning',
-        'neural-networks', 'package-management', 'linux'
+    config["tool"]["poetry"]["name"] = "luminous-nix"
+    config["tool"]["poetry"]["version"] = "0.3.0"
+    config["tool"]["poetry"][
+        "description"
+    ] = "Natural language interface for NixOS with 96% accuracy"
+    config["tool"]["poetry"]["authors"] = [
+        "Luminous Dynamics <contact@luminous-nix.org>"
     ]
-    config['tool']['poetry']['classifiers'] = [
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Topic :: System :: Systems Administration',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    config["tool"]["poetry"]["license"] = "MIT"
+    config["tool"]["poetry"]["readme"] = "README.md"
+    config["tool"]["poetry"][
+        "repository"
+    ] = "https://github.com/Luminous-Dynamics/luminous-nix"
+    config["tool"]["poetry"]["homepage"] = "https://luminous-nix.org"
+    config["tool"]["poetry"]["keywords"] = [
+        "nixos",
+        "natural-language",
+        "ai",
+        "machine-learning",
+        "neural-networks",
+        "package-management",
+        "linux",
     ]
-    
+    config["tool"]["poetry"]["classifiers"] = [
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Intended Audience :: System Administrators",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Topic :: System :: Systems Administration",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    ]
+
     # Update scripts
-    config['tool']['poetry']['scripts'] = {
-        'luminous-nix': 'luminous_nix.cli:main',
-        'ask-nix': 'luminous_nix.cli:main',
-        'nix-tui': 'luminous_nix.ui.main_app:run_tui'
+    config["tool"]["poetry"]["scripts"] = {
+        "luminous-nix": "luminous_nix.cli:main",
+        "ask-nix": "luminous_nix.cli:main",
+        "nix-tui": "luminous_nix.ui.main_app:run_tui",
     }
-    
+
     # Core dependencies (minimal for production)
-    config['tool']['poetry']['dependencies'] = {
-        'python': '^3.9',
-        'click': '^8.0',
-        'rich': '^13.0',
-        'prompt-toolkit': '^3.0',
-        'pyyaml': '^6.0',
-        'toml': '^0.10',
-        'torch': {'version': '^2.0', 'optional': True},  # Optional for non-neural usage
-        'textual': '^0.47.0',
-        'httpx': '^0.24.0',
-        'questionary': '^2.0',
+    config["tool"]["poetry"]["dependencies"] = {
+        "python": "^3.9",
+        "click": "^8.0",
+        "rich": "^13.0",
+        "prompt-toolkit": "^3.0",
+        "pyyaml": "^6.0",
+        "toml": "^0.10",
+        "torch": {"version": "^2.0", "optional": True},  # Optional for non-neural usage
+        "textual": "^0.47.0",
+        "httpx": "^0.24.0",
+        "questionary": "^2.0",
     }
-    
+
     # Optional extras
-    config['tool']['poetry']['extras'] = {
-        'neural': ['torch>=2.0'],
-        'voice': ['whisper', 'pyttsx3'],
-        'dev': ['pytest', 'black', 'ruff'],
+    config["tool"]["poetry"]["extras"] = {
+        "neural": ["torch>=2.0"],
+        "voice": ["whisper", "pyttsx3"],
+        "dev": ["pytest", "black", "ruff"],
     }
-    
+
     # Save updated config
-    with open(pyproject_path, 'w') as f:
+    with open(pyproject_path, "w") as f:
         toml.dump(config, f)
-    
+
     print("✅ Updated pyproject.toml for PyPI release")
     return config
+
 
 def create_pypi_readme():
     """Create README specifically for PyPI"""
@@ -238,12 +251,13 @@ MIT License - see [LICENSE](https://github.com/Luminous-Dynamics/luminous-nix/bl
 
 **Transform your NixOS experience with natural language!**
 """
-    
-    with open("README.pypi.md", 'w') as f:
+
+    with open("README.pypi.md", "w") as f:
         f.write(readme_content)
-    
+
     print("✅ Created PyPI-specific README")
     return readme_content
+
 
 def create_manifest_in():
     """Create MANIFEST.in for package data"""
@@ -273,11 +287,12 @@ recursive-exclude docs *
 recursive-exclude .archive* *
 recursive-exclude scripts *
 """
-    
-    with open("MANIFEST.in", 'w') as f:
+
+    with open("MANIFEST.in", "w") as f:
         f.write(manifest_content)
-    
+
     print("✅ Created MANIFEST.in")
+
 
 def create_setup_py():
     """Create setup.py for backwards compatibility"""
@@ -358,35 +373,37 @@ setup(
     zip_safe=False,
 )
 '''
-    
-    with open("setup.py", 'w') as f:
+
+    with open("setup.py", "w") as f:
         f.write(setup_content)
-    
+
     print("✅ Created setup.py for backwards compatibility")
+
 
 def build_pypi_package():
     """Build the PyPI package"""
     print("\n📦 Building PyPI Package...")
-    
+
     import subprocess
-    
+
     # Clean previous builds
-    shutil.rmtree('dist', ignore_errors=True)
-    shutil.rmtree('build', ignore_errors=True)
-    
+    shutil.rmtree("dist", ignore_errors=True)
+    shutil.rmtree("build", ignore_errors=True)
+
     # Build with poetry
-    result = subprocess.run(['poetry', 'build'], capture_output=True, text=True)
-    
+    result = subprocess.run(["poetry", "build"], capture_output=True, text=True)
+
     if result.returncode == 0:
         print("✅ Package built successfully!")
         print("\n📁 Distribution files:")
-        for file in Path('dist').glob('*'):
+        for file in Path("dist").glob("*"):
             size = file.stat().st_size / 1024 / 1024  # MB
             print(f"  - {file.name} ({size:.2f} MB)")
     else:
         print(f"❌ Build failed: {result.stderr}")
-        
+
     return result.returncode == 0
+
 
 def create_pypirc():
     """Create .pypirc template for upload"""
@@ -405,24 +422,25 @@ repository = https://test.pypi.org/legacy/
 username = __token__
 password = # Add your TestPyPI token here
 """
-    
-    pypirc_path = Path.home() / '.pypirc.template'
-    with open(pypirc_path, 'w') as f:
+
+    pypirc_path = Path.home() / ".pypirc.template"
+    with open(pypirc_path, "w") as f:
         f.write(pypirc_content)
-    
+
     print(f"✅ Created {pypirc_path} template")
     print("   Edit this file and rename to .pypirc to upload")
+
 
 def main():
     print("🚀 Setting up PyPI Package for Luminous Nix v0.3.0")
     print("=" * 60)
-    
+
     # Update configurations
     config = update_pyproject_for_pypi()
     create_pypi_readme()
     create_manifest_in()
     create_setup_py()
-    
+
     # Build package
     if build_pypi_package():
         print("\n✅ PyPI package ready!")
@@ -434,10 +452,11 @@ def main():
         print("- Set up PyPI account at https://pypi.org")
         print("- Generate API token")
         print("- Configure .pypirc with token")
-        
+
         create_pypirc()
     else:
         print("\n❌ Package build failed. Please check errors above.")
+
 
 if __name__ == "__main__":
     main()

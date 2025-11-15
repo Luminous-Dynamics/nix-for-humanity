@@ -5,46 +5,52 @@ Demonstrates the unconsidered aspects we discovered
 """
 
 import sys
-import os
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
 
 # Import our new advanced HRM modules
-from luminous_nix.ai.hrm_uncertainty import BayesianHRM, ConformalHRM, ActiveLearningHRM, demonstrate_uncertainty
-from luminous_nix.ai.hrm_counterfactual import CounterfactualHRM, demonstrate_counterfactual  
-from luminous_nix.ai.hrm_meta_learning import MetaLearningHRM, demonstrate_meta_learning
+from luminous_nix.ai.hrm_counterfactual import (
+    demonstrate_counterfactual,
+)
+from luminous_nix.ai.hrm_meta_learning import demonstrate_meta_learning
+from luminous_nix.ai.hrm_uncertainty import (
+    demonstrate_uncertainty,
+)
+
 
 def test_all_advanced_features():
     """Test all the unconsidered aspects we discovered"""
-    
+
     print("=" * 80)
     print("🚀 TESTING HRM ADVANCED FEATURES")
     print("=" * 80)
     print("\nThree breakthrough capabilities we hadn't considered:\n")
-    
+
     # 1. Uncertainty Quantification
     print("\n" + "=" * 80)
     print("1️⃣ UNCERTAINTY QUANTIFICATION - The model knows what it doesn't know")
     print("=" * 80)
     demonstrate_uncertainty()
-    
+
     # 2. Counterfactual Reasoning
     print("\n" + "=" * 80)
     print("2️⃣ COUNTERFACTUAL REASONING - What-if analysis and failure explanation")
     print("=" * 80)
     demonstrate_counterfactual()
-    
+
     # 3. Meta-Learning
     print("\n" + "=" * 80)
     print("3️⃣ META-LEARNING - Learning to learn from minimal examples")
     print("=" * 80)
     demonstrate_meta_learning()
-    
+
     # Summary
     print("\n" + "=" * 80)
     print("📊 SUMMARY: Game-Changing Capabilities")
     print("=" * 80)
-    
-    print("""
+
+    print(
+        """
 These three enhancements transform HRM from a pattern matcher to a true reasoning system:
 
 1. **Uncertainty Quantification**
@@ -70,7 +76,9 @@ IMPACT:
 - 100x faster learning (few-shot capability)
 - New capability: causal understanding
 - Paradigm shift: From memorization to reasoning
-""")
+"""
+    )
+
 
 if __name__ == "__main__":
     test_all_advanced_features()

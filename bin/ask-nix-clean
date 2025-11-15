@@ -13,8 +13,8 @@ from pathlib import Path
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
-from luminous_nix.core.config import load_config
 from luminous_nix.core.backend_real import RealNixBackend
+from luminous_nix.core.config import load_config
 from luminous_nix.core.intents import IntentRecognizer
 
 
@@ -22,42 +22,42 @@ def main():
     """Main entry point with clean configuration"""
     # Load configuration with proper precedence
     config = load_config(sys.argv[1:])
-    
+
     # Get the command from parsed args
-    if hasattr(config, '_command'):
-        command = ' '.join(config._command)
+    if hasattr(config, "_command"):
+        command = " ".join(config._command)
     else:
         command = None
-    
+
     # Show help if no command
     if not command:
         print_help(config)
         return 0
-    
+
     # Show configuration in verbose mode
     if config.verbose > 0:
-        print(f"🔧 Configuration:")
+        print("🔧 Configuration:")
         print(f"  Mode: {config.get_display_mode()}")
         print(f"  Verbosity: {config.get_verbosity_level()}")
         if config.force:
-            print(f"  Confirmations: Skipped")
+            print("  Confirmations: Skipped")
         print()
-    
+
     # Create backend with config
     backend = RealNixBackend(config)
-    
+
     # Recognize intent
     recognizer = IntentRecognizer()
     intent = recognizer.recognize(command)
-    
+
     # Process the intent
     if config.verbose > 0:
         print(f"🎯 Intent: {intent.type.value}")
-        print(f"🔄 Processing...")
+        print("🔄 Processing...")
         print()
-    
+
     response = backend.process(intent)
-    
+
     # Display response with proper formatting
     if response.success:
         icon = "🔍" if config.preview else "✅"
@@ -70,7 +70,7 @@ def main():
             print(f"❌ {response.text}")
         else:
             print(f"ERROR: {response.text}")
-    
+
     # Show additional data in verbose mode
     if config.verbose > 0 and response.data:
         print("\n📊 Details:")
@@ -79,15 +79,16 @@ def main():
                 print(f"  {key}: {len(value)} items")
             else:
                 print(f"  {key}: {value}")
-    
+
     return 0 if response.success else 1
 
 
 def print_help(config):
     """Print help message"""
     mode_desc = "preview" if config.preview else "apply"
-    
-    print(f"""
+
+    print(
+        f"""
 Luminous Nix v0.1.0-alpha - Natural Language NixOS Interface
 
 USAGE:
@@ -104,10 +105,10 @@ COMMANDS:
 MODE OPTIONS:
     --preview, -p      Preview changes without applying (default)
     --apply, -a        Apply changes to the system
-    
+
 CONFIRMATION:
     --yes, -y          Skip all confirmation prompts
-    
+
 OUTPUT:
     --verbose, -v      Increase verbosity (-vv for debug)
     --quiet, -q        Minimal output
@@ -122,7 +123,8 @@ EXAMPLES:
     ask-nix list                          # List installed packages
 
 CURRENT MODE: {config.get_display_mode()}
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

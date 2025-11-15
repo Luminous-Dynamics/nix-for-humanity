@@ -1,6 +1,6 @@
 # 🏗️ Architecture Reality Audit
 
-**Date**: 2025-01-29  
+**Date**: 2025-01-29
 **Goal**: Map what we claim vs what actually exists
 
 ## Executive Summary
@@ -76,7 +76,7 @@ class RealNixBackend:
     def _handle_search(self):
         # 300 lines mixing:
         # - Cache logic
-        # - Search logic  
+        # - Search logic
         # - Display logic
         # - Error handling
         pass
@@ -86,7 +86,7 @@ class SearchService:
     def __init__(self, cache: CacheService, executor: NixExecutor):
         self.cache = cache
         self.executor = executor
-    
+
     def search(self, query: str) -> SearchResult:
         # Just search logic
         pass
@@ -110,7 +110,7 @@ class PluginManager:
         pass
 
 # Example plugins:
-# - GitHubPackageSearch 
+# - GitHubPackageSearch
 # - NixOSConfigValidator
 # - SecurityAuditor
 # - PerformanceProfiler
@@ -121,7 +121,7 @@ class PluginManager:
 ```python
 class ConfigGenerator:
     """Generate REAL NixOS configurations"""
-    
+
     def generate(self, intent: str) -> NixConfig:
         # "I need a web server with SSL"
         # Returns actual working configuration.nix
@@ -133,7 +133,7 @@ class ConfigGenerator:
 ```python
 class SemanticSearch:
     """Find packages by meaning, not just names"""
-    
+
     def search(self, query: str) -> List[Package]:
         # "video editor" → kdenlive, openshot, pitivi
         # "code editor" → vim, emacs, vscode
@@ -145,7 +145,7 @@ class SemanticSearch:
 
 ### 🔥 Do First (High Impact, Low Effort)
 1. **Config Generator with Templates** - Most user value
-2. **Semantic Search** - Differentiator feature  
+2. **Semantic Search** - Differentiator feature
 3. **Better Error Messages** - Improves UX immediately
 
 ### 🚀 Do Second (High Impact, Medium Effort)
@@ -165,7 +165,7 @@ class SemanticSearch:
 src/luminous_nix/
 ├── services/
 │   ├── search.py       # SearchService
-│   ├── cache.py        # CacheService  
+│   ├── cache.py        # CacheService
 │   ├── executor.py     # NixExecutor
 │   ├── config_gen.py   # ConfigGenerator
 │   └── intent.py       # IntentParser
@@ -195,7 +195,7 @@ src/luminous_nix/
 - [ ] Clear separation of concerns
 - [ ] Plugin architecture working
 
-### User Experience  
+### User Experience
 - [ ] Config generation works for 10 common cases
 - [ ] Semantic search finds packages by meaning
 - [ ] Error messages include solutions

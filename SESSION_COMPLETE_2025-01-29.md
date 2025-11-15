@@ -7,7 +7,7 @@
 
 We successfully:
 1. ✅ Completed and documented v0.2.0-beta release (80% accuracy with neural networks)
-2. ✅ Fixed critical dev/shell query issue (0% → 100% accuracy) 
+2. ✅ Fixed critical dev/shell query issue (0% → 100% accuracy)
 3. ✅ Created v0.2.1 with 85% overall accuracy
 4. ✅ Defined clear path to 95% accuracy in 4 weeks
 
@@ -39,7 +39,7 @@ HRM v3
 ## Path Forward
 
 ### Week 1: Fix update queries (50% → 90%)
-### Week 2: Scale to 500+ training queries  
+### Week 2: Scale to 500+ training queries
 ### Week 3: Add transformer architecture
 ### Week 4: Deploy v0.3.0 with 95% accuracy
 

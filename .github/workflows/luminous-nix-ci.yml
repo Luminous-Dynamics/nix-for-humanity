@@ -20,15 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Check Python syntax
         run: python -m py_compile src/**/*.py
-      
+
       - name: Validate YAML files
         run: |
           pip install yamllint
@@ -41,35 +41,35 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v3
         with:
           path: ~/.cache/pypoetry
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-      
+
       - name: Install dependencies
         run: poetry install --with dev
-      
+
       - name: Run Black formatter check
         run: poetry run black --check src/ tests/
-      
+
       - name: Run Ruff linter
         run: poetry run ruff check src/ tests/
-      
+
       - name: Run isort import checker
         run: poetry run isort --check-only src/ tests/
-      
+
       - name: Type checking with mypy
         run: poetry run mypy src/ --ignore-missing-imports || true
 
@@ -81,23 +81,23 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      
+
       - name: Install dependencies
         run: poetry install --with dev
-      
+
       - name: Run unit tests
         run: |
           poetry run pytest tests/unit/ \
@@ -105,12 +105,12 @@ jobs:
             --cov-report=xml \
             --cov-report=term-missing \
             -v
-      
+
       - name: Run integration tests
         run: |
           poetry run pytest tests/integration/ \
             -v --tb=short || true
-      
+
       - name: Upload coverage
         if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v3
@@ -125,24 +125,24 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      
+
       - name: Install dependencies
         run: poetry install --with dev
-      
+
       - name: Test adaptive personas
         run: poetry run python test_adaptive_personas.py
-      
+
       - name: Test POML consciousness
         run: poetry run python test_consciousness.py || true
-      
+
       - name: Test learning memory
         run: |
           poetry run pytest tests/unit/test_learning_memory.py -v || true
@@ -154,17 +154,17 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Bandit security scan
         run: |
           pip install bandit
           bandit -r src/ -ll -f json -o bandit-report.json || true
-      
+
       - name: Check for hardcoded secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-      
+
       - name: Dependency vulnerability scan
         run: |
           pip install safety
@@ -178,24 +178,24 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      
+
       - name: Install dependencies
         run: poetry install --with dev
-      
+
       - name: Run performance tests
         run: |
           poetry run pytest tests/benchmarks/ \
             --benchmark-only \
             --benchmark-json=benchmark.json || true
-      
+
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         if: github.ref == 'refs/heads/main'
@@ -212,25 +212,25 @@ jobs:
     needs: [test, security]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      
+
       - name: Build distributions
         run: |
           poetry build
           ls -la dist/
-      
+
       - name: Check wheel contents
         run: |
           pip install check-wheel-contents
           check-wheel-contents dist/*.whl
-      
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -244,31 +244,31 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      
+
       - name: Install dependencies
         run: poetry install
-      
+
       - name: Start API server
         run: |
           poetry run python start_llm_api.py --port 8002 &
           sleep 5
-      
+
       - name: Test API health
         run: |
           curl -f http://localhost:8002/health || exit 1
-      
+
       - name: Test tool endpoints
         run: |
           curl -f http://localhost:8002/tools || exit 1
-      
+
       - name: Run integration test
         run: |
           poetry run python test_ollama_flow.py || true
@@ -281,13 +281,13 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: distributions
           path: dist/
-      
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -295,18 +295,18 @@ jobs:
           generate_release_notes: true
           body: |
             ## 🌟 Luminous Nix Release
-            
+
             ### ✨ Features
             - Adaptive persona system that learns from each user
             - Data Trinity integration for persistent memory
             - Ollama/LLM integration for natural language
             - Consciousness-first computing principles
-            
+
             ### 📦 Installation
             ```bash
             pip install luminous-nix
             ```
-      
+
       - name: Publish to PyPI
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         env:

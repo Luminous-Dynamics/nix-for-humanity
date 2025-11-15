@@ -21,7 +21,7 @@ We're thrilled to announce **Luminous Nix v0.2.0-beta** - featuring real neural 
 
 ### 3-Tier Intelligent Caching
 - **L1 Memory Cache**: <0.1ms for recent queries
-- **L2 SQLite Cache**: <1ms for thousands of queries  
+- **L2 SQLite Cache**: <1ms for thousands of queries
 - **L3 Pattern Matching**: <5ms for similar queries
 - **87.5% of queries served instantly** from cache
 

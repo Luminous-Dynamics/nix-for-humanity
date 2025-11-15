@@ -37,7 +37,7 @@ impl QueryOptimizer {
                 optimized.normalized = pattern.regex
                     .replace(&optimized.normalized, &pattern.replacement)
                     .to_string();
-                
+
                 if let Some(hint) = &pattern.cache_hint {
                     optimized.cache_key = Some(generate_cache_key(&optimized.normalized));
                 }
@@ -172,7 +172,7 @@ impl CommandOptimizer {
         }
 
         let command = cmd[0].clone();
-        
+
         // Add JSON output flag if applicable
         if should_add_json_flag(&command) && !cmd.contains(&"--json".to_string()) {
             cmd.push("--json".to_string());
@@ -226,7 +226,7 @@ impl CommandOptimizer {
             }
 
             let cmd_type = classify_command(&cmd[0]);
-            
+
             if current_type.is_none() {
                 current_type = Some(cmd_type.clone());
             }
@@ -287,7 +287,7 @@ fn normalize_query(query: &str) -> String {
 
 fn detect_intent(query: &str) -> Intent {
     let normalized = query.to_lowercase();
-    
+
     if normalized.contains("install") || normalized.contains("add") {
         Intent::Install
     } else if normalized.contains("uninstall") || normalized.contains("remove") {
@@ -312,7 +312,7 @@ fn detect_intent(query: &str) -> Intent {
 fn extract_entities(query: &str) -> Vec<Entity> {
     let mut entities = Vec::new();
     let words: Vec<&str> = query.split_whitespace().collect();
-    
+
     for (i, word) in words.iter().enumerate() {
         // Package names (simple heuristic)
         if i > 0 && (words[i-1] == "install" || words[i-1] == "search") {
@@ -322,7 +322,7 @@ fn extract_entities(query: &str) -> Vec<Entity> {
                 confidence: 0.9,
             });
         }
-        
+
         // Service names
         if word.ends_with(".service") || (i > 0 && words[i-1] == "service") {
             entities.push(Entity {
@@ -332,19 +332,19 @@ fn extract_entities(query: &str) -> Vec<Entity> {
             });
         }
     }
-    
+
     entities
 }
 
 fn should_use_json(query: &str) -> bool {
-    query.contains("search") || 
-    query.contains("list") || 
+    query.contains("search") ||
+    query.contains("list") ||
     query.contains("info") ||
     query.contains("show")
 }
 
 fn is_parallel_safe(query: &str) -> bool {
-    !query.contains("install") && 
+    !query.contains("install") &&
     !query.contains("uninstall") &&
     !query.contains("update") &&
     !query.contains("switch")
@@ -388,34 +388,34 @@ fn build_optimization_patterns() -> Vec<OptimizationPattern> {
 
 fn build_cache_hints() -> HashMap<String, CacheHint> {
     let mut hints = HashMap::new();
-    
+
     hints.insert("search".to_string(), CacheHint {
         ttl_seconds: 3600,
         cache_level: CacheLevel::L1Memory,
         invalidation_triggers: vec!["update".to_string()],
     });
-    
+
     hints.insert("list".to_string(), CacheHint {
         ttl_seconds: 300,
         cache_level: CacheLevel::L2Compressed,
         invalidation_triggers: vec!["install".to_string(), "uninstall".to_string()],
     });
-    
+
     hints
 }
 
 fn build_flags_map() -> HashMap<String, Vec<String>> {
     let mut map = HashMap::new();
-    
+
     map.insert("nix".to_string(), vec![
         "--extra-experimental-features".to_string(),
         "nix-command flakes".to_string(),
     ]);
-    
+
     map.insert("nix-env".to_string(), vec![
         "--prebuilt-only".to_string(),
     ]);
-    
+
     map
 }
 
@@ -447,7 +447,7 @@ mod tests {
     fn test_query_optimization() {
         let optimizer = QueryOptimizer::new();
         let optimized = optimizer.optimize_query("please search for firefox browser");
-        
+
         assert_eq!(optimized.intent, Intent::Search);
         assert!(optimized.json_output);
         assert!(optimized.parallel_safe);
@@ -458,14 +458,14 @@ mod tests {
         let optimizer = CommandOptimizer::new();
         let cmd = vec!["nix".to_string(), "search".to_string(), "firefox".to_string()];
         let optimized = optimizer.optimize_command(cmd);
-        
+
         assert!(optimized.contains(&"--json".to_string()));
     }
 
     #[test]
     fn test_entity_extraction() {
         let entities = extract_entities("install firefox and chromium");
-        
+
         assert_eq!(entities.len(), 2);
         assert_eq!(entities[0].value, "firefox");
         assert_eq!(entities[1].value, "and"); // Simple extraction, would need improvement

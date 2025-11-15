@@ -60,11 +60,11 @@ impl AdvancedSearcher {
                 .filter_map(|pkg| {
                     if let Some(score) = self.matcher.fuzzy_match(&pkg.name, query) {
                         let normalized_score = score as f64 / 100.0;
-                        
+
                         // Check if this might be a typo
-                        let typo_corrected = normalized_score > self.typo_threshold 
+                        let typo_corrected = normalized_score > self.typo_threshold
                             && normalized_score < 1.0;
-                        
+
                         Some(SearchResult {
                             name: pkg.name.clone(),
                             attribute: pkg.attribute.clone(),
@@ -105,7 +105,7 @@ impl AdvancedSearcher {
                     let desc_words: Vec<&str> = pkg.description
                         .split_whitespace()
                         .collect();
-                    
+
                     let query_words: Vec<&str> = query
                         .split_whitespace()
                         .collect();
@@ -194,7 +194,7 @@ pub fn batch_search_parallel(
     limit: usize,
 ) -> Vec<Vec<SearchResult>> {
     let searcher = AdvancedSearcher::new();
-    
+
     queries
         .par_iter()
         .map(|query| {
@@ -212,12 +212,12 @@ mod tests {
     #[test]
     fn test_typo_correction() {
         let searcher = AdvancedSearcher::new();
-        
+
         assert_eq!(
             searcher.correct_typo("fierrfox"),
             Some("firefox".to_string())
         );
-        
+
         assert_eq!(
             searcher.correct_typo("chromuim"),
             Some("chromium".to_string())
@@ -243,7 +243,7 @@ mod tests {
 
         let searcher = AdvancedSearcher::new();
         let results = searcher.search("firfox", &packages);
-        
+
         assert!(!results.is_empty());
         assert!(results[0].typo_corrected);
         assert_eq!(results[0].corrected_from, Some("firfox".to_string()));

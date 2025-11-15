@@ -9,7 +9,7 @@ Visual elements in Nix for Humanity are **supportive companions** to natural lan
 ### 1. Visual Elements Serve Language
 ```
 User says: "install firefox"
-Visual shows: 
+Visual shows:
   - Command preview: `nix-env -iA nixpkgs.firefox`
   - Estimated time: ~2 minutes
   - Download size: 89MB
@@ -42,7 +42,7 @@ As users become more experienced, visual elements fade:
 #### Command Understanding
 ```
 User: "install that web browser"
-Visual: 
+Visual:
 ┌─────────────────────────────────┐
 │ I found these web browsers:     │
 │ • Firefox (recommended)         │
@@ -65,7 +65,7 @@ Time remaining: ~45 seconds
 ✓ Firefox installed successfully
   Added to: ~/.nix-profile/bin/firefox
   Desktop entry created
-  
+
 Would you like to:
   • Set as default browser?
   • Import bookmarks?
@@ -76,7 +76,7 @@ Would you like to:
 ```
 💡 I noticed you install browsers in the morning
    Should I schedule large installs before 9am?
-   
+
    [Yes, mornings work] [No preference] [Ask each time]
 ```
 

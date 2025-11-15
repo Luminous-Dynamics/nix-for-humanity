@@ -118,7 +118,7 @@ def process_query():
     data = request.json
     query = data.get('query')
     user_id = data.get('user_id', 'anonymous')
-    
+
     result = system.process_query(query, user_id)
     return jsonify(result)
 
@@ -128,7 +128,7 @@ def record_feedback():
     query = data.get('query')
     result = data.get('result')
     feedback = data.get('feedback')
-    
+
     learning_result = system.record_feedback(query, result, feedback)
     return jsonify(learning_result)
 
@@ -164,18 +164,18 @@ system:
   version: v0.3.0
   enable_learning: true
   cache_size: 1000
-  
+
 performance:
   batch_size: 100
   prefetch_common: true
   max_workers: 4
-  
+
 learning:
   database: data/active_learning.db
   min_feedback: 3
   confidence_boost: 0.02
   confidence_penalty: -0.05
-  
+
 components:
   specialists:
     enabled: true
@@ -267,7 +267,7 @@ upstream luminous_backend {
 server {
     listen 80;
     server_name api.luminous-nix.org;
-    
+
     location / {
         proxy_pass http://luminous_backend;
         proxy_set_header Host $host;

@@ -6,7 +6,7 @@
   - Tests for command injection, path traversal, XSS prevention
   - Tests for Nix expression validation and Unicode handling
   - All tests now passing ✅
-  
+
 - Created comprehensive tests for `cli_adapter.py` (scripts/adapters/)
   - 24 test methods covering all functionality
   - Tests for both server and embedded modes

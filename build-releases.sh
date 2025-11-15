@@ -18,23 +18,23 @@ mkdir -p dist-releases
 build_release() {
     local version=$1
     echo -e "${BLUE}Building v${version}...${NC}"
-    
+
     # Update version in pyproject.toml
     sed -i "s/version = \".*\"/version = \"${version}\"/" pyproject.toml
-    
+
     # Build Python package
     poetry build
-    
+
     # Create standalone directory
     mkdir -p dist-releases/luminous-nix-v${version}
-    
+
     # Copy essential files
     cp -r bin dist-releases/luminous-nix-v${version}/
     cp -r src dist-releases/luminous-nix-v${version}/
     cp pyproject.toml dist-releases/luminous-nix-v${version}/
     cp README.md dist-releases/luminous-nix-v${version}/
     cp LICENSE dist-releases/luminous-nix-v${version}/
-    
+
     # Create launcher script
     cat > dist-releases/luminous-nix-v${version}/luminous-nix << 'EOF'
 #!/usr/bin/env bash
@@ -44,15 +44,15 @@ export PYTHONPATH="${SCRIPT_DIR}/src:${PYTHONPATH}"
 exec python3 "${SCRIPT_DIR}/bin/ask-nix" "$@"
 EOF
     chmod +x dist-releases/luminous-nix-v${version}/luminous-nix
-    
+
     # Create tarball
     cd dist-releases
     tar -czf luminous-nix-v${version}-standalone.tar.gz luminous-nix-v${version}
     cd ..
-    
+
     # Create wheel package name for PyPI
     cp dist/luminous_nix-${version}-py3-none-any.whl dist-releases/
-    
+
     echo -e "${GREEN}✅ Built v${version}${NC}"
     echo "  - Standalone: dist-releases/luminous-nix-v${version}-standalone.tar.gz"
     echo "  - Wheel: dist-releases/luminous_nix-${version}-py3-none-any.whl"

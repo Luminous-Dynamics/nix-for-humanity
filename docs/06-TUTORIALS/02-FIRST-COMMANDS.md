@@ -261,7 +261,7 @@ Once learned, use shortcuts:
 ```bash
 # Instead of listing everything:
 You: "dev setup"
-Nix: "Installing your development environment: 
+Nix: "Installing your development environment:
      rust, go, nodejs, docker, postgresql, redis..."
 
 # Quick contexts:
@@ -350,7 +350,7 @@ Every response includes:
 System: "Heading level 1: Search Results
 3 items found:
 1. Firefox - Web browser
-2. Chrome - Web browser  
+2. Chrome - Web browser
 3. Brave - Privacy-focused browser
 Use arrow keys to navigate, Enter to select."
 ```
@@ -413,7 +413,7 @@ Nix: Selective learning enabled
 ### Quick Status
 ```
 You: "How's my system?"
-Nix: "All services running. 15 updates available. 
+Nix: "All services running. 15 updates available.
      Last backup: 2 hours ago. Disk usage: 45%"
 ```
 

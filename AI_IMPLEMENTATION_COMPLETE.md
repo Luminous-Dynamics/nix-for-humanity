@@ -65,7 +65,7 @@ AI Orchestrator
 
 1. **Query Analysis**: Orchestrator detects "best" → conversational intent
 2. **Model Selection**: Routes to mistral:7b for quality response
-3. **Intelligent Response**: 
+3. **Intelligent Response**:
    - Compares Firefox, Chromium, Brave
    - Explains privacy features
    - Recommends based on use case

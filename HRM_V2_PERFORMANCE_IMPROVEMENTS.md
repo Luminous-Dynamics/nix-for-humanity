@@ -50,7 +50,7 @@ Successfully enhanced the HRM (Hierarchical Reasoning Model) with **4.4x faster 
 Enhanced classification with more specific patterns:
 ```python
 - Install operations: 97% accuracy
-- Error diagnosis: 92% accuracy  
+- Error diagnosis: 92% accuracy
 - Configuration: 95% accuracy
 - Dependency resolution: 98% accuracy
 ```

@@ -70,61 +70,61 @@ class EnhancedLuminousNixTUI(App):
         grid-columns: 2fr 1fr;
         grid-rows: 1fr;
     }
-    
+
     #left-panel {
         border: solid $primary;
         padding: 1;
         margin: 1;
     }
-    
+
     #right-panel {
         border: solid $secondary;
         padding: 1;
         margin: 1;
     }
-    
+
     #orb-container {
         height: 20;
         border: none;
         align: center middle;
     }
-    
+
     #status-container {
         height: 10;
         border: solid $accent;
         padding: 1;
     }
-    
+
     #input-container {
         height: 3;
         dock: bottom;
         border: solid $primary;
         padding: 0 1;
     }
-    
+
     #history-container {
         border: solid $secondary;
         padding: 1;
         overflow-y: scroll;
     }
-    
+
     Input {
         dock: bottom;
     }
-    
+
     .status-label {
         color: $text-muted;
         text-style: italic;
     }
-    
+
     .command-success {
         color: $success;
     }
-    
+
     .command-error {
         color: $error;
     }
-    
+
     .thinking {
         color: $warning;
         text-style: italic;

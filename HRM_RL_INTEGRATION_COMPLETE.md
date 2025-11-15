@@ -267,9 +267,9 @@ With RL, the HRM doesn't just answer queries - it **learns how to answer them be
 
 ---
 
-**Status**: ✅ Production Ready  
-**Performance**: 92.3% success rate (improving)  
-**Learning Rate**: 50 episodes to excellence  
-**Resource Impact**: Minimal (+50MB RAM)  
+**Status**: ✅ Production Ready
+**Performance**: 92.3% success rate (improving)
+**Learning Rate**: 50 episodes to excellence
+**Resource Impact**: Minimal (+50MB RAM)
 
 *"Not just AI - AI that learns from you and gets better every day."*

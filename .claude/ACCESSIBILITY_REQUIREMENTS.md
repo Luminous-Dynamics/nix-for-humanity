@@ -4,7 +4,7 @@
 
 ### 1. Screen Reader Support (MUST HAVE)
 - **NVDA**: Full compatibility on Windows
-- **JAWS**: Full compatibility on Windows  
+- **JAWS**: Full compatibility on Windows
 - **VoiceOver**: Full compatibility on macOS
 - **Orca**: Full compatibility on Linux
 
@@ -45,7 +45,7 @@ const keyboardPatterns = {
 - Configurable recognition sensitivity
 - Support for speech patterns:
   - Stuttering
-  - Slow speech  
+  - Slow speech
   - Accents
   - Impediments
 
@@ -128,13 +128,13 @@ describe('Accessibility', () => {
     const results = await axe(component);
     expect(results.violations).toHaveLength(0);
   });
-  
+
   it('is keyboard navigable', async () => {
     // Tab through all elements
     // Verify focus order
     // Check keyboard activation
   });
-  
+
   it('works with screen reader', async () => {
     // Check announcements
     // Verify labels
@@ -171,7 +171,7 @@ describe('Accessibility', () => {
 - Simple language required
 - Tremor tolerance needed
 
-### Maya (16) - ADHD considerations  
+### Maya (16) - ADHD considerations
 - Quick interactions
 - Visual feedback
 - Minimal distractions

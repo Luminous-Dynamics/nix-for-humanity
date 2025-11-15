@@ -31,13 +31,13 @@ ask-nix dna visualize configuration.nix --type full
 ```
      🧬 Configuration DNA Helix 🧬
      ══════════════════════════
-     
+
      │    A═══T    │
      │   G≡≡≡C     │
      │  C···G      │
      │ T───A       │
      │A═══T        │
-     
+
      Complexity: 72/100
      Health: GOOD
 ```
@@ -203,7 +203,7 @@ The wizard can generate a complete NixOS configuration snippet:
 programs.luminous-nix = {
   enable = true;
   defaultMode = "developer";
-  
+
   modes = {
     developer = {
       cpu_governor = "performance";
@@ -212,13 +212,13 @@ programs.luminous-nix = {
       notification_sounds = false;
     };
   };
-  
+
   schedule = {
     "09:00" = "developer";
     "18:00" = "personal";
     "22:00" = "quiet";
   };
-  
+
   automation = "guided";
 };
 ```

@@ -345,9 +345,7 @@ class LuminousNixBackend:
             for gen in generations
         ]
 
-    def rollback_generation(
-        self, generation_num: int | None = None
-    ) -> dict[str, Any]:
+    def rollback_generation(self, generation_num: int | None = None) -> dict[str, Any]:
         """Rollback to a previous generation for safety"""
         try:
             success, message = self.generation_manager.rollback(generation_num)

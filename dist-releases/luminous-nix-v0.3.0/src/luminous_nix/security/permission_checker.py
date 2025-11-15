@@ -245,7 +245,12 @@ class PermissionChecker:
                 # Check owner
                 if file_uid == user_info["uid"]:
                     # User owns the file
-                    if mode == "read" and file_mode & stat.S_IRUSR or mode == "write" and file_mode & stat.S_IWUSR:
+                    if (
+                        mode == "read"
+                        and file_mode & stat.S_IRUSR
+                        or mode == "write"
+                        and file_mode & stat.S_IWUSR
+                    ):
                         return {
                             "allowed": True,
                             "requires_elevation": False,
@@ -254,7 +259,12 @@ class PermissionChecker:
 
                 # Check group
                 if file_gid in [grp.getgrnam(g).gr_gid for g in user_info["groups"]]:
-                    if mode == "read" and file_mode & stat.S_IRGRP or mode == "write" and file_mode & stat.S_IWGRP:
+                    if (
+                        mode == "read"
+                        and file_mode & stat.S_IRGRP
+                        or mode == "write"
+                        and file_mode & stat.S_IWGRP
+                    ):
                         return {
                             "allowed": True,
                             "requires_elevation": False,
@@ -289,9 +299,7 @@ class PermissionChecker:
             if mode == "write":
                 parent = path.parent
                 if parent.exists():
-                    return cls._check_file_permission(
-                        str(parent), "write", user_info
-                    )
+                    return cls._check_file_permission(str(parent), "write", user_info)
 
             return {
                 "allowed": True,

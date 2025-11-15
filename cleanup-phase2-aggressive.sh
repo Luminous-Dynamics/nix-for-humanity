@@ -15,17 +15,17 @@ echo "📚 Aggressive documentation cleanup..."
 if [ -d "docs" ]; then
     # Keep only essential docs
     mkdir -p docs-temp
-    
+
     # Keep critical user docs
     [ -f "docs/README.md" ] && cp docs/README.md docs-temp/
     [ -f "docs/QUICKSTART.md" ] && cp docs/QUICKSTART.md docs-temp/
-    
+
     # Keep essential tutorials
     [ -d "docs/06-TUTORIALS" ] && cp -r docs/06-TUTORIALS docs-temp/
-    
+
     # Archive everything else
     mv docs/* .archive-2025-01-26/old-docs-detailed/ 2>/dev/null || true
-    
+
     # Restore essentials
     if [ -d "docs-temp" ]; then
         mv docs-temp/* docs/ 2>/dev/null || true

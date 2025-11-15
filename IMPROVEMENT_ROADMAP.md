@@ -39,12 +39,12 @@ class ConversationManager:
         self.history = []
         self.context = {}
         self.user_preferences = {}
-    
+
     def add_turn(self, query, response):
         # Remember what was discussed
         self.history.append((query, response))
         self.extract_context(query, response)
-    
+
     def get_relevant_context(self, query):
         # Provide context to AI for better responses
         return self.find_relevant_history(query)
@@ -135,7 +135,7 @@ class VoiceAssistant:
     def __init__(self):
         self.whisper = WhisperSTT()  # Speech to text
         self.piper = PiperTTS()      # Text to speech
-    
+
     def listen_and_respond(self):
         query = self.whisper.transcribe()
         response = self.process(query)
@@ -159,19 +159,19 @@ class VoiceAssistant:
 class SystemMonitor:
     def detect_issues(self):
         issues = []
-        
+
         # Check disk space
         if self.disk_usage() > 90:
             issues.append("Low disk space - suggest cleanup")
-        
+
         # Check for outdated packages
         if self.outdated_packages() > 50:
             issues.append("Many outdated packages - suggest update")
-        
+
         # Check for configuration conflicts
         if self.find_conflicts():
             issues.append("Configuration conflicts detected")
-        
+
         return issues
 ```
 
@@ -230,7 +230,7 @@ def share_snippet(config, description):
 class NixLSP:
     def provide_completions(self, position):
         return ai_assistant.suggest_completions(position)
-    
+
     def explain_error(self, error):
         return ai_assistant.diagnose(error)
 ```

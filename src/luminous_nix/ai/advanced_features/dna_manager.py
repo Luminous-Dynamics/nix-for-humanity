@@ -4,16 +4,16 @@ Configuration DNA Manager - Export, import, and breed configurations
 Enables sharing and combining configuration genetics
 """
 
-import json
-import hashlib
 import base64
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict
+import hashlib
+import json
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from typing import Any, Optional
 
-from .config_dna import ConfigDNA, ConfigGene, ConfigDNAAnalyzer, ConfigLineage
+from .config_dna import ConfigDNA, ConfigDNAAnalyzer, ConfigGene, ConfigLineage
 
 
 class DNAFormat(Enum):
@@ -39,14 +39,14 @@ class DNAPackage:
     # Metadata
     description: Optional[str] = None
     author: Optional[str] = None
-    tags: List[str] = None
+    tags: list[str] = None
 
     # Compatibility info
     nixos_version: Optional[str] = None
-    required_features: List[str] = None
+    required_features: list[str] = None
 
     # Breeding information
-    parent_dnas: List[str] = None  # Fingerprints of parent DNAs
+    parent_dnas: list[str] = None  # Fingerprints of parent DNAs
     generation: int = 0
 
     def __post_init__(self):
@@ -172,7 +172,7 @@ class ConfigDNAManager:
         parent1_path: str,
         parent2_path: str,
         breeding_strategy: str = "best_of_both",
-        trait_weights: Optional[Dict[str, float]] = None,
+        trait_weights: Optional[dict[str, float]] = None,
     ) -> ConfigDNA:
         """
         Breed two configuration DNAs to create offspring
@@ -266,7 +266,7 @@ class ConfigDNAManager:
 
     def compare_dna_packages(
         self, package1: DNAPackage, package2: DNAPackage
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compare two DNA packages for compatibility and differences
 
@@ -334,7 +334,7 @@ class ConfigDNAManager:
         self,
         parent1: ConfigDNA,
         parent2: ConfigDNA,
-        trait_weights: Optional[Dict[str, float]] = None,
+        trait_weights: Optional[dict[str, float]] = None,
     ) -> ConfigDNA:
         """Breed by selecting best traits from each parent"""
         # Combine genes, preferring higher fitness
@@ -438,7 +438,7 @@ class ConfigDNAManager:
         return offspring
 
     def _breed_selective(
-        self, parent1: ConfigDNA, parent2: ConfigDNA, trait_weights: Dict[str, float]
+        self, parent1: ConfigDNA, parent2: ConfigDNA, trait_weights: dict[str, float]
     ) -> ConfigDNA:
         """Selective breeding based on specific trait weights"""
         # Select genes based on weights
@@ -739,7 +739,7 @@ class ConfigDNAManager:
 
     def _identify_mutations(
         self, parent1: ConfigDNA, parent2: ConfigDNA, offspring: ConfigDNA
-    ) -> List[str]:
+    ) -> list[str]:
         """Identify mutations in offspring"""
         mutations = []
 
@@ -814,14 +814,14 @@ class ConfigDNAManager:
 
 {
   imports = [ ./hardware-configuration.nix ];
-  
+
   # DNA-applied configuration will be added here
-  
+
   system.stateVersion = "24.11";
 }"""
 
     def _apply_genes_to_config(
-        self, current_config: str, genes: List[ConfigGene], preserve_custom: bool
+        self, current_config: str, genes: list[ConfigGene], preserve_custom: bool
     ) -> str:
         """Apply genes to configuration"""
         # This would parse and modify the Nix configuration

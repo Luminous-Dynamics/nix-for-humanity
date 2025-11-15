@@ -5,7 +5,7 @@ This sacred guardian manages access to exclusive resources with grace,
 creating promises of future access when resources are busy, and ensuring
 fair and harmonious sharing among plugins.
 
-"Physical resources, like a microphone or port, can only serve one master 
+"Physical resources, like a microphone or port, can only serve one master
 at a time. We must share with grace."
 """
 

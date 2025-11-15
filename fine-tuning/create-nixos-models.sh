@@ -88,7 +88,7 @@ MESSAGE assistant 1. Package name might be different
 
 MESSAGE user error: collision between packages
 MESSAGE assistant 1. Multiple packages provide same file
-2. Use priority or remove conflicting package  
+2. Use priority or remove conflicting package
 3. nix-env --set-flag priority 10 package-name
 
 MESSAGE user error: no space left on device

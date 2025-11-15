@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Quick import test without external dependencies"""
 import sys
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
 
 print("Testing core module imports...")
 print("=" * 60)

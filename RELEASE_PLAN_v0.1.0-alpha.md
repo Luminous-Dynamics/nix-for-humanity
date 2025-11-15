@@ -1,7 +1,7 @@
 # 🚀 Release Plan: v0.1.0-alpha
 
-**Target Date**: January 29, 2025  
-**Version**: v0.1.0-alpha  
+**Target Date**: January 29, 2025
+**Version**: v0.1.0-alpha
 **Theme**: "Honest Beginnings"
 
 ---

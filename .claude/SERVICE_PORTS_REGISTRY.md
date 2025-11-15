@@ -52,7 +52,7 @@
 ```nix
 # /etc/nixos/configuration.nix
 networking.firewall = {
-  allowedTCPPorts = [ 
+  allowedTCPPorts = [
     3456  # Nix for Humanity API
     3457  # Nix for Humanity WebSocket
   ];
@@ -74,7 +74,7 @@ services:
   nlp-api:
     ports:
       - "3456:3456"
-  
+
   websocket:
     ports:
       - "3457:3457"
@@ -144,12 +144,12 @@ const checkPortAvailability = (port) => {
       }
     }
   }
-  
+
   // Check reserved ports
   if (Object.values(portRegistry.reserved).includes(port)) {
     return false;
   }
-  
+
   return true; // Port is available
 };
 ```

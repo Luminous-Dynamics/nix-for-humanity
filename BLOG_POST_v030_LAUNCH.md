@@ -43,7 +43,7 @@ Here's where we made a critical decision. Instead of simulating neural networks 
 class RealNixOSNeuralNetwork(nn.Module):
     def __init__(self, vocab_size, num_categories):
         super().__init__()
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, 
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim,
                            bidirectional=True)
         self.transformer = nn.TransformerEncoder(...)
         # Real gradients, real backpropagation
@@ -131,10 +131,10 @@ Every interaction teaches the system:
 def record_feedback(query, result, user_correction):
     # Learn from mistakes
     self.adjust_patterns(query, user_correction)
-    
+
     # Update confidence scores
     self.update_model_confidence(result.model, -0.1)
-    
+
     # Cache the correction
     self.cache[query] = user_correction
 ```
@@ -210,8 +210,8 @@ We didn't just improve accuracy. We proved that:
 
 ## Join the Revolution
 
-**GitHub**: [Luminous-Dynamics/luminous-nix](https://github.com/Luminous-Dynamics/luminous-nix)  
-**Discord**: [discord.gg/luminous-nix](https://discord.gg/luminous-nix)  
+**GitHub**: [Luminous-Dynamics/luminous-nix](https://github.com/Luminous-Dynamics/luminous-nix)
+**Discord**: [discord.gg/luminous-nix](https://discord.gg/luminous-nix)
 **Twitter**: [@LuminousNix](https://twitter.com/LuminousNix)
 
 ## Final Thought

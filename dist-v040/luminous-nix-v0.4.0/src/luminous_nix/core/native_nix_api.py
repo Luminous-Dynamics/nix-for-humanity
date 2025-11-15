@@ -105,21 +105,16 @@ class NativeNixAPI:
                 # Use nixos-rebuild-ng native API with CORRECT signatures
                 if flake:
                     # For flakes, use Flake object
-                    flake_obj = self.models.Flake(
-                        path=flake,
-                        attr=attribute
-                    )
+                    flake_obj = self.models.Flake(path=flake, attr=attribute)
                     # Build flake using build_flake
                     result_path = self.nix.build_flake(
-                        flake_obj.attr,
-                        flake_obj,
-                        flake_build_flags=None
+                        flake_obj.attr, flake_obj, flake_build_flags=None
                     )
                 else:
                     # For non-flakes, use BuildAttr with correct signature
                     build_attr = self.models.BuildAttr(
                         path="<nixpkgs/nixos>",  # Path to nixpkgs
-                        attr="system"  # Attribute to build
+                        attr="system",  # Attribute to build
                     )
                     # Native build - note attr as first argument!
                     result_path = self.nix.build("system", build_attr, build_flags=None)
@@ -159,7 +154,7 @@ class NativeNixAPI:
 
                 # Create Profile object (not an enum!)
                 profile = self.models.Profile.from_arg("/nix/var/nix/profiles/system")
-                
+
                 # Native switch with correct signature
                 self.nix.switch_to_configuration(
                     path_to_config=Path(path),
@@ -167,7 +162,7 @@ class NativeNixAPI:
                     target_host=None,  # Local operation
                     sudo=True,
                     install_bootloader=False,
-                    specialisation=None
+                    specialisation=None,
                 )
 
                 elapsed_ms = (time.time() - start_time) * 1000
@@ -228,9 +223,7 @@ class NativeNixAPI:
         # Always fallback to subprocess which works
         return self._install_subprocess(package, profile, start_time)
 
-    def list_generations(
-        self, profile: str | None = None
-    ) -> tuple[list[dict], float]:
+    def list_generations(self, profile: str | None = None) -> tuple[list[dict], float]:
         """
         List system generations using native API
 
@@ -242,10 +235,12 @@ class NativeNixAPI:
             try:
                 # Use nixos-rebuild-ng API with correct Profile creation
                 if not profile:
-                    profile_obj = self.models.Profile.from_arg("/nix/var/nix/profiles/system")
+                    profile_obj = self.models.Profile.from_arg(
+                        "/nix/var/nix/profiles/system"
+                    )
                 else:
                     profile_obj = self.models.Profile.from_arg(profile)
-                
+
                 generations = self.nix.get_generations(profile_obj)
 
                 result = []
@@ -255,7 +250,7 @@ class NativeNixAPI:
                             "number": gen.id,
                             "date": str(gen.timestamp),
                             "current": gen.current,
-                            "description": getattr(gen, 'description', '')
+                            "description": getattr(gen, "description", ""),
                         }
                     )
 
@@ -280,10 +275,10 @@ class NativeNixAPI:
             try:
                 # Use nixos-rebuild-ng API with correct Profile
                 profile = self.models.Profile.from_arg("/nix/var/nix/profiles/system")
-                
+
                 if generation:
                     # Switch to specific generation (if method exists)
-                    if hasattr(self.nix, 'switch_to_generation'):
+                    if hasattr(self.nix, "switch_to_generation"):
                         self.nix.switch_to_generation(profile, generation)
                     else:
                         # Alternative approach

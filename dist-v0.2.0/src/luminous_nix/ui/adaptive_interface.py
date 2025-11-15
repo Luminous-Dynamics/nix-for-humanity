@@ -190,21 +190,21 @@ class AdaptiveInterface(Container):
                 suggestions.display = self.current_config.show_suggestions
         except:
             pass
-        
+
         try:
             history = self.query_one("#history", HistoryPanel)
             if history:
                 history.display = self.current_config.show_history
         except:
             pass
-        
+
         try:
             metrics = self.query_one("#metrics", MetricsPanel)
             if metrics:
                 metrics.display = self.current_config.show_metrics
         except:
             pass
-        
+
         try:
             advanced = self.query_one("#advanced", AdvancedPanel)
             if advanced:

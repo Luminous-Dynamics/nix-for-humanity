@@ -37,7 +37,7 @@
       <step id="match_intent">
         Match the parsed request to available intent types:
         {{ available_intents }}
-        
+
         Consider synonyms:
         - "uninstall" = "remove"
         - "find" = "search"

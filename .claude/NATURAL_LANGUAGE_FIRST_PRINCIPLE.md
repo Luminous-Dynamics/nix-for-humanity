@@ -23,7 +23,7 @@ Input Methods:
     - Priority: EQUAL
     - Use cases: SSH, quiet environments, preference
     - Implementation: Text field with natural language processing
-    
+
   Voice:
     - Priority: EQUAL
     - Use cases: Hands-free, accessibility, preference

@@ -17,8 +17,9 @@ from .settings_command import settings
 # Import Phase 1 advanced features
 try:
     from .rollback_command import rollback
-    from .storage_command import storage
     from .security_command import security
+    from .storage_command import storage
+
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError:
     ADVANCED_FEATURES_AVAILABLE = False
@@ -30,6 +31,7 @@ except ImportError:
 try:
     from .devenv_command import devenv
     from .performance_command import performance
+
     PHASE2_FEATURES_AVAILABLE = True
 except ImportError:
     PHASE2_FEATURES_AVAILABLE = False
@@ -39,8 +41,9 @@ except ImportError:
 # Import Phase 3 advanced features
 try:
     from .dna_command import dna
-    from .modes_command import modes
     from .health_command import health
+    from .modes_command import modes
+
     PHASE3_FEATURES_AVAILABLE = True
 except ImportError:
     PHASE3_FEATURES_AVAILABLE = False

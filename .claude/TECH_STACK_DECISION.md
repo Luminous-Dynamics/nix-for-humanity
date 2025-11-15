@@ -122,7 +122,7 @@ class VoiceInput extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
   }
-  
+
   connectedCallback() {
     this.shadowRoot.innerHTML = `
       <style>
@@ -213,11 +213,11 @@ impl Sandbox {
 ```nix
 {
   description = "Nix for Humanity - Natural Language Interface for NixOS";
-  
+
   # Users can install with:
   # nix run github:Luminous-Dynamics/nix-for-humanity
   # nix profile install github:Luminous-Dynamics/nix-for-humanity
-  
+
   # Full flake with:
   # - Development shell with all Tauri dependencies
   # - Package build for Tauri app

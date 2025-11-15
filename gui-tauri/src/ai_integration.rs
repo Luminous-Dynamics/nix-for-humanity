@@ -97,9 +97,9 @@ impl OllamaClient {
             .send()
             .await
             .map_err(|e| e.to_string())?;
-        
+
         let data: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
-        
+
         Ok(AIResponse {
             text: data["response"].as_str().unwrap_or("").to_string(),
             model_used: model.to_string(),
@@ -109,7 +109,7 @@ impl OllamaClient {
             streaming: false,
         })
     }
-    
+
     pub async fn stream_chat(&self, query: &str, model: &str) -> impl Stream<Item = String> {
         // Stream responses for better UX
         futures::stream::iter(vec!["Thinking...".to_string()])
@@ -135,13 +135,13 @@ impl ConversationMemory {
             timestamp: chrono::Utc::now().timestamp(),
             model,
         });
-        
+
         // Keep only recent context to fit in context window
         if self.turns.len() > self.max_context_length {
             self.turns.remove(0);
         }
     }
-    
+
     pub fn get_context(&self, max_tokens: usize) -> String {
         // Build context string from recent turns
         self.turns
@@ -164,16 +164,16 @@ pub async fn ai_chat(
     state: State<'_, Arc<AIOrchestrator>>,
 ) -> Result<AIResponse, String> {
     let orchestrator = state.inner().clone();
-    
+
     // Determine which model to use
     let model = select_best_model(&query);
-    
+
     if use_streaming {
         // Start streaming response
         tokio::spawn(async move {
             stream_response_to_frontend(query, model, window, orchestrator).await;
         });
-        
+
         Ok(AIResponse {
             text: "Streaming...".to_string(),
             model_used: model,
@@ -199,7 +199,7 @@ pub async fn ai_complete_code(
         "Complete this {} code:\n```{}\n{}\n```\nComplete:",
         language, language, partial_code
     );
-    
+
     let orchestrator = state.inner().clone();
     let response = process_ai_query(prompt, "codellama".to_string(), orchestrator).await?;
     Ok(response.text)
@@ -216,7 +216,7 @@ pub async fn ai_explain_error(
         "Explain this NixOS error and provide a solution:\nError: {}\nContext: {}",
         error_message, context
     );
-    
+
     let orchestrator = state.inner().clone();
     process_ai_query(prompt, "mistral".to_string(), orchestrator).await
 }
@@ -231,10 +231,10 @@ pub async fn ai_suggest_packages(
         "Suggest NixOS packages for: {}. Return as comma-separated list.",
         description
     );
-    
+
     let orchestrator = state.inner().clone();
     let response = process_ai_query(prompt, "hrm".to_string(), orchestrator).await?;
-    
+
     Ok(response.text.split(',').map(|s| s.trim().to_string()).collect())
 }
 
@@ -248,7 +248,7 @@ pub async fn ai_generate_config(
         "Generate a complete NixOS configuration for: {}",
         requirements
     );
-    
+
     let orchestrator = state.inner().clone();
     let response = process_ai_query(prompt, "gemma".to_string(), orchestrator).await?;
     Ok(response.text)
@@ -264,7 +264,7 @@ pub async fn ai_optimize_config(
         "Optimize this NixOS configuration for performance and security:\n{}",
         current_config
     );
-    
+
     let orchestrator = state.inner().clone();
     let response = process_ai_query(prompt, "mixtral".to_string(), orchestrator).await?;
     Ok(response.text)
@@ -274,7 +274,7 @@ pub async fn ai_optimize_config(
 
 fn select_best_model(query: &str) -> String {
     let query_lower = query.to_lowercase();
-    
+
     if query_lower.contains("config") || query_lower.contains("nixos") {
         "hrm".to_string() // Fast NixOS reasoning
     } else if query_lower.contains("explain") || query_lower.contains("why") {
@@ -294,10 +294,10 @@ async fn process_ai_query(
     // Get conversation context
     let memory = orchestrator.memory.read().await;
     let context = memory.get_context(2000);
-    
+
     // Enhance query with context
     let enhanced_query = format!("{}\n\nQuery: {}", context, query);
-    
+
     // Route to appropriate model
     let response = match model.as_str() {
         "hrm" => {
@@ -309,13 +309,13 @@ async fn process_ai_query(
             ollama.chat(&enhanced_query, &model).await?
         }
     };
-    
+
     // Update memory
     drop(memory);
     let mut memory = orchestrator.memory.write().await;
     memory.add_turn("user".to_string(), query, None);
     memory.add_turn("assistant".to_string(), response.text.clone(), Some(model));
-    
+
     Ok(response)
 }
 
@@ -328,11 +328,11 @@ async fn stream_response_to_frontend(
     // Stream AI responses to frontend via events
     let ollama = orchestrator.ollama_client.read().await;
     let mut stream = ollama.stream_chat(&query, &model).await;
-    
+
     while let Some(chunk) = stream.next().await {
         window.emit("ai-stream-chunk", chunk).unwrap();
     }
-    
+
     window.emit("ai-stream-complete", ()).unwrap();
 }
 
@@ -341,12 +341,12 @@ async fn stream_response_to_frontend(
 mod local_ml {
     use candle_core::{Device, Tensor};
     use candle_transformers::models::llama;
-    
+
     pub struct LocalLLM {
         model: llama::Llama,
         device: Device,
     }
-    
+
     impl LocalLLM {
         pub fn new(model_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
             // Load quantized model for efficiency
@@ -354,7 +354,7 @@ mod local_ml {
             let model = llama::Llama::load(model_path, &device)?;
             Ok(Self { model, device })
         }
-        
+
         pub async fn generate(&self, prompt: &str) -> String {
             // Run inference locally
             "Local inference result".to_string()

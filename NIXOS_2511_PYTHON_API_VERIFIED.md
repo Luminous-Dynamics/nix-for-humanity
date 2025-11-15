@@ -45,7 +45,7 @@ nix.switch_to_configuration(path, Action.SWITCH, Profile.SYSTEM)
 ### Available Actions
 - `Action.SWITCH` - Apply now and on boot
 - `Action.BOOT` - Apply on next boot
-- `Action.TEST` - Apply now but not on boot  
+- `Action.TEST` - Apply now but not on boot
 - `Action.BUILD` - Build only
 - `Action.DRY_BUILD` - Show what would be built
 - `Action.DRY_ACTIVATE` - Test activation
@@ -88,18 +88,18 @@ def get_nixos_rebuild_api():
         capture_output=True,
         text=True
     )
-    
+
     if result.returncode == 0:
         rebuild_path = result.stdout.strip()
         site_packages = Path(rebuild_path) / "lib" / "python3.13" / "site-packages"
-        
+
         if site_packages.exists():
             sys.path.insert(0, str(site_packages))
-            
+
             # Now import the modules
             from nixos_rebuild import models, nix, services
             return nix, models, services
-    
+
     return None, None, None
 
 # Use the API
@@ -157,7 +157,7 @@ Since the API IS available, we should use it for:
 class NixOSRebuildAPI:
     def __init__(self):
         self.nix, self.models, self.services = get_nixos_rebuild_api()
-        
+
     def build_system(self):
         if self.nix:
             # Use Python API

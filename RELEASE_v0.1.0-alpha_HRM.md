@@ -2,8 +2,8 @@
 
 ## Revolutionary HRM-Powered Natural Language NixOS Interface
 
-**Release Date**: January 29, 2025  
-**Version**: v0.1.0-alpha  
+**Release Date**: January 29, 2025
+**Version**: v0.1.0-alpha
 **Codename**: "Honest Intelligence"
 
 ---

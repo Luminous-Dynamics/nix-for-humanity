@@ -85,7 +85,7 @@ ConsciousnessOrb
     ├── Emotional colors
     └── State transitions
 
-AdaptiveInterface  
+AdaptiveInterface
     ├── Complexity manager
     ├── Component visibility
     ├── Smooth transitions

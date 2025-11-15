@@ -66,15 +66,15 @@ Create proper Nix package:
 python3Packages.buildPythonApplication rec {
   pname = "luminous-nix";
   version = "0.3.1";
-  
+
   src = ./.;
-  
+
   propagatedBuildInputs = with python3Packages; [
     torch
     transformers
     rich
   ];
-  
+
   # Optional Rust extension
   cargoDeps = rustPlatform.fetchCargoTarball {
     inherit src;

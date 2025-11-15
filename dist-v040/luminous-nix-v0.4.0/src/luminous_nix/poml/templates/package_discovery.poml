@@ -66,7 +66,7 @@
         - Popularity/maintenance status
         - Compatibility with user's system
         - Community recommendations
-        
+
         <if condition="not include_unstable">
           Filter out unstable/broken packages
         </if>

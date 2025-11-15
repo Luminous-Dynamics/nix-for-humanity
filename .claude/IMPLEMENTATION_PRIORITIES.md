@@ -18,7 +18,7 @@
    - Keyboard entry
    - Typo tolerance
    - Natural phrasing
-   
+
    Voice Input:
    - Whisper.cpp integration
    - Microphone handling
@@ -31,12 +31,12 @@
    - Install something
    - Remove something
    - Search for something
-   
+
    Priority 2 (Day 4-7):
    - Update system
    - Show information
    - Get help
-   
+
    Priority 3 (Week 2):
    - Fix problems
    - Configure settings
@@ -60,7 +60,7 @@
 
 ### Must Test With Every Feature
 1. **Text Input** - Natural language typing
-2. **Voice Input** - Natural language speaking  
+2. **Voice Input** - Natural language speaking
 3. **Screen Reader** - Full accessibility
 4. **Mixed Input** - Type some, speak some
 5. **Error Recovery** - Graceful handling
@@ -83,13 +83,13 @@ Core:
   - NLP: Three-layer hybrid (rules + statistical + neural)
   - Voice: Whisper.cpp (best local STT)
   - Database: SQLite (embedded, reliable)
-  
+
 Frontend:
   - Framework: Vanilla JS + Web Components (no bloat)
   - Build: Vite (fastest, modern)
   - Style: CSS with custom properties
   - Accessibility: ARIA-first, WCAG AAA target
-  
+
 Infrastructure:
   - Testing: Jest + Playwright + Rust tests
   - CI/CD: GitHub Actions
@@ -121,7 +121,7 @@ Execution
 Input Layer:
   Text → NLP Pipeline
   Voice → Speech-to-Text → NLP Pipeline
-  
+
 Output Layer:
   Text Response (always)
   + Visual GUI (optional)

@@ -5,11 +5,10 @@ Multi-step planning, learning from corrections, and AI-powered troubleshooting.
 
 import json
 import sqlite3
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-import re
+from pathlib import Path
+from typing import Any, Optional
 
 
 @dataclass
@@ -17,11 +16,11 @@ class Plan:
     """Multi-step execution plan."""
 
     goal: str
-    steps: List[Dict[str, Any]]
+    steps: list[dict[str, Any]]
     estimated_time: float
     risk_level: str
-    dependencies: List[str]
-    rollback_plan: Optional[List[str]] = None
+    dependencies: list[str]
+    rollback_plan: Optional[list[str]] = None
 
 
 @dataclass
@@ -173,7 +172,7 @@ class MultiStepPlanner:
             rollback_plan=["nix-env --rollback"],
         )
 
-    def _extract_packages(self, text: str) -> List[str]:
+    def _extract_packages(self, text: str) -> list[str]:
         """Extract package names from text."""
         # Common package patterns
         packages = []
@@ -201,7 +200,7 @@ class MultiStepPlanner:
 
         return packages
 
-    def validate_plan(self, plan: Plan) -> Tuple[bool, List[str]]:
+    def validate_plan(self, plan: Plan) -> tuple[bool, list[str]]:
         """Validate a plan before execution."""
         issues = []
 
@@ -271,7 +270,7 @@ class LearningSystem:
         conn = sqlite3.connect(self.db_path)
         conn.execute(
             """
-            INSERT INTO corrections 
+            INSERT INTO corrections
             (original_query, original_response, user_correction, correct_response, category, timestamp)
             VALUES (?, ?, ?, ?, ?, ?)
         """,
@@ -305,7 +304,7 @@ class LearningSystem:
                 (pattern[0], pattern[1], 0.5, pattern[0]),
             )
 
-    def _extract_pattern(self, query: str, correct: str) -> Optional[Tuple[str, str]]:
+    def _extract_pattern(self, query: str, correct: str) -> Optional[tuple[str, str]]:
         """Extract reusable pattern from correction."""
         # Simple word replacement pattern
         query_words = set(query.lower().split())
@@ -324,8 +323,8 @@ class LearningSystem:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute(
             """
-            SELECT pattern, replacement, confidence 
-            FROM patterns 
+            SELECT pattern, replacement, confidence
+            FROM patterns
             WHERE confidence > 0.3
             ORDER BY confidence DESC, usage_count DESC
         """
@@ -346,15 +345,15 @@ class LearningSystem:
 
         return improved_query if improved_query != query else None
 
-    def get_suggestions(self, query: str) -> List[str]:
+    def get_suggestions(self, query: str) -> list[str]:
         """Get suggestions based on past corrections."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute(
             """
-            SELECT DISTINCT correct_response 
-            FROM corrections 
-            WHERE original_query LIKE ? 
-            ORDER BY timestamp DESC 
+            SELECT DISTINCT correct_response
+            FROM corrections
+            WHERE original_query LIKE ?
+            ORDER BY timestamp DESC
             LIMIT 5
         """,
             (f"%{query}%",),
@@ -432,7 +431,7 @@ class AITroubleshooter:
             },
         }
 
-    def diagnose(self, error_message: str) -> Dict[str, Any]:
+    def diagnose(self, error_message: str) -> dict[str, Any]:
         """Diagnose an error and provide solutions."""
         error_lower = error_message.lower()
 
@@ -449,7 +448,7 @@ class AITroubleshooter:
         # Fallback to general diagnosis
         return self._general_diagnosis(error_message)
 
-    def _general_diagnosis(self, error: str) -> Dict[str, Any]:
+    def _general_diagnosis(self, error: str) -> dict[str, Any]:
         """Provide general diagnosis for unknown errors."""
         return {
             "issue_type": "unknown",
@@ -464,7 +463,7 @@ class AITroubleshooter:
             "confidence": 0.3,
         }
 
-    def suggest_fix_command(self, diagnosis: Dict[str, Any]) -> Optional[str]:
+    def suggest_fix_command(self, diagnosis: dict[str, Any]) -> Optional[str]:
         """Suggest a specific command to fix the issue."""
         fixes = {
             "permission_denied": "sudo chown -R $USER:users .",
@@ -493,7 +492,7 @@ class AdvancedAI:
         self.learning = LearningSystem()
         self.troubleshooter = AITroubleshooter()
 
-    def process_complex_request(self, request: str) -> Dict[str, Any]:
+    def process_complex_request(self, request: str) -> dict[str, Any]:
         """Process a complex request with all AI capabilities."""
         # Apply learning from past corrections
         improved_request = self.learning.apply_learning(request)
@@ -515,7 +514,7 @@ class AdvancedAI:
             "suggestions": self.learning.get_suggestions(request),
         }
 
-    def handle_error(self, error: str) -> Dict[str, Any]:
+    def handle_error(self, error: str) -> dict[str, Any]:
         """Handle an error with AI troubleshooting."""
         diagnosis = self.troubleshooter.diagnose(error)
         fix_command = self.troubleshooter.suggest_fix_command(diagnosis)

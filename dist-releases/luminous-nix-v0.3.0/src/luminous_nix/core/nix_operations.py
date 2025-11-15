@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Import the subprocess-based operations for standard Nix performance
 try:
     from .native_nix_api import get_native_api
+
     NATIVE_API_AVAILABLE = True
 except ImportError:
     NATIVE_API_AVAILABLE = False

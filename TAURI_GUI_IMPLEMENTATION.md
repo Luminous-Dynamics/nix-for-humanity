@@ -66,7 +66,7 @@ You were absolutely right - **Tauri** is the superior choice for our GUI! Here's
 ### Modern Web Technologies
 ```tsx
 // Beautiful, reactive components
-<Card sx={{ 
+<Card sx={{
   backgroundColor: 'background.paper',
   '&:hover': { transform: 'scale(1.02)' }
 }}>
@@ -112,16 +112,16 @@ npm run tauri build
 pkgs.rustPlatform.buildRustPackage {
   pname = "luminous-nix-gui";
   version = "1.0.0";
-  
+
   src = ./gui-tauri;
-  
+
   cargoSha256 = "...";
-  
+
   nativeBuildInputs = with pkgs; [
     pkg-config
     nodePackages.npm
   ];
-  
+
   buildInputs = with pkgs; [
     webkitgtk
     libsoup

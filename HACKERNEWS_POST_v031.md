@@ -13,7 +13,7 @@ Yesterday we released v0.3.0 with real PyTorch neural networks achieving 96.3% a
 We listened. In less than 24 hours, v0.3.1 addresses EVERY reported issue:
 
 - HomeManagerSpecialist: Full home-manager command support
-- FlakeSpecialist: Complete nix flake operations  
+- FlakeSpecialist: Complete nix flake operations
 - ServiceSpecialist: Correctly differentiates services from packages
 - Enhanced GC: Garbage collection and generation management
 

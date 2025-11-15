@@ -1,7 +1,7 @@
 # EmbeddingGemma + HRM Integration Strategy
 
-**Date**: January 2025  
-**Status**: Architecture Design  
+**Date**: January 2025
+**Status**: Architecture Design
 **Impact**: Revolutionary neural architecture combining semantic understanding with NixOS reasoning
 
 ## Executive Summary
@@ -85,10 +85,10 @@ Combining EmbeddingGemma's semantic embeddings with HRM's specialized NixOS reas
 ```python
 class GemmaEnhancedHRM(nn.Module):
     """HRM enhanced with EmbeddingGemma semantic features"""
-    
+
     def __init__(self, gemma_dim=768, hrm_features=256, hidden_dim=512):
         super().__init__()
-        
+
         # Gemma embedding processor
         self.gemma_projection = nn.Sequential(
             nn.Linear(gemma_dim, 512),
@@ -97,7 +97,7 @@ class GemmaEnhancedHRM(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(512, 512)
         )
-        
+
         # Traditional HRM features processor
         self.feature_encoder = nn.Sequential(
             nn.Linear(hrm_features, 256),
@@ -106,25 +106,25 @@ class GemmaEnhancedHRM(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(256, 256)
         )
-        
+
         # Attention-based fusion
         self.fusion_attention = nn.MultiheadAttention(
             embed_dim=768,  # Combined dimension
             num_heads=8,
             dropout=0.1
         )
-        
+
         # Feature gating mechanism
         self.semantic_gate = nn.Sequential(
             nn.Linear(768, 1),
             nn.Sigmoid()
         )
-        
+
         self.feature_gate = nn.Sequential(
             nn.Linear(256, 1),
             nn.Sigmoid()
         )
-        
+
         # Combined reasoning layers (original HRM architecture)
         self.reasoning_layers = nn.Sequential(
             nn.Linear(768, hidden_dim),
@@ -136,17 +136,17 @@ class GemmaEnhancedHRM(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.2)
         )
-        
+
         # Task-specific heads
         self.intent_head = nn.Linear(256, len(INTENT_CLASSES))
         self.entity_head = nn.Linear(256, len(ENTITY_TAGS))
         self.confidence_head = nn.Linear(256, 1)
         self.strategy_head = nn.Linear(256, len(STRATEGIES))
-    
+
     def forward(self, gemma_embedding, hrm_features):
         """
         Forward pass combining semantic and traditional features
-        
+
         Args:
             gemma_embedding: [batch, 768] from EmbeddingGemma
             hrm_features: [batch, 256] traditional features
@@ -154,18 +154,18 @@ class GemmaEnhancedHRM(nn.Module):
         # Process both towers
         semantic = self.gemma_projection(gemma_embedding)
         features = self.feature_encoder(hrm_features)
-        
+
         # Adaptive gating based on input quality
         semantic_weight = self.semantic_gate(semantic)
         feature_weight = self.feature_gate(features)
-        
+
         # Weighted combination
         semantic_weighted = semantic * semantic_weight
         features_weighted = features * feature_weight
-        
+
         # Concatenate and fuse
         combined = torch.cat([semantic_weighted, features_weighted], dim=-1)
-        
+
         # Apply attention fusion
         fused, attention_weights = self.fusion_attention(
             combined.unsqueeze(0),
@@ -173,16 +173,16 @@ class GemmaEnhancedHRM(nn.Module):
             combined.unsqueeze(0)
         )
         fused = fused.squeeze(0)
-        
+
         # Reasoning
         hidden = self.reasoning_layers(fused)
-        
+
         # Multi-task outputs
         intent_logits = self.intent_head(hidden)
         entity_logits = self.entity_head(hidden)
         confidence = torch.sigmoid(self.confidence_head(hidden))
         strategy_logits = self.strategy_head(hidden)
-        
+
         return {
             'intent': intent_logits,
             'entities': entity_logits,
@@ -197,7 +197,7 @@ class GemmaEnhancedHRM(nn.Module):
 ```python
 class GemmaHRMTrainer:
     """Training pipeline for Gemma-enhanced HRM"""
-    
+
     def __init__(self, model, gemma_encoder, learning_rate=1e-4):
         self.model = model
         self.gemma_encoder = gemma_encoder
@@ -206,7 +206,7 @@ class GemmaHRMTrainer:
             lr=learning_rate,
             weight_decay=0.01
         )
-        
+
         # Multi-task loss weights
         self.loss_weights = {
             'intent': 1.0,
@@ -214,43 +214,43 @@ class GemmaHRMTrainer:
             'confidence': 0.3,
             'strategy': 0.7
         }
-        
+
         # Freeze Gemma initially (fine-tune later)
         self.gemma_encoder.model.eval()
         for param in self.gemma_encoder.model.parameters():
             param.requires_grad = False
-    
+
     def train_epoch(self, dataloader):
         """Train one epoch with curriculum learning"""
-        
+
         for batch_idx, batch in enumerate(dataloader):
             queries = batch['queries']
             intents = batch['intents']
             entities = batch['entities']
             strategies = batch['strategies']
-            
+
             # Generate Gemma embeddings (cached for efficiency)
             with torch.no_grad():
                 gemma_embeddings = self.gemma_encoder.encode_batch(queries)
-            
+
             # Extract traditional features
             hrm_features = self.extract_features(queries)
-            
+
             # Forward pass
             outputs = self.model(gemma_embeddings, hrm_features)
-            
+
             # Multi-task loss
             loss = self.compute_multi_task_loss(outputs, batch)
-            
+
             # Backward pass
             loss.backward()
-            
+
             # Gradient clipping
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-            
+
             self.optimizer.step()
             self.optimizer.zero_grad()
-            
+
             # Curriculum learning: adjust loss weights
             if batch_idx % 100 == 0:
                 self.adjust_loss_weights(outputs, batch)
@@ -261,22 +261,22 @@ class GemmaHRMTrainer:
 ```python
 class GemmaHRMInference:
     """Optimized inference with caching"""
-    
+
     def __init__(self, model_path, gemma_encoder):
         self.model = torch.load(model_path)
         self.model.eval()
         self.gemma_encoder = gemma_encoder
-        
+
         # Cache for embeddings
         self.embedding_cache = {}
-        
+
         # Batch processing queue
         self.query_queue = []
         self.batch_size = 32
-    
+
     def predict(self, query: str) -> Dict:
         """Single query prediction with caching"""
-        
+
         # Check cache
         query_hash = hashlib.md5(query.encode()).hexdigest()
         if query_hash in self.embedding_cache:
@@ -285,36 +285,36 @@ class GemmaHRMInference:
             # Generate embedding
             gemma_embedding = self.gemma_encoder.encode_query(query)
             self.embedding_cache[query_hash] = gemma_embedding
-        
+
         # Extract traditional features
         hrm_features = self.extract_features(query)
-        
+
         # Inference
         with torch.no_grad():
             outputs = self.model(
                 torch.tensor(gemma_embedding).unsqueeze(0),
                 torch.tensor(hrm_features).unsqueeze(0)
             )
-        
+
         # Post-process
         return self.post_process(outputs, query)
-    
+
     def batch_predict(self, queries: List[str]) -> List[Dict]:
         """Batch prediction for efficiency"""
-        
+
         # Generate all embeddings at once
         gemma_embeddings = self.gemma_encoder.encode_documents(queries)
-        
+
         # Extract features for all
         hrm_features = [self.extract_features(q) for q in queries]
-        
+
         # Batch inference
         with torch.no_grad():
             outputs = self.model(
                 torch.tensor(gemma_embeddings),
                 torch.tensor(hrm_features)
             )
-        
+
         # Post-process each
         return [self.post_process(
             {k: v[i] for k, v in outputs.items()},
@@ -362,20 +362,20 @@ combined = model(semantic_features, traditional_features)
 def augment_training_data(original_queries):
     """Use Gemma to generate semantically similar queries"""
     augmented = []
-    
+
     for query in original_queries:
         # Get embedding
         embedding = gemma_encoder.encode_query(query)
-        
+
         # Find similar queries in different languages
         translations = translate_query(query, languages=['es', 'fr', 'de'])
-        
+
         # Generate paraphrases
         paraphrases = generate_paraphrases(query, n=5)
-        
+
         # Add typos and variations
         variations = add_realistic_typos(query)
-        
+
         # All map to same intent!
         for variant in translations + paraphrases + variations:
             augmented.append({
@@ -383,7 +383,7 @@ def augment_training_data(original_queries):
                 'embedding': gemma_encoder.encode_query(variant),
                 'intent': original_queries[query]['intent']
             })
-    
+
     return augmented
 ```
 
@@ -396,10 +396,10 @@ class HybridPredictor:
         # Run both models
         hrm_only = self.hrm_model.predict(query)
         gemma_hrm = self.gemma_hrm_model.predict(query)
-        
+
         # Log for comparison
         self.log_comparison(query, hrm_only, gemma_hrm)
-        
+
         # Use Gemma+HRM if confidence higher
         if gemma_hrm['confidence'] > hrm_only['confidence']:
             return gemma_hrm
@@ -434,21 +434,21 @@ class EmbeddingCache:
     def __init__(self, max_size=10000):
         self.cache = OrderedDict()
         self.max_size = max_size
-    
+
     def get_or_compute(self, query):
         if query in self.cache:
             # Move to end (LRU)
             self.cache.move_to_end(query)
             return self.cache[query]
-        
+
         # Compute and cache
         embedding = gemma_encoder.encode_query(query)
         self.cache[query] = embedding
-        
+
         # Evict if needed
         if len(self.cache) > self.max_size:
             self.cache.popitem(last=False)
-        
+
         return embedding
 ```
 
@@ -480,18 +480,18 @@ class BatchProcessor:
         self.batch_size = batch_size
         self.timeout_ms = timeout_ms
         self.queue = []
-        
+
     async def process(self, query):
         # Add to queue
         future = asyncio.Future()
         self.queue.append((query, future))
-        
+
         # Process if batch full or timeout
         if len(self.queue) >= self.batch_size:
             await self._process_batch()
         else:
             asyncio.create_task(self._timeout_process())
-        
+
         return await future
 ```
 
@@ -502,11 +502,11 @@ class BatchProcessor:
 def visualize_attention(query, model_outputs):
     """Show which parts of query influenced decision"""
     attention_weights = model_outputs['attention']
-    
+
     # Map attention to tokens
     tokens = tokenize(query)
     token_importance = attention_weights.mean(axis=0)
-    
+
     # Highlight important tokens
     for token, importance in zip(tokens, token_importance):
         color_intensity = int(importance * 255)
@@ -541,12 +541,12 @@ if similar_queries[0].similarity > 0.9:
 ```python
 def test_gemma_hrm_integration():
     model = GemmaEnhancedHRM()
-    
+
     # Test shape compatibility
     gemma_emb = torch.randn(1, 768)
     hrm_feat = torch.randn(1, 256)
     output = model(gemma_emb, hrm_feat)
-    
+
     assert output['intent'].shape == (1, NUM_INTENTS)
     assert output['confidence'].item() >= 0 and <= 1
 ```
@@ -560,7 +560,7 @@ def test_multilingual_intent():
         ("installer firefox", "install"),  # French
         ("installieren firefox", "install")  # German
     ]
-    
+
     for query, expected_intent in queries:
         result = gemma_hrm_model.predict(query)
         assert result['intent'] == expected_intent

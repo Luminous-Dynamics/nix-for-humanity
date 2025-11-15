@@ -1,7 +1,11 @@
 # Stub for archived consciousness classes
 class ConsciousnessBarometer:
-    def __init__(self): pass
-    def measure(self): return 0.5
+    def __init__(self):
+        pass
+
+    def measure(self):
+        return 0.5
+
 
 #!/usr/bin/env python3
 """
@@ -28,9 +32,10 @@ try:
 except ImportError:
     # Create stubs until visual_orb module is implemented
     VisualOrb = None
-    
+
     class ConsciousnessQuality:
         """Stub for ConsciousnessQuality"""
+
         SUBLIME = "sublime"
         INTEGRATED = "integrated"
         COHERENT = "coherent"
@@ -43,6 +48,8 @@ except ImportError:
         BALANCED = "balanced"
         EMERGING = "emerging"
         FRAGMENTED = "fragmented"
+
+
 from .consciousness_orb import AIState, EmotionalState
 from .consciousness_orb import ConsciousnessOrb as TUIOrb
 

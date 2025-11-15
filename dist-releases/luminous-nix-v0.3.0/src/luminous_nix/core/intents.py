@@ -1373,16 +1373,25 @@ class IntentRecognizer:
                 # First check for compound terms in the full text
                 package = None
                 text_lower = text.lower()
-                
+
                 # Check for compound terms FIRST
-                for compound_term in ["text editor", "web browser", "video player", 
-                                     "music player", "pdf reader", "pdf viewer",
-                                     "image editor", "photo editor", "file manager",
-                                     "password manager", "email client"]:
+                for compound_term in [
+                    "text editor",
+                    "web browser",
+                    "video player",
+                    "music player",
+                    "pdf reader",
+                    "pdf viewer",
+                    "image editor",
+                    "photo editor",
+                    "file manager",
+                    "password manager",
+                    "email client",
+                ]:
                     if compound_term in text_lower:
                         package = self.package_aliases.get(compound_term, compound_term)
                         break
-                
+
                 # If no compound term found, extract package name from regex groups
                 if not package:
                     groups = match.groups()

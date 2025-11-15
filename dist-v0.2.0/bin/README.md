@@ -5,7 +5,7 @@ This directory contains the command-line tools for natural language NixOS intera
 ## 🚀 THE ONE COMMAND: ask-nix
 
 ### `ask-nix` ⭐ Consolidated Natural Language Interface
-**Status**: Fully functional with ALL features integrated!  
+**Status**: Fully functional with ALL features integrated!
 **Version**: v0.8.0 - Command Consolidation Complete
 
 **Integrated Features**:

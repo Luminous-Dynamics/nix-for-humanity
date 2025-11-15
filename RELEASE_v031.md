@@ -84,7 +84,7 @@ pip install luminous-nix==0.3.1
 
 > "Love it but NEED home-manager support!" - Fixed ✅
 
-> "Flake operations return 'unknown command'" - Fixed ✅  
+> "Flake operations return 'unknown command'" - Fixed ✅
 
 > "It tries to install docker.service as a package" - Fixed ✅
 

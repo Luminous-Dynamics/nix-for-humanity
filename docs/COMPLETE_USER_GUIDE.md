@@ -458,6 +458,6 @@ Built with consciousness-first principles, making technology accessible to all b
 
 *"Making NixOS as easy as having a conversation."*
 
-**Version**: 0.6.1  
-**License**: MIT  
+**Version**: 0.6.1
+**License**: MIT
 **Website**: https://luminousdynamics.org

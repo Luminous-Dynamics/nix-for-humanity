@@ -12,7 +12,7 @@ Successfully consolidated **75+ duplicate core files** into **4 unified modules*
 **Consolidated 7 files → 1 file**
 - Merged: `backend_real.py`, `executor.py`, `command_executor.py`, `nix_real_executor.py`, `native_nix_api.py`, `native_operations.py`, `native_operations_advanced.py`
 - **Result**: Single source of truth for all NixOS operations
-- **Features**: 
+- **Features**:
   - Real subprocess execution
   - subprocess-based operations support (NixOS 25.11+)
   - Profile migration handling

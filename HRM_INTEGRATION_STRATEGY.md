@@ -35,10 +35,10 @@ class AIOrchestrator:
         self.hrm = HRMNixOSReasoner()
         self.ollama = OllamaInterface()
         self.router = IntentRouter()
-    
+
     def process(self, query):
         intent = self.router.classify(query)
-        
+
         if intent in ['dependency', 'config', 'error', 'optimize']:
             return self.hrm.reason(query)  # <1ms response
         else:
@@ -75,14 +75,14 @@ class SmartRouter:
         # Fast keyword matching first
         if self.is_nixos_specific(query):
             return 'hrm'
-        
+
         # Check for reasoning patterns
         if self.needs_reasoning(query):
             return 'hrm'
-        
+
         # Default to Ollama for general
         return 'ollama'
-    
+
     def is_nixos_specific(self, query):
         nixos_keywords = [
             'package', 'dependency', 'conflict',
@@ -98,13 +98,13 @@ class SmartRouter:
 def process_with_confidence(self, query):
     # Try HRM first for speed
     hrm_result = self.hrm.reason(query)
-    
+
     if hrm_result.confidence > 0.85:
         return hrm_result  # High confidence, use HRM
-    
+
     # Low confidence, check with Ollama
     ollama_result = self.ollama.query(query)
-    
+
     # Return best result
     return self.select_best(hrm_result, ollama_result)
 ```
@@ -142,7 +142,7 @@ class RobustOrchestrator:
 # Cache HRM model in memory
 class CachedHRM:
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -153,11 +153,11 @@ class CachedHRM:
 def batch_process(queries):
     nixos_queries = [q for q in queries if is_nixos(q)]
     general_queries = [q for q in queries if not is_nixos(q)]
-    
+
     # Process in parallel
     hrm_results = hrm.batch_reason(nixos_queries)
     ollama_results = ollama.batch_query(general_queries)
-    
+
     return merge_results(hrm_results, ollama_results)
 ```
 
@@ -172,7 +172,7 @@ class UsageAnalytics:
             'time_ms': response_time,
             'timestamp': time.now()
         })
-    
+
     def get_stats(self):
         return {
             'hrm_usage': sum(1 for m in self.metrics if m['model'] == 'hrm'),
@@ -283,13 +283,13 @@ models:
     path: "models/hrm-nixos-v1.pt"
     max_response_time: 100  # ms
     confidence_threshold: 0.85
-    
+
   ollama:
     enabled: true
     model: "gemma:2b"
     max_response_time: 2000  # ms
     fallback: true
-    
+
 routing:
   strategy: "confidence"  # or "speed", "accuracy"
   nixos_patterns_file: "patterns/nixos.json"
@@ -393,7 +393,7 @@ result = orchestrator.process(query)
 - **Risk**: Inconsistent responses between models
 - **Mitigation**: Unified output formatting
 
-- **Risk**: Slower responses for general queries  
+- **Risk**: Slower responses for general queries
 - **Mitigation**: Parallel processing when possible
 
 ## 🏁 Conclusion & Recommendation

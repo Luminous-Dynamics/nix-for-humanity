@@ -78,7 +78,7 @@ npm run tauri dev
 # Add to your flake.nix
 {
   inputs.luminous-nix.url = "github:Luminous-Dynamics/luminous-nix";
-  
+
   outputs = { self, nixpkgs, luminous-nix }: {
     # Use as overlay
     nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
@@ -264,16 +264,16 @@ systemctl enable --now luminous-nix
 # /etc/nixos/configuration.nix
 { config, pkgs, ... }:
 {
-  imports = [ 
+  imports = [
     (fetchTarball "https://github.com/Luminous-Dynamics/luminous-nix/archive/main.tar.gz")
   ];
-  
+
   services.luminous-nix = {
     enable = true;
     aiEnabled = true;
     guiEnabled = true;
   };
-  
+
   # Optional: Add to system packages
   environment.systemPackages = with pkgs; [
     luminous-nix

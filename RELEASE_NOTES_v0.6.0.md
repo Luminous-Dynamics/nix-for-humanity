@@ -1,6 +1,6 @@
 # 🚀 Luminous Nix v0.6.0 Release Notes
 
-**Release Date**: January 2025  
+**Release Date**: January 2025
 **Codename**: "Intelligence Awakening"
 
 ## 🎉 Highlights
@@ -73,7 +73,7 @@ AI-powered health monitoring that sees the future:
 
 3. **New Commands Available**:
    - `ask-nix dna` - Configuration DNA analysis
-   - `ask-nix modes` - System mode management  
+   - `ask-nix modes` - System mode management
    - `ask-nix health` - Predictive health monitoring
 
 ## 🎯 Quick Start

@@ -36,7 +36,7 @@ These visual elements are **supportive, not primary** - they enhance natural lan
 - Adapts to your skill level
 - Remembers your preferences
 
-### WHAT - Intent Understanding  
+### WHAT - Intent Understanding
 - Goes beyond literal commands
 - Understands context and goals
 - Suggests based on patterns

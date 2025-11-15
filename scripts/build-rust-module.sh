@@ -37,30 +37,30 @@ cargo build --release
 
 if [ $? -eq 0 ]; then
     echo -e "\n✅ Build successful!"
-    
+
     # Find the built library
     LIB_PATH="target/release/libluminous_nix_core.so"
     if [ ! -f "$LIB_PATH" ]; then
         # Try dylib for macOS
         LIB_PATH="target/release/libluminous_nix_core.dylib"
     fi
-    
+
     if [ -f "$LIB_PATH" ]; then
         # Copy to Python module location
         cp "$LIB_PATH" "luminous_nix_core.so" 2>/dev/null || \
         cp "$LIB_PATH" "luminous_nix_core.pyd" 2>/dev/null || \
         echo "Note: Manual copy may be needed for your platform"
-        
+
         echo "📦 Library built at: $LIB_PATH"
         echo "📍 Size: $(du -h "$LIB_PATH" | cut -f1)"
     else
         echo "⚠️  Library file not found at expected location"
     fi
-    
+
     # Run tests
     echo -e "\n🧪 Running Rust tests..."
     cargo test --release
-    
+
     # Try Python integration test
     echo -e "\n🐍 Testing Python integration..."
     cd ..
@@ -70,7 +70,7 @@ if [ $? -eq 0 ]; then
         echo -e "\n⚠️  Python integration test failed (module may need installation)"
         echo "   Try: cd rust && maturin develop"
     fi
-    
+
 else
     echo -e "\n❌ Build failed. Check errors above."
     exit 1

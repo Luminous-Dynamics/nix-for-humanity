@@ -12,11 +12,14 @@ from typing import Any
 # ARCHIVED: from luminous_nix.consciousness.adaptive_persona import DynamicPersona, EmotionalState
 from .consciousness_orb import EmotionalState
 
+
 # Simple stub for DynamicPersona
 class DynamicPersona:
     """Minimal persona for compatibility"""
+
     def __init__(self):
         self.mode = "standard"
+
 
 logger = logging.getLogger(__name__)
 
@@ -358,9 +361,7 @@ class AdaptiveUISystem:
 
         return False
 
-    def suggest_level_change(
-        self, persona: DynamicPersona
-    ) -> UIComplexityLevel | None:
+    def suggest_level_change(self, persona: DynamicPersona) -> UIComplexityLevel | None:
         """
         Suggest if user should move to different complexity level
 

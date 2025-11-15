@@ -12,7 +12,7 @@ The system learns who you are through your interactions:
 ```yaml
 Pattern Recognition:
   - Command frequency and timing
-  - Vocabulary preferences  
+  - Vocabulary preferences
   - Technical skill level
   - Error patterns
   - Success patterns
@@ -131,7 +131,7 @@ User: "install python"
 # - Always uses Python for data science
 # - Prefers conda environments
 
-System: "I'll set up Python with your usual data science stack (numpy, pandas, jupyter). 
+System: "I'll set up Python with your usual data science stack (numpy, pandas, jupyter).
         Should I create a conda environment like you usually do?"
 ```
 
@@ -160,7 +160,7 @@ User: "install nvidia drivers"
 # - It broke the display manager
 # - Rolled back to nouveau
 
-System: "Last time we tried this, it conflicted with your display setup. 
+System: "Last time we tried this, it conflicted with your display setup.
         This time, I can:
         1. Create a backup generation first
         2. Try the newer 545 drivers (more stable)
@@ -181,7 +181,7 @@ System: "Last time we tried this, it conflicted with your display setup.
 High Confidence (>90%):
   - Suggest automatically
   - Apply learned preferences
-  
+
 Medium Confidence (60-90%):
   - Ask for confirmation
   - Offer alternatives

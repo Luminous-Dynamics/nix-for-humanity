@@ -23,7 +23,7 @@ impl FastJsonParser {
     pub fn parse(&mut self, json_str: &str) -> Result<Value> {
         // Use SIMD parser
         let borrowed = self.simd_parser.parse(json_str.as_bytes())?;
-        
+
         // Convert to serde_json::Value
         let value = serde_json::to_value(borrowed)?;
         Ok(value)
@@ -88,7 +88,7 @@ impl FastJsonParser {
     /// Parse flake metadata
     pub fn parse_flake_info(&mut self, json_str: &str) -> Result<FlakeInfo> {
         let json = self.parse(json_str)?;
-        
+
         if let Value::Object(map) = json {
             Ok(FlakeInfo {
                 url: extract_string(&map, "url").unwrap_or_default(),
@@ -190,13 +190,13 @@ impl NixExprParser {
     /// Extract configuration options from text
     pub fn extract_options(&self, text: &str) -> Vec<ConfigOption> {
         let mut options = Vec::new();
-        
+
         for line in text.lines() {
             if line.contains('=') {
                 if let Some((key, value)) = line.split_once('=') {
                     let key = key.trim().to_string();
                     let value = value.trim().trim_end_matches(';').to_string();
-                    
+
                     options.push(ConfigOption {
                         path: key.clone(),
                         value: value.clone(),
@@ -377,7 +377,7 @@ mod tests {
 
         let mut parser = FastJsonParser::new();
         let packages = parser.parse_packages(json).unwrap();
-        
+
         assert_eq!(packages.len(), 1);
         assert_eq!(packages[0].name, "firefox");
         assert_eq!(packages[0].version, "123.0");
@@ -387,7 +387,7 @@ mod tests {
     fn test_parse_attribute_path() {
         let parser = NixExprParser::new();
         let path = parser.parse_attribute_path("python3.pkgs.numpy");
-        
+
         assert_eq!(path, vec!["python3", "pkgs", "numpy"]);
     }
 

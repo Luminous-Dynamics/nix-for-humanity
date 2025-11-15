@@ -73,7 +73,7 @@ impl AdvancedCache {
     pub fn put(&self, key: String, data: Vec<u8>, ttl: Option<Duration>) -> Result<(), String> {
         let size = data.len();
         let compressed = size > self.compression_threshold;
-        
+
         let stored_data = if compressed {
             compress_data(&data)?
         } else {
@@ -116,7 +116,7 @@ impl AdvancedCache {
             }
 
             entry.touch();
-            
+
             let data = if entry.compressed {
                 decompress_data(&entry.data).ok()?
             } else {
@@ -169,7 +169,7 @@ impl AdvancedCache {
     /// Evict entries to reach target size
     fn evict_to_size(&self, target_size: usize) {
         let mut entries_to_evict = Vec::new();
-        
+
         match self.eviction_strategy {
             EvictionStrategy::LRU => {
                 // Collect and sort by last accessed time
@@ -177,7 +177,7 @@ impl AdvancedCache {
                     .map(|e| (e.key().clone(), e.last_accessed, e.size))
                     .collect();
                 candidates.sort_by_key(|(_, time, _)| *time);
-                
+
                 let mut current = *self.current_size.read();
                 for (key, _, size) in candidates {
                     if current <= target_size {
@@ -193,7 +193,7 @@ impl AdvancedCache {
                     .map(|e| (e.key().clone(), e.access_count, e.size))
                     .collect();
                 candidates.sort_by_key(|(_, count, _)| *count);
-                
+
                 let mut current = *self.current_size.read();
                 for (key, _, size) in candidates {
                     if current <= target_size {
@@ -209,7 +209,7 @@ impl AdvancedCache {
                     .map(|e| (e.key().clone(), e.created_at, e.size))
                     .collect();
                 candidates.sort_by_key(|(_, time, _)| *time);
-                
+
                 let mut current = *self.current_size.read();
                 for (key, _, size) in candidates {
                     if current <= target_size {
@@ -345,7 +345,7 @@ impl LayeredCache {
         // Write to all layers
         self.l1.insert(key.clone(), data.clone());
         self.l2.put(key.clone(), data.clone(), None)?;
-        
+
         if let Some(ref l3) = self.l3 {
             l3.put(key, data)?;
         }
@@ -376,18 +376,18 @@ mod tests {
     #[test]
     fn test_cache_compression() {
         let cache = AdvancedCache::new(1024 * 1024, 100);
-        
+
         // Small data - no compression
         let small_data = vec![1, 2, 3, 4, 5];
         cache.put("small".to_string(), small_data.clone(), None).unwrap();
-        
+
         let retrieved = cache.get("small").unwrap();
         assert_eq!(retrieved, small_data);
-        
+
         // Large data - with compression
         let large_data = vec![42u8; 1000];
         cache.put("large".to_string(), large_data.clone(), None).unwrap();
-        
+
         let retrieved = cache.get("large").unwrap();
         assert_eq!(retrieved, large_data);
     }
@@ -395,13 +395,13 @@ mod tests {
     #[test]
     fn test_cache_eviction() {
         let cache = AdvancedCache::new(100, 50);
-        
+
         // Fill cache
         for i in 0..20 {
             let data = vec![i as u8; 10];
             cache.put(format!("key{}", i), data, None).unwrap();
         }
-        
+
         // Should have evicted some entries
         let stats = cache.stats();
         assert!(stats.total_entries < 20);
@@ -411,13 +411,13 @@ mod tests {
     #[test]
     fn test_layered_cache() {
         let cache = LayeredCache::new(100, 1000);
-        
+
         let data = vec![1, 2, 3, 4, 5];
         cache.put("test".to_string(), data.clone()).unwrap();
-        
+
         // Should be in L1
         assert!(cache.l1.contains_key("test"));
-        
+
         // Get should still work
         let retrieved = cache.get("test").unwrap();
         assert_eq!(retrieved, data);

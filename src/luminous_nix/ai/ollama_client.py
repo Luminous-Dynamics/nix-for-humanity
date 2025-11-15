@@ -174,7 +174,7 @@ class OllamaClient:
         """Build a contextualized prompt for better AI responses"""
 
         # System prompt optimized for NixOS assistance
-        full_prompt = """You are Luminous Nix, an intelligent NixOS assistant. 
+        full_prompt = """You are Luminous Nix, an intelligent NixOS assistant.
 You help users with package management, system configuration, and troubleshooting.
 Be conversational, helpful, and informative.
 

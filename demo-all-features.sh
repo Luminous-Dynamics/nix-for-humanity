@@ -13,7 +13,7 @@ echo
 echo "2. Package aliases (200+ mappings):"
 echo "-----------------------------------"
 ./bin/ask-nix "search chrome"
-./bin/ask-nix "find vscode" 
+./bin/ask-nix "find vscode"
 echo
 
 echo "3. Natural language config generation:"

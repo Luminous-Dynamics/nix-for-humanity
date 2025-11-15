@@ -64,12 +64,12 @@
 ```yaml
 Foundation:
   Text Input: Always available, always works
-  
+
 Optional Layers:
   Voice: When hardware available and user wants
   GUI: When visual learning helps
   Audio: When auditory feedback desired
-  
+
 All Combinations Valid:
   - Text only
   - Text + Voice

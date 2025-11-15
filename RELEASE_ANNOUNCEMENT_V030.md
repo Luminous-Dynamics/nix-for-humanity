@@ -1,6 +1,6 @@
 # 🎉 Announcing Luminous Nix v0.3.0: Neural Networks Meet NixOS
 
-**FOR IMMEDIATE RELEASE**  
+**FOR IMMEDIATE RELEASE**
 *January 29, 2025*
 
 ## The Breakthrough: 96% Accuracy in Natural Language NixOS
@@ -86,7 +86,7 @@ Not one AI trying to do everything, but specialized components working together:
 ### 2. Revolutionary Caching
 Three-tier system with incredible performance:
 - **L1 Memory**: 0.001ms response
-- **L2 Recent**: 0.004ms response  
+- **L2 Recent**: 0.004ms response
 - **L3 Pattern**: 0.01ms response
 - Result: 53.8% of queries answered instantly
 
@@ -216,9 +216,9 @@ To make NixOS accessible to everyone through natural language, removing the barr
 
 ## 📞 Contact
 
-**Press Inquiries**: press@luminous-nix.org  
-**Technical Support**: support@luminous-nix.org  
-**Partnership**: partners@luminous-nix.org  
+**Press Inquiries**: press@luminous-nix.org
+**Technical Support**: support@luminous-nix.org
+**Partnership**: partners@luminous-nix.org
 
 ---
 

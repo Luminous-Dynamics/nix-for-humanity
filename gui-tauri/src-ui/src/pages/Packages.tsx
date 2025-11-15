@@ -57,10 +57,10 @@ const PackagesPage: React.FC = () => {
 
   const searchPackages = useCallback(async () => {
     if (!searchQuery.trim()) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const results = await invoke<Package[]>('search_packages', {
         query: searchQuery,
@@ -77,16 +77,16 @@ const PackagesPage: React.FC = () => {
   const installPackage = async (packageName: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await invoke<any>('install_package', {
         package: packageName,
       });
-      
+
       if (result.success) {
         setSuccess(`Successfully installed ${packageName}`);
         // Update package state
-        setPackages(packages.map(pkg => 
+        setPackages(packages.map(pkg =>
           pkg.name === packageName ? { ...pkg, installed: true } : pkg
         ));
       } else {
@@ -177,7 +177,7 @@ const PackagesPage: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Package Management
       </Typography>
-      
+
       {/* Search Bar */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">

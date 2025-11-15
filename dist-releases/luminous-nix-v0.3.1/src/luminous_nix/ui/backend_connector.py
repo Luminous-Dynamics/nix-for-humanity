@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..core.luminous_core import LuminousNixCore, Query, Response
+
 # ARCHIVED: from ..core.sacred_utils import KairosMode, SacredTimer, consciousness_field
 from .consciousness_orb import AIState, EmotionalState
 
@@ -188,7 +189,7 @@ class TUIBackendConnector:
             coherence = 0.5  # Default
 
             message = f"""🌊 Consciousness Field Status:
-            
+
 Field State: {field_state}
 Coherence Level: {coherence:.2f}
 Mindful Mode: {'Enabled' if self.core.mindful_mode else 'Disabled'}

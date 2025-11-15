@@ -39,7 +39,7 @@ ask-nix "install firefox"
 ask-nix "I need a text editor"
 ask-nix "set up docker"
 
-# Remove programs  
+# Remove programs
 ask-nix "remove firefox"
 ask-nix "uninstall games"
 
@@ -124,7 +124,7 @@ ask-nix --technical "install firefox"
 - **Safe by default** - Shows you what to do, you decide whether to do it
 
 ### 🚧 Coming Soon
-- **Direct execution** - Run commands automatically (with your permission)  
+- **Direct execution** - Run commands automatically (with your permission)
 - **Voice interface** - Speak to your system naturally
 - **Advanced learning** - Remembers your preferences
 - **Community wisdom** - Learn from others (privacy-preserved)
@@ -270,7 +270,7 @@ You're not just using a tool - you're experiencing a new paradigm where technolo
 **Save this for easy access:**
 
 ```bash
-# Essential Commands  
+# Essential Commands
 ./bin/ask-nix "install [program]"      # Install software
 ./bin/ask-nix "help"                   # Get help
 ./bin/ask-nix "update system"          # System updates
@@ -279,7 +279,7 @@ You're not just using a tool - you're experiencing a new paradigm where technolo
 # Personality Modes
 --minimal      # Fast responses (ADHD-friendly)
 --accessible   # Screen reader optimized
---learning     # Step-by-step guidance  
+--learning     # Step-by-step guidance
 --technical    # Detailed explanations
 
 # Emergency Commands

@@ -43,7 +43,7 @@
         - Look for explicit package names
         - Identify software by common names
         - Map common names to NixOS package names
-        
+
         Common mappings:
         - "vscode" -> "vscode" or "vscodium"
         - "chrome" -> "chromium" or "google-chrome"

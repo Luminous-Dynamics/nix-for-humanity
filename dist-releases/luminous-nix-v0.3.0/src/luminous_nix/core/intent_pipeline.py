@@ -412,7 +412,7 @@ class IntentRecognitionPipeline:
     def _extract_entities(self, original: str, normalized: str) -> list[Entity]:
         """Extract entities from the query"""
         entities = []
-        
+
         # First check for compound terms that should be treated as single packages
         compound_mappings = {
             "text editor": "vim",
@@ -426,7 +426,7 @@ class IntentRecognitionPipeline:
             "file manager": "ranger",
             "password manager": "bitwarden",
         }
-        
+
         # Check for compound terms in the original query
         original_lower = original.lower()
         for compound, package in compound_mappings.items():
@@ -438,8 +438,8 @@ class IntentRecognitionPipeline:
                     metadata={
                         "pattern_type": "compound_mapping",
                         "position": original_lower.index(compound),
-                        "original_phrase": compound
-                    }
+                        "original_phrase": compound,
+                    },
                 )
                 entities.append(entity)
                 # Replace the compound term to avoid double-matching
@@ -454,7 +454,7 @@ class IntentRecognitionPipeline:
                     # Skip common words
                     if value.lower() in {"the", "a", "an", "it", "that", "this", "my"}:
                         continue
-                        
+
                     # Skip if this is part of a compound term we already matched
                     if value.startswith("COMPOUND_"):
                         continue
@@ -478,14 +478,14 @@ class IntentRecognitionPipeline:
         # Deduplicate entities - prioritize compound mappings
         seen = set()
         unique_entities = []
-        
+
         # Add compound mappings first (they have priority)
         for entity in entities:
             if entity.metadata.get("pattern_type") == "compound_mapping":
                 key = (entity.type, entity.value.lower())
                 seen.add(key)
                 unique_entities.append(entity)
-        
+
         # Then add other entities that aren't duplicates
         for entity in entities:
             if entity.metadata.get("pattern_type") != "compound_mapping":

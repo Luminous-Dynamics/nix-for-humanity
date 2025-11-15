@@ -187,15 +187,15 @@ from luminous_nix.ai.hrm_integrated_v6_final import HRMIntegratedV6Final
 
 class HRMEnhancedCompat:
     """Compatibility wrapper for v0.2.x code"""
-    
+
     def __init__(self):
         self.system = HRMIntegratedV6Final(enable_active_learning=True)
-    
+
     def reason(self, query):
         """Old API compatibility"""
         result = self.system.process_query(query)
         return result.get('command', '')
-    
+
     # Add other v0.2.x methods as needed
 
 # Use in existing code
@@ -210,9 +210,9 @@ command = system.reason("install firefox")  # Works with old API
 # test_migration.py
 def test_migration():
     from luminous_nix.ai.hrm_integrated_v6_final import HRMIntegratedV6Final
-    
+
     system = HRMIntegratedV6Final(enable_active_learning=True)
-    
+
     # Test basic functionality
     test_queries = [
         "install firefox",
@@ -220,14 +220,14 @@ def test_migration():
         "python development environment",
         "search text editors"
     ]
-    
+
     for query in test_queries:
         result = system.process_query(query)
         assert 'command' in result
         assert 'confidence' in result
         assert result['confidence'] > 0.8
         print(f"✅ {query}: {result['command']}")
-    
+
     print("\n✅ Migration test passed!")
 
 if __name__ == "__main__":

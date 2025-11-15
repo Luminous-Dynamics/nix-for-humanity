@@ -9,7 +9,7 @@ This comprehensive training pipeline transforms the HRM system from a rule-based
 ### Key Features
 
 - 🎯 **Real NixOS Data Generation** - Generates training data from actual system operations
-- 🧠 **Advanced Neural Architecture** - Multi-task learning with uncertainty quantification  
+- 🧠 **Advanced Neural Architecture** - Multi-task learning with uncertainty quantification
 - 📊 **Comprehensive Benchmarking** - Production-readiness assessment with detailed metrics
 - 🚀 **Production Integration** - Hot-swappable models with A/B testing and monitoring
 - 🔄 **Continuous Learning** - Real-time adaptation and improvement capabilities
@@ -27,7 +27,7 @@ training_data = generator.generate_real_nixos_data(2000)
 
 **Features:**
 - Real package queries from nixpkgs
-- Configuration management scenarios  
+- Configuration management scenarios
 - Error resolution patterns
 - System optimization tasks
 - Advanced data augmentation
@@ -64,7 +64,7 @@ results = benchmark.benchmark_model(model, test_data)
 
 **Evaluation Metrics:**
 - Classification accuracy and F1 scores
-- Uncertainty quantification quality  
+- Uncertainty quantification quality
 - Performance metrics (speed, memory)
 - Confidence calibration analysis
 - Production readiness scoring
@@ -193,7 +193,7 @@ Task-specific Heads:
 
 ### Inference Performance
 - **CPU Inference**: 50-100ms average
-- **GPU Inference**: 5-15ms average  
+- **GPU Inference**: 5-15ms average
 - **Memory Usage**: ~150MB RAM
 - **Throughput**: 10-20 QPS (CPU) / 100+ QPS (GPU)
 
@@ -215,19 +215,19 @@ config = TrainingConfig(
     num_layers=4,
     num_heads=8,
     dropout=0.15,
-    
-    # Training parameters  
+
+    # Training parameters
     learning_rate=2e-4,
     weight_decay=1e-5,
     batch_size=24,
     max_epochs=200,
-    
+
     # Advanced features
     use_scheduler=True,
     use_mixed_precision=True,
     gradient_clip_norm=1.0,
     label_smoothing=0.1,
-    
+
     # Data augmentation
     augment_data=True,
     augmentation_probability=0.3
@@ -240,20 +240,20 @@ config = DeploymentConfig(
     # Models
     active_model_name="hrm_production_v1",
     fallback_model_name="hrm_baseline",
-    
+
     # Performance
     max_inference_time_ms=500.0,
     max_queue_size=1000,
-    
+
     # Monitoring
     metrics_window_size=1000,
     health_check_interval=30.0,
     auto_fallback_error_threshold=0.1,
-    
+
     # A/B Testing
     enable_ab_testing=True,
     ab_traffic_split=0.1,
-    
+
     # Caching
     enable_response_cache=True,
     cache_size=10000,
@@ -276,7 +276,7 @@ status = orchestrator.get_status()
 
 # Key metrics tracked:
 # - Request success/error rates
-# - Response time percentiles  
+# - Response time percentiles
 # - Model confidence distributions
 # - Cache hit rates
 # - Health check results
@@ -353,7 +353,7 @@ pip3 install torch torchvision torchaudio
 - Enable mixed precision
 - Use multiple workers: `num_workers=4`
 
-**Poor Model Performance** 
+**Poor Model Performance**
 - Increase training data size
 - Tune learning rate
 - Adjust model architecture
@@ -394,7 +394,7 @@ config = TrainingConfig(
 git clone https://github.com/Luminous-Dynamics/luminous-nix.git
 cd luminous-nix
 
-# Set up development environment  
+# Set up development environment
 nix develop
 poetry install --with dev
 
@@ -413,7 +413,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **PyTorch Team** - For the excellent deep learning framework
-- **NixOS Community** - For inspiration and domain expertise  
+- **NixOS Community** - For inspiration and domain expertise
 - **Luminous Dynamics** - For consciousness-first computing vision
 - **Contributors** - For making this vision reality
 

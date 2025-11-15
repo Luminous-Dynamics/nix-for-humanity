@@ -94,14 +94,14 @@ Output: Tuned configuration
 class HRMReasoner:
     def __init__(self):
         self.hrm = HRMModel.load("nixos-hrm-27m")
-        
+
     def solve(self, query):
         # Convert to reasoning task
         task = self.encode_nixos_task(query)
-        
+
         # HRM reasoning loop
         solution = self.hrm.hierarchical_solve(task)
-        
+
         # Convert to Nix configuration
         return self.decode_to_nix(solution)
 ```
@@ -138,7 +138,7 @@ class HRMReasoner:
 ### 1. Real-Time Configuration Preview
 ```bash
 # As you type, HRM generates live preview
-$ ask-nix "setup web..." 
+$ ask-nix "setup web..."
   [HRM inferring: nginx with standard config]
 $ ask-nix "setup web server with..."
   [HRM updating: adding SSL consideration]

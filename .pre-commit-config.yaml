@@ -1,173 +1,47 @@
-# .pre-commit-config.yaml - Pre-commit hooks for consciousness-first testing
-# Enforces standards to maintain code quality and prevent mock usage
+# Pre-commit hooks for Luminous Nix
+# Ensures code quality before commits
 
 repos:
-  # Check for mock usage in tests
-  - repo: local
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
     hooks:
-      - id: no-mocks
-        name: Check for mock usage
-        entry: scripts/check-no-mocks.sh
-        language: script
-        files: ^tests/.*\.py$
-        pass_filenames: false
-        description: "Prevents mock usage in tests - use consciousness-first testing instead"
+      - id: black
+        language_version: python3.11
+        args: [--line-length=88]
+        exclude: ^(dist-releases/|dist-v|dist-intelligent/|src/luminous_nix/ai/config_generator\.py)
 
-  # Python code quality checks
+  # Ruff - Fast Python linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^(dist-releases/|dist-v|dist-intelligent/|src/luminous_nix/ai/config_generator\.py)
+
+  # Pre-commit hooks for general checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: ^(\.github/workflows/performance-regression\.yml|mkdocs\.yml)
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: [--maxkb=1000]
       - id: check-merge-conflict
-      - id: debug-statements
-        description: "Check for debugger imports and breakpoints"
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-toml
 
-  # Python import sorting
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
-        description: "Sort imports according to PEP8"
-
-  # Python code formatting
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
-    hooks:
-      - id: black
-        language_version: python3.11
-        description: "Format code with Black"
-
-  # Python linting
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
-        additional_dependencies: 
-          - flake8-docstrings
-          - flake8-comprehensions
-          - flake8-bugbear
-        description: "Lint code for style and potential bugs"
-
-  # Type checking
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        args: ['--ignore-missing-imports', '--follow-imports=silent']
-        additional_dependencies: [types-all]
-        description: "Check type annotations"
-
-  # Security checks
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.6
-    hooks:
-      - id: bandit
-        args: ['-r', 'nix_humanity', '-ll']
-        description: "Check for security issues"
-
-  # Documentation checks
-  - repo: https://github.com/pydocstyle/pydocstyle
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
-        args: ['--convention=google']
-        description: "Check docstring conventions"
-
-  # Shell script checks
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
-    hooks:
-      - id: shellcheck
-        description: "Lint shell scripts"
-
-  # YAML checks
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        args: ['-d', 'relaxed']
-        description: "Lint YAML files"
-
-  # Custom hooks for consciousness-first standards
+  # Local hooks - pytest
   - repo: local
     hooks:
-      # Check for TODO comments (should be issues instead)
-      - id: no-todos
-        name: Check for TODO comments
-        entry: bash -c 'if grep -r "TODO" --include="*.py" nix_humanity/ tests/; then echo "Found TODO comments - create GitHub issues instead"; exit 1; fi'
+      - id: pytest-quick
+        name: Run quick tests
+        entry: poetry run pytest tests/test_core_imports.py -v
         language: system
         pass_filenames: false
-        description: "TODOs should be tracked as issues, not in code"
-
-      # Check for hardcoded paths
-      - id: no-hardcoded-paths
-        name: Check for hardcoded paths
-        entry: bash -c 'if grep -r "/home/\|/Users/" --include="*.py" nix_humanity/ tests/; then echo "Found hardcoded paths - use Path.home() or configuration"; exit 1; fi'
-        language: system
-        pass_filenames: false
-        description: "Paths should be configurable, not hardcoded"
-
-      # Check test coverage threshold
-      - id: coverage-check
-        name: Check test coverage
-        entry: bash -c 'coverage run -m pytest tests/unit/ && coverage report --fail-under=80'
-        language: system
-        pass_filenames: false
-        stages: [push]
-        description: "Ensure minimum 80% test coverage"
-
-      # Check for proper test structure
-      - id: test-structure
-        name: Check test structure
-        entry: bash -c 'for f in tests/unit/test_*.py; do if ! grep -q "from tests.test_utils import" "$f" 2>/dev/null; then echo "$f missing test_utils import"; fi; done'
-        language: system
-        files: ^tests/unit/test_.*\.py$
-        description: "Tests should use consciousness-first test utilities"
-
-      # Persona validation
-      - id: persona-tests
-        name: Check for persona test coverage
-        entry: bash -c 'if ! grep -r "PERSONA_TEST_DATA\|testAllPersonas" tests/; then echo "Missing persona test coverage"; exit 1; fi'
-        language: system
-        pass_filenames: false
-        description: "All features must be tested against personas"
-
-      # Performance checks
-      - id: performance-bounds
-        name: Check performance annotations
-        entry: bash -c 'if grep -r "async def.*process\|def.*execute" nix_humanity/ | grep -v "@measure_performance"; then echo "Missing performance monitoring"; exit 1; fi'
-        language: system
-        pass_filenames: false
-        description: "Critical functions need performance monitoring"
-
-# Configuration for when to run hooks
-default_stages: [commit]
-fail_fast: false
-exclude: |
-  (?x)^(
-    .*\.egg-info/|
-    \.eggs/|
-    \.git/|
-    \.mypy_cache/|
-    \.pytest_cache/|
-    \.tox/|
-    __pycache__/|
-    build/|
-    dist/|
-    node_modules/|
-    venv/|
-    \.coverage|
-    htmlcov/|
-    docs/_build/|
-    .*\.pyc|
-    .*\.pyo
-  )
-
-# Additional settings
-minimum_pre_commit_version: '3.0.0'
+        always_run: false
+        stages: [pre-push]

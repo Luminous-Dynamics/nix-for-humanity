@@ -75,7 +75,7 @@ ask-nix "i need git vim and tmux"
 # Instead of: "get that browser thing"
 ask-nix "install a web browser"
 
-# Instead of: "the editor"  
+# Instead of: "the editor"
 ask-nix "install a text editor"
 ```
 
@@ -155,7 +155,7 @@ ask-nix "install git"
 **A:** Coming soon! Plugin system in development.
 
 ### Q: Does it work with flakes?
-**A:** Yes! 
+**A:** Yes!
 ```bash
 ask-nix "create flake for rust project"
 ask-nix "update flake inputs"
@@ -196,7 +196,7 @@ LUMINOUS_DRY_RUN=true ask-nix "install firefox"
 **A:** Many ways!
 - Report bugs
 - Suggest features
-- Improve documentation  
+- Improve documentation
 - Write code
 - Test beta versions
 - Share with others
@@ -219,7 +219,7 @@ LUMINOUS_DRY_RUN=true ask-nix "install firefox"
 ## 🆘 Still Stuck?
 
 ### Q: Where can I get help?
-**A:** 
+**A:**
 1. This FAQ
 2. [GitHub Discussions](https://github.com/Luminous-Dynamics/luminous-nix/discussions)
 3. Discord (coming soon)
@@ -229,7 +229,7 @@ LUMINOUS_DRY_RUN=true ask-nix "install firefox"
 **A:** Coming soon! For now, check the [Cookbook](COOKBOOK.md) for examples.
 
 ### Q: Why "Luminous Nix"?
-**A:** 
+**A:**
 - **Luminous** = Illuminating, making clear
 - **Nix** = The package manager
 - Together: Making NixOS clear and accessible!

@@ -45,8 +45,8 @@ Luminous Nix uses a revolutionary **subprocess-based operations** architecture t
 ### Traditional Approach (SLOW)
 ```python
 # Every operation spawns a subprocess
-result = subprocess.run(['nix', 'search', 'firefox'], 
-                       capture_output=True, 
+result = subprocess.run(['nix', 'search', 'firefox'],
+                       capture_output=True,
                        timeout=30)  # Can timeout!
 # Parse string output (error-prone)
 # No progress tracking
@@ -141,11 +141,11 @@ class Plugin:
     def __init__(self, manifest: dict):
         self.name = manifest['name']
         self.version = manifest['version']
-    
+
     def on_intent(self, intent: Intent) -> Optional[Response]:
         """Hook into intent processing"""
         pass
-    
+
     def on_response(self, response: Response) -> Response:
         """Modify responses"""
         pass
@@ -264,7 +264,7 @@ def get_native_api():
 class Command:
     def execute(self) -> Response:
         pass
-    
+
     def undo(self) -> Response:
         pass
 ```

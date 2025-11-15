@@ -21,12 +21,12 @@ jobs:
         system: [x86_64-linux]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v12
         with:
           logger: pretty
-          
+
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
@@ -74,7 +74,7 @@ jobs:
         run: |
           echo "🔒 Checking for known vulnerabilities..."
           # Add vulnerability scanning here if needed
-          
+
   reproducibility:
     name: Check Reproducibility
     runs-on: ubuntu-latest

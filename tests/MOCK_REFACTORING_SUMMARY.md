@@ -10,7 +10,7 @@
    - Replaced Mock() in XAI tests with real CausalExplanation objects
    - Status: COMPLETE
 
-2. **test_cli_adapter.py** 
+2. **test_cli_adapter.py**
    - Already follows consciousness-first patterns
    - Only uses patch() for sys.argv and input (reasonable system interaction)
    - Uses ConsciousnessTestBackend
@@ -54,7 +54,7 @@ Replace mock creation with test implementation instantiation:
 mock_service = MagicMock()
 mock_service.method.return_value = "result"
 
-# After  
+# After
 test_service = TestService()
 test_service.add_expected_result("result")
 ```
@@ -65,7 +65,7 @@ Use TestExecutionBackend instead of patching subprocess:
 # Before
 with patch('subprocess.run') as mock_run:
     mock_run.return_value = MagicMock(returncode=0, stdout=b"output")
-    
+
 # After
 test_backend = TestExecutionBackend()
 test_backend.add_command_result('command', create_successful_process("output"))
@@ -90,7 +90,7 @@ result = await test_executor.execute('command', ['args'])
 - **test_execution_engine.py** - Many subprocess patches
 - **test_tui_app.py** - Mocks entire textual framework
 
-### Medium Priority Files  
+### Medium Priority Files
 - **test_native_nix_backend.py** - Module mocking
 - **test_cli_adapter_comprehensive.py** - Multiple patches
 - **test_knowledge_base_enhanced.py** - Some mocking

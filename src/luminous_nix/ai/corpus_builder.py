@@ -10,19 +10,17 @@ This module creates a comprehensive training corpus from:
 - Real-world examples
 """
 
-import os
-import re
+import hashlib
 import json
 import subprocess
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
-import hashlib
+from pathlib import Path
+from typing import Any, Optional
 
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 
 @dataclass
@@ -34,11 +32,11 @@ class DocumentChunk:
     category: str  # packages, services, configuration, troubleshooting
     title: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    examples: List[str] = field(default_factory=list)
-    keywords: List[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    examples: list[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
 
-    def to_training_format(self) -> Dict[str, Any]:
+    def to_training_format(self) -> dict[str, Any]:
         """Convert to format suitable for training"""
         return {
             "text": self.content,
@@ -62,7 +60,7 @@ class QAPair:
     category: str
     confidence: float = 1.0
 
-    def to_training_format(self) -> Dict[str, Any]:
+    def to_training_format(self) -> dict[str, Any]:
         """Convert to training format"""
         return {
             "instruction": self.question,
@@ -89,13 +87,13 @@ class NixOSCorpusBuilder:
         self.output_dir.mkdir(exist_ok=True)
 
         self.console = Console()
-        self.documents: List[DocumentChunk] = []
-        self.qa_pairs: List[QAPair] = []
+        self.documents: list[DocumentChunk] = []
+        self.qa_pairs: list[QAPair] = []
 
         # Statistics
         self.stats = {"documents": 0, "qa_pairs": 0, "examples": 0, "total_tokens": 0}
 
-    def build_corpus(self) -> Dict[str, Any]:
+    def build_corpus(self) -> dict[str, Any]:
         """Build the complete corpus"""
         self.console.print("[bold cyan]🏗️ Building NixOS Training Corpus[/bold cyan]\n")
 
@@ -463,7 +461,7 @@ services.postgresql = {
       enableACME = true;
       forceSSL = true;
       root = "/var/www/example";
-      
+
       locations."/" = {
         index = "index.html";
       };
@@ -472,7 +470,7 @@ services.postgresql = {
 
   # Firewall
   networking.firewall.allowedTCPPorts = [ 80 443 ];
-  
+
   # SSL certificates
   security.acme = {
     acceptTerms = true;
@@ -559,7 +557,7 @@ def main():
     builder = NixOSCorpusBuilder()
     result = builder.build_corpus()
 
-    print(f"\n✅ Corpus built successfully!")
+    print("\n✅ Corpus built successfully!")
     print(f"   Output directory: {result['output_dir']}")
     print(f"   Documents: {result['documents']}")
     print(f"   Q&A Pairs: {result['qa_pairs']}")

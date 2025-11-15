@@ -39,7 +39,7 @@
    - PackageInfo dataclass
    - Coverage: ~90%
 
-2. **execution_engine.py** (tests/unit/test_execution_engine.py) 
+2. **execution_engine.py** (tests/unit/test_execution_engine.py)
    - Command building for install/remove/update
    - Command validation (safe/unsafe patterns)
    - Dry run execution

@@ -109,7 +109,7 @@ function recognizeIntent(text) {} // YES
 function simulateInstall() { return "Installed!" } // NO
 
 // Actually do it (with safety)
-function install(pkg) { 
+function install(pkg) {
   return exec(`nix-env -iA nixpkgs.${pkg}`)
 } // YES
 ```

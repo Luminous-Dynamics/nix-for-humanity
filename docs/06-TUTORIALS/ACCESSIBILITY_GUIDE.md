@@ -62,7 +62,7 @@ Default: No (for safety)
 
 The system uses semantic structure:
 - **Main landmarks** for primary content areas
-- **Navigation landmarks** for menu areas  
+- **Navigation landmarks** for menu areas
 - **Search landmarks** for input areas
 - **Complementary landmarks** for help text
 - **Proper heading hierarchy** (H1 → H2 → H3)
@@ -85,7 +85,7 @@ Every feature is accessible via keyboard:
 ```bash
 # Basic navigation
 Tab              # Move to next element
-Shift+Tab        # Move to previous element  
+Shift+Tab        # Move to previous element
 Enter            # Activate/select
 Space            # Toggle/select
 Escape           # Cancel/close
@@ -124,7 +124,7 @@ alias nix-status='ask-nix --accessible "system status"'
 
 All audio cues have visual equivalents:
 - **Progress indicators** instead of beeps
-- **Status text** instead of audio notifications  
+- **Status text** instead of audio notifications
 - **Visual alerts** for important information
 - **Text transcripts** for any audio content
 
@@ -386,7 +386,7 @@ This includes:
 # Learn about NixOS accessibility features
 ask-nix --accessible --learning "explain NixOS accessibility"
 
-# Understand how packages handle accessibility  
+# Understand how packages handle accessibility
 ask-nix --accessible "how do I install accessible software?"
 
 # Configure accessibility tools

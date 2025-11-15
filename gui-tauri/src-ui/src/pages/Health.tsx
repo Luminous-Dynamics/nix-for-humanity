@@ -61,7 +61,7 @@ const HealthPage: React.FC<HealthPageProps> = ({ systemHealth }) => {
     try {
       const result = await invoke<SystemHealth>('run_health_check');
       setHealth(result);
-      
+
       if (result.overall_status === 'critical') {
         setMessage({ type: 'error', text: 'Critical issues detected! Immediate action recommended.' });
       } else if (result.overall_status === 'warning') {

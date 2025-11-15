@@ -29,7 +29,7 @@ poetry run ask-nix "install firefox"
 poetry run ask-nix "i need a text editor"
 poetry run ask-nix "setup python development"
 
-# Searching packages  
+# Searching packages
 poetry run ask-nix "search video player"
 poetry run ask-nix "find pdf reader"
 poetry run ask-nix "look for image editor"

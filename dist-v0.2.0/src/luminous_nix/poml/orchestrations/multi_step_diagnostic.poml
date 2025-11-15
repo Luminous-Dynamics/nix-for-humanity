@@ -15,7 +15,7 @@
 
   <orchestration>
     <workflow type="sequential">
-      
+
       <!-- Step 1: Initial Assessment -->
       <step id="initial_assessment">
         <agent>error_classifier</agent>
@@ -133,7 +133,7 @@
           <note>Falling back to basic analysis due to timeout</note>
         </fallback>
       </on-step-failure>
-      
+
       <on-step-failure step="solution_synthesis">
         <action>abort</action>
         <return>

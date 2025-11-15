@@ -140,9 +140,9 @@ class SimpleStore:
         if user_id:
             cursor.execute(
                 """
-                SELECT * FROM interactions 
+                SELECT * FROM interactions
                 WHERE user_id = ?
-                ORDER BY timestamp DESC 
+                ORDER BY timestamp DESC
                 LIMIT ?
             """,
                 (user_id, limit),
@@ -150,8 +150,8 @@ class SimpleStore:
         else:
             cursor.execute(
                 """
-                SELECT * FROM interactions 
-                ORDER BY timestamp DESC 
+                SELECT * FROM interactions
+                ORDER BY timestamp DESC
                 LIMIT ?
             """,
                 (limit,),
@@ -194,9 +194,9 @@ class SimpleStore:
         # Simple LIKE matching - not as good as semantic search but works
         cursor.execute(
             """
-            SELECT * FROM errors 
+            SELECT * FROM errors
             WHERE error_message LIKE ?
-            ORDER BY timestamp DESC 
+            ORDER BY timestamp DESC
             LIMIT ?
         """,
             (f"%{error_message[:30]}%", limit),
@@ -236,9 +236,9 @@ class SimpleStore:
 
         cursor.execute(
             """
-            SELECT config_json FROM configurations 
+            SELECT config_json FROM configurations
             WHERE name = ?
-            ORDER BY timestamp DESC 
+            ORDER BY timestamp DESC
             LIMIT 1
         """,
             (name,),
@@ -276,7 +276,7 @@ class SimpleStore:
 
         cursor.execute(
             """
-            SELECT preferences_json FROM preferences 
+            SELECT preferences_json FROM preferences
             WHERE user_id = ?
         """,
             (user_id,),

@@ -428,7 +428,9 @@ class UnifiedMemory:
 
     def learn(self, **kwargs):
         """Learn from new experiences"""
-        self.semantic# learn_from_interaction removed - no learning
+        self.semantic  # learn_from_interaction removed - no learning
+
+
 # **kwargs)
-        # self.chronicle.record_event(**kwargs)
-        # self.structure.update_connections(**kwargs)
+# self.chronicle.record_event(**kwargs)
+# self.structure.update_connections(**kwargs)

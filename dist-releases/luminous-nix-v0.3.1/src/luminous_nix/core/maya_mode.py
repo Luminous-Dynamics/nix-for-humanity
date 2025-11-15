@@ -5,7 +5,7 @@ Designed for Maya (16, ADHD):
 - 2-5 seconds responses (no delays)
 - MINIMAL text (just essentials)
 - NO animations or pauses
-- KEYBOARD shortcuts for everything  
+- KEYBOARD shortcuts for everything
 - BATCH operations to reduce context switches
 - VISUAL markers for quick scanning
 """

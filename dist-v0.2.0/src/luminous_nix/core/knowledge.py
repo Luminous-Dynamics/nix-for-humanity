@@ -401,7 +401,7 @@ class KnowledgeBase:
         for solution in solutions:
             cursor.execute(
                 """
-                INSERT OR IGNORE INTO solutions 
+                INSERT OR IGNORE INTO solutions
                 (intent, category, solution, example, explanation, related)
                 VALUES (?, ?, ?, ?, ?, ?)
             """,

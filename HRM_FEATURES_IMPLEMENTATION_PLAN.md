@@ -29,7 +29,7 @@ Phase 3 (Day 3): Revolutionary Features (7-10)
    - List all generations
    - Diff configurations between generations
    - Identify breaking changes
-   
+
 2. Train HRM on rollback patterns
    - Safe vs unsafe changes
    - Common breakage patterns

@@ -12,7 +12,7 @@ OBSOLETE_MODELS=(
     # Gemma 2 - replaced by faster Gemma 3
     "gemma2:2b"      # Slower than gemma3:1b
     "gemma2:9b"      # Too slow, gemma3:4b is better
-    
+
     # Old custom models (duplicates)
     "nix-empathy-20250726_1551:latest"
     "nix-coder-20250726_1551:latest"
@@ -26,7 +26,7 @@ OBSOLETE_MODELS=(
     "nix-coder:latest"
     "nix-quick:latest"
     "nix-quick-20250726_1551:latest"
-    
+
     # Duplicate/redundant models
     "qwen:0.5b"           # Keep qwen2.5:0.5b instead
     "qwen3:0.6b"          # qwen2.5 series is better

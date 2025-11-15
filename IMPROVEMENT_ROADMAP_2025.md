@@ -52,7 +52,7 @@ python src/luminous_nix/ai/train_hrm_production.py \
 #### 1.2 Activate Voice Interface
 ```python
 Priority: HIGH
-Impact: 10x accessibility 
+Impact: 10x accessibility
 Effort: 3 days
 ```
 

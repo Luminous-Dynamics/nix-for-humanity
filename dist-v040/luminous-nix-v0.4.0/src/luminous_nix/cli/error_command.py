@@ -32,9 +32,7 @@ def error():
     help="Response style",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed explanation")
-def explain(
-    error_text: str | None, file: str | None, persona: str, verbose: bool
-):
+def explain(error_text: str | None, file: str | None, persona: str, verbose: bool):
     """Explain a NixOS error in simple terms
 
     Examples:

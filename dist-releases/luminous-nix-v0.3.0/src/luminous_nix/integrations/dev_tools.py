@@ -219,9 +219,7 @@ class VHSRecorder:
     """Programmatic terminal recordings with VHS"""
 
     @staticmethod
-    async def create_tape(
-        commands: list[str], output_path: Path | None = None
-    ) -> Path:
+    async def create_tape(commands: list[str], output_path: Path | None = None) -> Path:
         """Create VHS tape file for recording"""
         tape_path = output_path or Path(tempfile.mktemp(suffix=".tape"))
 

@@ -74,7 +74,7 @@ async fn search_packages(query: String) -> Result<Vec<Package>, String> {
         .args(&["search", "nixpkgs", &query, "--json"])
         .output()
         .map_err(|e| e.to_string())?;
-    
+
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         // Parse JSON output
@@ -93,16 +93,16 @@ async fn install_package(
 ) -> Result<CommandResult, String> {
     // Add to conversation memory
     let mut memory = state.memory.lock().unwrap();
-    
+
     // Assess risk
     let risk_level = assess_risk(&format!("nix profile install nixpkgs#{}", package));
-    
+
     // Execute with safety checks
     let output = Command::new("nix")
         .args(&["profile", "install", &format!("nixpkgs#{}", package)])
         .output()
         .map_err(|e| e.to_string())?;
-    
+
     let success = output.status.success();
     let result = CommandResult {
         success,
@@ -110,7 +110,7 @@ async fn install_package(
         error: if success { None } else { Some(String::from_utf8_lossy(&output.stderr).to_string()) },
         risk_level,
     };
-    
+
     // Update memory
     memory.history.push(ConversationTurn {
         query: format!("install {}", package),
@@ -121,11 +121,11 @@ async fn install_package(
             .as_secs(),
         success,
     });
-    
+
     if success && !memory.user_patterns.common_packages.contains(&package) {
         memory.user_patterns.common_packages.push(package);
     }
-    
+
     Ok(result)
 }
 
@@ -134,10 +134,10 @@ async fn install_package(
 fn get_system_health(state: State<'_, AppState>) -> Result<SystemHealth, String> {
     let mut system = state.system.lock().unwrap();
     system.refresh_all();
-    
+
     let cpu_usage = system.global_processor_info().cpu_usage();
     let memory_usage = (system.used_memory() as f32 / system.total_memory() as f32) * 100.0;
-    
+
     let mut disk_usage = 0.0;
     for disk in system.disks() {
         if disk.mount_point().to_str() == Some("/") {
@@ -146,23 +146,23 @@ fn get_system_health(state: State<'_, AppState>) -> Result<SystemHealth, String>
             break;
         }
     }
-    
+
     let uptime = system.uptime();
-    
+
     // Generate warnings and recommendations
     let mut warnings = Vec::new();
     let mut recommendations = Vec::new();
-    
+
     if disk_usage > 80.0 {
         warnings.push(format!("Disk usage high: {:.1}%", disk_usage));
         recommendations.push("Run garbage collection: nix-collect-garbage -d".to_string());
     }
-    
+
     if memory_usage > 80.0 {
         warnings.push(format!("Memory usage high: {:.1}%", memory_usage));
         recommendations.push("Close unnecessary applications".to_string());
     }
-    
+
     Ok(SystemHealth {
         cpu_usage,
         memory_usage,
@@ -183,7 +183,7 @@ async fn generate_config(description: String) -> Result<NixConfig, String> {
 
 {{
   # Generated from: {}
-  
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -202,7 +202,7 @@ async fn generate_config(description: String) -> Result<NixConfig, String> {
 }}"#,
         description
     );
-    
+
     Ok(NixConfig {
         content: template,
         valid: true,
@@ -217,7 +217,7 @@ async fn list_generations() -> Result<Vec<Generation>, String> {
         .args(&["list-generations"])
         .output()
         .map_err(|e| e.to_string())?;
-    
+
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         Ok(parse_generations(&stdout))
@@ -243,7 +243,7 @@ async fn ask_assistant(
     // Get context from memory
     let memory = state.memory.lock().unwrap();
     let context = build_context(&memory, &query);
-    
+
     // Call Python backend via subprocess
     let output = Command::new("python3")
         .args(&[
@@ -261,7 +261,7 @@ print(assistant.answer('{}'))
         ])
         .output()
         .map_err(|e| e.to_string())?;
-    
+
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
@@ -315,7 +315,7 @@ fn build_context(memory: &ConversationMemory, query: &str) -> String {
         .map(|turn| format!("{}: {}", turn.query, turn.response))
         .collect::<Vec<_>>()
         .join("\n");
-    
+
     format!("Recent context:\n{}\n\nCurrent query: {}", recent, query)
 }
 
@@ -330,7 +330,7 @@ fn main() {
             },
         }),
     };
-    
+
     tauri::Builder::default()
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![

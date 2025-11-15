@@ -87,12 +87,12 @@ class UnifiedNixAssistant:
         self.continuous_listen = (
             os.environ.get("LUMINOUS_CONTINUOUS_LISTEN", "").lower() == "true"
         )
-        
+
         # Initialize native API for massive performance gains
         self.native_api = get_native_api() if NATIVE_API_AVAILABLE else None
         if self.native_api and self.verbose_level > 0:
             print("ℹ️ Using standard subprocess operations")
-        
+
         # Initialize REAL backend
         self.real_backend = None
         try:
@@ -113,16 +113,16 @@ class UnifiedNixAssistant:
         self.ollama = None
         self.socratic = None
         self.ai_orchestrator = None
-        
+
         # Try to initialize the full AI stack
         if self.ai_enabled:
             try:
                 # Import the orchestrator
                 from luminous_nix.ai.orchestrator import AIOrchestrator
-                
+
                 # Initialize orchestrator (handles HRM + Ollama)
                 self.ai_orchestrator = AIOrchestrator()
-                
+
                 # Check which models are available
                 available_models = []
                 if hasattr(self.ai_orchestrator, 'hrm') and self.ai_orchestrator.hrm:
@@ -132,7 +132,7 @@ class UnifiedNixAssistant:
                     # Get the Ollama client if available
                     if hasattr(self.ai_orchestrator.ollama, 'client'):
                         self.ollama = self.ai_orchestrator.ollama.client
-                    
+
                 if available_models:
                     if self.verbose_level > 0:
                         print(f"🧠 AI Stack Ready: {', '.join(available_models)}")
@@ -142,7 +142,7 @@ class UnifiedNixAssistant:
                     if self.verbose_level > 0:
                         print("📝 AI not available - using pattern matching")
                     self.ai_enabled = False
-                    
+
             except ImportError:
                 # Fallback to simple Ollama if orchestrator not available
                 if OLLAMA_AVAILABLE:
@@ -160,7 +160,7 @@ class UnifiedNixAssistant:
 
         # Initialize search cache for better performance
         self.search_cache = None
-        
+
         # Initialize conversation memory
         try:
             from luminous_nix.memory.conversation_manager import ConversationMemory, ContextEnhancer
@@ -171,7 +171,7 @@ class UnifiedNixAssistant:
         except ImportError:
             self.memory = None
             self.context_enhancer = None
-        
+
         # Initialize safe executor
         try:
             from luminous_nix.execution.safe_executor import SafeExecutor, ExecutionMode
@@ -625,13 +625,13 @@ class UnifiedNixAssistant:
             try:
                 # Use orchestrator for intelligent routing
                 result = self.ai_orchestrator.process(query)
-                
+
                 if result and result.confidence > 0.7:
                     if self.verbose_level > 0:
                         print(f"🧠 {result.model_used.value.upper()}: {result.response[:100]}...")
                         if result.reasoning_steps:
                             print(f"   Steps: {len(result.reasoning_steps)}")
-                    
+
                     # Process the AI response
                     if "install" in result.response.lower():
                         # Extract package and install
@@ -639,36 +639,36 @@ class UnifiedNixAssistant:
                     else:
                         print(result.response)
                         return
-                        
+
             except Exception as e:
                 if self.verbose_level > 0:
                     print(f"⚠️ AI orchestrator error: {e}")
-        
+
         # Fallback to direct Ollama if orchestrator not available
         elif self.ollama and self.ai_enabled and self.ollama is not None:
             # Use POML-based intent parser for better understanding
             import signal
-            
+
             def timeout_handler(signum, frame):
                 raise TimeoutError("AI parsing timed out")
-            
+
             try:
                 # Set a 3-second timeout for AI parsing
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(3)
-                
+
                 try:
                     from luminous_nix.ai.poml_intent_parser import POMLIntentParser
                     poml_parser = POMLIntentParser()
                     intent_data = poml_parser.parse(query, self.ollama)
-                    
+
                     # Transform to expected format
                     if intent_data.get("package"):
                         intent_data["entities"] = [intent_data["package"]]
                         intent_data["suggestion"] = intent_data.get("reasoning", "Processing...")
                     else:
                         intent_data["entities"] = []
-                        
+
                     if self.verbose_level > 0:
                         print(f"🎯 POML Intent: {intent_data['intent']} (confidence: {intent_data['confidence']:.2f})")
                         if intent_data.get("package"):
@@ -678,17 +678,17 @@ class UnifiedNixAssistant:
                     if self.verbose_level > 1:
                         print(f"⚠️ POML parser error: {e}")
                     intent_data = self.ollama.parse_intent(query)
-                
+
                 # Cancel the alarm
                 signal.alarm(0)
-                
+
             except (TimeoutError, AttributeError, ImportError) as e:
                 # AI parsing failed or timed out, continue without it
                 if self.verbose_level > 0:
                     print(f"⚠️ AI parsing unavailable: {e}")
                 signal.alarm(0)  # Cancel alarm
                 intent_data = {"confidence": 0}  # Low confidence to skip AI route
-                
+
             if intent_data.get("confidence", 0) > 0.6:
                 if self.verbose_level > 0:
                     print(
@@ -821,7 +821,7 @@ class UnifiedNixAssistant:
         elif "help" in query_lower or query_lower == "":
             intent = "help"
             self._show_help()
-        # Check for package recommendations  
+        # Check for package recommendations
         elif any(phrase in query_lower for phrase in ["recommend", "alternatives to", "alternatives for", "similar to", "instead of", "replace", "upgrade from"]):
             intent = "package_recommendation"
             self._handle_package_recommendation(query)
@@ -897,7 +897,7 @@ class UnifiedNixAssistant:
         # Check for common descriptions that should map to specific packages
         descriptions_to_packages = {
             "web browser": "firefox",
-            "browser": "firefox", 
+            "browser": "firefox",
             "text editor": "vim",
             "editor": "vim",
             "terminal": "alacritty",
@@ -914,7 +914,7 @@ class UnifiedNixAssistant:
             "file manager": "ranger",
             "password manager": "bitwarden",
         }
-        
+
         # Check if query contains any of these descriptions
         for desc, pkg in descriptions_to_packages.items():
             if desc in query_lower:
@@ -930,17 +930,17 @@ class UnifiedNixAssistant:
                 idx = words.index("install")
                 # Get all words after "install"
                 remaining_words = words[idx + 1:]
-                
+
                 # Skip common filler words
                 ignore_words = {
                     "i", "want", "to", "need", "please", "can",
                     "you", "help", "me", "a", "an", "the", "how",
                     "do", "some", "any"
                 }
-                
+
                 # Build potential package name from remaining words
                 filtered = [w for w in remaining_words if w not in ignore_words]
-                
+
                 # If we have filtered words, use them
                 if filtered:
                     # Check if it might be a compound term
@@ -958,7 +958,7 @@ class UnifiedNixAssistant:
         if not package:
             ignore_words = {
                 "i", "want", "to", "need", "please", "can",
-                "you", "help", "me", "install", "a", "an", 
+                "you", "help", "me", "install", "a", "an",
                 "the", "how", "do", "some", "any"
             }
             packages = [w for w in words if w not in ignore_words]
@@ -1018,7 +1018,7 @@ class UnifiedNixAssistant:
             "email": "email mail",
             "chat": "chat messaging",
         }
-        
+
         # Check if query contains any descriptions
         search_term = None
         for desc, search in descriptions_to_search.items():
@@ -1168,27 +1168,27 @@ class UnifiedNixAssistant:
 
     def _handle_list_installed(self):
         """List installed packages"""
-        
+
         # Use real backend if available
         if self.real_backend:
             from luminous_nix.core.intents import Intent, IntentType
-            
+
             intent = Intent(
                 type=IntentType.LIST_INSTALLED,
                 entities={},
                 confidence=1.0,
                 raw_text="list"
             )
-            
+
             response = self.real_backend.process(intent)
             print(response.text)
             return
-        
+
         print("📦 Installed packages:\n")
 
         # Try user packages first
         user_packages = []
-        
+
         # Use native API if available for standard speed list (2-3 seconds vs 500-1000ms!)
         if self.native_api:
             try:
@@ -1200,7 +1200,7 @@ class UnifiedNixAssistant:
                     pass
             except Exception:
                 pass
-        
+
         # Fallback to subprocess if native API not available or didn't work
         if not user_packages:
             try:
@@ -1353,18 +1353,18 @@ class UnifiedNixAssistant:
 
     def _install_package(self, package: str):
         """Install a specific package (fallback method)"""
-        
+
         # Use real backend if available
         if self.real_backend:
             from luminous_nix.core.intents import Intent, IntentType
-            
+
             intent = Intent(
                 type=IntentType.INSTALL_PACKAGE,
                 entities={'package': package},
                 confidence=1.0,
                 raw_text=f"install {package}"
             )
-            
+
             response = self.real_backend.process(intent)
             if response.success:
                 # Check if this is a dry-run response
@@ -1375,7 +1375,7 @@ class UnifiedNixAssistant:
             else:
                 print(f"❌ {response.text}")
             return
-        
+
         # Original fallback implementation
         print(f"📦 Installing {package}...")
 
@@ -1515,18 +1515,18 @@ class UnifiedNixAssistant:
 
     def _remove_package(self, package: str):
         """Remove a specific package (fallback method)"""
-        
+
         # Use real backend if available
         if self.real_backend:
             from luminous_nix.core.intents import Intent, IntentType
-            
+
             intent = Intent(
                 type=IntentType.REMOVE_PACKAGE,
                 entities={'package': package},
                 confidence=1.0,
                 raw_text=f"remove {package}"
             )
-            
+
             response = self.real_backend.process(intent)
             if response.success:
                 # Check if this is a dry-run response
@@ -1537,7 +1537,7 @@ class UnifiedNixAssistant:
             else:
                 print(f"❌ {response.text}")
             return
-        
+
         # Original fallback implementation
         print(f"🗑️ Removing {package}...")
 
@@ -1577,18 +1577,18 @@ class UnifiedNixAssistant:
 
     def _search_packages(self, term: str):
         """Search for packages"""
-        
+
         # Use real backend if available
         if self.real_backend:
             from luminous_nix.core.intents import Intent, IntentType
-            
+
             intent = Intent(
                 type=IntentType.SEARCH_PACKAGE,
                 entities={'package': term},
                 confidence=1.0,
                 raw_text=f"search {term}"
             )
-            
+
             response = self.real_backend.process(intent)
             print(response.text)
             return
@@ -1684,7 +1684,7 @@ class UnifiedNixAssistant:
         print(
             """
   • install <package>    - Install a package
-  • search <term>        - Search for packages  
+  • search <term>        - Search for packages
   • remove <package>     - Remove a package
   • list installed       - Show installed packages
   • update system        - Update NixOS
@@ -1854,14 +1854,14 @@ Examples:
                 print("  • Check system logs: journalctl -xe")
             if any("corrupted" in p for p in problems):
                 print("  • Run 'nix-store --repair-path' on broken paths")
-    
+
     def _handle_error_resolution(self, query: str):
         """Handle error resolution requests"""
         try:
             from luminous_nix.ai.error_resolver import resolve_nixos_error
-            
+
             print("🔍 Analyzing error...")
-            
+
             # Extract error message from query
             # Remove common prefixes
             error_text = query
@@ -1869,24 +1869,24 @@ Examples:
                 if query.lower().startswith(prefix):
                     error_text = query[len(prefix):].strip()
                     break
-            
+
             # Get resolution
             resolution = resolve_nixos_error(error_text)
             print(resolution)
-            
+
         except ImportError:
             print("⚠️ Error resolution system not available")
             print("Try updating your channels: sudo nix-channel --update")
-    
+
     def _handle_package_recommendation(self, query: str):
         """Handle package recommendation requests"""
         try:
             from luminous_nix.ai.package_recommender import recommend_packages
-            
+
             # Extract package name from query
             package = None
             words = query.lower().split()
-            
+
             # Look for package name after keywords
             keywords = ["recommend", "alternatives", "similar", "like", "instead", "replace", "upgrade"]
             for i, word in enumerate(words):
@@ -1898,7 +1898,7 @@ Examples:
                     if j < len(words):
                         package = words[j]
                         break
-            
+
             # If no package found after keywords, try to find a package name
             if not package:
                 # Look for known package names
@@ -1908,7 +1908,7 @@ Examples:
                         # Quick check if it might be a package
                         package = word
                         break
-            
+
             if package:
                 print(f"🔍 Finding recommendations for: {package}")
                 recommendations = recommend_packages(package)
@@ -1916,25 +1916,25 @@ Examples:
             else:
                 print("❌ Please specify a package to get recommendations for")
                 print("Example: 'recommend alternatives to vim'")
-        
+
         except ImportError:
             print("⚠️ Package recommendation system not available")
-    
+
     def _handle_command_explanation(self, query: str):
         """Handle command explanation requests"""
         try:
             from luminous_nix.ai.command_explainer import explain_command
-            
+
             # Extract command from query
             command = None
             query_lower = query.lower()
-            
+
             # Remove explanation request words
             for prefix in ["explain", "what does", "what is", "how does", "describe"]:
                 if query_lower.startswith(prefix):
                     command = query[len(prefix):].strip()
                     break
-            
+
             # Handle quoted commands
             import re
             quoted = re.search(r'["\'](.+)["\']', query)
@@ -1951,7 +1951,7 @@ Examples:
                             # Remove question marks and "do" words
                             command = command.replace("?", "").replace(" do", "").strip()
                             break
-            
+
             if command:
                 explanation = explain_command(command)
                 print(explanation)
@@ -1960,21 +1960,21 @@ Examples:
                 print("Examples:")
                 print('  • explain "nixos-rebuild switch"')
                 print('  • what does nix-env -iA nixpkgs.firefox do')
-        
+
         except ImportError:
             print("⚠️ Command explanation system not available")
-    
+
     def _handle_config_generation(self, query: str):
         """Handle configuration generation requests"""
         try:
             from luminous_nix.ai.config_generator import generate_nixos_config
-            
+
             print("🔨 Generating configuration...")
-            
+
             # Generate config
             config = generate_nixos_config(query)
             print(config)
-            
+
             # Offer to save to file
             if not self.skip_confirmation:
                 response = input("\n💾 Save to file? (y/N): ")
@@ -1982,7 +1982,7 @@ Examples:
                     filename = input("Filename (default: generated.nix): ").strip()
                     if not filename:
                         filename = "generated.nix"
-                    
+
                     # Extract just the nix code from the formatted output
                     import re
                     code_match = re.search(r'```nix\n(.*?)\n```', config, re.DOTALL)
@@ -1990,12 +1990,12 @@ Examples:
                         nix_code = code_match.group(1)
                     else:
                         nix_code = config
-                    
+
                     with open(filename, 'w') as f:
                         f.write(nix_code)
                     print(f"✅ Saved to {filename}")
                     print(f"📝 Test with: nix-2-5 secondsiate --parse {filename}")
-            
+
         except ImportError:
             print("⚠️ Configuration generator not available")
             print("Basic example configurations:")

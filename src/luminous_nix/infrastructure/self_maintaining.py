@@ -376,13 +376,13 @@ class SelfHealingEngine:
         logger.warning(
             f"""
         ⚠️ MANUAL INTERVENTION REQUIRED
-        
+
         Issue: {issue.description}
         Component: {issue.component}
         Severity: {issue.severity.value}
         Detected: {issue.detected_at}
         Attempts: {issue.recovery_attempts}
-        
+
         Suggested action: {issue.suggested_recovery.value}
         """
         )

@@ -5,9 +5,9 @@ This template helps track reciprocity and gift-forward contributions as outlined
 ## Contribution Report
 
 ### Basic Information
-- **Contributor Name / Entity:** 
-- **Date of Contribution:** 
-- **Contact Information (optional):** 
+- **Contributor Name / Entity:**
+- **Date of Contribution:**
+- **Contact Information (optional):**
 
 ### Type of Contribution
 Please check all that apply:
@@ -28,10 +28,10 @@ Please provide a detailed description of your contribution:
 
 ### Verification Method
 How can this contribution be verified? Please provide at least one:
-- [ ] Public repository link: 
-- [ ] Documentation link: 
-- [ ] Transaction receipt/ID: 
-- [ ] Community acknowledgment from: 
+- [ ] Public repository link:
+- [ ] Documentation link:
+- [ ] Transaction receipt/ID:
+- [ ] Community acknowledgment from:
 - [ ] Other verification:
 
 ### Impact Statement (Optional but Encouraged)

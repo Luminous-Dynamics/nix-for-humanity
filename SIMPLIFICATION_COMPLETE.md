@@ -10,7 +10,7 @@ Successfully transformed Luminous Nix from a **500+ file behemoth** into an **el
 **Created 4 unified modules from 28+ duplicates:**
 
 - `unified_backend.py` - Single source for all NixOS operations (was 7 files)
-- `unified_intent.py` - Unified intent processing with security (was 8 files)  
+- `unified_intent.py` - Unified intent processing with security (was 8 files)
 - `unified_errors.py` - Intelligent error system (was 9 files)
 - `unified_response.py` - Beautiful response formatting (was 4 files)
 
@@ -76,7 +76,7 @@ We proved this by:
 ```python
 # Which backend do I use??
 from .backend_real import RealNixBackend
-from .executor import Executor  
+from .executor import Executor
 from .command_executor import CommandExecutor
 from .nix_real_executor import NixRealExecutor
 # ... and 3 more options!

@@ -4,15 +4,15 @@
 
 ---
 
-💡 **Quick Context**: Comprehensive guide for all 10 personas - from Grandma Rose to power users  
-📍 **You are here**: Tutorials → User Guide (Complete Reference)  
-🔗 **Related**: [Quick Start](../03-DEVELOPMENT/03-QUICK-START.md) | [Troubleshooting](../04-OPERATIONS/03-TROUBLESHOOTING.md) | [Master Documentation Map](../MASTER_DOCUMENTATION_MAP.md)  
-⏱️ **Read time**: 25 minutes  
+💡 **Quick Context**: Comprehensive guide for all 10 personas - from Grandma Rose to power users
+📍 **You are here**: Tutorials → User Guide (Complete Reference)
+🔗 **Related**: [Quick Start](../03-DEVELOPMENT/03-QUICK-START.md) | [Troubleshooting](../04-OPERATIONS/03-TROUBLESHOOTING.md) | [Master Documentation Map](../MASTER_DOCUMENTATION_MAP.md)
+⏱️ **Read time**: 25 minutes
 📊 **Mastery Level**: 🌱 Beginner - designed for everyone, no technical knowledge required
 
 🌊 **Natural Next Steps**:
 - **For new users**: Start with the [Quick Start Guide](../03-DEVELOPMENT/03-QUICK-START.md) for 5-minute setup
-- **For developers**: Continue to [Sacred Trinity Workflow](../03-DEVELOPMENT/02-SACRED-TRINITY-WORKFLOW.md) for contribution process  
+- **For developers**: Continue to [Sacred Trinity Workflow](../03-DEVELOPMENT/02-SACRED-TRINITY-WORKFLOW.md) for contribution process
 - **For troubleshooting**: Reference [Troubleshooting Guide](../04-OPERATIONS/03-TROUBLESHOOTING.md) when issues arise
 - **For advanced features**: Explore [System Architecture](../02-ARCHITECTURE/01-SYSTEM-ARCHITECTURE.md) to understand the technology
 
@@ -73,7 +73,7 @@ You don't need to memorize anything. Just describe what you want:
 #### Example Conversation
 ```
 You: "I want to video call my family"
-System: "I can help you set up video calling! The easiest option is Skype. 
+System: "I can help you set up video calling! The easiest option is Skype.
          Should I install that for you?"
 You: "Yes please"
 System: "Installing Skype... Done! I'll show you how to use it next."
@@ -187,7 +187,7 @@ ask-nix --help-keyboard
 Heading Level 1: Package Installation Result
 Installing Firefox browser...
 Progress: Step 1 of 3: Downloading package
-Progress: Step 2 of 3: Installing package  
+Progress: Step 2 of 3: Installing package
 Progress: Step 3 of 3: Creating application menu entry
 Installation complete.
 
@@ -230,7 +230,7 @@ ask-nix --practice "update system"
 #### Learning Example
 ```
 You: "I want to learn about system updates"
-System: "Great! System updates in NixOS work differently than other systems. 
+System: "Great! System updates in NixOS work differently than other systems.
          Let me walk you through it:
 
          Step 1: Update the channel (think of it as updating the catalog)
@@ -275,8 +275,8 @@ ask-nix "install firefox libreoffice gimp vlc"
 #### Busy Parent Example
 ```
 You: "kid needs something for school presentations"
-System: "Installing LibreOffice Impress (PowerPoint equivalent)... Done. 
-         Also suggesting: GIMP for images, Audacity for audio. 
+System: "Installing LibreOffice Impress (PowerPoint equivalent)... Done.
+         Also suggesting: GIMP for images, Audacity for audio.
          Install those too? [y/N]"
 ```
 
@@ -385,7 +385,7 @@ ask-nix --organized "show available games"
 #### Software Management
 ```bash
 ask-nix "install firefox"              # Install programs
-ask-nix "remove firefox"               # Remove programs  
+ask-nix "remove firefox"               # Remove programs
 ask-nix "search for text editors"      # Find software
 ask-nix "what's installed?"            # See your software
 ```
@@ -559,7 +559,7 @@ ask-nix "search for [thing]"       # Find software
 
 # Your Personality Flags
 --minimal      # Fast, no fluff (Maya)
---accessible   # Screen reader friendly (Alex)  
+--accessible   # Screen reader friendly (Alex)
 --learning     # Step-by-step guidance (Carlos)
 --simple       # Clear English (Viktor)
 --safe         # Extra confirmation (David)

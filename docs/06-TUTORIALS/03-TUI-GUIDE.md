@@ -172,7 +172,7 @@ Before executing commands, see exactly what will happen:
 1. Update channels
    sudo nix-channel --update
 
-2. Rebuild system  
+2. Rebuild system
    sudo nixos-rebuild switch
 
 [Execute] [Cancel]

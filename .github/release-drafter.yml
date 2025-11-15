@@ -61,12 +61,12 @@ template: |
   $CHANGES
 
   ## 📊 Release Statistics
-  
+
   - **Contributors**: $CONTRIBUTORS
   - **Commits**: See [full changelog](https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION)
-  
+
   ## 📦 Installation
-  
+
   ### NixOS Module
   ```nix
   services.nixos-gui = {
@@ -74,10 +74,10 @@ template: |
     package = pkgs.nixos-gui; # Version $RESOLVED_VERSION
   };
   ```
-  
+
   ### Docker
   ```bash
   docker pull ghcr.io/$OWNER/$REPOSITORY:$RESOLVED_VERSION
   ```
-  
+
   ## 🙏 Thanks to all contributors!

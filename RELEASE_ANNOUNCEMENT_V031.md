@@ -1,7 +1,7 @@
 # 🚀 Luminous Nix v0.3.1 - Critical User-Requested Features
 
-**Released**: 48 hours after v0.3.0 launch  
-**Type**: Hotfix with critical feature additions  
+**Released**: 48 hours after v0.3.0 launch
+**Type**: Hotfix with critical feature additions
 **Achievement**: 100% accuracy on previously failing queries
 
 ## 📊 What's New

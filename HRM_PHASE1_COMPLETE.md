@@ -135,12 +135,12 @@ elif intent == "rollback":
     from ai.advanced_features.rollback_intelligence import RollbackIntelligence
     analyzer = RollbackIntelligence()
     result = analyzer.analyze_system_failure(query)
-    
+
 elif intent == "storage":
     from ai.advanced_features.storage_optimizer import StorageOptimizer
     optimizer = StorageOptimizer()
     result = optimizer.analyze_storage()
-    
+
 elif intent == "security":
     from ai.advanced_features.security_auditor import SecurityAuditor
     auditor = SecurityAuditor()

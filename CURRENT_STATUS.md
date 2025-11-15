@@ -1,7 +1,7 @@
 # 📊 Luminous Nix - Current System Status
 
-**Date**: 2025-09-07  
-**Version**: 0.6.1  
+**Date**: 2025-09-07
+**Version**: 0.6.1
 **Phase**: B - Production Polish & Release (70% Complete)
 
 ---
@@ -146,7 +146,7 @@ We spent weeks building sophisticated features on a broken foundation. The syste
 
 **Luminous Nix is now a REAL working system**, not just an aspiration. It can:
 - Search and install NixOS packages
-- Generate configurations from natural language  
+- Generate configurations from natural language
 - Learn from usage patterns
 - Provide a genuinely helpful interface
 

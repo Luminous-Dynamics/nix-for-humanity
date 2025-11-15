@@ -2,7 +2,7 @@
 
 ## 🌐 NixOS Discourse Post
 
-**Forum**: https://discourse.nixos.org/c/announcements/8  
+**Forum**: https://discourse.nixos.org/c/announcements/8
 **Title**: Luminous Nix v0.2.0-beta: Natural Language NixOS with Real Neural Networks (80% Accuracy!)
 
 ```markdown
@@ -93,7 +93,7 @@ Looking forward to your feedback and contributions! Let's make NixOS accessible 
 
 ## 📱 Reddit r/NixOS Post
 
-**Subreddit**: https://reddit.com/r/NixOS  
+**Subreddit**: https://reddit.com/r/NixOS
 **Title**: [Tool] Luminous Nix v0.2.0-beta - Natural language NixOS interface with real neural networks (80% accuracy!)
 
 ```markdown
@@ -101,11 +101,11 @@ Just released v0.2.0-beta of Luminous Nix! This is a major update that replaces 
 
 ## What's New
 
-✅ **Real PyTorch neural network** (128K parameters, LSTM)  
-✅ **80% accuracy** on common NixOS queries  
-✅ **3.7ms response time** (with <0.1ms for cached queries)  
-✅ **Learns from your usage** (continuous learning)  
-✅ **CPU-only** (no GPU needed)  
+✅ **Real PyTorch neural network** (128K parameters, LSTM)
+✅ **80% accuracy** on common NixOS queries
+✅ **3.7ms response time** (with <0.1ms for cached queries)
+✅ **Learns from your usage** (continuous learning)
+✅ **CPU-only** (no GPU needed)
 
 ## How It Works
 
@@ -166,7 +166,7 @@ Would love feedback from the community! Every query helps train the model to be 
 
 ## 🐦 Twitter/X Thread
 
-**Platform**: Twitter/X  
+**Platform**: Twitter/X
 **Thread Format**:
 
 ```
@@ -225,7 +225,7 @@ One command to natural language NixOS!
 
 From simulation to real neural networks in one release cycle.
 
-Let's make NixOS accessible to everyone! 
+Let's make NixOS accessible to everyone!
 
 #NixOS #AI #OpenSource #MachineLearning
 ```
@@ -234,8 +234,8 @@ Let's make NixOS accessible to everyone!
 
 ## 📰 Hacker News Submission
 
-**Site**: https://news.ycombinator.com/submit  
-**Title**: Show HN: Natural language NixOS interface with neural networks (80% accuracy)  
+**Site**: https://news.ycombinator.com/submit
+**Title**: Show HN: Natural language NixOS interface with neural networks (80% accuracy)
 **URL**: https://github.com/Luminous-Dynamics/luminous-nix/releases/tag/v0.2.0-beta
 
 **Comment to post after submission**:

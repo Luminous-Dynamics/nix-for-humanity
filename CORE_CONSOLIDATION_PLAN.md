@@ -40,7 +40,7 @@ After analyzing the core directory, I've identified significant duplication acro
 - `config_generator_ast.py` - AST-based generation
 - `simple_config_generator.py` - Simple generation
 
-**Target:** 
+**Target:**
 - `config.py` - Configuration management
 - `config_generator.py` - Generation logic (unified)
 

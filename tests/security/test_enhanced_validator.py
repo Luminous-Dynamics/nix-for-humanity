@@ -10,12 +10,13 @@ Validates the additional security layers including:
 """
 
 import unittest
+
 import pytest
 
 # Skip this test file - enhanced_validator module doesn't exist yet
 pytestmark = pytest.mark.skip(reason="Enhanced validator module not yet implemented")
 
-from unittest.mock import Mock, MagicMock, patch, call
+
 # from luminous_nix.security.enhanced_validator import (
 #     EnhancedInputValidator,
 #     SecurityLevel,
@@ -24,6 +25,7 @@ from unittest.mock import Mock, MagicMock, patch, call
 #     ValidationError,
 #     create_enhanced_validator,
 # )
+
 
 class TestEnhancedInputValidator(unittest.TestCase):
     """Test enhanced input validation features."""
@@ -403,6 +405,7 @@ class TestEnhancedInputValidator(unittest.TestCase):
         # Should have results from all threads
         self.assertEqual(len(results), 50)
 
+
 class TestValidationIntegration(unittest.TestCase):
     """Test integration with the overall system."""
 
@@ -426,6 +429,7 @@ class TestValidationIntegration(unittest.TestCase):
         self.assertEqual(validator.security_level, SecurityLevel.STRICT)
         self.assertTrue(validator.enable_rate_limiting)
         self.assertTrue(validator.enable_behavioral_analysis)
+
 
 if __name__ == "__main__":
     unittest.main()

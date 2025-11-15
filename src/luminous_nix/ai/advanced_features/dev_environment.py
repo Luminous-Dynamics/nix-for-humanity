@@ -4,12 +4,12 @@ Development Environment Generator - Create perfect dev shells
 Intelligent environment generation based on project needs
 """
 
-import logging
 import json
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Any
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -37,25 +37,25 @@ class EnvironmentSpec:
     """Specification for a development environment"""
 
     project_type: ProjectType
-    detected_stack: List[str]
+    detected_stack: list[str]
 
     # Core requirements
-    languages: List[str]
-    frameworks: List[str]
-    tools: List[str]
-    databases: List[str]
-    services: List[str]
+    languages: list[str]
+    frameworks: list[str]
+    tools: list[str]
+    databases: list[str]
+    services: list[str]
 
     # Generated configuration
     shell_nix: str
     flake_nix: Optional[str]
     docker_compose: Optional[str]
-    env_vars: Dict[str, str]
+    env_vars: dict[str, str]
 
     # Additional setup
-    vscode_settings: Dict[str, Any]
-    git_hooks: List[str]
-    aliases: Dict[str, str]
+    vscode_settings: dict[str, Any]
+    git_hooks: list[str]
+    aliases: dict[str, str]
 
     confidence: float
 
@@ -303,7 +303,7 @@ class DevEnvironmentGenerator:
 
         return ProjectType.UNKNOWN
 
-    def _detect_stack(self, path: Path, project_type: ProjectType) -> List[str]:
+    def _detect_stack(self, path: Path, project_type: ProjectType) -> list[str]:
         """Detect technology stack"""
         stack = []
 
@@ -343,7 +343,7 @@ class DevEnvironmentGenerator:
 
         return stack
 
-    def _detect_languages(self, path: Path) -> List[str]:
+    def _detect_languages(self, path: Path) -> list[str]:
         """Detect programming languages used"""
         languages = set()
 
@@ -365,7 +365,7 @@ class DevEnvironmentGenerator:
 
         return list(languages)
 
-    def _detect_frameworks(self, path: Path, project_type: ProjectType) -> List[str]:
+    def _detect_frameworks(self, path: Path, project_type: ProjectType) -> list[str]:
         """Detect frameworks used"""
         frameworks = []
 
@@ -376,8 +376,8 @@ class DevEnvironmentGenerator:
         return frameworks
 
     def _recommend_tools(
-        self, project_type: ProjectType, frameworks: List[str]
-    ) -> List[str]:
+        self, project_type: ProjectType, frameworks: list[str]
+    ) -> list[str]:
         """Recommend development tools"""
         tools = []
 
@@ -397,7 +397,7 @@ class DevEnvironmentGenerator:
 
         return tools
 
-    def _detect_databases(self, path: Path) -> List[str]:
+    def _detect_databases(self, path: Path) -> list[str]:
         """Detect database usage"""
         databases = []
 
@@ -424,7 +424,7 @@ class DevEnvironmentGenerator:
 
         return databases
 
-    def _detect_services(self, path: Path) -> List[str]:
+    def _detect_services(self, path: Path) -> list[str]:
         """Detect required services"""
         services = []
 
@@ -444,11 +444,11 @@ class DevEnvironmentGenerator:
     def _generate_shell_nix(
         self,
         project_type: ProjectType,
-        languages: List[str],
-        frameworks: List[str],
-        tools: List[str],
-        databases: List[str],
-        services: List[str],
+        languages: list[str],
+        frameworks: list[str],
+        tools: list[str],
+        databases: list[str],
+        services: list[str],
     ) -> str:
         """Generate shell.nix configuration"""
 
@@ -493,17 +493,17 @@ pkgs.mkShell {{
   buildInputs = with pkgs; [
     {packages_str}
   ];
-  
+
   shellHook = ''
     echo "🚀 Development environment loaded!"
     echo "Project type: {project_type.value}"
     echo "Stack: {', '.join(frameworks)}"
-    
+
     # Set up aliases
     alias dev="nix-shell"
     alias test="pytest"
     alias fmt="black . && ruff check --fix"
-    
+
     # Environment variables
     export DEVELOPMENT=true
   '';
@@ -514,20 +514,20 @@ pkgs.mkShell {{
     def _generate_flake_nix(
         self,
         project_type: ProjectType,
-        languages: List[str],
-        frameworks: List[str],
-        tools: List[str],
+        languages: list[str],
+        frameworks: list[str],
+        tools: list[str],
     ) -> str:
         """Generate flake.nix configuration"""
 
         flake_nix = f"""{{
   description = "{project_type.value} development environment";
-  
+
   inputs = {{
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   }};
-  
+
   outputs = {{ self, nixpkgs, flake-utils }}:
     flake-utils.lib.eachDefaultSystem (system:
       let
@@ -545,7 +545,7 @@ pkgs.mkShell {{
         return flake_nix
 
     def _generate_docker_compose(
-        self, databases: List[str], services: List[str]
+        self, databases: list[str], services: list[str]
     ) -> Optional[str]:
         """Generate docker-compose.yml if needed"""
         if not databases:
@@ -588,8 +588,8 @@ volumes:
         return docker_compose
 
     def _generate_env_vars(
-        self, project_type: ProjectType, databases: List[str], services: List[str]
-    ) -> Dict[str, str]:
+        self, project_type: ProjectType, databases: list[str], services: list[str]
+    ) -> dict[str, str]:
         """Generate environment variables"""
         env_vars = {"DEVELOPMENT": "true", "DEBUG": "true"}
 
@@ -602,8 +602,8 @@ volumes:
         return env_vars
 
     def _generate_vscode_settings(
-        self, project_type: ProjectType, languages: List[str]
-    ) -> Dict[str, Any]:
+        self, project_type: ProjectType, languages: list[str]
+    ) -> dict[str, Any]:
         """Generate VS Code settings"""
         settings = {"editor.formatOnSave": True, "editor.rulers": [80, 120]}
 
@@ -619,7 +619,7 @@ volumes:
 
         return settings
 
-    def _recommend_git_hooks(self, project_type: ProjectType) -> List[str]:
+    def _recommend_git_hooks(self, project_type: ProjectType) -> list[str]:
         """Recommend git hooks"""
         hooks = ["pre-commit: Run tests and linting"]
 
@@ -629,7 +629,7 @@ volumes:
 
         return hooks
 
-    def _generate_aliases(self, project_type: ProjectType) -> Dict[str, str]:
+    def _generate_aliases(self, project_type: ProjectType) -> dict[str, str]:
         """Generate useful aliases"""
         aliases = {"dev": "nix-shell", "update": "nix flake update"}
 
@@ -673,7 +673,7 @@ volumes:
         }
         return mapping.get(language.lower(), ProjectType.UNKNOWN)
 
-    def _recommend_databases(self, stack: str) -> List[str]:
+    def _recommend_databases(self, stack: str) -> list[str]:
         """Recommend databases for stack"""
         if "django" in stack or "rails" in stack:
             return ["postgres"]

@@ -103,13 +103,13 @@ class SearchCache:
     def set(self, query: str, results: dict) -> None:
         """
         Set/store search results in cache.
-        
+
         Args:
             query: Search query
             results: Results to cache
         """
         self.cache_search_results(query, results.get("packages", []))
-    
+
     def search_with_cache(self, term: str, timeout: int = 5) -> list[dict[str, str]]:
         """
         Search with caching - returns cached results or performs new search
@@ -158,12 +158,14 @@ class SearchCache:
                         else:
                             name = line
                             version = ""
-                        
-                        results.append({
-                            "name": name,
-                            "description": "",  # nix-env -qa doesn't provide descriptions
-                            "version": version
-                        })
+
+                        results.append(
+                            {
+                                "name": name,
+                                "description": "",  # nix-env -qa doesn't provide descriptions
+                                "version": version,
+                            }
+                        )
 
         except subprocess.TimeoutExpired:
             print(

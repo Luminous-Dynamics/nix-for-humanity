@@ -106,7 +106,7 @@ python test_ultra_fast.py
 
 ## 🎊 Conclusion
 
-**WE DID IT!** 
+**WE DID IT!**
 
 From 2-3 second operations to 0.003ms average - a **666,667x improvement**!
 

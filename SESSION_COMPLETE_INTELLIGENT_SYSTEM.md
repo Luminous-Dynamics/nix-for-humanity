@@ -120,7 +120,7 @@ pip install luminous_nix-0.5.0-py3-none-any.whl
 While the system is complete and ready for use, potential optimizations include:
 
 1. **Async Refactor**: Convert concurrent operations to async (save 3.5s)
-2. **Pagination**: Add result pagination for large queries (save 2.7s)  
+2. **Pagination**: Add result pagination for large queries (save 2.7s)
 3. **GPU Acceleration**: Use CUDA for ML operations if available
 4. **Distributed Cache**: Redis for multi-machine deployments
 

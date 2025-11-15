@@ -43,7 +43,7 @@ Date: 2025-01-26
 ### ✅ Core Files Preserved
 ```
 src/luminous_nix/     # All source code
-tests/                # Complete test suite  
+tests/                # Complete test suite
 bin/ask-nix          # Main CLI entry point
 pyproject.toml       # Dependencies
 poetry.lock          # Locked dependencies

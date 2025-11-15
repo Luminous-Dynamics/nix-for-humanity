@@ -207,9 +207,7 @@ class NativeNixAPI:
         # Always fallback to subprocess which works
         return self._install_subprocess(package, profile, start_time)
 
-    def list_generations(
-        self, profile: str | None = None
-    ) -> tuple[list[dict], float]:
+    def list_generations(self, profile: str | None = None) -> tuple[list[dict], float]:
         """
         List system generations using native API
 

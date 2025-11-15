@@ -4,35 +4,34 @@ Transforms natural language requests into complete NixOS configurations
 """
 
 import re
-import json
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
-from pathlib import Path
-from textwrap import dedent, indent
+from textwrap import dedent
+from typing import Any
+
 
 @dataclass
 class ConfigRequest:
     """Represents a configuration generation request"""
     config_type: str  # nginx, shell, service, etc.
     description: str
-    requirements: List[str]
-    context: Dict[str, Any]
+    requirements: list[str]
+    context: dict[str, Any]
 
-@dataclass 
+@dataclass
 class GeneratedConfig:
     """Represents a generated configuration"""
     config_type: str
     nix_code: str
     explanation: str
-    dependencies: List[str]
+    dependencies: list[str]
     usage_instructions: str
-    test_commands: List[str]
+    test_commands: list[str]
 
 class NixOSConfigGenerator:
     """
     Generates NixOS configurations from natural language descriptions
     """
-    
+
     def __init__(self):
         # Configuration templates for common services
         self.templates = {
@@ -45,7 +44,7 @@ class NixOSConfigGenerator:
             "user": self._user_template,
             "shell": self._shell_env_template,
         }
-        
+
         # Common configuration patterns
         self.patterns = {
             r"nginx.*ssl|https.*nginx|web.*server.*ssl": "nginx_ssl",
@@ -60,28 +59,28 @@ class NixOSConfigGenerator:
             r"user|account": "user",
             r"shell\.nix|dev.*shell|nix.*shell": "shell",
         }
-    
+
     def generate_config(self, request: str) -> GeneratedConfig:
         """
         Main entry point - generates configuration from natural language
         """
         # Parse the request
         config_request = self._parse_request(request)
-        
+
         # Determine configuration type
         config_type = self._determine_config_type(request, config_request)
-        
+
         # Generate the appropriate configuration
         if config_type in self.templates:
             return self.templates[config_type](config_request)
         else:
             return self._generic_config(config_request)
-    
+
     def _parse_request(self, request: str) -> ConfigRequest:
         """Parse natural language request into structured format"""
         # Extract requirements
         requirements = []
-        
+
         # Look for common requirements
         if "ssl" in request.lower() or "https" in request.lower():
             requirements.append("ssl")
@@ -95,53 +94,56 @@ class NixOSConfigGenerator:
             requirements.append("nodejs")
         if "database" in request.lower():
             requirements.append("database")
-        
+
         # Extract context (domain names, ports, etc.)
         context = {}
-        
+
         # Look for domain names
         domain_match = re.search(r"(?:for|domain|host)\s+([a-z0-9.-]+\.[a-z]{2,})", request.lower())
         if domain_match:
             context["domain"] = domain_match.group(1)
-        
+
         # Look for port numbers
         port_match = re.search(r"port\s+(\d+)", request.lower())
         if port_match:
             context["port"] = int(port_match.group(1))
-        
+
         # Look for usernames
         user_match = re.search(r"user\s+([a-z0-9_-]+)", request.lower())
         if user_match:
             context["user"] = user_match.group(1)
-        
+
         return ConfigRequest(
             config_type="unknown",
             description=request,
             requirements=requirements,
             context=context
         )
-    
+
     def _determine_config_type(self, request: str, parsed: ConfigRequest) -> str:
         """Determine what type of configuration to generate"""
         request_lower = request.lower()
-        
+
         # Check patterns
         for pattern, config_type in self.patterns.items():
             if re.search(pattern, request_lower):
                 return config_type.split("_")[0]  # Get base type
-        
+
         # Default to development environment if unclear
         if any(lang in request_lower for lang in ["rust", "python", "node", "go", "java"]):
             return "development"
-        
+
         return "generic"
-    
+
     def _nginx_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate nginx configuration"""
         domain = req.context.get("domain", "example.com")
         has_ssl = "ssl" in req.requirements or "https" in req.description.lower()
         has_php = "php" in req.requirements or "php" in req.description.lower()
-        
+
+        # Extract regex pattern to avoid backslash in f-string
+        php_location_pattern = r'"~ \.php$"'
+
         config = dedent(f"""
         # Nginx web server configuration
         services.nginx = {{
@@ -150,31 +152,31 @@ class NixOSConfigGenerator:
           recommendedTlsSettings = true;
           recommendedOptimisation = true;
           recommendedGzipSettings = true;
-          
+
           virtualHosts."{domain}" = {{
-            {f'''enableACME = true;
+            {'''enableACME = true;
             forceSSL = true;''' if has_ssl else '# No SSL configured'}
             root = "/var/www/{domain}";
-            
-            {f'''locations."~ \\.php$" = {{
+
+            {f'''locations.{php_location_pattern} = {{
               extraConfig = \'\'\'
                 fastcgi_pass unix:${{config.services.phpfpm.pools.www.socket}};
                 fastcgi_index index.php;
               \'\'\';
             }};''' if has_php else ''}
-            
+
             locations."/" = {{
               index = "index.html index.htm{' index.php' if has_php else ''}";
               tryFiles = "$uri $uri/ {'/index.php?$query_string' if has_php else '=404'}";
             }};
           }};
         }};
-        
-        {f'''# PHP-FPM configuration
-        services.phpfpm.pools.www = {{
+
+        {'''# PHP-FPM configuration
+        services.phpfpm.pools.www = {
           user = "nginx";
           group = "nginx";
-          settings = {{
+          settings = {
             "listen.owner" = config.services.nginx.user;
             "pm" = "dynamic";
             "pm.max_children" = 32;
@@ -182,25 +184,25 @@ class NixOSConfigGenerator:
             "pm.min_spare_servers" = 2;
             "pm.max_spare_servers" = 4;
             "pm.max_requests" = 500;
-          }};
-        }};''' if has_php else ''}
-        
+          };
+        };''' if has_php else ''}
+
         {f'''# ACME (Let's Encrypt) configuration
         security.acme = {{
           acceptTerms = true;
           defaults.email = "admin@{domain}";
         }};''' if has_ssl else ''}
-        
+
         # Firewall configuration
         networking.firewall.allowedTCPPorts = [ 80{' 443' if has_ssl else ''} ];
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="nginx",
             nix_code=config,
-            explanation=f"Nginx web server configuration for {domain}" + 
-                       (f" with SSL/HTTPS" if has_ssl else "") +
-                       (f" and PHP support" if has_php else ""),
+            explanation=f"Nginx web server configuration for {domain}" +
+                       (" with SSL/HTTPS" if has_ssl else "") +
+                       (" and PHP support" if has_php else ""),
             dependencies=["nginx"] + (["certbot"] if has_ssl else []) + (["php"] if has_php else []),
             usage_instructions=dedent(f"""
                 1. Add this configuration to /etc/nixos/configuration.nix
@@ -214,18 +216,18 @@ class NixOSConfigGenerator:
                 "sudo nginx -t",
             ] + (["sudo systemctl status phpfpm-www"] if has_php else [])
         )
-    
+
     def _postgresql_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate PostgreSQL configuration"""
         db_name = req.context.get("database", "myapp")
         user = req.context.get("user", "myuser")
-        
+
         config = dedent(f"""
         # PostgreSQL database configuration
         services.postgresql = {{
           enable = true;
           package = pkgs.postgresql_15;
-          
+
           ensureDatabases = [ "{db_name}" ];
           ensureUsers = [
             {{
@@ -233,14 +235,14 @@ class NixOSConfigGenerator:
               ensureDBOwnership = true;
             }}
           ];
-          
+
           authentication = pkgs.lib.mkOverride 10 \'\'\'
             # TYPE  DATABASE        USER            ADDRESS                 METHOD
             local   all             all                                     trust
             host    all             all             127.0.0.1/32            trust
             host    all             all             ::1/128                 trust
           \'\'\';
-          
+
           settings = {{
             shared_buffers = "256MB";
             max_connections = 100;
@@ -249,7 +251,7 @@ class NixOSConfigGenerator:
             logging_collector = true;
           }};
         }};
-        
+
         # Backup configuration (optional)
         services.postgresqlBackup = {{
           enable = true;
@@ -258,7 +260,7 @@ class NixOSConfigGenerator:
           startAt = "03:00";
         }};
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="postgresql",
             nix_code=config,
@@ -276,17 +278,17 @@ class NixOSConfigGenerator:
                 f"sudo -u postgres psql -d {db_name} -c '\\dt'",
             ]
         )
-    
+
     def _docker_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate Docker configuration"""
         user = req.context.get("user", "$USER")
-        
+
         config = dedent(f"""
         # Docker container runtime configuration
         virtualisation.docker = {{
           enable = true;
           enableOnBoot = true;
-          
+
           # Enable Docker daemon
           daemon.settings = {{
             data-root = "/var/lib/docker";
@@ -296,31 +298,31 @@ class NixOSConfigGenerator:
               max-file = "3";
             }};
           }};
-          
+
           # Prune old images automatically
           autoPrune = {{
             enable = true;
             dates = "weekly";
           }};
         }};
-        
+
         # Add user to docker group
         users.users.{user} = {{
           extraGroups = [ "docker" ];
         }};
-        
+
         # Docker Compose (optional)
         environment.systemPackages = with pkgs; [
           docker-compose
         ];
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="docker",
             nix_code=config,
             explanation=f"Docker container runtime with user '{user}' added to docker group",
             dependencies=["docker", "docker-compose"],
-            usage_instructions=dedent(f"""
+            usage_instructions=dedent("""
                 1. Add this configuration to /etc/nixos/configuration.nix
                 2. Apply configuration: sudo nixos-rebuild switch
                 3. Log out and log back in for group changes to take effect
@@ -333,7 +335,7 @@ class NixOSConfigGenerator:
                 "docker ps",
             ]
         )
-    
+
     def _dev_env_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate development environment configuration"""
         lang = "generic"
@@ -345,7 +347,7 @@ class NixOSConfigGenerator:
             lang = "node"
         elif "go" in req.description.lower():
             lang = "go"
-        
+
         configs = {
             "rust": self._rust_dev_config(),
             "python": self._python_dev_config(),
@@ -353,15 +355,15 @@ class NixOSConfigGenerator:
             "go": self._go_dev_config(),
             "generic": self._generic_dev_config(),
         }
-        
+
         return configs[lang]
-    
+
     def _rust_dev_config(self) -> GeneratedConfig:
         """Generate Rust development environment"""
         config = dedent("""
         # Rust development environment
         { pkgs ? import <nixpkgs> {} }:
-        
+
         pkgs.mkShell {
           buildInputs = with pkgs; [
             # Rust toolchain
@@ -370,27 +372,27 @@ class NixOSConfigGenerator:
             rustfmt
             rust-analyzer
             clippy
-            
+
             # Build tools
             gcc
             pkg-config
             openssl.dev
-            
+
             # Useful tools
             cargo-watch
             cargo-edit
             cargo-audit
             bacon  # Background rust code checker
-            
+
             # Optional: for web development
             wasm-pack
             trunk
           ];
-          
+
           # Environment variables
           RUST_BACKTRACE = 1;
           RUST_LOG = "debug";
-          
+
           shellHook = ''
             echo "🦀 Rust development environment loaded!"
             echo "Rust version: $(rustc --version)"
@@ -406,7 +408,7 @@ class NixOSConfigGenerator:
           '';
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="shell",
             nix_code=config,
@@ -424,13 +426,13 @@ class NixOSConfigGenerator:
                 "nix-shell --run 'cargo init my_project'",
             ]
         )
-    
+
     def _python_dev_config(self) -> GeneratedConfig:
         """Generate Python development environment"""
         config = dedent("""
         # Python development environment
         { pkgs ? import <nixpkgs> {} }:
-        
+
         let
           pythonPackages = pkgs.python311Packages;
         in
@@ -441,7 +443,7 @@ class NixOSConfigGenerator:
             pythonPackages.pip
             pythonPackages.virtualenv
             poetry
-            
+
             # Development tools
             pythonPackages.black
             pythonPackages.flake8
@@ -449,23 +451,23 @@ class NixOSConfigGenerator:
             pythonPackages.mypy
             pythonPackages.ipython
             pythonPackages.jupyter
-            
+
             # Common libraries
             pythonPackages.numpy
             pythonPackages.pandas
             pythonPackages.requests
             pythonPackages.pyyaml
-            
+
             # Database
             pythonPackages.psycopg2
             pythonPackages.sqlalchemy
-            
+
             # Web frameworks (uncomment as needed)
             # pythonPackages.django
             # pythonPackages.flask
             # pythonPackages.fastapi
           ];
-          
+
           shellHook = ''
             echo "🐍 Python development environment loaded!"
             echo "Python version: $(python --version)"
@@ -485,7 +487,7 @@ class NixOSConfigGenerator:
           '';
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="shell",
             nix_code=config,
@@ -503,13 +505,13 @@ class NixOSConfigGenerator:
                 "nix-shell --run 'python -c \"import numpy; print(numpy.__version__)\"'",
             ]
         )
-    
+
     def _node_dev_config(self) -> GeneratedConfig:
         """Generate Node.js development environment"""
         config = dedent("""
         # Node.js development environment
         { pkgs ? import <nixpkgs> {} }:
-        
+
         pkgs.mkShell {
           buildInputs = with pkgs; [
             # Node.js and package managers
@@ -517,27 +519,27 @@ class NixOSConfigGenerator:
             nodePackages.npm
             nodePackages.yarn
             nodePackages.pnpm
-            
+
             # Development tools
             nodePackages.typescript
             nodePackages.ts-node
             nodePackages.nodemon
             nodePackages.eslint
             nodePackages.prettier
-            
+
             # Testing
             nodePackages."@vue/cli"
             nodePackages.create-react-app
             nodePackages.jest
-            
+
             # Build tools
             nodePackages.webpack
             nodePackages.vite
-            
+
             # Database clients
             nodePackages.prisma
           ];
-          
+
           shellHook = ''
             echo "📦 Node.js development environment loaded!"
             echo "Node version: $(node --version)"
@@ -553,7 +555,7 @@ class NixOSConfigGenerator:
           '';
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="shell",
             nix_code=config,
@@ -572,13 +574,13 @@ class NixOSConfigGenerator:
                 "nix-shell --run 'tsc --version'",
             ]
         )
-    
+
     def _go_dev_config(self) -> GeneratedConfig:
         """Generate Go development environment"""
         config = dedent("""
         # Go development environment
         { pkgs ? import <nixpkgs> {} }:
-        
+
         pkgs.mkShell {
           buildInputs = with pkgs; [
             # Go toolchain
@@ -588,24 +590,24 @@ class NixOSConfigGenerator:
             go-tools
             golangci-lint
             delve
-            
+
             # Build tools
             gnumake
             gcc
-            
+
             # Database tools
             postgresql
             redis
-            
+
             # Protobuf support
             protobuf
             protoc-gen-go
           ];
-          
+
           shellHook = ''
             export GOPATH=$HOME/go
             export PATH=$PATH:$GOPATH/bin
-            
+
             echo "🐹 Go development environment loaded!"
             echo "Go version: $(go version)"
             echo "GOPATH: $GOPATH"
@@ -619,7 +621,7 @@ class NixOSConfigGenerator:
           '';
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="shell",
             nix_code=config,
@@ -637,23 +639,23 @@ class NixOSConfigGenerator:
                 "nix-shell --run 'golangci-lint version'",
             ]
         )
-    
+
     def _generic_dev_config(self) -> GeneratedConfig:
         """Generate generic development environment"""
         config = dedent("""
         # Generic development environment
         { pkgs ? import <nixpkgs> {} }:
-        
+
         pkgs.mkShell {
           buildInputs = with pkgs; [
             # Version control
             git
             gh  # GitHub CLI
-            
+
             # Editors
             neovim
             vscode
-            
+
             # Common tools
             curl
             wget
@@ -664,23 +666,23 @@ class NixOSConfigGenerator:
             eza
             htop
             tmux
-            
+
             # Build tools
             gnumake
             gcc
             cmake
             pkg-config
-            
+
             # Container tools
             docker
             docker-compose
-            
+
             # Database clients
             postgresql
             redis
             sqlite
           ];
-          
+
           shellHook = ''
             echo "💻 Development environment loaded!"
             echo ""
@@ -693,7 +695,7 @@ class NixOSConfigGenerator:
           '';
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="shell",
             nix_code=config,
@@ -709,52 +711,52 @@ class NixOSConfigGenerator:
                 "nix-shell --run 'nvim --version | head -1'",
             ]
         )
-    
+
     def _systemd_service_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate systemd service configuration"""
         service_name = req.context.get("name", "myservice")
         user = req.context.get("user", "serviceuser")
-        
+
         config = dedent(f"""
         # Systemd service configuration
         systemd.services.{service_name} = {{
           description = "My Custom Service";
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
-          
+
           serviceConfig = {{
             Type = "simple";
             User = "{user}";
             Group = "{user}";
             WorkingDirectory = "/var/lib/{service_name}";
-            
+
             # Service command
             ExecStart = "${{pkgs.bash}}/bin/bash /var/lib/{service_name}/run.sh";
-            
+
             # Restart policy
             Restart = "always";
             RestartSec = "10s";
-            
+
             # Security hardening
             PrivateTmp = true;
             NoNewPrivileges = true;
             ProtectSystem = "strict";
             ProtectHome = true;
             ReadWritePaths = [ "/var/lib/{service_name}" ];
-            
+
             # Resource limits
             LimitNOFILE = "4096";
             MemoryMax = "512M";
             CPUQuota = "50%";
           }};
-          
+
           # Optional: environment variables
           environment = {{
             SERVICE_PORT = "8080";
             SERVICE_ENV = "production";
           }};
         }};
-        
+
         # Create service user
         users.users.{user} = {{
           isSystemUser = true;
@@ -762,10 +764,10 @@ class NixOSConfigGenerator:
           home = "/var/lib/{service_name}";
           createHome = true;
         }};
-        
+
         users.groups.{user} = {{}};
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="systemd",
             nix_code=config,
@@ -784,7 +786,7 @@ class NixOSConfigGenerator:
                 f"sudo systemctl restart {service_name}",
             ]
         )
-    
+
     def _firewall_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate firewall configuration"""
         ports = []
@@ -794,63 +796,63 @@ class NixOSConfigGenerator:
             ports.append(22)
         if "database" in req.description.lower():
             ports.append(5432)  # PostgreSQL default
-        
+
         # Add any specific ports mentioned
         port_matches = re.findall(r"\b(\d{2,5})\b", req.description)
         for port in port_matches:
             port_num = int(port)
             if 1 < port_num < 65536:
                 ports.append(port_num)
-        
+
         ports = sorted(set(ports))
-        
+
         config = dedent(f"""
         # Firewall configuration
         networking.firewall = {{
           enable = true;
-          
+
           # Allow specific TCP ports
           allowedTCPPorts = [ {' '.join(map(str, ports))} ];
-          
+
           # Allow specific UDP ports (uncomment as needed)
           # allowedUDPPorts = [ 53 67 68 ];
-          
+
           # Allow specific port ranges
           # allowedTCPPortRanges = [
           #   {{ from = 8000; to = 8010; }}
           # ];
-          
+
           # Trusted interfaces (no firewall)
           # trustedInterfaces = [ "docker0" ];
-          
+
           # Log rejected connections
           logRejected = false;
-          
+
           # Allow ping
           allowPing = true;
-          
+
           # Additional rules using iptables
           extraCommands = \'\'\'
             # Allow established connections
             iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-            
+
             # Rate limiting for SSH (if port 22 is open)
-            {f'iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set' if 22 in ports else ''}
-            {f'iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 -j DROP' if 22 in ports else ''}
+            {'iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set' if 22 in ports else ''}
+            {'iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 -j DROP' if 22 in ports else ''}
           \'\'\';
-          
+
           # Stop additional rules
           extraStopCommands = \'\'\'
             iptables -D INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
           \'\'\';
         }};
-        
+
         # Fail2ban for additional protection (optional)
         services.fail2ban = {{
           enable = true;
           maxretry = 5;
           ignoreIP = [ "127.0.0.1/8" "::1" ];
-          
+
           jails = {{
             ssh.settings = {{
               enabled = true;
@@ -861,7 +863,7 @@ class NixOSConfigGenerator:
           }};
         }};
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="firewall",
             nix_code=config,
@@ -879,19 +881,19 @@ class NixOSConfigGenerator:
                 "sudo nft list ruleset",  # If using nftables
             ] + [f"nc -zv localhost {port}" for port in ports[:3]]
         )
-    
+
     def _user_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate user account configuration"""
         username = req.context.get("user", "newuser")
         is_admin = "admin" in req.description.lower() or "sudo" in req.description.lower()
-        
+
         config = dedent(f"""
         # User account configuration
         users.users.{username} = {{
           isNormalUser = true;
           description = "{username.capitalize()} User Account";
           home = "/home/{username}";
-          
+
           # Groups membership
           extraGroups = [
             "wheel"     # Enable sudo
@@ -905,18 +907,18 @@ class NixOSConfigGenerator:
             "input"
             "render"
           ]);
-          
+
           # Shell configuration
           shell = pkgs.zsh;  # Or pkgs.bash, pkgs.fish
-          
+
           # SSH public keys (add your keys here)
           openssh.authorizedKeys.keys = [
             # "ssh-rsa AAAAB3NzaC1... user@example.com"
           ];
-          
+
           # Initial password (user should change on first login)
           initialPassword = "changeme";
-          
+
           # Packages specific to this user
           packages = with pkgs; [
             firefox
@@ -925,10 +927,10 @@ class NixOSConfigGenerator:
             neovim
           ];
         }};
-        
+
         # Enable zsh if selected as shell
         programs.zsh.enable = true;
-        
+
         # Sudo configuration for admin users
         {f'''security.sudo.extraRules = [
           {{
@@ -942,13 +944,13 @@ class NixOSConfigGenerator:
           }}
         ];''' if is_admin else '# Not configured as admin user'}
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="user",
             nix_code=config,
             explanation=f"User account '{username}' with {'admin privileges' if is_admin else 'standard privileges'}",
             dependencies=["zsh"],
-            usage_instructions=dedent(f"""
+            usage_instructions=dedent("""
                 1. Add this configuration to /etc/nixos/configuration.nix
                 2. Apply configuration: sudo nixos-rebuild switch
                 3. User can now login with initial password: 'changeme'
@@ -961,7 +963,7 @@ class NixOSConfigGenerator:
                 f"sudo -l -U {username}",
             ]
         )
-    
+
     def _shell_env_template(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate shell.nix environment configuration"""
         # Delegate to appropriate dev config based on requirements
@@ -975,27 +977,27 @@ class NixOSConfigGenerator:
             return self._go_dev_config()
         else:
             return self._generic_dev_config()
-    
+
     def _generic_config(self, req: ConfigRequest) -> GeneratedConfig:
         """Generate a generic configuration template"""
         config = dedent("""
         # Generic NixOS configuration
         { config, pkgs, ... }:
-        
+
         {
           # Add your configuration here
           environment.systemPackages = with pkgs; [
             # Add packages
           ];
-          
+
           # Add services
           # services.example.enable = true;
-          
+
           # Add system configuration
           # system.stateVersion = "24.05";
         }
         """).strip()
-        
+
         return GeneratedConfig(
             config_type="generic",
             nix_code=config,
@@ -1004,28 +1006,28 @@ class NixOSConfigGenerator:
             usage_instructions="Add this to your /etc/nixos/configuration.nix and customize as needed",
             test_commands=["sudo nixos-rebuild test"]
         )
-    
+
     def format_config(self, config: GeneratedConfig) -> str:
         """Format the generated configuration for display"""
         output = []
         output.append(f"🎉 **Generated {config.config_type.title()} Configuration**")
         output.append(f"📝 **Description**: {config.explanation}")
-        
+
         if config.dependencies:
             output.append(f"📦 **Dependencies**: {', '.join(config.dependencies)}")
-        
+
         output.append("\n```nix")
         output.append(config.nix_code)
         output.append("```")
-        
-        output.append(f"\n📚 **Usage Instructions**:")
+
+        output.append("\n📚 **Usage Instructions**:")
         output.append(config.usage_instructions)
-        
+
         if config.test_commands:
-            output.append(f"\n🧪 **Test Commands**:")
+            output.append("\n🧪 **Test Commands**:")
             for cmd in config.test_commands:
                 output.append(f"  $ {cmd}")
-        
+
         return "\n".join(output)
 
 

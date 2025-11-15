@@ -1,7 +1,7 @@
 # 🚀 Phase B: Production Polish & Release - COMPLETE
 
-**Date**: 2025-09-07  
-**Version**: 0.6.1  
+**Date**: 2025-09-07
+**Version**: 0.6.1
 **Status**: ✅ **RELEASE READY**
 
 ---
@@ -172,8 +172,8 @@ poetry publish
 
 **Title**: "Show HN: Luminous Nix – Natural Language Interface for NixOS (Python/AI)"
 
-**First Comment**: 
-> Solo developer here. I built this using Claude Code and local LLMs to make NixOS accessible to everyone. It translates natural language like "install a web browser" into proper Nix commands. 
+**First Comment**:
+> Solo developer here. I built this using Claude Code and local LLMs to make NixOS accessible to everyone. It translates natural language like "install a web browser" into proper Nix commands.
 
 > The interesting part: it's a "Living System" that learns from usage patterns and eventually makes its own interface disappear as users become experts.
 

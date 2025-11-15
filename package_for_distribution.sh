@@ -63,42 +63,42 @@ Examples:
   luminous-nix health
         '''
     )
-    
+
     subparsers = parser.add_subparsers(dest='command', help='Commands')
-    
+
     # Search command
     search_parser = subparsers.add_parser('search', help='Search for packages')
     search_parser.add_argument('query', help='Natural language search query')
     search_parser.add_argument('--limit', type=int, default=10, help='Number of results')
-    
+
     # Suggest command
     suggest_parser = subparsers.add_parser('suggest', help='Get suggestions')
     suggest_parser.add_argument('partial', help='Partial query for suggestions')
-    
+
     # Install command
     install_parser = subparsers.add_parser('install', help='Get install command')
     install_parser.add_argument('package', help='Package to install')
     install_parser.add_argument('--permanent', action='store_true', help='Permanent install')
-    
+
     # Insights command
     subparsers.add_parser('insights', help='Get usage insights')
-    
+
     # Health command
     subparsers.add_parser('health', help='Check system health')
-    
+
     # Popular command
     popular_parser = subparsers.add_parser('popular', help='Show popular packages')
     popular_parser.add_argument('--limit', type=int, default=10, help='Number of packages')
-    
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         return 1
-    
+
     # Initialize API
     api = LuminousNixAPI()
-    
+
     try:
         if args.command == 'search':
             response = api.search(args.query, args.limit)
@@ -107,7 +107,7 @@ Examples:
                 for i, result in enumerate(response.data, 1):
                     print(f"{i}. {result['name']} ({result['version']})")
                     print(f"   {result['description'][:70]}...")
-                
+
                 if response.metadata:
                     print(f"\n⏱️ Response time: {response.metadata['response_time_ms']:.1f}ms")
                     print(f"🎯 Intent: {response.metadata['intent']}")
@@ -117,7 +117,7 @@ Examples:
                             print(f"   • {query}")
             else:
                 print(f"Error: {response.message}")
-        
+
         elif args.command == 'suggest':
             response = api.suggest(args.partial)
             if response.success:
@@ -127,7 +127,7 @@ Examples:
                     print(f"{icon} {suggestion['text']}")
             else:
                 print(f"Error: {response.message}")
-        
+
         elif args.command == 'install':
             response = api.get_install_command(args.package, args.permanent)
             if response.success:
@@ -139,7 +139,7 @@ Examples:
                     print(response.data['command'])
             else:
                 print(f"Error: {response.message}")
-        
+
         elif args.command == 'insights':
             response = api.get_insights()
             if response.success:
@@ -151,7 +151,7 @@ Examples:
                 print(f"Queue size: {insights['performance']['queue_size']}")
             else:
                 print(f"Error: {response.message}")
-        
+
         elif args.command == 'health':
             response = api.health_check()
             if response.success:
@@ -161,7 +161,7 @@ Examples:
                     print(f"{icon} {component}: {status}")
             else:
                 print(f"Error: {response.message}")
-        
+
         elif args.command == 'popular':
             response = api.get_popular_packages(args.limit)
             if response.success:
@@ -170,9 +170,9 @@ Examples:
                     print(f"{i}. {pkg['name']} (used {pkg['frequency']} times)")
             else:
                 print(f"Error: {response.message}")
-        
+
         return 0
-        
+
     finally:
         api.shutdown()
 

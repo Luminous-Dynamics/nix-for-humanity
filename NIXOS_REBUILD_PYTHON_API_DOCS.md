@@ -114,30 +114,30 @@ from nixos_rebuild import models, nix
 def rebuild_system(dry_run=False):
     """Rebuild NixOS system"""
     action = models.Action.DRY_BUILD if dry_run else models.Action.BUILD
-    
+
     # Build configuration
     build_attr = models.BuildAttr(attribute="system")
     path = nix.build(build_attr)
-    
+
     if not dry_run:
         # Apply configuration
         nix.switch_to_configuration(
-            path, 
-            models.Action.SWITCH, 
+            path,
+            models.Action.SWITCH,
             models.Profile.SYSTEM
         )
-    
+
     return path
 
 def manage_generations():
     """List and manage system generations"""
     generations = nix.list_generations(models.Profile.SYSTEM)
-    
+
     for gen in generations:
         print(f"Generation {gen.number}: {gen.date}")
         if gen.current:
             print("  (current)")
-    
+
     # Rollback if needed
     # nix.rollback(models.Profile.SYSTEM)
 ```

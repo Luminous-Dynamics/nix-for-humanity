@@ -323,9 +323,7 @@ class CommandValidator:
         return features
 
     @classmethod
-    def suggest_safer_alternative(
-        cls, command: list[str], reason: str
-    ) -> str | None:
+    def suggest_safer_alternative(cls, command: list[str], reason: str) -> str | None:
         """
         Suggest a safer alternative to a dangerous command
 

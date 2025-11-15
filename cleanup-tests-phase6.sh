@@ -17,20 +17,20 @@ KEEP_TESTS=(
     "tests/integration/test_native_operations_real.py"
     "tests/integration/test_cli_backend_integration.py"
     "tests/integration/test_cli_core_pipeline.py"
-    
+
     # Performance tests
     "tests/performance/test_native_api_performance.py"
     "tests/performance/test_breakthrough_metrics.py"
-    
+
     # Security tests
     "tests/security/test_enhanced_validator.py"
     "tests/security/test_security_boundaries.py"
-    
+
     # Core unit tests
     "tests/unit/test_native_nix_backend.py"
     "tests/unit/test_intent.py"
     "tests/unit/test_executor.py"
-    
+
     # Essential files
     "tests/conftest.py"
     "tests/__init__.py"
@@ -72,7 +72,7 @@ for file in tests/test_*.py; do
                 break
             fi
         done
-        
+
         if [ "$keep" = false ]; then
             echo "  Archiving: $file"
             mv "$file" "$ARCHIVE_DIR/" 2>/dev/null

@@ -3,6 +3,7 @@
 """
 
 from .adaptive_interface import AdaptiveInterface
+
 # ARCHIVED: from .consciousness_orb import ConsciousnessOrb
 from .main_app import LuminousNixTUI
 

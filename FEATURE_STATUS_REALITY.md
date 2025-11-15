@@ -1,7 +1,7 @@
 # 🔍 Luminous Nix Feature Status - The Truth
 
-**Last Verified**: 2025-01-29  
-**Version**: v0.6.x  
+**Last Verified**: 2025-01-29
+**Version**: v0.6.x
 **Honesty Level**: 100%
 
 ## Executive Summary
@@ -45,7 +45,7 @@ These features have been tested and verified to work:
 These features work but not as claimed:
 
 ### 1. "Native API" Performance ⚠️
-**Claim**: 10x-1500x performance improvement  
+**Claim**: 10x-1500x performance improvement
 **Reality**: Only nixos-rebuild operations would benefit. Search still uses subprocess.
 
 ```python
@@ -65,11 +65,11 @@ def search_packages(self, query: str):
 - List: 0.5-1 second (claimed 0.29ms - **3,400x slower**)
 
 ### 2. TUI Interface ⚠️
-**Claim**: Beautiful, working TUI  
+**Claim**: Beautiful, working TUI
 **Reality**: Import errors need fixing, basic structure exists
 
 ### 3. Error Intelligence ⚠️
-**Claim**: Educational error messages  
+**Claim**: Educational error messages
 **Reality**: Some custom messages, mostly raw Nix errors
 
 ## 🔴 What DOESN'T Work
@@ -213,13 +213,13 @@ Despite the performance claims being wrong, Luminous Nix provides:
 
 ### Marketing Pivot
 
-Instead of: "10,000x faster with native API!"  
+Instead of: "10,000x faster with native API!"
 Say: "Natural language interface that makes NixOS accessible"
 
-Instead of: "0.29ms search!"  
+Instead of: "0.29ms search!"
 Say: "Smart package discovery with typo correction"
 
-Instead of: "Revolutionary performance!"  
+Instead of: "Revolutionary performance!"
 Say: "User-friendly alternative to complex Nix commands"
 
 ## 🔮 Future Possibilities
@@ -236,7 +236,7 @@ These could make the performance claims real:
 
 ## Summary for Users
 
-**Luminous Nix is a working natural language interface for NixOS, but it's not faster than regular Nix commands.** 
+**Luminous Nix is a working natural language interface for NixOS, but it's not faster than regular Nix commands.**
 
 It makes NixOS more accessible through:
 - Natural language understanding

@@ -60,12 +60,12 @@ queries = [
 
 for query in queries:
     print(f"\nQuery: {query}")
-    
+
     # Capture output
     buffer = io.StringIO()
     with redirect_stdout(buffer):
         assistant.answer(query)
-    
+
     # Display result
     print(buffer.getvalue())
 ```
@@ -99,7 +99,7 @@ for query in queries:
 def test_command(cmd):
     subprocess.run(['poetry', 'run'] + cmd)  # ❌
 
-# After  
+# After
 def test_command(query):
     assistant = UnifiedNixAssistant()
     assistant.answer(query)  # ✅

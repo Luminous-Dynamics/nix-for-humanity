@@ -50,7 +50,7 @@ This is the first working release of Luminous Nix after extensive cleanup and in
 - **Natural language CLI** - Ask questions in plain English
 - **HRM v1 Integration** - 27M parameter model for instant NixOS reasoning (<0.1ms responses!)
 - **Intelligent AI Routing** - HRM for NixOS tasks, Ollama for general knowledge
-- **Package search** - Find packages with smart matching and typo correction  
+- **Package search** - Find packages with smart matching and typo correction
 - **Package installation** - Install packages with confirmation
 - **List installed** - Show what's installed on your system
 - **Help system** - Clear, helpful documentation
@@ -75,7 +75,7 @@ This is the first working release of Luminous Nix after extensive cleanup and in
 - **Missing dependencies** - All required dependencies included
 - **False claims** - Removed all hyperbolic performance claims
 
-### Removed  
+### Removed
 - **Consciousness features** - Archived 28 mystical/aspirational files
 - **Sacred utilities** - Removed non-functional sacred code
 - **Learning system** - Deactivated incomplete learning features

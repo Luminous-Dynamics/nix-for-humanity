@@ -42,7 +42,7 @@ Instead of trying to use undocumented internal APIs, optimize our subprocess usa
 class OptimizedNixAPI:
     def __init__(self):
         self.use_rebuild_ng = self._check_rebuild_ng()
-        
+
     def _check_rebuild_ng(self):
         """Check if nixos-rebuild-ng is available"""
         result = subprocess.run(
@@ -50,7 +50,7 @@ class OptimizedNixAPI:
             capture_output=True
         )
         return result.returncode == 0
-    
+
     def rebuild(self, action="switch"):
         """Use nixos-rebuild-ng if available, else fallback"""
         cmd = "nixos-rebuild-ng" if self.use_rebuild_ng else "nixos-rebuild"
@@ -72,7 +72,7 @@ fn fast_search(query: &str) -> PyResult<Vec<Package>> {
     // 1000x faster than subprocess
 }
 
-#[pyfunction] 
+#[pyfunction]
 fn fast_eval(expr: &str) -> PyResult<String> {
     // Direct nix evaluation
     // No subprocess overhead
@@ -136,7 +136,7 @@ data = json.loads(result.stdout)  # Direct access!
 import asyncio
 
 async def parallel_search(queries):
-    tasks = [async_subprocess(["nix", "search", q, "--json"]) 
+    tasks = [async_subprocess(["nix", "search", q, "--json"])
              for q in queries]
     return await asyncio.gather(*tasks)
 ```
@@ -157,7 +157,7 @@ luminous-nix/
 
 ### Current (Pure Python + Subprocess)
 - Search: 2000-3000ms
-- Install: 5000-30000ms  
+- Install: 5000-30000ms
 - Evaluation: 500-1000ms
 - Memory: 150MB
 

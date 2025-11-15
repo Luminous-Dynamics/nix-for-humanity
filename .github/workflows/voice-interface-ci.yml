@@ -30,16 +30,16 @@ jobs:
   voice-unit-tests:
     name: Voice Unit Tests
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Cache pip dependencies
       uses: actions/cache@v3
       with:
@@ -48,23 +48,23 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-voice-
           ${{ runner.os }}-pip-
-          
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov pytest-mock
-        
+
     - name: Create test data directories
       run: |
         mkdir -p tests/voice/data
         mkdir -p ~/.local/share/nix-humanity/voice/models
-        
+
     - name: Run voice unit tests
       run: |
         chmod +x scripts/run-voice-tests.sh
         ./scripts/run-voice-tests.sh unit
-        
+
     - name: Upload unit test coverage
       uses: codecov/codecov-action@v3
       with:
@@ -73,19 +73,19 @@ jobs:
         name: voice-unit-tests
 
   voice-integration-tests:
-    name: Voice Integration Tests  
+    name: Voice Integration Tests
     runs-on: ubuntu-latest
     needs: voice-unit-tests
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Cache pip dependencies
       uses: actions/cache@v3
       with:
@@ -93,30 +93,30 @@ jobs:
         key: ${{ runner.os }}-pip-voice-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-voice-
-          
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov pytest-mock
-        
+
     - name: Install system audio dependencies (mock)
       run: |
         # Install lightweight audio system for testing
         sudo apt-get update
         sudo apt-get install -y pulseaudio-utils alsa-utils
-        
+
     - name: Create test environment
       run: |
         mkdir -p tests/voice/data
         mkdir -p ~/.local/share/nix-humanity/voice/models
         mkdir -p ~/.local/share/nix-humanity/voice/cache
-        
+
     - name: Run voice integration tests
       run: |
         chmod +x scripts/run-voice-tests.sh
         ./scripts/run-voice-tests.sh integration
-        
+
     - name: Upload integration test coverage
       uses: codecov/codecov-action@v3
       with:
@@ -128,16 +128,16 @@ jobs:
     name: Voice Performance Tests
     runs-on: ubuntu-latest
     needs: voice-integration-tests
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Cache pip dependencies
       uses: actions/cache@v3
       with:
@@ -145,13 +145,13 @@ jobs:
         key: ${{ runner.os }}-pip-voice-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-voice-
-          
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-benchmark psutil
-        
+
     - name: Set up performance test environment
       run: |
         mkdir -p tests/voice/data
@@ -159,12 +159,12 @@ jobs:
         # Create small test models for performance testing
         echo "mock-whisper-model" > ~/.local/share/nix-humanity/voice/models/whisper-base.bin
         echo "mock-piper-model" > ~/.local/share/nix-humanity/voice/models/piper-voice.onnx
-        
+
     - name: Run voice performance tests
       run: |
         chmod +x scripts/run-voice-tests.sh
         ./scripts/run-voice-tests.sh performance
-        
+
     - name: Upload performance test results
       uses: actions/upload-artifact@v3
       with:
@@ -178,38 +178,38 @@ jobs:
     strategy:
       matrix:
         persona: [grandma_rose, maya, alex, dr_sarah, default]
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Cache pip dependencies
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-voice-${{ hashFiles('requirements.txt') }}
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-mock
-        
+
     - name: Create persona test environment
       run: |
         mkdir -p tests/voice/data
         mkdir -p ~/.local/share/nix-humanity/voice/models
-        
+
     - name: Run persona-specific voice tests
       run: |
         chmod +x scripts/run-voice-tests.sh
         ./scripts/run-voice-tests.sh persona --persona=${{ matrix.persona }}
-        
+
     - name: Upload persona test results
       uses: actions/upload-artifact@v3
       with:
@@ -220,35 +220,35 @@ jobs:
     name: Voice Security Tests
     runs-on: ubuntu-latest
     needs: voice-unit-tests
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio bandit safety
-        
+
     - name: Run security analysis on voice code
       run: |
         # Static security analysis
         bandit -r src/nix_for_humanity/voice/ -f json -o voice-security-report.json
-        
+
         # Dependency vulnerability check
         safety check --json --output voice-safety-report.json
-        
+
     - name: Run voice security tests
       run: |
         # Custom security tests for voice interface
         python -m pytest tests/voice/ -k "security" -v
-        
+
     - name: Upload security test results
       uses: actions/upload-artifact@v3
       with:
@@ -261,33 +261,33 @@ jobs:
     name: Voice Accessibility Tests
     runs-on: ubuntu-latest
     needs: voice-unit-tests
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio
-        
+
     - name: Install accessibility testing tools
       run: |
         # Install tools for accessibility testing
         sudo apt-get update
         sudo apt-get install -y espeak-ng speech-dispatcher
-        
+
     - name: Run voice accessibility tests
       run: |
         # Test screen reader compatibility, voice output clarity, etc.
         python -m pytest tests/voice/ -k "accessibility" -v
-        
+
     - name: Upload accessibility test results
       uses: actions/upload-artifact@v3
       with:
@@ -298,31 +298,31 @@ jobs:
     name: Voice Coverage Report
     runs-on: ubuntu-latest
     needs: [voice-unit-tests, voice-integration-tests]
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install coverage pytest pytest-cov
-        
+
     - name: Download coverage artifacts
       uses: actions/download-artifact@v3
-      
+
     - name: Generate comprehensive coverage report
       run: |
         # Combine coverage from all test runs
         coverage combine
         coverage report --fail-under=${{ env.COVERAGE_THRESHOLD }}
         coverage html -d voice-coverage-html
-        
+
     - name: Upload comprehensive coverage report
       uses: actions/upload-artifact@v3
       with:
@@ -334,21 +334,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [voice-integration-tests, voice-performance-tests, voice-security-tests]
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Download all test artifacts
       uses: actions/download-artifact@v3
-      
+
     - name: Analyze deployment readiness
       run: |
         python << 'EOF'
         import json
         import os
         import sys
-        
+
         def check_deployment_readiness():
             """Check if voice interface is ready for deployment."""
             checks = {
@@ -358,30 +358,30 @@ jobs:
                 'security_tests': False,
                 'coverage_threshold': False
             }
-            
+
             # Check for test result artifacts
             artifacts_dir = '.'
-            
+
             # Check unit tests
             if os.path.exists('voice-unit-tests'):
                 checks['unit_tests'] = True
                 print("✅ Unit tests passed")
-            
-            # Check integration tests  
+
+            # Check integration tests
             if os.path.exists('voice-integration-tests'):
                 checks['integration_tests'] = True
                 print("✅ Integration tests passed")
-            
+
             # Check performance tests
             if os.path.exists('voice-performance-results'):
                 checks['performance_tests'] = True
                 print("✅ Performance tests passed")
-            
+
             # Check security tests
             if os.path.exists('voice-security-results'):
                 checks['security_tests'] = True
                 print("✅ Security tests passed")
-            
+
             # Overall readiness
             if all(checks.values()):
                 print("\n🚀 Voice interface is ready for deployment!")
@@ -390,7 +390,7 @@ jobs:
                 print(f"\n❌ Voice interface not ready for deployment")
                 print(f"Failed checks: {[k for k, v in checks.items() if not v]}")
                 sys.exit(1)
-        
+
         check_deployment_readiness()
         EOF
 
@@ -399,7 +399,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [voice-deployment-readiness]
     if: always()
-    
+
     steps:
     - name: Report CI Results
       run: |

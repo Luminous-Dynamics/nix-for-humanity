@@ -69,16 +69,16 @@ poetry run pyinstaller \
 # Fallback: Create a portable package
 if [ ! -f "dist/luminous-nix" ]; then
     echo "📦 Creating portable package..."
-    
+
     mkdir -p dist-standalone/luminous-nix-v0.4.0
-    
+
     # Copy essential files
     cp -r src/luminous_nix dist-standalone/luminous-nix-v0.4.0/
     cp -r bin dist-standalone/luminous-nix-v0.4.0/
     cp pyproject.toml dist-standalone/luminous-nix-v0.4.0/
     cp README.md dist-standalone/luminous-nix-v0.4.0/
     cp LICENSE dist-standalone/luminous-nix-v0.4.0/
-    
+
     # Create run script
     cat > dist-standalone/luminous-nix-v0.4.0/luminous-nix << 'EOF'
 #!/usr/bin/env python3
@@ -93,14 +93,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "luminous_nix"))
 from luminous_nix.cli import main
 main()
 EOF
-    
+
     chmod +x dist-standalone/luminous-nix-v0.4.0/luminous-nix
-    
+
     # Create archive
     cd dist-standalone
     tar czf luminous-nix-v0.4.0-standalone.tar.gz luminous-nix-v0.4.0
     cd ..
-    
+
     echo "✅ Portable package created: dist-standalone/luminous-nix-v0.4.0-standalone.tar.gz"
 else
     echo "✅ Standalone executable created: dist/luminous-nix"
@@ -119,7 +119,7 @@ cat > dist-standalone/RELEASE-v0.4.0.md << 'EOF'
 ### <1ms Average Response Time!
 - **Search operations**: 0.003ms average (3000x faster)
 - **Package info**: <0.001ms (instant from cache)
-- **List operations**: 0.001ms 
+- **List operations**: 0.001ms
 - **Cached searches**: 0.0002ms (5000x faster)
 
 ### Key Features

@@ -70,9 +70,7 @@ class LLMIntentRecognizer:
 
         return pattern_intent
 
-    def _llm_classify(
-        self, text: str, context: dict | None = None
-    ) -> Intent | None:
+    def _llm_classify(self, text: str, context: dict | None = None) -> Intent | None:
         """Use LLM to classify intent."""
 
         prompt = self._build_classification_prompt(text)
@@ -80,16 +78,17 @@ class LLMIntentRecognizer:
         try:
             # Use our Ollama client's process_query method
             response = self.llm_client.process_query(
-                text, 
-                context=json.dumps(context) if context else None
+                text, context=json.dumps(context) if context else None
             )
 
             # Use the structured response from Ollama
             if response.confidence > 0.7:
                 intent_data = {
-                    "type": self._map_intent_string_to_type(response.intent or "unknown"),
+                    "type": self._map_intent_string_to_type(
+                        response.intent or "unknown"
+                    ),
                     "entities": response.entities or {},
-                    "confidence": response.confidence
+                    "confidence": response.confidence,
                 }
             else:
                 intent_data = None
@@ -106,7 +105,7 @@ class LLMIntentRecognizer:
             logger.debug(f"LLM intent classification error: {e}")
 
         return None
-    
+
     def _map_intent_string_to_type(self, intent_str: str) -> IntentType:
         """Map string intent to IntentType enum."""
         intent_map = {
@@ -122,9 +121,9 @@ class LLMIntentRecognizer:
             "status": IntentType.CHECK_STATUS,
             "config": IntentType.CONFIG_SYSTEM,
             "help": IntentType.HELP,
-            "unknown": IntentType.UNKNOWN
+            "unknown": IntentType.UNKNOWN,
         }
-        
+
         return intent_map.get(intent_str.lower(), IntentType.UNKNOWN)
 
     def _build_classification_prompt(self, text: str) -> str:

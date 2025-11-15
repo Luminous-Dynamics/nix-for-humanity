@@ -66,7 +66,7 @@ git push origin main
    - Add website: https://luminous-dynamics.org
 3. **Create Issue Templates**:
    - Bug report template
-   - Feature request template  
+   - Feature request template
    - Persona feedback template
 4. **Update GitHub Project Board**:
    - Create "Week 3-4 Sprint" milestone

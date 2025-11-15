@@ -45,7 +45,7 @@
 **Architecture**:
 ```
 Layer 1: Intent Recognition (pure functions)
-Layer 2: Command Building (pure functions)  
+Layer 2: Command Building (pure functions)
 Layer 3: Execution (with --dry-run, confirmations)
 ```
 
@@ -189,7 +189,7 @@ Voice → TS Intent Engine → Rust Command Builder → NixOS
 
 ### Response Times
 - Voice recognition: <500ms
-- Intent parsing: <100ms  
+- Intent parsing: <100ms
 - Command generation: <50ms
 - Total response: <2000ms
 

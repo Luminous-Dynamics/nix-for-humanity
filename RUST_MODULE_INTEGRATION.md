@@ -1,7 +1,7 @@
 # 🪨 Rust Module Integration with PyO3
 
-**Status**: ✅ Foundation Complete  
-**Performance**: 10-100x improvement for critical operations  
+**Status**: ✅ Foundation Complete
+**Performance**: 10-100x improvement for critical operations
 **Integration**: Seamless Python bindings via PyO3
 
 ## Overview

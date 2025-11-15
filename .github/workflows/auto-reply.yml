@@ -12,7 +12,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-    
+
     steps:
     - name: Auto Reply to Issue
       if: github.event_name == 'issues'
@@ -21,26 +21,26 @@ jobs:
         script: |
           const issueComment = `
           👋 Thanks for opening this issue, @${context.payload.issue.user.login}!
-          
+
           I'm actively working on Luminous Nix and will review your issue soon. In the meantime:
-          
+
           - 📖 Check our [documentation](https://github.com/Luminous-Dynamics/luminous-nix/tree/main/docs)
           - 💬 Join the discussion in [GitHub Discussions](https://github.com/Luminous-Dynamics/luminous-nix/discussions)
           - 🐛 If this is a bug, please include:
             - Your NixOS version
             - Steps to reproduce
             - Any error messages
-          
+
           Building in public means your feedback directly shapes this project. Thank you for being part of the journey!
           `;
-          
+
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: issueComment
           });
-    
+
     - name: Auto Reply to PR
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v6
@@ -48,24 +48,24 @@ jobs:
         script: |
           const prComment = `
           🎉 Thank you for your contribution, @${context.payload.pull_request.user.login}!
-          
+
           I'll review your PR as soon as possible. Please ensure:
-          
+
           - [ ] Tests pass (run \`pytest tests/\`)
           - [ ] Code follows our style guide
           - [ ] Documentation is updated if needed
           - [ ] Commit messages are descriptive
-          
+
           This project uses the Trinity Development Model - human creativity enhanced by AI assistance. Your contribution is valued!
           `;
-          
+
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: prComment
           });
-    
+
     - name: Add Labels
       if: github.event_name == 'issues'
       uses: actions/github-script@v6
@@ -74,7 +74,7 @@ jobs:
           const labels = [];
           const title = context.payload.issue.title.toLowerCase();
           const body = (context.payload.issue.body || '').toLowerCase();
-          
+
           if (title.includes('bug') || body.includes('error') || body.includes('broken')) {
             labels.push('bug');
           }
@@ -87,7 +87,7 @@ jobs:
           if (body.includes('help wanted') || body.includes('question')) {
             labels.push('question');
           }
-          
+
           if (labels.length > 0) {
             github.rest.issues.addLabels({
               issue_number: context.issue.number,

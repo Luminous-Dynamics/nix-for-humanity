@@ -76,9 +76,7 @@ class ConversationState:
     - Session management
     """
 
-    def __init__(
-        self, state_dir: Path | None = None, session_id: str | None = None
-    ):
+    def __init__(self, state_dir: Path | None = None, session_id: str | None = None):
         """Initialize conversation state manager"""
         self.state_dir = state_dir or (
             Path.home() / ".local/state/luminous-nix/conversations"

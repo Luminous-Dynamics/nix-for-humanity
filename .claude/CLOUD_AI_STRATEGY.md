@@ -93,7 +93,7 @@ Multi-language → Cloud AI (better support)
 ### Risk: Privacy concerns
 **Mitigation**: Aggressive sanitization, audit trails, opt-in only
 
-### Risk: Cost overruns  
+### Risk: Cost overruns
 **Mitigation**: Cost estimates, daily limits, intelligent routing
 
 ### Risk: Internet dependency

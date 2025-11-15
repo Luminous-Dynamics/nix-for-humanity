@@ -6,10 +6,9 @@ Intelligent migration that preserves functionality while modernizing
 
 import logging
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set, Any
 from dataclasses import dataclass
-from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class MigrationAnalysis:
     """Analysis of configuration for flake migration"""
 
     config_type: str  # 'simple', 'modular', 'complex'
-    current_structure: Dict[str, Any]
+    current_structure: dict[str, Any]
 
     # Detected patterns
     has_overlays: bool
@@ -31,13 +30,13 @@ class MigrationAnalysis:
     # Migration recommendations
     migration_complexity: str  # 'trivial', 'moderate', 'complex'
     estimated_effort_hours: float
-    breaking_changes: List[str]
-    benefits: List[str]
+    breaking_changes: list[str]
+    benefits: list[str]
 
     # Generated flake
     flake_nix: str
-    inputs_required: Dict[str, str]
-    migration_commands: List[str]
+    inputs_required: dict[str, str]
+    migration_commands: list[str]
 
     confidence: float
 
@@ -184,7 +183,7 @@ class FlakeMigrationAssistant:
 
     def migrate_to_flake(
         self, config_path: Optional[str] = None, output_dir: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform actual migration to flake
 
@@ -230,7 +229,7 @@ class FlakeMigrationAssistant:
                 "suggestions": self._get_migration_suggestions(),
             }
 
-    def validate_flake(self, flake_path: str = ".") -> Dict[str, Any]:
+    def validate_flake(self, flake_path: str = ".") -> dict[str, Any]:
         """Validate a flake configuration"""
         try:
             # Check flake syntax
@@ -261,13 +260,13 @@ class FlakeMigrationAssistant:
             logger.error(f"Flake validation failed: {e}")
             return {"valid": False, "error": str(e)}
 
-    def suggest_improvements(self, flake_path: str = ".") -> List[str]:
+    def suggest_improvements(self, flake_path: str = ".") -> list[str]:
         """Suggest improvements for existing flake"""
         suggestions = []
 
         try:
             # Read flake
-            with open(f"{flake_path}/flake.nix", "r") as f:
+            with open(f"{flake_path}/flake.nix") as f:
                 content = f.read()
 
             # Check for pinning
@@ -304,7 +303,7 @@ class FlakeMigrationAssistant:
     def _read_config(self, config_path: str) -> str:
         """Read configuration file"""
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 return f.read()
         except:
             # Return example config for demo
@@ -312,20 +311,20 @@ class FlakeMigrationAssistant:
 { config, pkgs, ... }:
 {
   imports = [ ./hardware-configuration.nix ];
-  
+
   boot.loader.systemd-boot.enable = true;
   networking.hostName = "nixos";
-  
+
   environment.systemPackages = with pkgs; [
     vim wget firefox
   ];
-  
+
   services.openssh.enable = true;
   system.stateVersion = "24.05";
 }
 """
 
-    def _analyze_structure(self, content: str) -> Dict[str, Any]:
+    def _analyze_structure(self, content: str) -> dict[str, Any]:
         """Analyze configuration structure"""
         structure = {
             "type": "simple",
@@ -383,7 +382,7 @@ class FlakeMigrationAssistant:
 
     def _generate_flake(
         self,
-        structure: Dict,
+        structure: dict,
         has_overlays: bool,
         has_custom_packages: bool,
         has_home_manager: bool,
@@ -446,7 +445,7 @@ class FlakeMigrationAssistant:
 
     def _determine_inputs(
         self, has_home_manager: bool, has_secrets: bool, has_custom_packages: bool
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Determine required flake inputs"""
         inputs = {"nixpkgs": self.standard_inputs["nixpkgs"].url}
 
@@ -461,7 +460,7 @@ class FlakeMigrationAssistant:
 
         return inputs
 
-    def _generate_migration_commands(self, config_path: str) -> List[str]:
+    def _generate_migration_commands(self, config_path: str) -> list[str]:
         """Generate commands for migration"""
         return [
             "# 1. Enable flakes",
@@ -484,7 +483,7 @@ class FlakeMigrationAssistant:
             "sudo nixos-rebuild switch --flake /etc/nixos#default",
         ]
 
-    def _identify_breaking_changes(self, structure: Dict) -> List[str]:
+    def _identify_breaking_changes(self, structure: dict) -> list[str]:
         """Identify potential breaking changes"""
         changes = []
 
@@ -496,7 +495,7 @@ class FlakeMigrationAssistant:
 
         return changes
 
-    def _list_migration_benefits(self) -> List[str]:
+    def _list_migration_benefits(self) -> list[str]:
         """List benefits of migrating to flakes"""
         return [
             "Reproducible builds with lock file",
@@ -546,19 +545,19 @@ class FlakeMigrationAssistant:
         """Check flake outputs validity"""
         return True
 
-    def _check_flake_evaluation(self, flake_path: str) -> Dict[str, Any]:
+    def _check_flake_evaluation(self, flake_path: str) -> dict[str, Any]:
         """Check if flake evaluates correctly"""
         return {"success": True, "time_ms": 150}
 
-    def _get_flake_warnings(self, flake_path: str) -> List[str]:
+    def _get_flake_warnings(self, flake_path: str) -> list[str]:
         """Get flake warnings"""
         return []
 
-    def _get_flake_suggestions(self, flake_path: str) -> List[str]:
+    def _get_flake_suggestions(self, flake_path: str) -> list[str]:
         """Get flake improvement suggestions"""
         return ["Consider pinning nixpkgs to specific revision"]
 
-    def _get_next_steps(self) -> List[str]:
+    def _get_next_steps(self) -> list[str]:
         """Get next steps after migration"""
         return [
             "Test the new flake configuration",
@@ -567,7 +566,7 @@ class FlakeMigrationAssistant:
             "Set up CI/CD if needed",
         ]
 
-    def _get_migration_suggestions(self) -> List[str]:
+    def _get_migration_suggestions(self) -> list[str]:
         """Get migration suggestions on failure"""
         return [
             "Ensure flakes are enabled in nix.conf",

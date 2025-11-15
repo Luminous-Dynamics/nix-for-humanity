@@ -198,7 +198,7 @@ impl PackageIndex {
 class NixSearchService:
     def __init__(self):
         self.rust_available = self._try_import_rust()
-    
+
     def _try_import_rust(self):
         try:
             import nix_native
@@ -206,7 +206,7 @@ class NixSearchService:
             return True
         except ImportError:
             return False
-    
+
     def search(self, query: str) -> List[Package]:
         if self.rust_available:
             # Fast path: Rust
@@ -238,7 +238,7 @@ from concurrent.futures import ThreadPoolExecutor
 class HybridExecutor:
     def __init__(self):
         self.thread_pool = ThreadPoolExecutor(max_workers=4)
-    
+
     async def fast_operation(self, query):
         # Run Rust in thread pool
         loop = asyncio.get_event_loop()
@@ -327,12 +327,12 @@ def search_packages(query):
     # Try fast path
     if RUST_AVAILABLE:
         return nix_native.fast_search(query)
-    
+
     # Try JSON (10x faster)
     result = subprocess.run(["nix", "search", query, "--json"])
     if result.returncode == 0:
         return json.loads(result.stdout)
-    
+
     # Final fallback
     return parse_text_output(result.stdout)
 ```

@@ -78,11 +78,11 @@ class npyjs {
     float16ToFloat32Array(float16Array) {
         const length = float16Array.length;
         const float32Array = new Float32Array(length);
-        
+
         for (let i = 0; i < length; i++) {
             float32Array[i] = npyjs.float16ToFloat32(float16Array[i]);
         }
-        
+
         return float32Array;
     }
 

@@ -249,7 +249,7 @@ Want to improve these features? See [CONTRIBUTING.md](../CONTRIBUTING.md)
 Phase 1 brings revolutionary AI-powered intelligence to NixOS system management:
 
 - **Rollback Intelligence**: Never guess which generation is safe again
-- **Storage Optimization**: Free up space without breaking your system  
+- **Storage Optimization**: Free up space without breaking your system
 - **Security Auditing**: Proactive vulnerability detection and hardening
 
 These features work offline, respond in milliseconds, and integrate seamlessly with existing NixOS workflows. The future of NixOS is here, and it's intelligent! 🚀

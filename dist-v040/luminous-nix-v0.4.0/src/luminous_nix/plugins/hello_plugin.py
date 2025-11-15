@@ -107,11 +107,11 @@ Available commands:
   hello         - Simple greeting
   greet         - Friendly greeting
   welcome       - Welcome message
-  
+
 Options:
   --technical   - Technical greeting
   --warmly      - Extra warm greeting
-  
+
 Examples:
   ask-nix hello
   ask-nix greet --warmly

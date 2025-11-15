@@ -5,34 +5,29 @@ Production-ready training system with real NixOS data integration
 
 This pipeline provides:
 1. Advanced data generation from NixOS operations
-2. Multi-task learning with uncertainty quantification  
+2. Multi-task learning with uncertainty quantification
 3. Real-time training monitoring and validation
 4. Model versioning and deployment automation
 5. Integration with existing HRM modules
 """
 
+import json
+import logging
+import subprocess
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset, random_split
-from torch.utils.tensorboard import SummaryWriter
-import numpy as np
-import json
-import time
-import logging
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any, Union
-from dataclasses import dataclass, asdict
-import subprocess
-import re
-from collections import defaultdict
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import classification_report, confusion_matrix
-from datetime import datetime
 import yaml
-import pickle
+from torch.utils.data import DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 # Import existing HRM modules
@@ -44,8 +39,7 @@ except ImportError:
     import sys
 
     sys.path.append(str(Path(__file__).parent))
-    from hrm_neural import HRMNeuralNetwork, NeuralHRM
-    from hrm_reasoner_v2 import HierarchicalReasoningModel
+    from hrm_neural import HRMNeuralNetwork
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -139,7 +133,7 @@ class NixOSDataGenerator:
             "evaluation_error": "Nix evaluation failures",
         }
 
-    def generate_real_nixos_data(self, num_samples: int = 1000) -> List[Dict[str, Any]]:
+    def generate_real_nixos_data(self, num_samples: int = 1000) -> list[dict[str, Any]]:
         """Generate training data from real NixOS operations"""
         logger.info(f"🏭 Generating {num_samples} real NixOS training samples...")
 
@@ -160,7 +154,7 @@ class NixOSDataGenerator:
         logger.info(f"✅ Generated {len(samples)} training samples")
         return samples
 
-    def _generate_package_queries(self, num_samples: int) -> List[Dict[str, Any]]:
+    def _generate_package_queries(self, num_samples: int) -> list[dict[str, Any]]:
         """Generate realistic package installation queries"""
         # Get actual package list from nixpkgs
         try:
@@ -216,7 +210,7 @@ class NixOSDataGenerator:
 
         return samples
 
-    def _generate_config_queries(self, num_samples: int) -> List[Dict[str, Any]]:
+    def _generate_config_queries(self, num_samples: int) -> list[dict[str, Any]]:
         """Generate configuration management queries"""
         config_templates = [
             "setup {service} service",
@@ -279,7 +273,7 @@ class NixOSDataGenerator:
 
         return samples
 
-    def _generate_error_scenarios(self, num_samples: int) -> List[Dict[str, Any]]:
+    def _generate_error_scenarios(self, num_samples: int) -> list[dict[str, Any]]:
         """Generate error resolution scenarios"""
         error_templates = [
             "error: {error_type} when {action}",
@@ -331,7 +325,7 @@ class NixOSDataGenerator:
 
         return samples
 
-    def _generate_optimization_queries(self, num_samples: int) -> List[Dict[str, Any]]:
+    def _generate_optimization_queries(self, num_samples: int) -> list[dict[str, Any]]:
         """Generate system optimization queries"""
         optimization_templates = [
             "optimize {aspect} performance",
@@ -374,7 +368,7 @@ class NixOSDataGenerator:
 
         return samples
 
-    def _get_common_packages(self) -> List[str]:
+    def _get_common_packages(self) -> list[str]:
         """Fallback list of common NixOS packages"""
         return [
             "firefox",
@@ -468,7 +462,7 @@ class NixOSDataGenerator:
         else:
             return "low"
 
-    def _generate_reasoning_steps(self, query: str, strategy: str) -> List[str]:
+    def _generate_reasoning_steps(self, query: str, strategy: str) -> list[str]:
         """Generate reasoning steps for query resolution"""
         steps_map = {
             "direct_install": [
@@ -522,7 +516,7 @@ environment.systemPackages = with pkgs; [
 
         return solutions.get(strategy, f"# Solution for {item} using {strategy}")
 
-    def _generate_error_reasoning(self, error_type: str, query: str) -> List[str]:
+    def _generate_error_reasoning(self, error_type: str, query: str) -> list[str]:
         """Generate reasoning steps for error resolution"""
         error_reasoning = {
             "build_failure": [
@@ -563,7 +557,7 @@ environment.systemPackages = with pkgs; [
             error_type, "Research error in NixOS documentation and community resources"
         )
 
-    def _generate_optimization_reasoning(self, query: str) -> List[str]:
+    def _generate_optimization_reasoning(self, query: str) -> list[str]:
         """Generate reasoning for optimization queries"""
         return [
             "Analyze current system performance",
@@ -589,7 +583,7 @@ class EnhancedNixOSDataset(Dataset):
 
     def __init__(
         self,
-        data: List[Dict],
+        data: list[dict],
         config: TrainingConfig,
         tokenizer=None,
         augment: bool = True,
@@ -618,7 +612,7 @@ class EnhancedNixOSDataset(Dataset):
 
         return self._tokenize_text
 
-    def _tokenize_text(self, text: str, max_length: int = 200) -> List[int]:
+    def _tokenize_text(self, text: str, max_length: int = 200) -> list[int]:
         """Tokenize text to indices"""
         tokens = [self.char_to_idx.get(c, 0) for c in text[:max_length]]
         tokens += [0] * (max_length - len(tokens))  # Pad
@@ -666,7 +660,7 @@ class EnhancedNixOSDataset(Dataset):
             "metadata": sample.get("metadata", {}),
         }
 
-    def _augment_sample(self, sample: Dict) -> Dict:
+    def _augment_sample(self, sample: dict) -> dict:
         """Apply data augmentation techniques"""
         augmented = sample.copy()
 
@@ -771,8 +765,8 @@ class ProductionHRMTrainer:
                 nn.init.constant_(param, 0)
 
     def create_data_loaders(
-        self, train_data: List[Dict], val_data: List[Dict], test_data: List[Dict] = None
-    ) -> Tuple:
+        self, train_data: list[dict], val_data: list[dict], test_data: list[dict] = None
+    ) -> tuple:
         """Create data loaders for training"""
         # Create datasets
         train_dataset = EnhancedNixOSDataset(train_data, self.config, augment=True)
@@ -854,7 +848,7 @@ class ProductionHRMTrainer:
         train_loader: DataLoader,
         optimizer: optim.Optimizer,
         scheduler=None,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Train for one epoch"""
         model.train()
 
@@ -982,7 +976,7 @@ class ProductionHRMTrainer:
 
         return total_loss
 
-    def validate(self, model: nn.Module, val_loader: DataLoader) -> Dict[str, float]:
+    def validate(self, model: nn.Module, val_loader: DataLoader) -> dict[str, float]:
         """Validate model performance"""
         model.eval()
 
@@ -1048,7 +1042,7 @@ class ProductionHRMTrainer:
         model: nn.Module,
         optimizer: optim.Optimizer,
         epoch: int,
-        metrics: Dict[str, float],
+        metrics: dict[str, float],
         dataset: EnhancedNixOSDataset,
         is_best: bool = False,
     ):
@@ -1086,8 +1080,8 @@ class ProductionHRMTrainer:
             yaml.dump(asdict(self.config), f, default_flow_style=False)
 
     def train(
-        self, train_data: List[Dict], val_data: List[Dict], test_data: List[Dict] = None
-    ) -> Dict[str, Any]:
+        self, train_data: list[dict], val_data: list[dict], test_data: list[dict] = None
+    ) -> dict[str, Any]:
         """Full training pipeline"""
 
         logger.info("🚀 Starting HRM Production Training")
@@ -1186,7 +1180,7 @@ class ProductionHRMTrainer:
 
         return final_results
 
-    def _generate_training_report(self, results: Dict, dataset: EnhancedNixOSDataset):
+    def _generate_training_report(self, results: dict, dataset: EnhancedNixOSDataset):
         """Generate comprehensive training report"""
         report_path = self.model_dir / "training_report.md"
 

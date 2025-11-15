@@ -37,7 +37,7 @@ pip install SpeechRecognition pyttsx3
 # Optional: Install Whisper for better recognition
 pip install openai-whisper
 
-# Optional: Install Piper for better synthesis  
+# Optional: Install Piper for better synthesis
 pip install piper-tts
 ```
 
@@ -143,7 +143,7 @@ voice.enter_deep_focus()
 voice.speak("Update available", InterruptionLevel.NORMAL)  # Queued
 voice.speak("System critical!", InterruptionLevel.CRITICAL)  # Immediate
 
-# Exit focus mode  
+# Exit focus mode
 voice.exit_deep_focus()
 ```
 
@@ -151,7 +151,7 @@ voice.exit_deep_focus()
 - `NONE` - No interruption allowed
 - `GENTLE` - Wait for natural pause
 - `NORMAL` - Standard interruption
-- `URGENT` - Important but not critical  
+- `URGENT` - Important but not critical
 - `CRITICAL` - Must interrupt immediately
 
 ## 🎛️ Voice Control Commands
@@ -267,7 +267,7 @@ def my_processor(text: str) -> str:
     """Custom voice command processor"""
     if "weather" in text.lower():
         return "I can't check weather, but I can help with NixOS!"
-    
+
     # Fallback to default processing
     return bridge.process_voice_command(text)
 

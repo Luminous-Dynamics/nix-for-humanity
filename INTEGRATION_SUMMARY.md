@@ -82,7 +82,7 @@ python VERIFY_STATUS.py
 
 # Expected results:
 # Modules: 7/8 (87%)
-# Commands: 3/4 (75%)  
+# Commands: 3/4 (75%)
 # Performance: ~2000ms
 ```
 

@@ -16,7 +16,7 @@ With our 25x Normal operation using gemma3:270m, we have a powerful LLM system t
 ./bin/ask-nix "set up password management"          # → bitwarden
 ```
 
-**Strategic Value**: 
+**Strategic Value**:
 - Reduces NixOS learning curve by 80%
 - Makes NixOS accessible to non-technical users
 - Grandma Rose can finally use NixOS!
@@ -157,12 +157,12 @@ compound_mappings = {
     "code editor": "vscode",
     "python ide": "pycharm-community",
     "terminal emulator": "alacritty",
-    
+
     # Productivity
     "note taking": "obsidian",
     "mind mapping": "xmind",
     "task manager": "todoist",
-    
+
     # System
     "system monitor": "htop",
     "disk usage": "ncdu",
@@ -252,7 +252,7 @@ categories = {
 # Based on time and patterns
 if time.hour == 9 and day == "Monday":
     suggest("Start your week? Update system and packages?")
-    
+
 if user.installs_pattern(["vim", "tmux", "git"]):
     suggest("Looks like dev setup. Add language servers?")
 ```

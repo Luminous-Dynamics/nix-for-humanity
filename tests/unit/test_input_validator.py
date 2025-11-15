@@ -12,15 +12,16 @@ Tests all security validation functionality including:
 - Display sanitization
 """
 
-from unittest.mock import Mock, MagicMock, patch, call
 import os
 import sys
 import unittest
+from unittest.mock import MagicMock, patch
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from luminous_nix.security.input_validator import InputValidator, SecurityContext
+
 
 class TestInputValidator(unittest.TestCase):
     """Test the InputValidator class."""
@@ -426,6 +427,7 @@ class TestInputValidator(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertEqual(result["sanitized_input"], "install firefox")
 
+
 class TestSecurityContext(unittest.TestCase):
     """Test the SecurityContext class."""
 
@@ -480,6 +482,7 @@ class TestSecurityContext(unittest.TestCase):
         self.assertTrue(any("ValueError" in str(call) for call in error_calls))
         self.assertTrue(any("Test error" in str(call) for call in error_calls))
 
+
 class TestInputValidatorDemo(unittest.TestCase):
     """Test the demo function."""
 
@@ -499,6 +502,7 @@ class TestInputValidatorDemo(unittest.TestCase):
         self.assertTrue(any("Security Input Validator Demo" in out for out in outputs))
         self.assertTrue(any("✅ Valid" in out for out in outputs))
         self.assertTrue(any("❌ Invalid" in out for out in outputs))
+
 
 if __name__ == "__main__":
     unittest.main()

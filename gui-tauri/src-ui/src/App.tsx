@@ -84,7 +84,7 @@ function App() {
   useEffect(() => {
     // Load initial system health
     loadSystemHealth();
-    
+
     // Refresh every 30 seconds
     const interval = setInterval(loadSystemHealth, 30000);
     return () => clearInterval(interval);
@@ -139,7 +139,7 @@ function App() {
             )}
           </Toolbar>
         </AppBar>
-        
+
         <Drawer
           sx={{
             width: drawerWidth,
@@ -182,7 +182,7 @@ function App() {
             ))}
           </List>
         </Drawer>
-        
+
         <Box
           component="main"
           sx={{

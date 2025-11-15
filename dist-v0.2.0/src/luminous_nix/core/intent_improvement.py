@@ -130,7 +130,7 @@ class IntentLearningDatabase:
             conn.execute(
                 """
                 INSERT INTO feedback (
-                    query, recognized_intent, correct_intent, 
+                    query, recognized_intent, correct_intent,
                     confidence, timestamp, user_satisfaction, notes
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
@@ -184,7 +184,7 @@ class IntentLearningDatabase:
                 conn.execute(
                     """
                     INSERT INTO pattern_metrics (
-                        pattern, intent_type, matches, correct, 
+                        pattern, intent_type, matches, correct,
                         total_confidence, total_latency_ms, last_updated
                     ) VALUES (?, ?, 1, 1, ?, ?, ?)
                     ON CONFLICT(pattern) DO UPDATE SET
@@ -423,7 +423,7 @@ class IntentImprovementDashboard:
             # Get recent accuracy
             recent = conn.execute(
                 """
-                SELECT 
+                SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN recognized_intent = correct_intent THEN 1 ELSE 0 END) as correct
                 FROM feedback

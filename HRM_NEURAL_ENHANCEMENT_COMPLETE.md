@@ -9,7 +9,7 @@ We have successfully enhanced the HRM (Hierarchical Reasoning Model) system with
 ### Phase 1: Unconsidered Aspects Discovery
 Identified THREE breakthrough capabilities missing from HRM:
 1. **Uncertainty Quantification** - Model knows what it doesn't know
-2. **Counterfactual Reasoning** - What-if analysis and failure explanation  
+2. **Counterfactual Reasoning** - What-if analysis and failure explanation
 3. **Meta-Learning** - Learning from 3-5 examples instead of 1000s
 
 ### Phase 2: PyTorch Integration
@@ -112,7 +112,7 @@ result = hrm.predict("install firefox")
 ```bash
 # Collect real queries from:
 - NixOS forums
-- GitHub issues  
+- GitHub issues
 - Discord/Matrix logs
 - User submissions
 Target: 10,000 diverse queries

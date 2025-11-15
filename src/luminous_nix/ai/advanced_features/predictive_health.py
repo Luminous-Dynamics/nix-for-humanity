@@ -5,15 +5,13 @@ Uses historical data and patterns to forecast system health issues
 """
 
 import logging
-import json
 import sqlite3
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
+import statistics
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-import statistics
-import math
+from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -76,21 +74,21 @@ class SystemHealthReport:
     health_score: float  # 0-100
 
     # Current metrics
-    current_metrics: Dict[HealthMetric, float]
+    current_metrics: dict[HealthMetric, float]
 
     # Predictions
-    predictions: List[HealthPrediction]
+    predictions: list[HealthPrediction]
 
     # Issues detected
-    immediate_issues: List[str]
-    predicted_issues: List[Tuple[str, datetime]]  # (issue, predicted_time)
+    immediate_issues: list[str]
+    predicted_issues: list[tuple[str, datetime]]  # (issue, predicted_time)
 
     # Recommendations
-    preventive_actions: List[str]
-    optimization_suggestions: List[str]
+    preventive_actions: list[str]
+    optimization_suggestions: list[str]
 
     # Risk assessment
-    risk_factors: Dict[str, float]  # factor: risk_score
+    risk_factors: dict[str, float]  # factor: risk_score
     estimated_time_to_failure: Optional[timedelta]
 
     confidence: float
@@ -260,7 +258,7 @@ class PredictiveHealthMonitor:
 
         cursor.execute(
             """
-            CREATE INDEX IF NOT EXISTS idx_metric_timestamp 
+            CREATE INDEX IF NOT EXISTS idx_metric_timestamp
             ON health_metrics(metric, timestamp)
         """
         )
@@ -268,7 +266,7 @@ class PredictiveHealthMonitor:
         conn.commit()
         conn.close()
 
-    def _collect_current_metrics(self) -> Dict[HealthMetric, float]:
+    def _collect_current_metrics(self) -> dict[HealthMetric, float]:
         """Collect current system health metrics"""
         metrics = {}
 
@@ -349,7 +347,7 @@ class PredictiveHealthMonitor:
 
         return metrics
 
-    def _store_metrics(self, metrics: Dict[HealthMetric, float]):
+    def _store_metrics(self, metrics: dict[HealthMetric, float]):
         """Store metrics in database"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -367,7 +365,7 @@ class PredictiveHealthMonitor:
         conn.commit()
         conn.close()
 
-    def _load_historical_data(self) -> Dict[HealthMetric, List[Dict]]:
+    def _load_historical_data(self) -> dict[HealthMetric, list[dict]]:
         """Load historical health data"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -391,7 +389,7 @@ class PredictiveHealthMonitor:
         conn.close()
         return historical
 
-    def _load_metric_history(self, metric: HealthMetric) -> List[Dict]:
+    def _load_metric_history(self, metric: HealthMetric) -> list[dict]:
         """Load history for specific metric"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -415,9 +413,9 @@ class PredictiveHealthMonitor:
 
     def _generate_predictions(
         self,
-        historical: Dict[HealthMetric, List[Dict]],
-        current: Dict[HealthMetric, float],
-    ) -> List[HealthPrediction]:
+        historical: dict[HealthMetric, list[dict]],
+        current: dict[HealthMetric, float],
+    ) -> list[HealthPrediction]:
         """Generate predictions for all metrics"""
         predictions = []
 
@@ -427,7 +425,7 @@ class PredictiveHealthMonitor:
 
         return predictions
 
-    def _calculate_trend(self, history: List[Dict]) -> Tuple[float, float]:
+    def _calculate_trend(self, history: list[dict]) -> tuple[float, float]:
         """Calculate trend using linear regression"""
         if len(history) < 2:
             return 0.0, 0.0
@@ -459,7 +457,7 @@ class PredictiveHealthMonitor:
         return slope, max(0, min(1, confidence))
 
     def _assess_overall_status(
-        self, current: Dict[HealthMetric, float], predictions: List[HealthPrediction]
+        self, current: dict[HealthMetric, float], predictions: list[HealthPrediction]
     ) -> HealthStatus:
         """Assess overall system health status"""
         critical_count = 0
@@ -492,7 +490,7 @@ class PredictiveHealthMonitor:
             return HealthStatus.EXCELLENT
 
     def _calculate_health_score(
-        self, current: Dict[HealthMetric, float], predictions: List[HealthPrediction]
+        self, current: dict[HealthMetric, float], predictions: list[HealthPrediction]
     ) -> float:
         """Calculate overall health score (0-100)"""
         scores = []
@@ -514,8 +512,8 @@ class PredictiveHealthMonitor:
         return statistics.mean(scores) if scores else 50
 
     def _identify_immediate_issues(
-        self, current: Dict[HealthMetric, float]
-    ) -> List[str]:
+        self, current: dict[HealthMetric, float]
+    ) -> list[str]:
         """Identify immediate health issues"""
         issues = []
 
@@ -529,8 +527,8 @@ class PredictiveHealthMonitor:
         return issues
 
     def _identify_predicted_issues(
-        self, predictions: List[HealthPrediction]
-    ) -> List[Tuple[str, datetime]]:
+        self, predictions: list[HealthPrediction]
+    ) -> list[tuple[str, datetime]]:
         """Identify predicted future issues"""
         issues = []
 
@@ -545,9 +543,9 @@ class PredictiveHealthMonitor:
 
     def _generate_preventive_actions(
         self,
-        predictions: List[HealthPrediction],
-        predicted_issues: List[Tuple[str, datetime]],
-    ) -> List[str]:
+        predictions: list[HealthPrediction],
+        predicted_issues: list[tuple[str, datetime]],
+    ) -> list[str]:
         """Generate preventive action recommendations"""
         actions = []
 
@@ -565,8 +563,8 @@ class PredictiveHealthMonitor:
         return actions
 
     def _generate_optimizations(
-        self, current: Dict[HealthMetric, float], predictions: List[HealthPrediction]
-    ) -> List[str]:
+        self, current: dict[HealthMetric, float], predictions: list[HealthPrediction]
+    ) -> list[str]:
         """Generate optimization suggestions"""
         suggestions = []
 
@@ -582,8 +580,8 @@ class PredictiveHealthMonitor:
         return suggestions
 
     def _assess_risk_factors(
-        self, current: Dict[HealthMetric, float], predictions: List[HealthPrediction]
-    ) -> Dict[str, float]:
+        self, current: dict[HealthMetric, float], predictions: list[HealthPrediction]
+    ) -> dict[str, float]:
         """Assess risk factors"""
         risks = {}
 
@@ -604,7 +602,7 @@ class PredictiveHealthMonitor:
         return risks
 
     def _estimate_time_to_failure(
-        self, predictions: List[HealthPrediction]
+        self, predictions: list[HealthPrediction]
     ) -> Optional[timedelta]:
         """Estimate time until system failure"""
         critical_predictions = [p for p in predictions if p.risk_level == "high"]

@@ -114,7 +114,7 @@ const ConfigurationPage: React.FC = () => {
 
   const generateFromAI = async () => {
     if (!aiPrompt.trim()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -190,7 +190,7 @@ const ConfigurationPage: React.FC = () => {
               </Tooltip>
             </Box>
           </Box>
-          
+
           <TextField
             fullWidth
             multiline
@@ -206,7 +206,7 @@ const ConfigurationPage: React.FC = () => {
               },
             }}
           />
-          
+
           <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
             <Button
               variant="contained"
@@ -233,7 +233,7 @@ const ConfigurationPage: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Template Builder
           </Typography>
-          
+
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
@@ -251,7 +251,7 @@ const ConfigurationPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <TextField
@@ -270,7 +270,7 @@ const ConfigurationPage: React.FC = () => {
                 </Button>
               </Box>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="subtitle1" gutterBottom>
                 Selected Packages:
@@ -291,7 +291,7 @@ const ConfigurationPage: React.FC = () => {
                 )}
               </Box>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Button
                 variant="contained"
@@ -312,7 +312,7 @@ const ConfigurationPage: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             AI Configuration Generator
           </Typography>
-          
+
           <TextField
             fullWidth
             multiline
@@ -323,7 +323,7 @@ const ConfigurationPage: React.FC = () => {
             variant="outlined"
             sx={{ mb: 2 }}
           />
-          
+
           <Button
             variant="contained"
             startIcon={<AIIcon />}
@@ -333,7 +333,7 @@ const ConfigurationPage: React.FC = () => {
           >
             Generate with AI
           </Button>
-          
+
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Example prompts:

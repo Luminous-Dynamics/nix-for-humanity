@@ -90,9 +90,9 @@ def _is_complex_query(self, query: str) -> bool:
 ## 🔧 Fine-Tuning Opportunities
 
 ### Phase 1: NixOS Command Model
-**Base Model**: gemma3:270m or tinyllama:1.1b  
-**Dataset**: Common NixOS commands from manual  
-**Training Method**: Ollama Modelfile  
+**Base Model**: gemma3:270m or tinyllama:1.1b
+**Dataset**: Common NixOS commands from manual
+**Training Method**: Ollama Modelfile
 **Expected Outcome**: 5-30 seconds command generation
 
 ```dockerfile
@@ -106,15 +106,15 @@ PARAMETER top_p 0.5
 ```
 
 ### Phase 2: Configuration Generator
-**Base Model**: gemma3:1b or qwen2.5-coder:1.5b  
-**Dataset**: configuration.nix examples  
-**Training Tool**: Axolotl or LLaMA-Factory  
+**Base Model**: gemma3:1b or qwen2.5-coder:1.5b
+**Dataset**: configuration.nix examples
+**Training Tool**: Axolotl or LLaMA-Factory
 **Expected Outcome**: Valid Nix configs in <2s
 
 ### Phase 3: Error Resolution Specialist
-**Base Model**: deepseek-r1:1.5b  
-**Dataset**: NixOS errors + solutions from discourse/GitHub  
-**Training Tool**: Unsloth (works on consumer GPUs)  
+**Base Model**: deepseek-r1:1.5b
+**Dataset**: NixOS errors + solutions from discourse/GitHub
+**Training Tool**: Unsloth (works on consumer GPUs)
 **Expected Outcome**: Diagnostic reasoning with solutions
 
 ## 📦 Storage Optimization
@@ -147,7 +147,7 @@ Removes:
    ```bash
    # Extract from NixOS manual
    nix-build '<nixpkgs/nixos/release.nix>' -A manual.x86_64-linux
-   
+
    # Parse nixpkgs for package info
    nix-env -qaP > nixpkgs_packages.txt
    ```

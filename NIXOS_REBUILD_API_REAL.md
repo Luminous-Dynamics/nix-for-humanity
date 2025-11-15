@@ -85,8 +85,8 @@ remote = Remote(
 # Build remotely
 build_attr = models.BuildAttr(path="<nixpkgs/nixos>", attr="system")
 path = nix.build_remote(
-    "system", 
-    build_attr, 
+    "system",
+    build_attr,
     build_host=remote,
     realise_flags=None,
     instantiate_flags=None,
@@ -145,28 +145,28 @@ except NixOSRebuildError as e:
 class NativeNixAPI:
     def __init__(self):
         self.nix, self.models, self.Remote = self._setup_api()
-    
+
     def _setup_api(self):
         # Import nixos-rebuild-ng modules
         # ... (setup code) ...
         from nixos_rebuild import models, nix
         from nixos_rebuild.process import Remote
         return nix, models, Remote
-    
+
     def build_configuration(self, attribute="system"):
         build_attr = self.models.BuildAttr(
             path="<nixpkgs/nixos>",
             attr=attribute
         )
         return self.nix.build(attribute, build_attr)
-    
+
     def switch_to_configuration(self, path, action="switch"):
         action_map = {
             "switch": self.models.Action.SWITCH,
             "boot": self.models.Action.BOOT,
             "test": self.models.Action.TEST,
         }
-        
+
         self.nix.switch_to_configuration(
             path_to_config=path,
             action=action_map[action],

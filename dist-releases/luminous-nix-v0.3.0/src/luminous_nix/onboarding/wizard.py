@@ -73,7 +73,7 @@ I'm here to make NixOS simple and joyful for you.
 In the next 2 minutes, we'll:
 
   1. ✓ Set up your preferences
-  2. ✓ Test that everything works  
+  2. ✓ Test that everything works
   3. ✓ Complete your first task
   4. ✓ Celebrate your success!
 
@@ -99,7 +99,10 @@ Let's begin! 🚀
                 "NixOS": ("Checking for NixOS...", self._check_nixos()),
                 "Network": ("Testing network connectivity...", self._check_network()),
                 "Permissions": ("Checking sudo access...", self._check_permissions()),
-                "AI (Ollama)": ("Checking for AI capabilities...", self._check_ollama()),
+                "AI (Ollama)": (
+                    "Checking for AI capabilities...",
+                    self._check_ollama(),
+                ),
             }
 
             # Create a nice table for results
@@ -217,17 +220,19 @@ Let's begin! 🚀
 
             # AI preference if Ollama is available
             if self._check_ollama():
-                console.print(Panel(
-                    "[bold]AI Enhancement Available! 🤖[/bold]\n\n"
-                    "Ollama is installed! Enable AI features for:\n"
-                    "• Natural language understanding\n"
-                    "• Smart package suggestions\n"
-                    "• Error explanations\n\n"
-                    "[cyan]1.[/cyan] Yes, enable AI features\n"
-                    "[cyan]2.[/cyan] No, keep it simple\n"
-                    "[cyan]3.[/cyan] Ask me later",
-                    border_style="magenta"
-                ))
+                console.print(
+                    Panel(
+                        "[bold]AI Enhancement Available! 🤖[/bold]\n\n"
+                        "Ollama is installed! Enable AI features for:\n"
+                        "• Natural language understanding\n"
+                        "• Smart package suggestions\n"
+                        "• Error explanations\n\n"
+                        "[cyan]1.[/cyan] Yes, enable AI features\n"
+                        "[cyan]2.[/cyan] No, keep it simple\n"
+                        "[cyan]3.[/cyan] Ask me later",
+                        border_style="magenta",
+                    )
+                )
 
                 ai_choice = IntPrompt.ask(
                     "Enable AI features", choices=["1", "2", "3"], default=1
@@ -235,9 +240,13 @@ Let's begin! 🚀
                 self.user_data["ai_enabled"] = ai_choice == 1
 
                 if ai_choice == 1:
-                    console.print("[green]✓[/green] AI features [bold]enabled[/bold]! 🎉\n")
+                    console.print(
+                        "[green]✓[/green] AI features [bold]enabled[/bold]! 🎉\n"
+                    )
                 elif ai_choice == 2:
-                    console.print("[yellow]✓[/yellow] AI features [bold]disabled[/bold] (can enable later)\n")
+                    console.print(
+                        "[yellow]✓[/yellow] AI features [bold]disabled[/bold] (can enable later)\n"
+                    )
                 else:
                     console.print("[blue]✓[/blue] Will ask again later\n")
 
@@ -531,16 +540,12 @@ Happy Nix-ing! 🌊✨
         """Check if Ollama is available for AI features."""
         try:
             # Check if ollama command exists
-            result = subprocess.run(
-                ["which", "ollama"], capture_output=True, timeout=1
-            )
+            result = subprocess.run(["which", "ollama"], capture_output=True, timeout=1)
             if result.returncode != 0:
                 return False
 
             # Check if ollama is running
-            result = subprocess.run(
-                ["ollama", "list"], capture_output=True, timeout=2
-            )
+            result = subprocess.run(["ollama", "list"], capture_output=True, timeout=2)
             return result.returncode == 0
         except:
             return False

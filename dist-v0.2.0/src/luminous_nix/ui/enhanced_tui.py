@@ -57,9 +57,7 @@ class ErrorNotification(Notification):
 class ErrorPanel(Static):
     """Panel showing current error with recovery options"""
 
-    def __init__(
-        self, error: EnhancedError, recovery_plan: RecoveryPlan | None = None
-    ):
+    def __init__(self, error: EnhancedError, recovery_plan: RecoveryPlan | None = None):
         self.error = error
         self.recovery_plan = recovery_plan
         super().__init__()
@@ -153,35 +151,35 @@ class EnhancedLuminousNixTUI(App):
     Screen {
         background: $surface;
     }
-    
+
     #orb-container {
         height: 15;
         margin: 1;
         border: solid $primary;
     }
-    
+
     #conversation {
         height: 100%;
         margin: 1;
         border: solid $secondary;
         padding: 1;
     }
-    
+
     #error-panel {
         margin: 1;
         height: auto;
         display: none;
     }
-    
+
     #error-panel.visible {
         display: block;
     }
-    
+
     #input-container {
         height: 3;
         margin: 1;
     }
-    
+
     #error-history {
         dock: right;
         width: 40;
@@ -189,15 +187,15 @@ class EnhancedLuminousNixTUI(App):
         border: solid $error;
         display: none;
     }
-    
+
     #error-history.visible {
         display: block;
     }
-    
+
     ConversationMessage {
         margin-bottom: 1;
     }
-    
+
     .error-button {
         margin: 1;
     }

@@ -376,7 +376,7 @@ class PackageDiscoveryCommand:
 Natural Language Search:
   search <query>         Smart package search
   find <query>          Alias for search
-  
+
   Examples:
     search I need a text editor
     search music player
@@ -384,17 +384,17 @@ Natural Language Search:
 
 Finding Alternatives:
   alternative <package>  Find alternative packages
-  
+
   Examples:
     alternative firefox
     alternative docker
 
 Recommendations:
   recommend             Get personalized recommendations
-  
+
 Categories:
   explore <category>    Browse packages by category
-  
+
   Examples:
     explore editors
     explore development

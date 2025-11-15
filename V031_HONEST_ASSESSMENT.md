@@ -48,7 +48,7 @@ Critical Features Test: 6/6 passing (100%)
 
 ## 💯 Honest Accuracy Assessment
 
-**Before v0.3.1**: 
+**Before v0.3.1**:
 - User feedback showed 68.5% accuracy on problem queries
 - Missing home-manager, flakes, service confusion, GC
 

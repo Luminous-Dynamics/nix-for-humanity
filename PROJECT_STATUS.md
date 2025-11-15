@@ -1,7 +1,7 @@
 # 📊 Luminous Nix Project Status
 
-**Current Version**: v0.1.0-alpha  
-**Date**: January 29, 2025  
+**Current Version**: v0.1.0-alpha
+**Date**: January 29, 2025
 **Status**: ✅ Ready for alpha release
 
 ---

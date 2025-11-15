@@ -56,7 +56,7 @@
 # Quick dev environment
 ./bin/ask-nix "python environment with poetry and jupyter"
 
-# Complex service setup  
+# Complex service setup
 ./bin/ask-nix "postgresql with automatic backups"
 
 # Find modern alternatives

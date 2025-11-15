@@ -112,7 +112,7 @@ Memory: 147MB
 Power: ~15W
 
 # GPU Performance (RTX 3070)
-Single inference: 8ms  
+Single inference: 8ms
 Batch=1 throughput: 95 QPS
 Memory: 2.1GB (includes CUDA overhead)
 Power: ~150W
@@ -134,18 +134,18 @@ class OptimizedHRM:
         self.model = torch.quantization.quantize_dynamic(
             model, {nn.LSTM, nn.Linear}, dtype=torch.qint8
         )
-        
+
         # ONNX for additional optimization
         self.onnx_model = convert_to_onnx(model)
-        
+
         # Response caching
         self.cache = LRUCache(maxsize=10000)
-    
+
     def predict(self, query):
         # Cache hit: <1ms
         if query in self.cache:
             return self.cache[query]
-        
+
         # CPU inference: 50ms
         result = self.model(query)
         self.cache[query] = result
@@ -232,7 +232,7 @@ pruned_model = prune.l1_unstructured(
 
 ### Current (Correct) Strategy
 1. **CPU-only for production** ✅
-2. **Optimize with quantization** 
+2. **Optimize with quantization**
 3. **Implement smart caching**
 4. **Optional GPU for training only**
 

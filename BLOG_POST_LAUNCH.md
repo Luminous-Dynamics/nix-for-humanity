@@ -99,7 +99,7 @@ The interface adapts to different users:
 ask-nix --persona grandma "install a web browser"
 > "I'll help you get Firefox! This lets you browse the internet."
 
-# For developers  
+# For developers
 ask-nix --persona developer "setup rust development"
 > "Installing: rustc, cargo, rust-analyzer, clippy
 >  Config: /etc/nixos/development.nix"

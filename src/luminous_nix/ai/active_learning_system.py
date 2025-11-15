@@ -5,15 +5,12 @@ Learns from user feedback and adapts in real-time
 Target: Push accuracy from 96% to 97%+ through usage
 """
 
-import json
-import time
-import sqlite3
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import logging
-from datetime import datetime, timedelta
 import hashlib
+import logging
+import sqlite3
 from collections import defaultdict, deque
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +104,7 @@ class ActiveLearningSystem:
         conn.commit()
         conn.close()
 
-    def record_feedback(self, query: str, prediction: Dict, feedback: Dict) -> Dict:
+    def record_feedback(self, query: str, prediction: dict, feedback: dict) -> dict:
         """
         Record user feedback on a prediction
 
@@ -164,15 +161,15 @@ class ActiveLearningSystem:
             "pattern_learned": learning_result.get("pattern_learned", False),
         }
 
-    def _store_feedback(self, feedback: Dict):
+    def _store_feedback(self, feedback: dict):
         """Store feedback in database"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         cursor.execute(
             """
-            INSERT INTO feedback 
-            (query, predicted_category, predicted_command, correct_category, 
+            INSERT INTO feedback
+            (query, predicted_category, predicted_command, correct_category,
              correct_command, confidence, feedback_type, user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
@@ -191,7 +188,7 @@ class ActiveLearningSystem:
         conn.commit()
         conn.close()
 
-    def _learn_from_feedback(self, feedback: Dict) -> Dict:
+    def _learn_from_feedback(self, feedback: dict) -> dict:
         """Apply learning from feedback"""
         result = {
             "applied": False,
@@ -331,7 +328,7 @@ class ActiveLearningSystem:
         correct = sum(1 for c in corrections if c["category"] == category)
         return correct / len(corrections)
 
-    def get_adjustment(self, query: str) -> Dict:
+    def get_adjustment(self, query: str) -> dict:
         """Get confidence adjustment for a query"""
         query_hash = hashlib.md5(query.encode()).hexdigest()
 
@@ -378,7 +375,7 @@ class ActiveLearningSystem:
 
         return 0.0
 
-    def get_learning_metrics(self) -> Dict:
+    def get_learning_metrics(self) -> dict:
         """Get current learning metrics"""
         # Calculate accuracy improvement
         if self.metrics["total_feedback"] > 0:
@@ -414,7 +411,7 @@ class ActiveLearningSystem:
             "recent_feedback_count": len(self.feedback_buffer),
         }
 
-    def export_improvements(self) -> Dict:
+    def export_improvements(self) -> dict:
         """Export learned improvements for model updates"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -471,7 +468,7 @@ class ActiveLearningSystem:
             "total_improvements": len(patterns) + len(corrections),
         }
 
-    def simulate_user_feedback(self, num_interactions: int = 50) -> Dict:
+    def simulate_user_feedback(self, num_interactions: int = 50) -> dict:
         """Simulate user feedback for testing"""
         import random
 
@@ -578,7 +575,7 @@ def test_active_learning():
 
     result = system.record_feedback(query, prediction, feedback)
     print(f"Query: {query}")
-    print(f"Feedback: Correct ✅")
+    print("Feedback: Correct ✅")
     print(f"Learning result: {result}")
 
     # Negative feedback with correction
@@ -598,8 +595,8 @@ def test_active_learning():
 
     result2 = system.record_feedback(query2, prediction2, feedback2)
     print(f"\nQuery: {query2}")
-    print(f"Feedback: Incorrect ❌")
-    print(f"Correction: dev category, 'nix-shell -p go' command")
+    print("Feedback: Incorrect ❌")
+    print("Correction: dev category, 'nix-shell -p go' command")
     print(f"Learning result: {result2}")
 
     # Test 2: Pattern learning

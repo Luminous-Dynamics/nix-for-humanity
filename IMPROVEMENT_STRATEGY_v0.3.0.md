@@ -108,7 +108,7 @@ class EnsembleHRM:
             CNNModel(),        # Fast
             PatternModel()     # Fallback
         ]
-    
+
     def predict(self, query):
         predictions = [m.predict(query) for m in self.models]
         return self.weighted_vote(predictions)
@@ -122,7 +122,7 @@ class EnsembleHRM:
 import torch.quantization as quant
 
 quantized_model = quant.quantize_dynamic(
-    model, 
+    model,
     {nn.Linear, nn.LSTM},
     dtype=torch.qint8
 )
@@ -137,7 +137,7 @@ class AdaptiveCache:
         self.warm_cache = LRU(1000)   # <0.1ms
         self.cold_cache = SQLite()    # <1ms
         self.pattern_cache = Trie()   # <5ms
-        
+
     def adaptive_prefetch(self, context):
         """Predict next likely queries"""
         return self.prefetch_model.predict(context)
@@ -184,7 +184,7 @@ class ExplainableHRM:
 - [x] Improve update queries (50% → 90%) ✅ Exceeded target!
 - [x] Collect 88 new queries (44% of 200 target)
 
-### Week 3-4: Core Improvements  
+### Week 3-4: Core Improvements
 - [ ] Reach 500+ training queries
 - [ ] Implement transformer architecture
 - [ ] Achieve 85% overall accuracy

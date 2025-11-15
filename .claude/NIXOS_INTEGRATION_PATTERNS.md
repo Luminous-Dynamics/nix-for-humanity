@@ -61,7 +61,7 @@ Before executing any system modification:
     python3Packages.pip
     python3Packages.virtualenv
   ];
-  
+
   # Optional: Set up development shell
   environment.shellInit = ''
     alias python=python3

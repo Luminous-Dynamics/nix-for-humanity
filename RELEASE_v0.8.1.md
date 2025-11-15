@@ -1,7 +1,7 @@
 # 🚀 Luminous Nix v0.8.1 - Real Neural HRM Achievement!
 
-**Release Date**: January 29, 2025  
-**Version**: v0.8.1  
+**Release Date**: January 29, 2025
+**Version**: v0.8.1
 **Milestone**: Production Neural Network with 99.93% Accuracy
 
 ## 🎉 Major Achievement: Real Neural HRM Model
@@ -70,7 +70,7 @@ Original queries: 719 (hand-curated from real usage)
 Augmented to: 10,000+ queries
 Techniques used:
 - Natural language variations
-- Common typos and misspellings  
+- Common typos and misspellings
 - Different phrasings for same intent
 - Context-aware synonyms
 ```
@@ -234,8 +234,8 @@ This isn't a simulation or mock-up - it's a production-ready neural network achi
 
 ---
 
-**Download**: [GitHub Release](https://github.com/Tristan-Stoltz-ERC/luminous-nix/releases/tag/v0.8.1)  
-**Documentation**: [luminous-nix.readthedocs.io](https://luminous-nix.readthedocs.io)  
+**Download**: [GitHub Release](https://github.com/Tristan-Stoltz-ERC/luminous-nix/releases/tag/v0.8.1)
+**Documentation**: [luminous-nix.readthedocs.io](https://luminous-nix.readthedocs.io)
 **Report Issues**: [GitHub Issues](https://github.com/Tristan-Stoltz-ERC/luminous-nix/issues)
 
 *Built with 🧠 Real Neural Networks and ❤️ for the NixOS Community*

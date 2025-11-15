@@ -16,7 +16,7 @@ QUICK START (No installation needed!):
 PERFORMANCE ACHIEVEMENTS:
 ------------------------
 - Search: 0.003ms average (3000x faster than v0.3)
-- List: 0.001ms 
+- List: 0.001ms
 - Info: <0.001ms
 - Cached: 0.0002ms
 
@@ -28,7 +28,7 @@ USAGE EXAMPLES:
 # Ultra-fast search
 ./luminous-nix search firefox
 
-# Instant package info  
+# Instant package info
 ./luminous-nix info vim
 
 # Lightning list

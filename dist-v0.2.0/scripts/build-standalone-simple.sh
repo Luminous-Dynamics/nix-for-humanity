@@ -47,27 +47,27 @@ def main():
         ("typer", "typer"),
         ("pydantic", "pydantic"),
     ]
-    
+
     missing = []
     for module, package in required:
         if not check_dependency(module, package):
             missing.append(package)
-    
+
     if missing:
         print("\n❌ Missing dependencies. Install with:")
         print(f"   pip install {' '.join(missing)}")
         print("\nOr install all at once:")
         print("   pip install click rich psutil typer pydantic textual questionary")
         sys.exit(1)
-    
+
     # Add bundled code to path
     script_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.join(script_dir, 'luminous_nix_code'))
-    
+
     # Set environment
     os.environ['LUMINOUS_STANDALONE'] = 'true'
     os.environ['LUMINOUS_SKIP_ONBOARDING'] = 'true'
-    
+
     # Import and run
     try:
         from luminous_nix.cli import main as cli_main

@@ -470,10 +470,10 @@ async def main():
     # Test search
     cursor.execute(
         """
-        SELECT name, description, popularity_score 
-        FROM packages 
-        WHERE description LIKE '%browser%' 
-        ORDER BY popularity_score DESC 
+        SELECT name, description, popularity_score
+        FROM packages
+        WHERE description LIKE '%browser%'
+        ORDER BY popularity_score DESC
         LIMIT 5
     """
     )

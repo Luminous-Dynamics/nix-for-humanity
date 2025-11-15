@@ -7,19 +7,38 @@ try:
     # Primary unified modules
     from .unified_backend import UnifiedNixBackend, get_backend
     from .unified_intent import (
-        Intent, IntentType, IntentPipeline, IntentRecognizer,
-        SecurityValidator, create_intent, is_safe
+        Intent,
+        IntentType,
+        IntentPipeline,
+        IntentRecognizer,
+        SecurityValidator,
+        create_intent,
+        is_safe,
     )
     from .unified_errors import (
-        ErrorIntelligence, ErrorIntelligenceEngine, ErrorRecovery,
-        ErrorCategory, analyze_error, format_error, attempt_recovery
+        ErrorIntelligence,
+        ErrorIntelligenceEngine,
+        ErrorRecovery,
+        ErrorCategory,
+        analyze_error,
+        format_error,
+        attempt_recovery,
     )
     from .unified_response import (
-        Response, ResponseType, ResponseFormatter, ResponseBuilder,
-        ProgressReporter, format_response, success_response, error_response,
-        package_response, output, show_packages, progress
+        Response,
+        ResponseType,
+        ResponseFormatter,
+        ResponseBuilder,
+        ProgressReporter,
+        format_response,
+        success_response,
+        error_response,
+        package_response,
+        output,
+        show_packages,
+        progress,
     )
-    
+
     # Feature-specific modules (kept separate)
     from .knowledge import KnowledgeBase
     from .config import Config
@@ -30,12 +49,12 @@ try:
     from .nixos_doctor import NixOSDoctor
     from .first_run_wizard import FirstRunWizard
     from .plugin_system import PluginManager as PluginSystem
-    
+
     # Smart features
     from .smart_package_discovery import get_smart_discovery
     from .search_cache import SearchCache
     from .progress_indicator import ProgressIndicator, progress_context
-    
+
 except ImportError as e:
     warnings.warn(f"Some unified modules not available: {e}")
     # Try to import legacy modules for compatibility
@@ -58,9 +77,10 @@ try:
     CommandExecutor = UnifiedNixBackend
     Executor = UnifiedNixBackend
     NixRealExecutor = UnifiedNixBackend
-    
+
     # Old core names
     from .luminous_core import LuminousNixCore
+
     NixForHumanityCore = LuminousNixCore
 except:
     # If luminous_core doesn't exist, use UnifiedNixBackend
@@ -98,7 +118,6 @@ __all__ = [
     "output",
     "show_packages",
     "progress",
-    
     # Feature modules
     "KnowledgeBase",
     "Config",
@@ -113,7 +132,6 @@ __all__ = [
     "SearchCache",
     "ProgressIndicator",
     "progress_context",
-    
     # Backward compatibility
     "RealNixBackend",
     "NixForHumanityBackend",

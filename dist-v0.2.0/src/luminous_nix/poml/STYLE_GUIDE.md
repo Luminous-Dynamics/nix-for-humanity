@@ -53,10 +53,10 @@ poml/
 <variables>
   <!-- Required variables -->
   <let name="required_var">{{ required_var }}</let>
-  
+
   <!-- Optional with defaults -->
   <let name="optional_var">{{ optional_var | default: "value" }}</let>
-  
+
   <!-- Computed variables -->
   <let name="computed">{{ var1 + var2 }}</let>
 </variables>
@@ -67,7 +67,7 @@ poml/
 <context>
   <!-- External knowledge bases -->
   <document src="relative/path/to/knowledge.yaml" />
-  
+
   <!-- Inline context (small datasets only) -->
   <data name="inline_data">
     key: value
@@ -169,12 +169,12 @@ poml/
   <on-error type="parse_failure">
     Specific recovery action
   </on-error>
-  
+
   <!-- Generic fallback -->
   <on-error type="unknown">
     Generic recovery with diagnostic info
   </on-error>
-  
+
   <!-- Timeout handling -->
   <on-error type="timeout">
     Return partial results with status
@@ -226,7 +226,7 @@ poml/
       <type>json</type>
     </expected>
   </test>
-  
+
   <test name="handles_edge_case">
     <input>
       <variable name="user_query"></variable>
@@ -273,10 +273,10 @@ poml/
 <model-hints>
   <!-- Fast, simple tasks -->
   <preferred-models>gpt-3.5-turbo, mistral-7b</preferred-models>
-  
+
   <!-- Complex reasoning -->
   <preferred-models>gpt-4, claude-3, llama-70b</preferred-models>
-  
+
   <!-- Code generation -->
   <preferred-models>gpt-4, codellama-34b, starcoder</preferred-models>
 </model-hints>

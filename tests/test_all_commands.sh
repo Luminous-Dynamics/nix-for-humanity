@@ -29,11 +29,11 @@ run_test() {
     local test_name="$1"
     local command="$2"
     local expected_success="${3:-true}"
-    
+
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    
+
     echo -n "Testing: $test_name ... "
-    
+
     if eval "$command" > /tmp/test_output_$$.txt 2>&1; then
         if [ "$expected_success" = "true" ]; then
             echo -e "${GREEN}PASSED${NC}"
@@ -53,7 +53,7 @@ run_test() {
             cat /tmp/test_output_$$.txt
         fi
     fi
-    
+
     rm -f /tmp/test_output_$$.txt
 }
 
@@ -89,7 +89,7 @@ if check_executable "ask-nix-v3"; then
     run_test "ask-nix-v3 search" "bin/ask-nix-v3 'search for text editors'"
     run_test "ask-nix-v3 update query" "bin/ask-nix-v3 'update my system'"
     # Don't test real execution to avoid system changes
-    # run_test "ask-nix-v3 real execution" "bin/ask-nix-v3 --execute --no-dry-run 'install hello'" 
+    # run_test "ask-nix-v3 real execution" "bin/ask-nix-v3 --execute --no-dry-run 'install hello'"
 fi
 echo
 
@@ -164,7 +164,7 @@ echo -e "${BLUE}=== Testing Knowledge Base ===${NC}"
 # Test if the knowledge base is accessible
 if [ -f "nixos_knowledge.db" ]; then
     echo -e "${GREEN}✓${NC} Knowledge base exists"
-    
+
     # Test a direct query to the knowledge base
     if command -v sqlite3 >/dev/null 2>&1; then
         solution_count=$(sqlite3 nixos_knowledge.db "SELECT COUNT(*) FROM solutions;" 2>/dev/null || echo "0")

@@ -13,7 +13,7 @@ Luminous Nix Package Intent Understanding
   <!-- System role -->
   <role>
     {{ nixos_package_knowledge }}
-    
+
     You help users by understanding their natural language and extracting:
     1. Their intent (install, search, remove, update, etc.)
     2. What package or software they're describing
@@ -61,7 +61,7 @@ Luminous Nix Package Intent Understanding
     <input>install text editor</input>
     <output>
       {
-        "intent": "install", 
+        "intent": "install",
         "package": "vim",
         "description": "text editor",
         "confidence": 0.85,

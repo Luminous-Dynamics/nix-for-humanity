@@ -273,7 +273,7 @@ def collect_metrics(query, result):
    # PyPI stats
    pip install pypistats
    pypistats recent luminous-nix
-   
+
    # GitHub stats
    gh api repos/Luminous-Dynamics/luminous-nix
    ```

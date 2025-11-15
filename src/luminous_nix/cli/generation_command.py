@@ -288,22 +288,22 @@ Common Tasks:
 
 1. View Recent Generations:
    ask-nix generation list
-   
+
 2. Rollback to Previous:
    ask-nix generation rollback
-   
+
 3. Rollback to Specific Generation:
    ask-nix generation rollback 42
-   
+
 4. Compare Generations:
    ask-nix generation diff 42 43
-   
+
 5. Clean Old Generations:
    ask-nix generation clean --keep 5
-   
+
 6. Check System Health:
    ask-nix generation health
-   
+
 7. Create Recovery Snapshot:
    ask-nix generation snapshot "Before major update"
 

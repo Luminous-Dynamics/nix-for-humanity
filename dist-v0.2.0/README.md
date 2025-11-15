@@ -27,7 +27,7 @@ ask-nix "update my system"
 
 ### ✅ Natural Language Commands
 - Install/remove packages with plain English
-- Search by description, not just package names  
+- Search by description, not just package names
 - System updates and maintenance commands
 - Profile detection and migration for modern Nix
 

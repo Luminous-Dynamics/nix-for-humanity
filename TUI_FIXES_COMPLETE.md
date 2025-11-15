@@ -1,6 +1,6 @@
 # ✅ TUI Import Errors Fixed
 
-**Date**: 2025-01-29  
+**Date**: 2025-01-29
 **Status**: All TUI issues resolved
 
 ## Problem
@@ -20,7 +20,7 @@ Created stub implementations for missing consciousness modules to allow TUI to w
 ```python
 class ConsciousnessBarometer:
     """Placeholder that returns default values"""
-    
+
     def measure(self, context=None):
         return {
             'coherence': 0.5,

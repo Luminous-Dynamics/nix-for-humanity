@@ -19,7 +19,7 @@ User Query → AI Orchestrator → Smart Routing
 
 ### Routing Accuracy: 9/10 Correct
 - ✅ NixOS-specific queries → HRM (5/5 correct)
-- ✅ General knowledge → Ollama (4/5 correct) 
+- ✅ General knowledge → Ollama (4/5 correct)
 - Average response time: **68ms** (down from 300ms!)
 
 ### Performance Metrics

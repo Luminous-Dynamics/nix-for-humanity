@@ -20,7 +20,7 @@ $ time luminous-nix search firefox
 [... 2.3 seconds later ...]
 real    0m2.342s
 
-# Now (v0.4.0): Instant gratification  
+# Now (v0.4.0): Instant gratification
 $ time luminous-nix search firefox
 [... 0.003ms later ...]
 real    0m0.003s  # Yes, 3 microseconds!
@@ -61,7 +61,7 @@ We didn't just test in ideal conditions. Here's real-world usage:
 Operation               Time      Status
 --------------------- -------- ----------
 Search "vim"           0.003ms     ✅
-Install validation     0.000ms     ✅  
+Install validation     0.000ms     ✅
 List packages          0.001ms     ✅
 Package info          <0.001ms     ✅
 Cached search          0.0002ms    ✅
@@ -83,7 +83,7 @@ The breakthrough came from a fundamental rethink:
 ```python
 class UltraFastCache:
     """The secret sauce - everything in memory"""
-    
+
     def search_instant(self, query: str) -> Tuple[List[Dict], float]:
         # No network, no subprocess, no waiting
         # Just pure in-memory hashtable lookups
@@ -232,9 +232,9 @@ When we set out to make NixOS management conversational and fast, we didn't know
 
 *Download now and experience the speed revolution!*
 
-**GitHub**: [luminous-nix/releases/v0.4.0](https://github.com/Luminous-Dynamics/luminous-nix)  
-**Size**: 2.21 MB  
-**Requirements**: NixOS or Nix package manager  
-**Performance**: 0.003ms average response time  
+**GitHub**: [luminous-nix/releases/v0.4.0](https://github.com/Luminous-Dynamics/luminous-nix)
+**Size**: 2.21 MB
+**Requirements**: NixOS or Nix package manager
+**Performance**: 0.003ms average response time
 
 *"Not just faster. Instant."* ⚡

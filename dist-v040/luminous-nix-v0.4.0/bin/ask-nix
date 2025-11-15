@@ -5,7 +5,7 @@ Where consciousness flows invisibly through every interaction
 
 This is the unified entry point where the Seven Spirals live
 within practical functionality, adapting based on context,
-not explicit modes. 
+not explicit modes.
 
 The consciousness is not a room you visit;
 it is the quality of the air you breathe.
@@ -80,14 +80,14 @@ parser.add_argument('--ask', '-a', action='store_true',
                    help='Ask clarifying questions for better results')
 
 # Voice support
-parser.add_argument('--voice', action='store_true', 
+parser.add_argument('--voice', action='store_true',
                    help='Enable voice input mode')
 parser.add_argument('--speak', '-s', action='store_true',
                    help='Speak responses aloud')
 parser.add_argument('--listen', '-l', action='store_true',
                    help='Continuous listening mode')
 
-# AI/Persona support  
+# AI/Persona support
 parser.add_argument('--persona', '-p', type=str,
                    help='Use specific persona (grandma, developer, etc.)')
 parser.add_argument('--ai', '--ollama', action='store_true',
@@ -148,7 +148,7 @@ try:
             report = doctor.run_diagnosis()
             formatted = doctor.format_report(report)
             print(formatted)
-            
+
             if report.can_auto_fix:
                 response = input("\n🔧 Apply automatic fixes? (y/n): ")
                 if response.lower() == 'y':
@@ -156,13 +156,13 @@ try:
                     for action in actions:
                         print(f"  {action}")
             sys.exit(0)
-        
+
         # Handle 'setup' command
         elif command.strip().lower() == 'setup' and UX_FEATURES:
             fre = FirstRunExperience()
             success = fre.run_first_time_setup()
             sys.exit(0 if success else 1)
-    
+
     # Run the main function
     import asyncio
     if asyncio.iscoroutinefunction(main):

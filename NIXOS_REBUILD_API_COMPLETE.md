@@ -1,7 +1,7 @@
 # nixos-rebuild-ng Python API - Complete Documentation
 
-**Status**: ✅ VERIFIED and WORKING on NixOS 25.11  
-**Version**: nixos-rebuild-ng-0.0.0  
+**Status**: ✅ VERIFIED and WORKING on NixOS 25.11
+**Version**: nixos-rebuild-ng-0.0.0
 **Last Updated**: January 2025
 
 ## Executive Summary
@@ -54,7 +54,7 @@ from nixos_rebuild.models import Action
 
 # Available actions
 Action.SWITCH        # Apply configuration now and on boot
-Action.BOOT          # Apply on next boot only  
+Action.BOOT          # Apply on next boot only
 Action.TEST          # Apply now but not on boot
 Action.BUILD         # Build only, don't apply
 Action.DRY_BUILD     # Show what would be built
@@ -268,18 +268,18 @@ def get_nixos_rebuild_api():
     try:
         import subprocess
         from pathlib import Path
-        
+
         result = subprocess.run(
             ["nix-build", "<nixpkgs>", "-A", "nixos-rebuild-ng", "--no-out-link"],
             capture_output=True,
             text=True,
             timeout=30
         )
-        
+
         if result.returncode == 0:
             rebuild_path = result.stdout.strip()
             site_packages = Path(rebuild_path) / "lib" / "python3.13" / "site-packages"
-            
+
             if site_packages.exists():
                 import sys
                 sys.path.insert(0, str(site_packages))
@@ -287,7 +287,7 @@ def get_nixos_rebuild_api():
                 return nix, models, services
     except Exception:
         pass
-    
+
     return None, None, None
 ```
 
@@ -297,7 +297,7 @@ class NixOperations:
     def __init__(self):
         self.nix, self.models, _ = get_nixos_rebuild_api()
         self.use_api = self.nix is not None
-    
+
     def build_system(self):
         if self.use_api:
             # Fast path: Python API
@@ -322,7 +322,7 @@ from pathlib import Path
 
 class NixRebuildAPI:
     """Type-safe wrapper around nixos-rebuild-ng API"""
-    
+
     def build_configuration(
         self,
         attribute: str = "system",
@@ -332,13 +332,13 @@ class NixRebuildAPI:
         """Build NixOS configuration with type safety"""
         if not self.nix:
             return None
-            
+
         build_attr = self.models.BuildAttr(path=path, attr=attribute)
-        
+
         build_flags = {}
         if max_jobs:
             build_flags["max-jobs"] = str(max_jobs)
-        
+
         try:
             return self.nix.build(attribute, build_attr, build_flags or None)
         except self.models.NixOSRebuildError as e:
