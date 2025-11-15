@@ -1,5 +1,4 @@
 """
-from typing import List, Dict, Optional
 Knowledge base for NixOS information
 
 This module provides accurate NixOS knowledge without hallucination.
@@ -7,8 +6,20 @@ It acts as the source of truth for NixOS facts, commands, and best practices.
 """
 
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class PackageInfo:
+    """Package information dataclass"""
+
+    name: str
+    version: Optional[str] = None
+    description: Optional[str] = None
+    homepage: Optional[str] = None
+    license: Optional[str] = None
 
 
 class KnowledgeBase:

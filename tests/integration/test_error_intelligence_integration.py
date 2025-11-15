@@ -10,18 +10,12 @@ import pytest
 # Skip entire module - outdated imports from old module structure
 pytestmark = pytest.mark.skip(reason="Test module uses outdated imports from old nix_for_humanity structure")
 
-from unittest.mock import Mock, patch
-
-from luminous_nix.core.engine import LuminousNixBackend as EnhancedBackend
-
-from src.nix_for_humanity.core.types import (
-    IntentType,
-    Request,
-)
-from src.nix_for_humanity.error_intelligence import (
-    ResolutionOutcome,
-)
-from src.nix_for_humanity.tui.persona_styles import PersonaType
+# Imports commented out to prevent collection errors (module doesn't exist)
+# from unittest.mock import Mock, patch
+# from luminous_nix.core.engine import LuminousNixBackend as EnhancedBackend
+# from src.nix_for_humanity.core.types import IntentType, Request
+# from src.nix_for_humanity.error_intelligence import ResolutionOutcome
+# from src.nix_for_humanity.tui.persona_styles import PersonaType
 
 
 class TestErrorIntelligenceIntegration(unittest.TestCase):
