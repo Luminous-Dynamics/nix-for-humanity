@@ -15,7 +15,7 @@ sys.path.insert(
 )
 
 from luminous_nix.core.engine import LuminousNixBackend as IntentEngine
-from luminous_nix.core.executor import CommandExecutor as ExecutionEngine
+from luminous_nix.core.executor import SafeExecutor as ExecutionEngine
 
 
 class TestSecurityExecution(unittest.TestCase):

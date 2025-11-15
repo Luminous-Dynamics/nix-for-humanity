@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from luminous_nix.core.interface import IntentType
+from luminous_nix.core.intents import IntentType
 from luminous_nix.core.knowledge import KnowledgeBase, PackageInfo
 
 

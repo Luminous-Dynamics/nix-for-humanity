@@ -67,9 +67,13 @@ class MayaMode:
         common_packages = ["firefox", "vscode", "discord", "spotify"]
         for pkg in common_packages:
             try:
+                # Security: Quote package name to prevent injection
+                import shlex
+
+                quoted_pkg = shlex.quote(pkg)
                 # Check if installed
                 result = subprocess.run(
-                    f"nix-env -q | grep -i {pkg}",
+                    f"nix-env -q | grep -i {quoted_pkg}",
                     shell=True,
                     capture_output=True,
                     text=True,
@@ -91,8 +95,11 @@ class MayaMode:
         for p in programs:
             expanded.append(self.shortcuts.get(p.lower(), p))
 
+        # Security: Quote each package name to prevent injection
+        import shlex
+
         # Build single command for ALL packages
-        packages = " ".join([f"nixpkgs#{p}" for p in expanded])
+        packages = " ".join([f"nixpkgs#{shlex.quote(p)}" for p in expanded])
         cmd = f"nix profile install {packages}"
 
         # Execute FAST
@@ -133,7 +140,10 @@ class MayaMode:
             expanded.append(self.shortcuts.get(p.lower(), p))
 
         # Single command
-        packages = " ".join(expanded)
+        # Security: Quote each package name to prevent injection
+        import shlex
+
+        packages = " ".join([shlex.quote(p) for p in expanded])
         cmd = f"nix-env -e {packages}"
 
         try:
@@ -171,7 +181,11 @@ class MayaMode:
                 success=True, result=self.cache[cache_key], time_ms=0  # 2-5 seconds!
             )
 
-        cmd = f"nix search nixpkgs {term} --json 2>/dev/null | head -1000"
+        # Security: Quote search term to prevent injection
+        import shlex
+
+        quoted_term = shlex.quote(term)
+        cmd = f"nix search nixpkgs {quoted_term} --json 2>/dev/null | head -1000"
 
         try:
             result = subprocess.run(
@@ -217,8 +231,12 @@ class MayaMode:
         """
         start = time.time()
 
+        # Security: Quote pattern to prevent injection
+        import shlex
+
         if pattern:
-            cmd = f"nix-env -q | grep -i {pattern} | cut -d'-' -f1 | uniq"
+            quoted_pattern = shlex.quote(pattern)
+            cmd = f"nix-env -q | grep -i {quoted_pattern} | cut -d'-' -f1 | uniq"
         else:
             cmd = "nix-env -q | cut -d'-' -f1 | uniq | head -20"
 
@@ -323,7 +341,14 @@ class MayaMode:
         Pomodoro timer for ADHD focus.
         Runs in background.
         """
-        cmd = f"(sleep {duration_minutes * 60} && notify-send '⏰ Break time!') &"
+        # Security: Validate integer to prevent injection
+        # Convert to int to ensure it's a number
+        try:
+            duration_seconds = int(duration_minutes) * 60
+        except (ValueError, TypeError):
+            duration_seconds = 25 * 60  # Default to 25 minutes
+
+        cmd = f"(sleep {duration_seconds} && notify-send '⏰ Break time!') &"
 
         try:
             subprocess.run(cmd, shell=True, timeout=0.1)

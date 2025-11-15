@@ -4,15 +4,14 @@ Security Auditor - Comprehensive vulnerability scanning and CVE analysis
 Identifies security issues and provides actionable remediation steps
 """
 
-import re
-import json
 import logging
+import re
 import subprocess
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set, Any
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from typing import Any, Optional
 
 # Import core infrastructure
 try:
@@ -57,7 +56,7 @@ class SecurityAuditResult:
 
     scan_date: datetime
     total_packages_scanned: int
-    vulnerabilities_found: List[CVEInfo]
+    vulnerabilities_found: list[CVEInfo]
     critical_count: int
     high_count: int
     medium_count: int
@@ -70,9 +69,9 @@ class SecurityAuditResult:
     encrypted_root: bool
 
     # Recommendations
-    immediate_actions: List[str]
-    recommended_patches: List[str]
-    configuration_fixes: List[str]
+    immediate_actions: list[str]
+    recommended_patches: list[str]
+    configuration_fixes: list[str]
 
     # Overall score
     security_score: float  # 0-100
@@ -184,7 +183,7 @@ class SecurityAuditor:
             logger.error(f"Security audit failed: {e}")
             return self._create_fallback_audit()
 
-    def check_package_security(self, package_name: str) -> List[CVEInfo]:
+    def check_package_security(self, package_name: str) -> list[CVEInfo]:
         """
         Check security of a specific package
 
@@ -222,7 +221,7 @@ class SecurityAuditor:
 
         return vulnerabilities
 
-    def suggest_hardening(self) -> Dict[str, Any]:
+    def suggest_hardening(self) -> dict[str, Any]:
         """
         Suggest system hardening configurations
 
@@ -247,7 +246,7 @@ class SecurityAuditor:
             "priority": self._prioritize_hardening(hardening),
         }
 
-    def track_security_updates(self) -> List[Dict]:
+    def track_security_updates(self) -> list[dict]:
         """
         Track available security updates
 
@@ -272,8 +271,8 @@ class SecurityAuditor:
         return updates
 
     def _scan_for_vulnerabilities(
-        self, packages: List[str], deep: bool
-    ) -> List[CVEInfo]:
+        self, packages: list[str], deep: bool
+    ) -> list[CVEInfo]:
         """Scan packages for known vulnerabilities"""
         vulnerabilities = []
 
@@ -305,7 +304,7 @@ class SecurityAuditor:
             unique_vulns, key=lambda v: self._severity_weight(v.severity), reverse=True
         )
 
-    def _check_security_configurations(self) -> Dict[str, bool]:
+    def _check_security_configurations(self) -> dict[str, bool]:
         """Check various security configurations"""
         results = {}
 
@@ -419,8 +418,8 @@ class SecurityAuditor:
         return False
 
     def _generate_immediate_actions(
-        self, vulns: List[CVEInfo], config: Dict
-    ) -> List[str]:
+        self, vulns: list[CVEInfo], config: dict
+    ) -> list[str]:
         """Generate immediate action items"""
         actions = []
 
@@ -444,7 +443,7 @@ class SecurityAuditor:
 
         return actions
 
-    def _generate_patch_recommendations(self, vulns: List[CVEInfo]) -> List[str]:
+    def _generate_patch_recommendations(self, vulns: list[CVEInfo]) -> list[str]:
         """Generate patch recommendations"""
         patches = []
 
@@ -456,7 +455,7 @@ class SecurityAuditor:
 
         return patches
 
-    def _generate_configuration_fixes(self, config: Dict) -> List[str]:
+    def _generate_configuration_fixes(self, config: dict) -> list[str]:
         """Generate configuration fixes"""
         fixes = []
 
@@ -474,8 +473,8 @@ class SecurityAuditor:
         return fixes
 
     def _calculate_security_score(
-        self, vulns: List[CVEInfo], config: Dict
-    ) -> Tuple[float, str]:
+        self, vulns: list[CVEInfo], config: dict
+    ) -> tuple[float, str]:
         """Calculate overall security score and risk level"""
         score = 100.0
 
@@ -517,7 +516,7 @@ class SecurityAuditor:
         }
         return weights.get(severity, 0.0)
 
-    def _count_severities(self, vulns: List[CVEInfo]) -> Dict[str, int]:
+    def _count_severities(self, vulns: list[CVEInfo]) -> dict[str, int]:
         """Count vulnerabilities by severity"""
         counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
 
@@ -535,7 +534,7 @@ class SecurityAuditor:
 
     def _parse_package_string(
         self, package: str
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str]]:
         """Parse package string into name and version"""
         # Handle various formats: name-version, name, etc.
         match = re.match(r"^([a-zA-Z0-9_-]+)(?:-(\d+[\.\d]+))?", package)
@@ -608,22 +607,22 @@ class SecurityAuditor:
         }
         return descriptions.get(cve_id, "Security vulnerability detected")
 
-    def _load_cve_database(self) -> Dict:
+    def _load_cve_database(self) -> dict:
         """Load CVE database (mock for demo)"""
         # In production, would load from NVD or nixpkgs
         return {}
 
-    def _check_cve_database(self, package: str, version: str) -> List[CVEInfo]:
+    def _check_cve_database(self, package: str, version: str) -> list[CVEInfo]:
         """Check CVE database for package"""
         # In production, would query real database
         return []
 
-    def _check_dependency_vulnerabilities(self, package: str) -> List[CVEInfo]:
+    def _check_dependency_vulnerabilities(self, package: str) -> list[CVEInfo]:
         """Check vulnerabilities in dependencies"""
         # Would trace dependency tree
         return []
 
-    def _get_vulnerable_packages(self) -> List[str]:
+    def _get_vulnerable_packages(self) -> list[str]:
         """Get list of vulnerable packages"""
         vulnerable = []
         state = self.analyzer.get_system_state()
@@ -635,12 +634,12 @@ class SecurityAuditor:
 
         return vulnerable
 
-    def _check_for_update(self, package: str) -> Optional[Dict]:
+    def _check_for_update(self, package: str) -> Optional[dict]:
         """Check if update is available for package"""
         # In production, would check nixpkgs
         return None
 
-    def _suggest_kernel_hardening(self) -> List[str]:
+    def _suggest_kernel_hardening(self) -> list[str]:
         """Suggest kernel hardening options"""
         return [
             'boot.kernel.sysctl."kernel.kptr_restrict" = 2;',
@@ -649,7 +648,7 @@ class SecurityAuditor:
             'boot.kernel.sysctl."kernel.unprivileged_bpf_disabled" = 1;',
         ]
 
-    def _suggest_network_hardening(self) -> List[str]:
+    def _suggest_network_hardening(self) -> list[str]:
         """Suggest network hardening options"""
         return [
             "networking.firewall.enable = true;",
@@ -658,7 +657,7 @@ class SecurityAuditor:
             'networking.firewall.checkReversePath = "strict";',
         ]
 
-    def _suggest_service_hardening(self) -> List[str]:
+    def _suggest_service_hardening(self) -> list[str]:
         """Suggest service hardening options"""
         return [
             "services.openssh.passwordAuthentication = false;",
@@ -666,7 +665,7 @@ class SecurityAuditor:
             "services.fail2ban.enable = true;",
         ]
 
-    def _suggest_filesystem_hardening(self) -> List[str]:
+    def _suggest_filesystem_hardening(self) -> list[str]:
         """Suggest filesystem hardening options"""
         return [
             "boot.tmp.useTmpfs = true;",
@@ -674,7 +673,7 @@ class SecurityAuditor:
             "security.hideProcessInformation = true;",
         ]
 
-    def _suggest_auth_hardening(self) -> List[str]:
+    def _suggest_auth_hardening(self) -> list[str]:
         """Suggest authentication hardening options"""
         return [
             "security.pam.enableSudoTouchIdAuth = true;",
@@ -682,7 +681,7 @@ class SecurityAuditor:
             'security.pam.loginLimits = [{ domain = "*"; type = "-"; item = "maxlogins"; value = "3"; }];',
         ]
 
-    def _generate_hardening_config(self, hardening: Dict) -> str:
+    def _generate_hardening_config(self, hardening: dict) -> str:
         """Generate complete hardening configuration"""
         config_lines = ["{ config, pkgs, ... }:", "{"]
 
@@ -694,7 +693,7 @@ class SecurityAuditor:
         config_lines.append("}")
         return "\n".join(config_lines)
 
-    def _assess_hardening_impact(self, hardening: Dict) -> Dict[str, str]:
+    def _assess_hardening_impact(self, hardening: dict) -> dict[str, str]:
         """Assess impact of hardening recommendations"""
         return {
             "performance": "minimal",
@@ -703,7 +702,7 @@ class SecurityAuditor:
             "compatibility": "high",
         }
 
-    def _prioritize_hardening(self, hardening: Dict) -> List[str]:
+    def _prioritize_hardening(self, hardening: dict) -> list[str]:
         """Prioritize hardening recommendations"""
         priorities = []
 
@@ -740,8 +739,15 @@ class SecurityAuditor:
     def _run_command(self, command: str) -> Optional[str]:
         """Run shell command and return output"""
         try:
+            # Security: Use shlex.split to avoid shell injection
+            import shlex
+
             result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=5
+                shlex.split(command),
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0:
                 return result.stdout.strip()

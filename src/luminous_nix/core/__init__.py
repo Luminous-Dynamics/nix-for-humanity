@@ -71,21 +71,38 @@ except ImportError as e:
 
 # Backward compatibility aliases
 try:
-    # Old backend names -> Unified backend
-    RealNixBackend = UnifiedNixBackend
-    NixForHumanityBackend = UnifiedNixBackend
-    CommandExecutor = UnifiedNixBackend
-    Executor = UnifiedNixBackend
-    NixRealExecutor = UnifiedNixBackend
+    # Old backend names -> Unified backend (if it exists)
+    if "UnifiedNixBackend" in globals():
+        RealNixBackend = UnifiedNixBackend
+        NixForHumanityBackend = UnifiedNixBackend
+        CommandExecutor = UnifiedNixBackend
+        Executor = UnifiedNixBackend
+        NixRealExecutor = UnifiedNixBackend
+    else:
+        # UnifiedNixBackend not available, try engine backend
+        from .engine import LuminousNixBackend
+
+        RealNixBackend = LuminousNixBackend
+        NixForHumanityBackend = LuminousNixBackend
+        UnifiedNixBackend = LuminousNixBackend
+        CommandExecutor = LuminousNixBackend
+        Executor = LuminousNixBackend
 
     # Old core names
     from .luminous_core import LuminousNixCore
 
     NixForHumanityCore = LuminousNixCore
-except:
-    # If luminous_core doesn't exist, use UnifiedNixBackend
-    LuminousNixCore = UnifiedNixBackend
-    NixForHumanityCore = UnifiedNixBackend
+except Exception:
+    # Fallback: use engine backend if available
+    try:
+        from .engine import LuminousNixBackend
+
+        LuminousNixCore = LuminousNixBackend
+        NixForHumanityCore = LuminousNixBackend
+        RealNixBackend = LuminousNixBackend
+        UnifiedNixBackend = LuminousNixBackend
+    except:
+        pass
 
 # Export all
 __all__ = [

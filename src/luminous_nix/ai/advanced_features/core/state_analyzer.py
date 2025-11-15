@@ -4,14 +4,13 @@ NixOS State Analyzer - Core infrastructure for all advanced features
 Provides system state reading, generation listing, and configuration access
 """
 
-import json
-import subprocess
+import logging
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime
-import logging
+from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,10 @@ class SystemState:
     nixos_version: str
     kernel_version: str
     store_size_gb: float
-    installed_packages: List[str]
-    running_services: List[str]
-    disk_usage: Dict[str, float]
-    memory_usage: Dict[str, float]
+    installed_packages: list[str]
+    running_services: list[str]
+    disk_usage: dict[str, float]
+    memory_usage: dict[str, float]
     boot_time_seconds: Optional[float] = None
 
 
@@ -118,7 +117,7 @@ class NixOSStateAnalyzer:
                 memory_usage={},
             )
 
-    def list_generations(self, limit: int = 50) -> List[SystemGeneration]:
+    def list_generations(self, limit: int = 50) -> list[SystemGeneration]:
         """List all system generations"""
         if self.generations_cache:
             return list(self.generations_cache.values())[:limit]
@@ -167,7 +166,7 @@ class NixOSStateAnalyzer:
 
         return generations[:limit]
 
-    def get_generation_diff(self, gen1: int, gen2: int) -> Dict[str, Any]:
+    def get_generation_diff(self, gen1: int, gen2: int) -> dict[str, Any]:
         """Get differences between two generations"""
         diff = {
             "packages_added": [],
@@ -221,7 +220,7 @@ class NixOSStateAnalyzer:
             pass
         return 0
 
-    def _get_generation_packages(self, generation: int) -> Dict[str, str]:
+    def _get_generation_packages(self, generation: int) -> dict[str, str]:
         """Get packages installed in a specific generation"""
         packages = {}
         gen_path = f"/nix/var/nix/profiles/system-{generation}-link"
@@ -274,7 +273,7 @@ class NixOSStateAnalyzer:
             pass
         return 0.0
 
-    def _get_installed_packages(self) -> List[str]:
+    def _get_installed_packages(self) -> list[str]:
         """Get list of installed packages"""
         packages = []
         try:
@@ -285,7 +284,7 @@ class NixOSStateAnalyzer:
             pass
         return packages
 
-    def _get_running_services(self) -> List[str]:
+    def _get_running_services(self) -> list[str]:
         """Get list of running systemd services"""
         services = []
         try:
@@ -301,7 +300,7 @@ class NixOSStateAnalyzer:
             pass
         return services
 
-    def _get_disk_usage(self) -> Dict[str, float]:
+    def _get_disk_usage(self) -> dict[str, float]:
         """Get disk usage by mountpoint"""
         usage = {}
         try:
@@ -321,7 +320,7 @@ class NixOSStateAnalyzer:
             pass
         return usage
 
-    def _get_memory_usage(self) -> Dict[str, float]:
+    def _get_memory_usage(self) -> dict[str, float]:
         """Get memory usage statistics"""
         usage = {}
         try:
@@ -352,7 +351,7 @@ class NixOSStateAnalyzer:
             pass
         return None
 
-    def _list_generations_fallback(self) -> List[SystemGeneration]:
+    def _list_generations_fallback(self) -> list[SystemGeneration]:
         """Fallback method to list generations from profile directory"""
         generations = []
         profile_dir = Path("/nix/var/nix/profiles")
@@ -391,8 +390,15 @@ class NixOSStateAnalyzer:
     def _run_command(self, command: str) -> Optional[str]:
         """Run a shell command and return output"""
         try:
+            # Security: Use shlex.split to avoid shell injection
+            import shlex
+
             result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=5
+                shlex.split(command),
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0:
                 return result.stdout.strip()

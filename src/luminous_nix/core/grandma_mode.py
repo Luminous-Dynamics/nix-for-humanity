@@ -83,7 +83,11 @@ class GrandmaMode:
         try:
             print(f"🌟 Installing {program_name}... This might take a minute...")
 
-            cmd = f"nix profile install nixpkgs#{package}"
+            # Security: Quote package name to prevent injection
+            import shlex
+
+            quoted_package = shlex.quote(package)
+            cmd = f"nix profile install nixpkgs#{quoted_package}"
             result = subprocess.run(
                 cmd,
                 shell=True,
@@ -155,7 +159,11 @@ class GrandmaMode:
                 )
 
             # If not in common programs, do real search
-            cmd = f"nix search nixpkgs {search_term} --json 2>/dev/null | head -1000"
+            # Security: Quote search term to prevent injection
+            import shlex
+
+            quoted_term = shlex.quote(search_term)
+            cmd = f"nix search nixpkgs {quoted_term} --json 2>/dev/null | head -1000"
             result = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True, timeout=10
             )
@@ -228,7 +236,11 @@ class GrandmaMode:
 
         # ACTUAL REMOVAL
         try:
-            cmd = f"nix-env -e {package}"
+            # Security: Quote package name to prevent injection
+            import shlex
+
+            quoted_package = shlex.quote(package)
+            cmd = f"nix-env -e {quoted_package}"
             result = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True, timeout=30
             )
@@ -257,9 +269,13 @@ class GrandmaMode:
         Show installed programs in a friendly way
         """
         try:
-            cmd = "nix-env -q"
+            # No user input here, but use shell=False for consistency
             result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=10
+                ["nix-env", "-q"],
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
 
             if result.returncode == 0 and result.stdout:
@@ -338,8 +354,14 @@ class GrandmaMode:
     def _is_installed(self, package: str) -> bool:
         """Check if a package is actually installed"""
         try:
+            # Security: Quote package name to prevent injection
+            import shlex
+
+            quoted_package = shlex.quote(package)
             result = subprocess.run(
-                f"nix-env -q | grep -i {package}", shell=True, capture_output=True
+                f"nix-env -q | grep -i {quoted_package}",
+                shell=True,
+                capture_output=True,
             )
             return result.returncode == 0
         except:

@@ -245,14 +245,21 @@ class SafeExecutor:
         Returns:
             Execution result
         """
+        # Security: Escape user command to prevent injection
+        import shlex
+
+        escaped_command = shlex.quote(command)
+
         # Create temporary Nix shell for isolation
+        # Note: We still need shell=True here for the outer nix-shell command,
+        # but the user command is now safely quoted
         sandbox_command = f"""
         nix-shell --pure --packages coreutils --run '
             # Sandbox environment
             export HOME=/tmp/nix-sandbox-home
             export NIX_PATH=nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos
             mkdir -p $HOME
-            {command}
+            {escaped_command}
         '
         """
 
@@ -308,8 +315,15 @@ class SafeExecutor:
             # Use specific timeout based on command type
             timeout = 120 if "nixos-rebuild" in command else 30
 
+            # Security: Use shlex.split to avoid shell injection
+            import shlex
+
             result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=timeout
+                shlex.split(command),
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
             )
 
             # Get generation after execution

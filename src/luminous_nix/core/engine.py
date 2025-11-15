@@ -240,6 +240,7 @@ class LuminousNixBackend:
             Dict with success, output, and error information
         """
         # For simple command execution, bypass the full intent system
+        import shlex
         import subprocess
 
         try:
@@ -253,8 +254,13 @@ class LuminousNixBackend:
                     "dry_run": dry_run,
                 }
             # Actually execute (be careful!)
+            # Security: Use shlex.split to avoid shell injection
             result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=30
+                shlex.split(command),
+                shell=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             # Use orchestrator's unified error analysis
