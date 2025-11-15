@@ -30,6 +30,8 @@ result-*
 # Project specific
 package_cache.db
 *.log
+data/*.db
+data/*.wal
 data/consciousness/*.db
 data/consciousness/*.wal
 .archive-*/
