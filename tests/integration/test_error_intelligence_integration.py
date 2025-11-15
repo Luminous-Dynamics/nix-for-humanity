@@ -5,6 +5,8 @@ Tests the complete flow from error occurrence to educational display,
 including XAI explanations and persona adaptation.
 """
 
+import unittest
+
 import pytest
 
 # Skip entire module - outdated imports from old module structure

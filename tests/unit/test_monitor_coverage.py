@@ -6,6 +6,7 @@ Tests the coverage monitoring functionality.
 """
 
 import unittest
+from unittest.mock import patch
 
 import pytest
 

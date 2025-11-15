@@ -15,23 +15,27 @@ pytestmark = pytest.mark.skip(reason="sacred_voice_interface module not found")
 # from voice_nlp_bridge import VoiceNLPBridge
 from unittest.mock import Mock, patch
 
+# Placeholders for undefined classes
+SacredVoiceInterface = None
+FlowState = None
+
 TEST_CONFIG = None  # Placeholder
 # TEST_CONFIG = VoiceConfig(
-    energy_threshold=100,
-    pause_threshold=0.5,
-    phrase_time_limit=5.0,
-    voice_rate=200,
-    voice_volume=0.8,
-    pause_before_speech=0.1,
-    pause_after_listening=0.1,
-    deep_breath_duration=0.5,
-    focus_protection=True,
-    min_focus_duration=1.0,
-    interruption_cooldown=0.5,
-    voice_personality="gentle",
-    use_acknowledgments=True,
-    use_thinking_sounds=True,
-)
+#     energy_threshold=100,
+#     pause_threshold=0.5,
+#     phrase_time_limit=5.0,
+#     voice_rate=200,
+#     voice_volume=0.8,
+#     pause_before_speech=0.1,
+#     pause_after_listening=0.1,
+#     deep_breath_duration=0.5,
+#     focus_protection=True,
+#     min_focus_duration=1.0,
+#     interruption_cooldown=0.5,
+#     voice_personality="gentle",
+#     use_acknowledgments=True,
+#     use_thinking_sounds=True,
+# )
 
 
 class TestSacredVoiceInterface(unittest.TestCase):

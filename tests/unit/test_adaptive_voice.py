@@ -4,6 +4,8 @@
 Verifies that voice adapts correctly to different emotional states
 """
 
+from unittest.mock import patch
+
 import pytest
 
 # Skip entire module - voice module has missing dependencies
@@ -14,8 +16,12 @@ pytestmark = pytest.mark.skip(
 # Imports commented out to prevent collection errors
 # import tempfile
 # from pathlib import Path
-# from unittest.mock import patch
 # from luminous_nix.voice.unified_voice import VOICE_PROFILES, UnifiedVoiceSystem, VoiceProfile, VoiceTone
+
+# Placeholders for undefined classes referenced in test bodies
+UnifiedVoiceSystem = None
+DynamicPersona = None
+EmotionalState = None
 
 
 class TestAdaptiveVoiceSystem:

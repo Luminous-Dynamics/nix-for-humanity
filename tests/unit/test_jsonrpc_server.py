@@ -4,6 +4,7 @@ Comprehensive tests for JSON-RPC Server
 """
 
 import unittest
+from unittest.mock import patch
 
 import pytest
 
