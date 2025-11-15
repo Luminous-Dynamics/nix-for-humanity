@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 from luminous_nix.core.knowledge import KnowledgeBase
 
@@ -21,30 +21,15 @@ class TestKnowledgeBase(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.temp_db = Path(self.temp_dir) / "test_knowledge.db"
 
-        # Patch the database path to use our temp database
-        self.patcher = patch.object(
-            KnowledgeBase,
-            "db_path",
-            new_callable=PropertyMock,
-            return_value=self.temp_db,
-        )
-        self.patcher.start()
-
-        # Also patch base_dir to avoid creating directories
-        self.base_patcher = patch.object(
-            KnowledgeBase,
-            "base_dir",
-            new_callable=PropertyMock,
-            return_value=Path(self.temp_dir),
-        )
-        self.base_patcher.start()
+        # Patch Path.home() to use temp directory
+        self.home_patcher = patch("pathlib.Path.home", return_value=Path(self.temp_dir))
+        self.home_patcher.start()
 
         self.kb = KnowledgeBase()
 
     def tearDown(self):
         """Clean up test fixtures."""
-        self.patcher.stop()
-        self.base_patcher.stop()
+        self.home_patcher.stop()
 
         # Clean up temp directory
         import shutil

@@ -6,7 +6,7 @@ Following Living Documentation pattern - tests explain WHY they exist.
 
 import unittest
 
-from luminous_nix.core.responses import Response
+from luminous_nix.api.schema import Response
 
 
 class TestResponse(unittest.TestCase):
