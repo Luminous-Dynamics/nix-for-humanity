@@ -4,6 +4,7 @@ Comprehensive unit tests for NixOSIntegration module
 Tests the bridge between high-level intents and NixOS operations
 """
 
+import asyncio
 import sys
 import unittest
 from pathlib import Path
@@ -14,9 +15,7 @@ test_dir = Path(__file__).parent
 backend_path = test_dir.parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
-from luminous_nix.core.nix_integration import (
-    NixOSIntegration,
-)
+from luminous_nix.core.nix_integration import NixOSIntegration  # noqa: E402
 
 
 class TestNixOSIntegration(unittest.TestCase):
@@ -25,7 +24,9 @@ class TestNixOSIntegration(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Mock the NativeNixBackend import
-        self.mock_backend_patcher = patch("core.nix_integration.NativeNixBackend")
+        self.mock_backend_patcher = patch(
+            "luminous_nix.core.nix_integration.NativeNixBackend"
+        )
         self.mock_backend_class = self.mock_backend_patcher.start()
 
         # Create mock backend instance
@@ -34,7 +35,7 @@ class TestNixOSIntegration(unittest.TestCase):
 
         # Mock NATIVE_API_AVAILABLE
         self.native_api_patcher = patch(
-            "core.nix_integration.NATIVE_API_AVAILABLE", True
+            "luminous_nix.core.nix_integration.NATIVE_API_AVAILABLE", True
         )
         self.native_api_patcher.start()
 
@@ -59,7 +60,7 @@ class TestNixOSIntegration(unittest.TestCase):
         """Test initialization with progress callback"""
         # Create new instance with callback
         callback = Mock()
-        integration = NixOSIntegration(progress_callback=callback)
+        _integration = NixOSIntegration(progress_callback=callback)  # noqa: F841
 
         # Verify callback was set
         self.mock_backend.set_progress_callback.assert_called_with(callback)
@@ -99,7 +100,9 @@ class TestNixOSIntegration(unittest.TestCase):
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
         # Execute intent
-        result = self.integration.execute_intent("update_system", {"dry_run": False})
+        result = asyncio.run(
+            self.integration.execute_intent("update_system", {"dry_run": False})
+        )
 
         # Verify backend was called correctly
         self.mock_backend.execute.assert_called_once()
@@ -131,7 +134,7 @@ class TestNixOSIntegration(unittest.TestCase):
 
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
-        result = self.integration.execute_intent("rollback_system", {})
+        result = asyncio.run(self.integration.execute_intent("rollback_system", {}))
 
         # Verify operation type
         call_args = self.mock_backend.execute.call_args[0][0]
@@ -153,8 +156,8 @@ class TestNixOSIntegration(unittest.TestCase):
 
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
-        result = self.integration.execute_intent(
-            "install_package", {"package": "firefox"}
+        result = asyncio.run(
+            self.integration.execute_intent("install_package", {"package": "firefox"})
         )
 
         # Verify package was passed correctly
@@ -177,8 +180,10 @@ class TestNixOSIntegration(unittest.TestCase):
 
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
-        self.integration.execute_intent(
-            "install_package", {"packages": ["vim", "emacs", "neovim"]}
+        asyncio.run(
+            self.integration.execute_intent(
+                "install_package", {"packages": ["vim", "emacs", "neovim"]}
+            )
         )
 
         call_args = self.mock_backend.execute.call_args[0][0]
@@ -191,7 +196,9 @@ class TestNixOSIntegration(unittest.TestCase):
             side_effect=Exception("Network connection failed")
         )
 
-        result = self.integration.execute_intent("update_system", {"dry_run": False})
+        result = asyncio.run(
+            self.integration.execute_intent("update_system", {"dry_run": False})
+        )
 
         # Verify error handling
         self.assertFalse(result["success"])
@@ -210,8 +217,10 @@ class TestNixOSIntegration(unittest.TestCase):
 
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
-        result = self.integration.execute_intent(
-            "install_package", {"package": "firefx"}  # Typo
+        result = asyncio.run(
+            self.integration.execute_intent(
+                "install_package", {"package": "firefx"}  # Typo
+            )
         )
 
         self.assertFalse(result["success"])
@@ -326,7 +335,7 @@ class TestNixOSIntegration(unittest.TestCase):
             "builtins.open",
             unittest.mock.mock_open(read_data='VERSION="24.05 (Uakari)"'),
         ):
-            info = self.integration.get_system_info()
+            info = asyncio.run(self.integration.get_system_info())
 
         self.assertEqual(info["nixos_version"], "24.05 (Uakari)")
         self.assertEqual(info["total_generations"], 3)
@@ -346,7 +355,7 @@ class TestNixOSIntegration(unittest.TestCase):
 
         self.mock_backend.execute = AsyncMock(return_value=mock_result)
 
-        info = self.integration.get_system_info()
+        info = asyncio.run(self.integration.get_system_info())
 
         self.assertIsNone(info["current_generation"])
         self.assertEqual(info["total_generations"], 2)
@@ -357,7 +366,7 @@ class TestNixOSIntegration(unittest.TestCase):
             side_effect=Exception("Failed to list generations")
         )
 
-        info = self.integration.get_system_info()
+        info = asyncio.run(self.integration.get_system_info())
 
         self.assertIn("error", info)
         self.assertIn("Failed to list generations", info["error"])

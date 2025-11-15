@@ -26,9 +26,9 @@ backend_path = os.path.join(project_root, "luminous_nix")
 sys.path.insert(0, backend_path)
 
 # Import the module we're testing
-from luminous_nix.api.schema import Request, Response, Result
-from luminous_nix.core.engine import LuminousNixBackend, create_backend
-from luminous_nix.core.intents import Intent, IntentType
+from luminous_nix.api.schema import Request, Response, Result  # noqa: E402
+from luminous_nix.core.engine import LuminousNixBackend, create_backend  # noqa: E402
+from luminous_nix.core.intents import Intent, IntentType  # noqa: E402
 
 
 class TestLuminousNixBackend(unittest.TestCase):
@@ -44,13 +44,18 @@ class TestLuminousNixBackend(unittest.TestCase):
         # Patch the dependencies
         self.patches = [
             patch(
-                "core.backend.IntentRecognizer",
+                "luminous_nix.core.engine.IntentRecognizer",
                 return_value=self.mock_intent_recognizer,
             ),
-            patch("core.backend.SafeExecutor", return_value=self.mock_executor),
-            patch("core.backend.KnowledgeBase", return_value=self.mock_knowledge),
-            patch("core.backend.NATIVE_INTEGRATION_AVAILABLE", False),
-            patch("core.backend.NATIVE_API_AVAILABLE", False),
+            patch(
+                "luminous_nix.core.engine.SafeExecutor", return_value=self.mock_executor
+            ),
+            patch(
+                "luminous_nix.core.engine.KnowledgeBase",
+                return_value=self.mock_knowledge,
+            ),
+            patch("luminous_nix.core.engine.NATIVE_INTEGRATION_AVAILABLE", False),
+            patch("luminous_nix.core.engine.NATIVE_API_AVAILABLE", False),
         ]
 
         for p in self.patches:
@@ -77,12 +82,12 @@ class TestLuminousNixBackend(unittest.TestCase):
         """Test nixos API initialization when path is found."""
         # Create a new backend with mocked path finding
         with patch(
-            "core.backend.LuminousNixBackend._find_nixos_rebuild_path"
+            "luminous_nix.core.engine.LuminousNixBackend._find_nixos_rebuild_path"
         ) as mock_find:
             mock_find.return_value = Path("/mock/path")
 
             with patch("sys.path", []) as mock_syspath:
-                backend = LuminousNixBackend()
+                _backend = LuminousNixBackend()  # noqa: F841
 
                 # Check that path was added
                 self.assertIn("/mock/path", mock_syspath)
@@ -103,7 +108,7 @@ class TestLuminousNixBackend(unittest.TestCase):
 
     def test_find_nixos_rebuild_path_via_which(self):
         """Test finding nixos-rebuild path via which command."""
-        with patch(
+        with patch(  # noqa: SIM117
             "pathlib.Path.exists", return_value=False
         ):  # Known paths don't exist
             with patch("subprocess.run") as mock_run:
@@ -121,16 +126,18 @@ class TestLuminousNixBackend(unittest.TestCase):
                     mock_site_packages = Mock()
                     mock_site_packages.exists.return_value = True
 
-                    with patch.object(Path, "parents", [mock_parent]):
+                    with patch.object(Path, "parents", [mock_parent]):  # noqa: SIM117
                         with patch.object(mock_parent, "__truediv__") as mock_div:
                             mock_div.return_value = mock_site_packages
 
-                            result = self.backend._find_nixos_rebuild_path()
+                            _result = (
+                                self.backend._find_nixos_rebuild_path()
+                            )  # noqa: F841
 
                             # Should find via which command
                             mock_run.assert_called_once()
 
-    @patch("core.backend.asyncio.create_task")
+    @patch("luminous_nix.core.engine.asyncio.create_task")
     async def test_process_request_success(self, mock_create_task):
         """Test successful request processing."""
         # Setup mocks
@@ -220,7 +227,7 @@ class TestLuminousNixBackend(unittest.TestCase):
                 "sanitized_input": "install vim",
             }
 
-            with patch("core.backend.asyncio.create_task"):
+            with patch("luminous_nix.core.engine.asyncio.create_task"):
                 response = await self.backend.process_request(request)
 
                 # Verify execution was called
@@ -443,7 +450,7 @@ class TestLuminousNixBackend(unittest.TestCase):
             success=True, text="test response", commands=[], data={"intent": "test"}
         )
 
-        with patch.dict(os.environ, {"DEBUG": "1"}):
+        with patch.dict(os.environ, {"DEBUG": "1"}):  # noqa: SIM117
             with patch("builtins.print") as mock_print:
                 await self.backend._learn(request, response)
 
@@ -468,9 +475,9 @@ class TestBackendAsyncIntegration(unittest.TestCase):
 
     def test_async_to_sync_conversion(self):
         """Test that async methods work in sync context."""
-        with patch("core.backend.IntentRecognizer"), patch(
-            "core.backend.SafeExecutor"
-        ), patch("core.backend.KnowledgeBase"):
+        with patch("luminous_nix.core.engine.IntentRecognizer"), patch(
+            "luminous_nix.core.engine.SafeExecutor"
+        ), patch("luminous_nix.core.engine.KnowledgeBase"):
             backend = LuminousNixBackend()
 
             # Mock the sync process method
