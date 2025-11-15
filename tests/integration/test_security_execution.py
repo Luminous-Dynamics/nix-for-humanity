@@ -14,7 +14,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from luminous_nix.core.engine import NixForHumanityBackend as IntentEngine
+from luminous_nix.core.engine import LuminousNixBackend as IntentEngine
 from luminous_nix.core.executor import CommandExecutor as ExecutionEngine
 
 

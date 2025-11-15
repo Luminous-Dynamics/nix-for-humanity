@@ -12,7 +12,7 @@ import time
 import pytest
 from luminous_nix.api.schema import Context, Request
 from luminous_nix.core.advanced_features import AdvancedFeatures
-from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.engine import LuminousNixBackend
 from luminous_nix.core.native_operations import (
     NativeOperationsManager,
     NativeOperationType,
@@ -25,7 +25,7 @@ class TestRealNixOSOperations:
     @pytest.fixture
     def backend(self):
         """Get real backend instance"""
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
 
     @pytest.fixture
     def native_ops(self):
@@ -302,7 +302,7 @@ class TestErrorScenarios:
 
     @pytest.fixture
     def backend(self):
-        return NixForHumanityBackend()
+        return LuminousNixBackend()
 
     def test_empty_input(self, backend):
         """Test handling of empty input"""

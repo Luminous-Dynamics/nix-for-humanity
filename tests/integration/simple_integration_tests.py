@@ -12,7 +12,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from luminous_nix.api.schema import Request
-from luminous_nix.core.engine import NixForHumanityBackend
+from luminous_nix.core.engine import LuminousNixBackend
 from luminous_nix.core.executor import SafeExecutor
 from luminous_nix.core.intents import IntentRecognizer, IntentType
 from luminous_nix.core.knowledge import KnowledgeBase
@@ -22,7 +22,7 @@ class SimpleIntegrationTests:
     """Simple integration tests without pytest"""
 
     def __init__(self):
-        self.backend = NixForHumanityBackend()
+        self.backend = LuminousNixBackend()
         self.recognizer = IntentRecognizer()
         self.executor = SafeExecutor()
         self.executor.dry_run = True  # Set dry_run after initialization

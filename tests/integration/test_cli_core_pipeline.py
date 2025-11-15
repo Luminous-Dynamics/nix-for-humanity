@@ -21,7 +21,7 @@ from luminous_nix.api.schema import (
     Request,
     Response,
 )
-from luminous_nix.core.engine import NixForHumanityBackend as Engine
+from luminous_nix.core.engine import LuminousNixBackend as Engine
 from luminous_nix.core.intents import IntentType
 
 
