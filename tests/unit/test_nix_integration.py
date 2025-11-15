@@ -230,37 +230,45 @@ class TestNixOSIntegration(unittest.TestCase):
     def test_map_intent_to_operation(self):
         """Test mapping various intents to operations"""
         test_cases = [
-            ("update_system", {}, "update_system"),
+            ("update_system", {}, "switch"),  # Maps to SWITCH
             ("rollback_system", {}, "rollback"),
-            ("install_package", {"package": "vim"}, "install_package"),
-            ("remove_package", {"package": "vim"}, "remove"),
-            ("search_package", {"package": "firefox"}, "search_package"),
+            ("install_package", {"package": "vim"}, "build"),  # Maps to BUILD
+            ("remove_package", {"package": "vim"}, "build"),  # Maps to BUILD
+            (
+                "search_package",
+                {"package": "firefox"},
+                "search",
+            ),  # Maps to SEARCH_PACKAGES
             ("build_system", {}, "build"),
             ("test_configuration", {}, "test"),
-            ("list_generations", {}, "list_generations"),
+            ("list_generations", {}, "list-generations"),  # Hyphenated value
             ("unknown_intent", {}, "build"),  # Default
         ]
 
         for intent, params, expected_type in test_cases:
-            operation = self.integration._map_intent_to_operation(intent, params)
-            self.assertEqual(operation.type.value, expected_type)
+            (
+                operation_type,
+                packages,
+                options,
+            ) = self.integration._map_intent_to_operation(intent, params)
+            self.assertEqual(operation_type.value, expected_type)
 
     def test_map_intent_with_dry_run(self):
         """Test dry run parameter mapping"""
-        operation = self.integration._map_intent_to_operation(
+        operation_type, packages, options = self.integration._map_intent_to_operation(
             "update_system", {"dry_run": True}
         )
 
-        self.assertTrue(operation.dry_run)
+        self.assertTrue(options.get("dry_run", False))
 
     def test_map_intent_with_options(self):
         """Test custom options mapping"""
-        options = {"verbose": True, "show-trace": True}
-        operation = self.integration._map_intent_to_operation(
-            "build_system", {"options": options}
+        input_options = {"verbose": True, "show-trace": True}
+        operation_type, packages, options = self.integration._map_intent_to_operation(
+            "build_system", {"options": input_options}
         )
 
-        self.assertEqual(operation.options, options)
+        self.assertEqual(options, input_options)
 
     def test_get_error_suggestion_permission(self):
         """Test error suggestion for permission errors"""
