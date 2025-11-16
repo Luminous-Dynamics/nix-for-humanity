@@ -98,7 +98,7 @@ class TestSafeExecutor(unittest.TestCase):
         # Should not raise error
         executor._progress_wrapper("Test", 0.1)
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
     async def test_execute_help(self, mock_run):
         """Test executing help command."""
         intent = Intent(
@@ -112,7 +112,7 @@ class TestSafeExecutor(unittest.TestCase):
         self.assertIn("Install packages", result.output)
         self.assertEqual(result.error, "")
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
     async def test_execute_search(self, mock_run):
         """Test executing package search."""
         mock_run.return_value = {
@@ -139,7 +139,7 @@ class TestSafeExecutor(unittest.TestCase):
         cmd = mock_run.call_args[0][0]
         self.assertEqual(cmd, ["nix", "search", "nixpkgs", "firefox"])
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
     async def test_execute_search_no_query(self, mock_run):
         """Test search with no query specified."""
         intent = Intent(
@@ -302,7 +302,7 @@ class TestSafeExecutor(unittest.TestCase):
         # Cleanup
         script_path.unlink()
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
     async def test_execute_install_dry_run(self, mock_run):
         """Test install in dry run mode."""
         self.executor.dry_run = True
@@ -321,9 +321,9 @@ class TestSafeExecutor(unittest.TestCase):
         self.assertEqual(result.error, "")
         mock_run.assert_not_called()
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
-    @patch("backend.core.executor.InputValidator.validate_input")
-    @patch("backend.core.executor.PermissionChecker.check_operation_permission")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.InputValidator.validate_input")
+    @patch("luminous_nix.core.executor.PermissionChecker.check_operation_permission")
     async def test_execute_install_validation_fail(
         self, mock_perm, mock_validate, mock_run
     ):
@@ -350,8 +350,8 @@ class TestSafeExecutor(unittest.TestCase):
         self.assertEqual(result.details, ["Use alphanumeric characters only"])
         mock_run.assert_not_called()
 
-    @patch("backend.core.executor.SafeExecutor._run_command")
-    @patch("backend.core.executor.PermissionChecker.check_operation_permission")
+    @patch("luminous_nix.core.executor.SafeExecutor._run_command")
+    @patch("luminous_nix.core.executor.PermissionChecker.check_operation_permission")
     async def test_execute_permission_denied(self, mock_perm, mock_run):
         """Test execution with permission denied."""
         mock_perm.return_value = {
@@ -374,7 +374,7 @@ class TestSafeExecutor(unittest.TestCase):
         self.assertEqual(result.details, ["Add user to wheel group"])
         mock_run.assert_not_called()
 
-    @patch("backend.core.executor.asyncio.create_subprocess_exec")
+    @patch("luminous_nix.core.executor.asyncio.create_subprocess_exec")
     async def test_run_command_timeout(self, mock_subprocess):
         """Test command execution with timeout."""
         # Create mock process
@@ -393,7 +393,7 @@ class TestSafeExecutor(unittest.TestCase):
         self.assertIn("timed out", result["stderr"])
         mock_process.kill.assert_called_once()
 
-    @patch("backend.core.executor.CommandValidator.validate_nix_command")
+    @patch("luminous_nix.core.executor.CommandValidator.validate_nix_command")
     async def test_run_command_security_block(self, mock_validate):
         """Test command blocked by security validation."""
         mock_validate.return_value = (

@@ -106,7 +106,7 @@ class TestNLPPipeline(unittest.TestCase):
     def test_xai_engine_integration(self):
         """Test XAI engine integration when available."""
         # Create pipeline with mocked XAI engine
-        with patch("backend.ai.nlp.XAIEngine") as mock_xai:
+        with patch("luminous_nix.ai.nlp.XAIEngine") as mock_xai:
             mock_xai_instance = MagicMock()
             mock_xai.return_value = mock_xai_instance
 
