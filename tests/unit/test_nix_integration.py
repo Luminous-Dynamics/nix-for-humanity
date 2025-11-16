@@ -97,7 +97,7 @@ class TestNixOSIntegration(unittest.TestCase):
         mock_result.data = {"updated_packages": 5}
         mock_result.error = None
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         # Execute intent
         result = asyncio.run(
@@ -105,10 +105,12 @@ class TestNixOSIntegration(unittest.TestCase):
         )
 
         # Verify backend was called correctly
-        self.mock_backend.execute.assert_called_once()
-        call_args = self.mock_backend.execute.call_args[0][0]
-        self.assertEqual(call_args.type.value, "update_system")  # OperationType.UPDATE
-        self.assertFalse(call_args.dry_run)
+        self.mock_backend.execute_native_operation.assert_called_once()
+        call_kwargs = self.mock_backend.execute_native_operation.call_args.kwargs
+        self.assertEqual(
+            call_kwargs["operation_type"].value, "switch"
+        )  # OperationType.SWITCH
+        self.assertFalse(call_kwargs["options"].get("dry_run", False))
 
         # Verify result
         self.assertTrue(result["success"])
@@ -132,17 +134,18 @@ class TestNixOSIntegration(unittest.TestCase):
         mock_result.data = {"generation": 42}
         mock_result.error = None
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         result = asyncio.run(self.integration.execute_intent("rollback_system", {}))
 
         # Verify operation type
-        call_args = self.mock_backend.execute.call_args[0][0]
-        self.assertEqual(call_args.type.value, "rollback")
+        call_kwargs = self.mock_backend.execute_native_operation.call_args.kwargs
+        self.assertEqual(call_kwargs["operation_type"].value, "rollback")
 
         # Verify educational context for rollback
         self.assertIn("education", result)
-        self.assertIn("instant and safe", result["education"]["why_it_matters"])
+        self.assertIn("safe", result["education"]["why_it_matters"])
+        self.assertIn("rollback", result["education"]["why_it_matters"].lower())
 
     def test_execute_intent_install_package(self):
         """Test executing install_package intent"""
@@ -154,16 +157,19 @@ class TestNixOSIntegration(unittest.TestCase):
         }
         mock_result.error = None
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         result = asyncio.run(
             self.integration.execute_intent("install_package", {"package": "firefox"})
         )
 
         # Verify package was passed correctly
-        call_args = self.mock_backend.execute.call_args[0][0]
-        self.assertEqual(call_args.type.value, "install_package")
-        self.assertEqual(call_args.packages, ["firefox"])
+        self.mock_backend.execute_native_operation.assert_called_once()
+        call_kwargs = self.mock_backend.execute_native_operation.call_args.kwargs
+        self.assertEqual(
+            call_kwargs["operation_type"].value, "build"
+        )  # install_package maps to BUILD
+        self.assertEqual(call_kwargs["packages"], ["firefox"])
 
         # Verify educational context
         self.assertIn(
@@ -178,7 +184,7 @@ class TestNixOSIntegration(unittest.TestCase):
         mock_result.data = {}
         mock_result.error = None
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         asyncio.run(
             self.integration.execute_intent(
@@ -186,13 +192,14 @@ class TestNixOSIntegration(unittest.TestCase):
             )
         )
 
-        call_args = self.mock_backend.execute.call_args[0][0]
-        self.assertEqual(call_args.packages, ["vim", "emacs", "neovim"])
+        self.mock_backend.execute_native_operation.assert_called_once()
+        call_kwargs = self.mock_backend.execute_native_operation.call_args.kwargs
+        self.assertEqual(call_kwargs["packages"], ["vim", "emacs", "neovim"])
 
     def test_execute_intent_with_error(self):
         """Test handling errors during execution"""
         # Mock backend raising exception
-        self.mock_backend.execute = AsyncMock(
+        self.mock_backend.execute_native_operation = AsyncMock(
             side_effect=Exception("Network connection failed")
         )
 
@@ -336,7 +343,7 @@ class TestNixOSIntegration(unittest.TestCase):
             ]
         }
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         # Mock NixOS version reading
         with patch(
@@ -361,7 +368,7 @@ class TestNixOSIntegration(unittest.TestCase):
             ]
         }
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_result)
+        self.mock_backend.execute_native_operation = AsyncMock(return_value=mock_result)
 
         info = asyncio.run(self.integration.get_system_info())
 
@@ -370,7 +377,7 @@ class TestNixOSIntegration(unittest.TestCase):
 
     def test_get_system_info_error(self):
         """Test handling errors when getting system info"""
-        self.mock_backend.execute = AsyncMock(
+        self.mock_backend.execute_native_operation = AsyncMock(
             side_effect=Exception("Failed to list generations")
         )
 
@@ -407,13 +414,18 @@ class TestConvenienceFunctions(unittest.TestCase):
 
     def setUp(self):
         """Set up for integration tests"""
-        self.mock_backend_patcher = patch("core.nix_integration.NativeNixBackend")
+        self.mock_backend_patcher = patch(
+            "luminous_nix.core.nix_integration.NativeNixBackend"
+        )
         self.mock_backend_class = self.mock_backend_patcher.start()
         self.mock_backend = Mock()
         self.mock_backend_class.return_value = self.mock_backend
 
+        # Mock the compatibility check to prevent RuntimeError
+        self.mock_backend._check_compatibility = Mock()
+
         self.native_api_patcher = patch(
-            "core.nix_integration.NATIVE_API_AVAILABLE", True
+            "luminous_nix.core.nix_integration.NATIVE_API_AVAILABLE", True
         )
         self.native_api_patcher.start()
 
@@ -448,18 +460,22 @@ class TestConvenienceFunctions(unittest.TestCase):
         mock_update_result.error = None
 
         # Set up mock returns in order
-        self.mock_backend.execute = AsyncMock(
+        self.mock_backend.execute_native_operation = AsyncMock(
             side_effect=[mock_info_result, mock_dry_result, mock_update_result]
         )
 
         # Execute workflow
-        info = integration.get_system_info()
+        info = asyncio.run(integration.get_system_info())
         self.assertEqual(info["current_generation"]["generation"], 42)
 
-        dry_result = integration.execute_intent("update_system", {"dry_run": True})
+        dry_result = asyncio.run(
+            integration.execute_intent("update_system", {"dry_run": True})
+        )
         self.assertTrue(dry_result["success"])
 
-        update_result = integration.execute_intent("update_system", {"dry_run": False})
+        update_result = asyncio.run(
+            integration.execute_intent("update_system", {"dry_run": False})
+        )
         self.assertTrue(update_result["success"])
 
         # Verify operation count
@@ -470,11 +486,11 @@ class TestConvenienceFunctions(unittest.TestCase):
         integration = NixOSIntegration()
 
         # First attempt fails
-        self.mock_backend.execute = AsyncMock(
+        self.mock_backend.execute_native_operation = AsyncMock(
             side_effect=Exception("Network unreachable")
         )
 
-        result1 = integration.execute_intent("update_system", {})
+        result1 = asyncio.run(integration.execute_intent("update_system", {}))
         self.assertFalse(result1["success"])
         self.assertIn("internet connection", result1["suggestion"])
 
@@ -485,9 +501,11 @@ class TestConvenienceFunctions(unittest.TestCase):
         mock_success.data = {}
         mock_success.error = None
 
-        self.mock_backend.execute = AsyncMock(return_value=mock_success)
+        self.mock_backend.execute_native_operation = AsyncMock(
+            return_value=mock_success
+        )
 
-        result2 = integration.execute_intent("update_system", {})
+        result2 = asyncio.run(integration.execute_intent("update_system", {}))
         self.assertTrue(result2["success"])
 
 

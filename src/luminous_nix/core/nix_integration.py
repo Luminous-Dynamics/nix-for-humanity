@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 from luminous_nix.core.native_operations import (  # noqa: E402
     NATIVE_API_AVAILABLE,
     NativeNixBackend,
-    NixOperation,
     NixResult,
     OperationType,
 )
@@ -208,7 +207,11 @@ class NixOSIntegration:
                 "Network issue detected. Check your internet connection and try again."
             )
 
-        if "disk space" in error_lower:
+        if (
+            "disk space" in error_lower
+            or "no space" in error_lower
+            or "space left" in error_lower
+        ):
             return "Low disk space. Run 'nix-collect-garbage -d' to free up space."
 
         return "Check the NixOS manual or ask the community for help with this error."
@@ -216,9 +219,10 @@ class NixOSIntegration:
     async def get_system_info(self) -> dict[str, Any]:
         """Get current system information"""
         try:
-            # Get generations
-            list_op = NixOperation(type=OperationType.LIST_GENERATIONS)
-            result = await self.native_backend.execute(list_op)
+            # Get generations using native operation
+            result = await self.native_backend.execute_native_operation(
+                operation_type=OperationType.LIST_GENERATIONS, packages=[], options={}
+            )
 
             generations = []
             current_gen = None
