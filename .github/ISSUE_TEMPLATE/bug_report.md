@@ -1,39 +1,33 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Bug Report
+about: Report a bug to help us improve
 title: '[BUG] '
-labels: 'bug'
+labels: bug
 assignees: ''
 ---
 
-## Describe the bug
-A clear and concise description of what the bug is.
+## Description
+A clear and concise description of the bug.
 
-## To Reproduce
-Steps to reproduce the behavior:
-1. Run command '...'
-2. Type '...'
+## Steps to Reproduce
+1. Go to '...'
+2. Click on '...'
 3. See error
 
-## Expected behavior
+## Expected Behavior
 What you expected to happen.
 
-## Actual behavior
+## Actual Behavior
 What actually happened.
 
-## Error messages
-```
-Paste any error messages here
-```
-
 ## Environment
-- NixOS Version: [e.g., 25.11]
-- Python Version: [e.g., 3.11]
-- Luminous Nix Version: [e.g., 0.3.1]
-- Installation method: [nix-shell/poetry/other]
+- OS: [e.g., NixOS 24.05, Ubuntu 22.04]
+- Version: [e.g., v0.8.2]
+- Browser (if applicable): [e.g., Firefox 120]
 
-## Additional context
-Add any other context about the problem here.
+## Additional Context
+Add any other context, screenshots, or error logs here.
 
-## Screenshots
-If applicable, add screenshots to help explain your problem.
+```
+Paste error logs here
+```

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/Luminous-Dynamics/luminous-nix/discussions
+    about: Ask questions and discuss ideas
+  - name: Documentation
+    url: https://nixforhumanity.org
+    about: Check the documentation first

@@ -1,31 +1,24 @@
 ---
-name: Feature request
-about: Suggest an idea for Luminous Nix
+name: Feature Request
+about: Suggest a new feature or enhancement
 title: '[FEATURE] '
-labels: 'enhancement'
+labels: enhancement
 assignees: ''
 ---
 
-## Is your feature request related to a problem?
-A clear description of what the problem is. Ex. I'm always frustrated when [...]
+## Problem Statement
+A clear description of the problem this feature would solve.
 
-## Describe the solution you'd like
-A clear description of what you want to happen.
+## Proposed Solution
+How you envision this feature working.
 
-## Example usage
-Show how you'd like to use this feature:
-```bash
-ask-nix "your example command"
-```
+## Alternatives Considered
+Other solutions you've thought about.
 
-## Describe alternatives you've considered
-Other solutions or features you've considered.
+## Additional Context
+Any other context, mockups, or examples.
 
-## Additional context
-Add any other context, mockups, or examples about the feature request here.
-
-## Would you be willing to help implement this?
-- [ ] Yes, I'd like to contribute!
-- [ ] Yes, with guidance
-- [ ] No, but I can test it
-- [ ] No
+## Would you like to work on this?
+- [ ] Yes, I'd like to submit a PR
+- [ ] No, but I can help test
+- [ ] Just suggesting
