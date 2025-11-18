@@ -11,5 +11,5 @@ PySocks==1.7.1
 requests==2.32.4
 requests-toolbelt==1.0.0
 rich==14.0.0
-setuptools==80.7.1.post0
+setuptools==80.9.0
 urllib3==2.4.0
