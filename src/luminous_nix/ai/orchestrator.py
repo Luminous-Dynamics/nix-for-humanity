@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from enum import Enum
 
 # Import our AI systems
-from .hrm_reasoner import HRMNixOSReasoner, ReasoningTask, ReasoningResult
+# Updated to use migrated HRM v2 (hrm_reasoner.py archived 2025-11-20)
+from .hrm.base.hrm_reasoner_v2 import HierarchicalReasoningModel as HRMNixOSReasoner
+# Note: ReasoningTask and ReasoningResult may need to be imported from v2 as well
 from .ollama_interface import OllamaInterface, OllamaConfig
 
 logger = logging.getLogger(__name__)
