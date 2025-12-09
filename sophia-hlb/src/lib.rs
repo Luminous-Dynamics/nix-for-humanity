@@ -20,6 +20,9 @@ pub mod brain;
 // Week 1: Soul Module (Temporal Coherence & Identity)
 pub mod soul;
 
+// Week 2: Memory Systems (Episodic & Procedural)
+pub mod memory;
+
 // Phase 11: Bio-Digital Bridge modules (Week 0: Deferred to later phases)
 // pub mod semantic_ear;  // Needs rust-bert, tokenizers
 pub mod safety;
@@ -58,6 +61,9 @@ pub use sleep_cycles::{SleepCycleManager, SleepConfig, MemoryType, SleepReport};
 
 // Week 1: Soul Module exports
 pub use soul::{WeaverActor, DailyState, CoherenceStatus, KVector};
+
+// Week 2: Memory Systems exports
+pub use memory::{HippocampusActor, MemoryTrace, RecallQuery, EmotionalValence};
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
 use anyhow::Result;
