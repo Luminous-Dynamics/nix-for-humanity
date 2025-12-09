@@ -42,4 +42,7 @@ pub use prefrontal::{
     WorkingMemoryItem,
     PrefrontalStats,
     WorkingMemoryStats,
+    Goal,
+    Condition,
+    GoalStats,
 };

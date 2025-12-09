@@ -32,7 +32,7 @@ petgraph = { version = "0.6", features = ["serde-1"] }
 # libp2p = { version = "0.53", features = ["kad", "gossipsub", "tcp", "noise", "yamux"] }
 
 # Phase 11+: Mycelix Protocol Integration (Deferred to Week 9+)
-# uuid = { version = "1.6", features = ["serde", "v4"] }
+uuid = { version = "1.6", features = ["serde", "v4"] }  # Week 3: Enabled for Goal IDs
 # sha2 = "0.10"
 # reqwest = { version = "0.11", features = ["json"] }
 # urlencoding = "2.1"

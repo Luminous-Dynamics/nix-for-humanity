@@ -58,8 +58,9 @@
 //! and consciousness is what happens when one wins.
 
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 use crate::memory::EmotionalValence;
 
@@ -157,6 +158,248 @@ impl AttentionBid {
         };
 
         (base_score + emotional_boost).clamp(0.0, 1.2) // Allow slight overflow for urgent threats
+    }
+}
+
+// ============================================================================
+// Week 3 Days 4-5: Goal System - The Architecture of Will
+// ============================================================================
+
+/// Condition - Logic Probes for Goal Success/Failure
+///
+/// Instead of `Box<dyn Fn>`, we use serializable conditions that can be:
+/// - Persisted to disk
+/// - Explained to users
+/// - Composed and combined
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Condition {
+    /// Check if Working Memory contains a specific string (case-insensitive)
+    MemoryContains(String),
+
+    /// Check if a specific key-value pair exists in state
+    StateMatch { key: String, value: String },
+
+    /// Timeout condition (milliseconds since goal creation)
+    Timeout(u64),
+
+    /// Always true (for testing or unconditional goals)
+    Always,
+
+    /// Never true (goals that must be manually completed)
+    Never,
+
+    /// Logical AND of multiple conditions
+    And(Vec<Condition>),
+
+    /// Logical OR of multiple conditions
+    Or(Vec<Condition>),
+
+    /// Logical NOT of a condition
+    Not(Box<Condition>),
+}
+
+impl Condition {
+    /// Check if this condition is satisfied
+    ///
+    /// # Arguments
+    /// * `workspace` - The global workspace to check against
+    /// * `state` - Optional key-value state storage
+    /// * `goal_created_at` - When the goal was created (for timeout checks)
+    pub fn is_satisfied(
+        &self,
+        workspace: &GlobalWorkspace,
+        state: &HashMap<String, String>,
+        goal_created_at: u64,
+    ) -> bool {
+        match self {
+            Condition::MemoryContains(pattern) => {
+                let pattern_lower = pattern.to_lowercase();
+                workspace.working_memory.iter().any(|item| {
+                    item.content.to_lowercase().contains(&pattern_lower)
+                })
+            }
+
+            Condition::StateMatch { key, value } => {
+                state.get(key).map(|v| v == value).unwrap_or(false)
+            }
+
+            Condition::Timeout(millis) => {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                (now - goal_created_at) >= *millis
+            }
+
+            Condition::Always => true,
+            Condition::Never => false,
+
+            Condition::And(conditions) => {
+                conditions.iter().all(|c| c.is_satisfied(workspace, state, goal_created_at))
+            }
+
+            Condition::Or(conditions) => {
+                conditions.iter().any(|c| c.is_satisfied(workspace, state, goal_created_at))
+            }
+
+            Condition::Not(condition) => {
+                !condition.is_satisfied(workspace, state, goal_created_at)
+            }
+        }
+    }
+
+    /// Human-readable explanation of what this condition checks
+    pub fn explain(&self) -> String {
+        match self {
+            Condition::MemoryContains(pattern) => {
+                format!("Working Memory contains '{}'", pattern)
+            }
+            Condition::StateMatch { key, value } => {
+                format!("State[{}] == '{}'", key, value)
+            }
+            Condition::Timeout(millis) => {
+                format!("After {}ms timeout", millis)
+            }
+            Condition::Always => "Always (unconditional)".to_string(),
+            Condition::Never => "Never (manual completion only)".to_string(),
+            Condition::And(conditions) => {
+                let explanations: Vec<String> = conditions.iter().map(|c| c.explain()).collect();
+                format!("ALL of: [{}]", explanations.join(", "))
+            }
+            Condition::Or(conditions) => {
+                let explanations: Vec<String> = conditions.iter().map(|c| c.explain()).collect();
+                format!("ANY of: [{}]", explanations.join(", "))
+            }
+            Condition::Not(condition) => {
+                format!("NOT ({})", condition.explain())
+            }
+        }
+    }
+}
+
+/// Goal - A Persistent Bid with Conditions
+///
+/// Goals are thoughts that REFUSE TO DIE until their condition is met.
+/// They compete for attention like all bids, but have decay resistance.
+///
+/// **This is revolutionary**: Instead of AutoGPT-style infinite loops,
+/// Goals naturally compete in the attention economy while persisting
+/// in the background.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Goal {
+    /// Unique identifier
+    pub id: Uuid,
+
+    /// Human-readable intent ("Fix the wifi", "Install Firefox")
+    pub intent: String,
+
+    /// Base salience for bid injection (0.0-1.0)
+    pub priority: f32,
+
+    /// Decay resistance (0.0 = normal thought, 1.0 = immortal)
+    /// Goals with high decay_resistance survive in Working Memory longer
+    pub decay_resistance: f32,
+
+    /// When is this goal successful?
+    pub success_condition: Condition,
+
+    /// When has this goal failed?
+    pub failure_condition: Condition,
+
+    /// Subgoals (hierarchical planning)
+    pub subgoals: Vec<Goal>,
+
+    /// When was this goal created?
+    pub created_at: u64,
+
+    /// How many times has this goal been injected as a bid?
+    pub injection_count: usize,
+
+    /// Context tags for memory/learning
+    pub tags: Vec<String>,
+}
+
+impl Goal {
+    /// Create a new goal
+    pub fn new(intent: impl Into<String>, priority: f32) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            intent: intent.into(),
+            priority: priority.clamp(0.0, 1.0),
+            decay_resistance: 0.8, // Default: High persistence
+            success_condition: Condition::Never, // Must be set explicitly
+            failure_condition: Condition::Timeout(60_000), // Default: 1 minute timeout
+            subgoals: Vec::new(),
+            created_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            injection_count: 0,
+            tags: Vec::new(),
+        }
+    }
+
+    /// Builder: Set decay resistance
+    pub fn with_decay_resistance(mut self, resistance: f32) -> Self {
+        self.decay_resistance = resistance.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Builder: Set success condition
+    pub fn with_success(mut self, condition: Condition) -> Self {
+        self.success_condition = condition;
+        self
+    }
+
+    /// Builder: Set failure condition
+    pub fn with_failure(mut self, condition: Condition) -> Self {
+        self.failure_condition = condition;
+        self
+    }
+
+    /// Builder: Add subgoals
+    pub fn with_subgoals(mut self, subgoals: Vec<Goal>) -> Self {
+        self.subgoals = subgoals;
+        self
+    }
+
+    /// Builder: Add tags
+    pub fn with_tags(mut self, tags: Vec<String>) -> Self {
+        self.tags = tags;
+        self
+    }
+
+    /// Create an AttentionBid from this goal
+    ///
+    /// Goals inject themselves into the attention competition.
+    /// The bid's salience is boosted by the goal's priority and persistence.
+    pub fn to_bid(&self) -> AttentionBid {
+        // Urgency increases with injection count (goal becomes more insistent)
+        let urgency = (0.5 + (self.injection_count as f32 * 0.1)).clamp(0.5, 1.0);
+
+        AttentionBid::new("Goal", self.intent.clone())
+            .with_salience(self.priority)
+            .with_urgency(urgency)
+            .with_emotion(EmotionalValence::Neutral) // Goals are neutral until completed
+            .with_tags(self.tags.clone())
+    }
+
+    /// Check if goal is successful
+    pub fn check_success(
+        &self,
+        workspace: &GlobalWorkspace,
+        state: &HashMap<String, String>,
+    ) -> bool {
+        self.success_condition.is_satisfied(workspace, state, self.created_at)
+    }
+
+    /// Check if goal has failed
+    pub fn check_failure(
+        &self,
+        workspace: &GlobalWorkspace,
+        state: &HashMap<String, String>,
+    ) -> bool {
+        self.failure_condition.is_satisfied(workspace, state, self.created_at)
     }
 }
 
@@ -585,6 +828,19 @@ pub struct PrefrontalCortexActor {
 
     /// Total broadcasts sent
     total_broadcasts: u64,
+
+    // Week 3 Days 4-5: Goal System
+    /// Goal stack (LIFO - most recent goal on top)
+    goal_stack: Vec<Goal>,
+
+    /// State storage for condition checking (key-value pairs)
+    state: HashMap<String, String>,
+
+    /// Total goals completed
+    goals_completed: u64,
+
+    /// Total goals failed
+    goals_failed: u64,
 }
 
 impl Default for PrefrontalCortexActor {
@@ -601,6 +857,10 @@ impl PrefrontalCortexActor {
             cycle_count: 0,
             total_bids: 0,
             total_broadcasts: 0,
+            goal_stack: Vec::new(),
+            state: HashMap::new(),
+            goals_completed: 0,
+            goals_failed: 0,
         }
     }
 
@@ -755,6 +1015,171 @@ impl PrefrontalCortexActor {
     pub fn working_memory_stats(&self) -> WorkingMemoryStats {
         self.workspace.working_memory_stats()
     }
+
+    // ========================================================================
+    // Week 3 Days 4-5: Goal Management - The Architecture of Will
+    // ========================================================================
+
+    /// Push a new goal onto the stack
+    ///
+    /// Goals are LIFO (Last In, First Out). The most recent goal is the current focus.
+    pub fn push_goal(&mut self, goal: Goal) {
+        tracing::info!("🎯 New goal: {}", goal.intent);
+        self.goal_stack.push(goal);
+    }
+
+    /// Peek at the current goal (without removing it)
+    pub fn current_goal(&self) -> Option<&Goal> {
+        self.goal_stack.last()
+    }
+
+    /// Peek at the current goal (mutable)
+    pub fn current_goal_mut(&mut self) -> Option<&mut Goal> {
+        self.goal_stack.last_mut()
+    }
+
+    /// Pop a goal from the stack (when completed or failed)
+    pub fn pop_goal(&mut self) -> Option<Goal> {
+        self.goal_stack.pop()
+    }
+
+    /// Set state for condition checking
+    pub fn set_state(&mut self, key: impl Into<String>, value: impl Into<String>) {
+        self.state.insert(key.into(), value.into());
+    }
+
+    /// Get state value
+    pub fn get_state(&self, key: &str) -> Option<&String> {
+        self.state.get(key)
+    }
+
+    /// Process goals (check conditions, inject bids)
+    ///
+    /// This is the revolutionary "Organic Persistence" mechanism:
+    /// - Goals don't run in a separate loop
+    /// - They inject themselves as bids, competing for attention
+    /// - High decay_resistance keeps them alive in the background
+    /// - They re-emerge naturally when higher priority tasks complete
+    ///
+    /// Returns: Any goals that should be injected as bids this cycle
+    pub fn process_goals(&mut self) -> Vec<AttentionBid> {
+        let mut goal_bids = Vec::new();
+
+        // Check current goal (top of stack)
+        if let Some(goal) = self.goal_stack.last_mut() {
+            // Check success condition
+            if goal.check_success(&self.workspace, &self.state) {
+                tracing::info!("✅ Goal achieved: {}", goal.intent);
+
+                // Pop completed goal
+                let completed = self.pop_goal().unwrap();
+                self.goals_completed += 1;
+
+                // Create achievement bid (dopamine spike!)
+                let achievement_bid = AttentionBid::new(
+                    "Goal",
+                    format!("✅ Achieved: {}", completed.intent)
+                )
+                .with_salience(0.9) // Achievements are highly salient
+                .with_urgency(0.7)
+                .with_emotion(EmotionalValence::Positive) // Dopamine!
+                .with_tags(vec!["achievement".to_string(), "goal_complete".to_string()]);
+
+                goal_bids.push(achievement_bid);
+
+                // If there's a subgoal, push it onto the stack
+                if !completed.subgoals.is_empty() {
+                    for subgoal in completed.subgoals {
+                        self.push_goal(subgoal);
+                    }
+                }
+
+                return goal_bids; // Early return after completion
+            }
+
+            // Check failure condition
+            if goal.check_failure(&self.workspace, &self.state) {
+                tracing::warn!("❌ Goal failed: {}", goal.intent);
+
+                let failed = self.pop_goal().unwrap();
+                self.goals_failed += 1;
+
+                // Create failure bid (learning signal)
+                let failure_bid = AttentionBid::new(
+                    "Goal",
+                    format!("❌ Failed: {}", failed.intent)
+                )
+                .with_salience(0.7)
+                .with_urgency(0.5)
+                .with_emotion(EmotionalValence::Negative) // Failure teaches
+                .with_tags(vec!["failure".to_string(), "goal_failed".to_string()]);
+
+                goal_bids.push(failure_bid);
+                return goal_bids;
+            }
+
+            // Goal is still active - inject it as a bid
+            goal.injection_count += 1;
+            let bid = goal.to_bid();
+
+            tracing::debug!(
+                "🔄 Goal persistence: {} (injection #{})",
+                goal.intent,
+                goal.injection_count
+            );
+
+            goal_bids.push(bid);
+        }
+
+        goal_bids
+    }
+
+    /// Cognitive cycle with goal processing
+    ///
+    /// This is the complete cycle that includes:
+    /// 1. Goal processing (inject persistent bids)
+    /// 2. Normal attention competition
+    /// 3. Consolidation (insights)
+    /// 4. Goal condition checking
+    pub fn cognitive_cycle_with_goals(
+        &mut self,
+        mut bids: Vec<AttentionBid>,
+        consolidation_threshold: f32,
+    ) -> (Option<AttentionBid>, Vec<AttentionBid>) {
+        // Step 1: Process goals (inject persistent bids)
+        let goal_bids = self.process_goals();
+        bids.extend(goal_bids);
+
+        // Step 2: Normal attention competition + consolidation
+        let (winner, insights) = self.cognitive_cycle_with_insights(bids, consolidation_threshold);
+
+        (winner, insights)
+    }
+
+    /// Get goal stack size
+    pub fn goal_count(&self) -> usize {
+        self.goal_stack.len()
+    }
+
+    /// Get all goals (for inspection)
+    pub fn goals(&self) -> &[Goal] {
+        &self.goal_stack
+    }
+
+    /// Clear all goals
+    pub fn clear_goals(&mut self) {
+        self.goal_stack.clear();
+    }
+
+    /// Goal statistics
+    pub fn goal_stats(&self) -> GoalStats {
+        GoalStats {
+            active_goals: self.goal_stack.len(),
+            goals_completed: self.goals_completed,
+            goals_failed: self.goals_failed,
+            current_goal: self.current_goal().map(|g| g.intent.clone()),
+        }
+    }
 }
 
 /// Statistics from the prefrontal cortex
@@ -766,6 +1191,15 @@ pub struct PrefrontalStats {
     pub current_focus: Option<String>,
     pub working_memory_size: usize,
     pub stream_length: usize,
+}
+
+/// Goal statistics (Week 3 Days 4-5)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GoalStats {
+    pub active_goals: usize,
+    pub goals_completed: u64,
+    pub goals_failed: u64,
+    pub current_goal: Option<String>,
 }
 
 // ============================================================================
@@ -1309,5 +1743,348 @@ mod tests {
             // If no insights generated, that's okay - the similarity calculation is conservative
             println!("ℹ️  No insights generated (similarity threshold not met)");
         }
+    }
+
+    // ========================================================================
+    // Week 3 Days 4-5: Goal System Tests
+    // ========================================================================
+
+    #[test]
+    fn test_goal_creation() {
+        let goal = Goal::new("Install Firefox", 0.8)
+            .with_success(Condition::MemoryContains("firefox installed".to_string()))
+            .with_failure(Condition::Timeout(30_000))
+            .with_tags(vec!["installation".to_string(), "browser".to_string()]);
+
+        assert_eq!(goal.intent, "Install Firefox");
+        assert_eq!(goal.priority, 0.8);
+        assert_eq!(goal.decay_resistance, 0.8); // Default
+        assert_eq!(goal.tags.len(), 2);
+    }
+
+    #[test]
+    fn test_condition_memory_contains() {
+        let mut workspace = GlobalWorkspace::new();
+        let state = HashMap::new();
+
+        // Add a thought to working memory
+        let bid = AttentionBid::new("Test", "firefox installed successfully");
+        workspace.add_to_working_memory(bid);
+
+        let condition = Condition::MemoryContains("firefox".to_string());
+        assert!(condition.is_satisfied(&workspace, &state, 0));
+
+        let condition2 = Condition::MemoryContains("chrome".to_string());
+        assert!(!condition2.is_satisfied(&workspace, &state, 0));
+    }
+
+    #[test]
+    fn test_condition_state_match() {
+        let workspace = GlobalWorkspace::new();
+        let mut state = HashMap::new();
+        state.insert("wifi_status".to_string(), "connected".to_string());
+
+        let condition = Condition::StateMatch {
+            key: "wifi_status".to_string(),
+            value: "connected".to_string(),
+        };
+
+        assert!(condition.is_satisfied(&workspace, &state, 0));
+
+        let condition2 = Condition::StateMatch {
+            key: "wifi_status".to_string(),
+            value: "disconnected".to_string(),
+        };
+
+        assert!(!condition2.is_satisfied(&workspace, &state, 0));
+    }
+
+    #[test]
+    fn test_condition_timeout() {
+        let workspace = GlobalWorkspace::new();
+        let state = HashMap::new();
+
+        // Create a goal 100ms ago
+        let created_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64 - 100;
+
+        let condition = Condition::Timeout(50); // 50ms timeout
+
+        // Should be satisfied (100ms > 50ms)
+        assert!(condition.is_satisfied(&workspace, &state, created_at));
+
+        let condition2 = Condition::Timeout(200); // 200ms timeout
+        // Should NOT be satisfied (100ms < 200ms)
+        assert!(!condition2.is_satisfied(&workspace, &state, created_at));
+    }
+
+    #[test]
+    fn test_condition_logical_operators() {
+        let workspace = GlobalWorkspace::new();
+        let mut state = HashMap::new();
+        state.insert("ready".to_string(), "true".to_string());
+
+        // Test AND
+        let and_condition = Condition::And(vec![
+            Condition::StateMatch {
+                key: "ready".to_string(),
+                value: "true".to_string(),
+            },
+            Condition::Always,
+        ]);
+        assert!(and_condition.is_satisfied(&workspace, &state, 0));
+
+        // Test OR
+        let or_condition = Condition::Or(vec![
+            Condition::Never,
+            Condition::Always,
+        ]);
+        assert!(or_condition.is_satisfied(&workspace, &state, 0));
+
+        // Test NOT
+        let not_condition = Condition::Not(Box::new(Condition::Never));
+        assert!(not_condition.is_satisfied(&workspace, &state, 0));
+    }
+
+    #[test]
+    fn test_condition_explain() {
+        let condition = Condition::MemoryContains("success".to_string());
+        assert_eq!(condition.explain(), "Working Memory contains 'success'");
+
+        let condition2 = Condition::StateMatch {
+            key: "status".to_string(),
+            value: "ready".to_string(),
+        };
+        assert_eq!(condition2.explain(), "State[status] == 'ready'");
+
+        let condition3 = Condition::Timeout(5000);
+        assert_eq!(condition3.explain(), "After 5000ms timeout");
+    }
+
+    #[test]
+    fn test_goal_stack_management() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        assert_eq!(pfc.goal_count(), 0);
+        assert!(pfc.current_goal().is_none());
+
+        // Push a goal
+        let goal1 = Goal::new("Task 1", 0.7);
+        pfc.push_goal(goal1);
+
+        assert_eq!(pfc.goal_count(), 1);
+        assert!(pfc.current_goal().is_some());
+        assert_eq!(pfc.current_goal().unwrap().intent, "Task 1");
+
+        // Push another goal (LIFO)
+        let goal2 = Goal::new("Task 2", 0.9);
+        pfc.push_goal(goal2);
+
+        assert_eq!(pfc.goal_count(), 2);
+        assert_eq!(pfc.current_goal().unwrap().intent, "Task 2"); // Most recent
+
+        // Pop goal
+        let popped = pfc.pop_goal().unwrap();
+        assert_eq!(popped.intent, "Task 2");
+        assert_eq!(pfc.goal_count(), 1);
+        assert_eq!(pfc.current_goal().unwrap().intent, "Task 1");
+    }
+
+    #[test]
+    fn test_goal_state_management() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        assert!(pfc.get_state("wifi").is_none());
+
+        pfc.set_state("wifi", "connected");
+        assert_eq!(pfc.get_state("wifi").unwrap(), "connected");
+
+        pfc.set_state("wifi", "disconnected");
+        assert_eq!(pfc.get_state("wifi").unwrap(), "disconnected");
+    }
+
+    #[test]
+    fn test_goal_persistence_injection() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        // Create a goal that never completes (for testing injection)
+        let goal = Goal::new("Persistent Task", 0.8)
+            .with_success(Condition::Never)
+            .with_failure(Condition::Timeout(10_000)); // Won't timeout in this test
+
+        pfc.push_goal(goal);
+
+        // Process goals - should inject a bid
+        let bids = pfc.process_goals();
+
+        assert_eq!(bids.len(), 1);
+        assert_eq!(bids[0].content, "Persistent Task");
+        assert_eq!(bids[0].source, "Goal");
+
+        // Goal should still be on stack
+        assert_eq!(pfc.goal_count(), 1);
+
+        // Process again - injection count should increase
+        let bids2 = pfc.process_goals();
+        assert_eq!(bids2.len(), 1);
+
+        // Check that injection count increased
+        assert_eq!(pfc.current_goal().unwrap().injection_count, 2);
+    }
+
+    #[test]
+    fn test_goal_success_completion() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        // Create a goal with success condition
+        let goal = Goal::new("Find Success", 0.7)
+            .with_success(Condition::MemoryContains("success".to_string()))
+            .with_failure(Condition::Never);
+
+        pfc.push_goal(goal);
+        assert_eq!(pfc.goal_count(), 1);
+
+        // Add "success" to working memory
+        let bid = AttentionBid::new("Test", "Operation completed with success!");
+        pfc.workspace.add_to_working_memory(bid);
+
+        // Process goals - should detect success and complete
+        let result_bids = pfc.process_goals();
+
+        // Should get an achievement bid
+        assert_eq!(result_bids.len(), 1);
+        assert!(result_bids[0].content.contains("Achieved"));
+        assert!(result_bids[0].content.contains("Find Success"));
+        assert_eq!(result_bids[0].emotion, EmotionalValence::Positive);
+
+        // Goal should be popped from stack
+        assert_eq!(pfc.goal_count(), 0);
+        assert_eq!(pfc.goal_stats().goals_completed, 1);
+    }
+
+    #[test]
+    fn test_goal_failure_detection() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        // Create a goal with timeout
+        let goal = Goal::new("Quick Task", 0.7)
+            .with_success(Condition::Never)
+            .with_failure(Condition::Always); // Will fail immediately
+
+        pfc.push_goal(goal);
+        assert_eq!(pfc.goal_count(), 1);
+
+        // Process goals - should detect failure
+        let result_bids = pfc.process_goals();
+
+        // Should get a failure bid
+        assert_eq!(result_bids.len(), 1);
+        assert!(result_bids[0].content.contains("Failed"));
+        assert_eq!(result_bids[0].emotion, EmotionalValence::Negative);
+
+        // Goal should be popped
+        assert_eq!(pfc.goal_count(), 0);
+        assert_eq!(pfc.goal_stats().goals_failed, 1);
+    }
+
+    #[test]
+    fn test_goal_subgoals_execution() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        // Create goal with subgoals
+        let subgoal1 = Goal::new("Subgoal 1", 0.6);
+        let subgoal2 = Goal::new("Subgoal 2", 0.5);
+
+        let parent_goal = Goal::new("Parent Goal", 0.9)
+            .with_success(Condition::Always) // Will complete immediately
+            .with_failure(Condition::Never)
+            .with_subgoals(vec![subgoal1, subgoal2]);
+
+        pfc.push_goal(parent_goal);
+        assert_eq!(pfc.goal_count(), 1);
+
+        // Process - parent should complete and push subgoals
+        let _result = pfc.process_goals();
+
+        // Parent should be gone, subgoals should be pushed
+        assert_eq!(pfc.goal_count(), 2);
+        assert!(pfc.current_goal().unwrap().intent.contains("Subgoal"));
+    }
+
+    #[test]
+    fn test_cognitive_cycle_with_goals() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        // Create a persistent goal
+        let goal = Goal::new("Maintain Focus", 0.7)
+            .with_success(Condition::Never)
+            .with_failure(Condition::Never);
+
+        pfc.push_goal(goal);
+
+        // Create some normal bids
+        let bid1 = AttentionBid::new("Thalamus", "User input").with_salience(0.6);
+        let bid2 = AttentionBid::new("Hippocampus", "Memory recall").with_salience(0.5);
+
+        // Run cognitive cycle with goals
+        let (winner, _insights) = pfc.cognitive_cycle_with_goals(
+            vec![bid1, bid2],
+            0.4
+        );
+
+        // Winner might be the goal or one of the normal bids
+        assert!(winner.is_some());
+
+        // Goal should still be active
+        assert_eq!(pfc.goal_count(), 1);
+    }
+
+    #[test]
+    fn test_goal_stats() {
+        let mut pfc = PrefrontalCortexActor::new();
+
+        let stats = pfc.goal_stats();
+        assert_eq!(stats.active_goals, 0);
+        assert_eq!(stats.goals_completed, 0);
+        assert_eq!(stats.goals_failed, 0);
+        assert!(stats.current_goal.is_none());
+
+        // Add a goal
+        let goal = Goal::new("Test Goal", 0.8);
+        pfc.push_goal(goal);
+
+        let stats2 = pfc.goal_stats();
+        assert_eq!(stats2.active_goals, 1);
+        assert_eq!(stats2.current_goal.unwrap(), "Test Goal");
+
+        // Complete a goal manually
+        pfc.goals_completed = 5;
+        pfc.goals_failed = 2;
+
+        let stats3 = pfc.goal_stats();
+        assert_eq!(stats3.goals_completed, 5);
+        assert_eq!(stats3.goals_failed, 2);
+    }
+
+    #[test]
+    fn test_goal_to_bid_urgency_increases() {
+        let mut goal = Goal::new("Insistent Task", 0.7);
+
+        // First injection
+        let bid1 = goal.to_bid();
+        assert_eq!(bid1.urgency, 0.5); // Base urgency
+
+        // Simulate injection
+        goal.injection_count = 1;
+        let bid2 = goal.to_bid();
+        assert!(bid2.urgency > 0.5); // Increased urgency
+
+        // More injections
+        goal.injection_count = 5;
+        let bid3 = goal.to_bid();
+        assert!(bid3.urgency > bid2.urgency); // Even more urgent
+        assert!(bid3.urgency <= 1.0); // Clamped to max
     }
 }
