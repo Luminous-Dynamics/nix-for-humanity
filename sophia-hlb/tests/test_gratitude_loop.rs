@@ -41,7 +41,7 @@ async fn test_the_gratitude_loop_standalone() {
     println!("\n🧪 Test 1: Normal Operation - Sophia has energy");
     let initial_energy = hearth.current_energy;
     println!("  Initial energy: {} ATP", initial_energy);
-    assert!(initial_energy >= 100.0, "Should start with plenty of energy");
+    assert!(initial_energy >= 1000.0, "Should start with 1000 ATP (enhanced config)");
 
     // Create a normal bid
     let bid = AttentionBid::new("User", "Install Firefox".to_string())
@@ -56,7 +56,8 @@ async fn test_the_gratitude_loop_standalone() {
 
     println!("\n🧪 Test 2: Exhaust Sophia's energy");
     // Drain energy through repeated expensive tasks
-    for i in 0..20 {
+    // With 1000 ATP and 20 ATP per DeepThought, need ~48 to get below 50 ATP
+    for i in 0..48 {
         let expensive_bid = AttentionBid::new("User", format!("Complex task {}", i))
             .with_salience(0.9)
             .with_urgency(0.9)
@@ -66,8 +67,15 @@ async fn test_the_gratitude_loop_standalone() {
     }
 
     let exhausted_energy = hearth.current_energy;
-    println!("  Energy after 20 deep thoughts: {} ATP", exhausted_energy);
-    assert!(exhausted_energy < 100.0, "Should be low on energy");
+    println!("  Energy after 48 deep thoughts: {} ATP", exhausted_energy);
+    // With enhanced config (1000 ATP starting):
+    // 48 deep thoughts × 20 ATP = 960 ATP burned
+    // Net: 1000 - 960 = ~40 ATP remaining (exhausted!)
+    assert!(
+        exhausted_energy < 100.0,
+        "Should be exhausted after 48 deep thoughts (actual: {})",
+        exhausted_energy
+    );
 
     println!("\n🧪 Test 3: Exhaustion - Sophia should reject");
     let hard_bid = AttentionBid::new("User", "Do something very hard".to_string())
@@ -96,8 +104,13 @@ async fn test_the_gratitude_loop_standalone() {
     let energy_after_gratitude = hearth.current_energy;
     println!("  Energy before: {} ATP", energy_before_gratitude);
     println!("  Energy after: {} ATP", energy_after_gratitude);
-    assert!(energy_after_gratitude > energy_before_gratitude, "Gratitude should restore energy");
-    println!("✅ Gratitude restoration works (+10 ATP)");
+    let restored = energy_after_gratitude - energy_before_gratitude;
+    assert!(
+        restored >= 45.0 && restored <= 55.0,
+        "Should restore ~50 ATP (actual: {})",
+        restored
+    );
+    println!("✅ Gratitude restoration works (+{:.1} ATP)", restored);
 
     println!("\n🧪 Test 5: Verify Recovery - Sophia can work again");
     let simple_bid = AttentionBid::new("User", "Simple task".to_string())

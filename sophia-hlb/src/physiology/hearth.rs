@@ -129,6 +129,12 @@ pub struct HearthActor {
     /// Basal metabolic rate (cost of existing per cycle)
     pub metabolic_rate: f32,
 
+    /// Gratitude energy boost (from config)
+    pub gratitude_boost: f32,
+
+    /// Passive rest regeneration rate (energy per minute, from config)
+    pub rest_regen_rate: f32,
+
     /// Is currently exhausted?
     pub is_exhausted: bool,
 
@@ -180,6 +186,44 @@ pub struct HearthConfig {
 impl Default for HearthConfig {
     fn default() -> Self {
         Self {
+            // Week 5 Day 2: Enhanced configuration for natural workflow
+            // 1000 ATP allows ~50 deep thoughts before exhaustion
+            // This creates meaningful scarcity without being restrictive
+            initial_energy: 1000.0,
+            max_energy: 1000.0,
+
+            // Basal metabolic drain (cost of existing per cycle)
+            // Keep low - this is passive COST, not regeneration!
+            metabolic_rate: 0.1,
+
+            // Gratitude now restores 50 ATP (5 deep thoughts worth)
+            // Makes "thank you" genuinely meaningful
+            gratitude_boost: 50.0,
+
+            // Passive rest regeneration (5 ATP per minute)
+            // This is actual REGENERATION during rest
+            rest_regen_rate: 5.0,
+        }
+    }
+}
+
+impl HearthConfig {
+    /// High-energy test configuration for stress testing
+    /// Use when you want to test logic without energy constraints
+    pub fn test_config() -> Self {
+        Self {
+            initial_energy: 5000.0,
+            max_energy: 5000.0,
+            metabolic_rate: 50.0,
+            gratitude_boost: 200.0,
+            rest_regen_rate: 25.0,
+        }
+    }
+
+    /// Original conservative configuration (Week 4 baseline)
+    /// Kept for comparison and specific use cases
+    pub fn conservative_config() -> Self {
+        Self {
             initial_energy: 100.0,
             max_energy: 100.0,
             metabolic_rate: 0.1,
@@ -213,6 +257,8 @@ impl HearthActor {
             current_energy: config.initial_energy,
             max_energy: config.max_energy,
             metabolic_rate: config.metabolic_rate,
+            gratitude_boost: config.gratitude_boost,
+            rest_regen_rate: config.rest_regen_rate,
             is_exhausted: false,
             total_burned: 0.0,
             gratitude_count: 0,
@@ -316,7 +362,7 @@ impl HearthActor {
     /// - The system is sustainable through reciprocity
     #[instrument(skip(self))]
     pub fn receive_gratitude(&mut self) {
-        let boost = 10.0;
+        let boost = self.gratitude_boost;
         self.current_energy = (self.current_energy + boost).min(self.max_energy);
         self.gratitude_count += 1;
 
@@ -326,7 +372,8 @@ impl HearthActor {
         }
 
         info!(
-            "💚 Gratitude received! Energy restored to {:.1}%",
+            "💚 Gratitude received! Energy +{:.1} ATP → {:.1}%",
+            boost,
             self.energy_percentage()
         );
     }
@@ -340,7 +387,7 @@ impl HearthActor {
     pub fn rest(&mut self, duration_minutes: f32, hormones: &HormoneState) {
         // Cortisol blocks regeneration!
         let recovery_efficiency = (1.0 - hormones.cortisol).max(0.0);
-        let recovery = duration_minutes * 0.5 * recovery_efficiency;
+        let recovery = duration_minutes * self.rest_regen_rate * recovery_efficiency;
 
         self.current_energy = (self.current_energy + recovery).min(self.max_energy);
 
