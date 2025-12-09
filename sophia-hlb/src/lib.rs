@@ -74,6 +74,8 @@ pub use brain::{
 pub use brain::{
     PrefrontalCortexActor, AttentionBid, GlobalWorkspace, WorkingMemoryItem, PrefrontalStats,
     WorkingMemoryStats, Goal, Condition, GoalStats,
+    MetaCognitionMonitor, CognitiveMetrics, RegulatoryAction, RegulatoryBid,
+    MetaCognitionConfig, MonitorStats,
 };
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 

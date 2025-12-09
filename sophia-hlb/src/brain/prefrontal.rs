@@ -63,6 +63,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 use crate::memory::EmotionalValence;
+use super::meta_cognition::{MetaCognitionMonitor, CognitiveMetrics, RegulatoryBid, MetaCognitionConfig};
 
 // ============================================================================
 // Core Types
@@ -841,6 +842,10 @@ pub struct PrefrontalCortexActor {
 
     /// Total goals failed
     goals_failed: u64,
+
+    // Week 3 Days 6-7: Meta-Cognition
+    /// The Monitor: Watches cognitive state and generates regulatory bids
+    monitor: MetaCognitionMonitor,
 }
 
 impl Default for PrefrontalCortexActor {
@@ -861,6 +866,7 @@ impl PrefrontalCortexActor {
             state: HashMap::new(),
             goals_completed: 0,
             goals_failed: 0,
+            monitor: MetaCognitionMonitor::default(),
         }
     }
 
@@ -1179,6 +1185,186 @@ impl PrefrontalCortexActor {
             goals_failed: self.goals_failed,
             current_goal: self.current_goal().map(|g| g.intent.clone()),
         }
+    }
+
+    // ============================================================================
+    // Week 3 Days 6-7: Meta-Cognition - The Loop That Watches The Loop
+    // ============================================================================
+
+    /// Calculate decay velocity from workspace history
+    ///
+    /// Measures how fast thoughts are decaying from working memory.
+    /// High decay = distracted, low decay = fixated
+    fn calculate_decay_velocity(&self) -> f32 {
+        if self.workspace.working_memory.is_empty() {
+            return 0.5; // Default neutral
+        }
+
+        // Count how many items in working memory have low activation (decaying)
+        let decay_count = self.workspace.working_memory
+            .iter()
+            .filter(|item| item.activation < 0.3)
+            .count();
+
+        let total_items = self.workspace.working_memory.len();
+
+        // Ratio of decayed items = decay velocity
+        decay_count as f32 / total_items as f32
+    }
+
+    /// Calculate conflict ratio from recent bids
+    ///
+    /// Measures how much competition there is for attention.
+    /// High conflict = many bids competing, low conflict = clear winner
+    fn calculate_conflict_ratio(&self, recent_bids: &[AttentionBid]) -> f32 {
+        if recent_bids.len() < 2 {
+            return 0.0; // No conflict with 0-1 bids
+        }
+
+        // Sort bids by priority
+        let mut priorities: Vec<f32> = recent_bids
+            .iter()
+            .map(|b| b.salience * b.urgency + b.emotion.to_scalar().abs() * 0.2)
+            .collect();
+        priorities.sort_by(|a, b| b.partial_cmp(a).unwrap());
+
+        // Calculate how close the top bids are
+        if priorities.len() >= 2 {
+            let top = priorities[0];
+            let second = priorities[1];
+
+            if top < 0.01 {
+                return 0.0; // All priorities negligible
+            }
+
+            // Conflict is high when top bids are close in priority
+            second / top
+        } else {
+            0.0
+        }
+    }
+
+    /// Calculate insight rate from working memory consolidation
+    ///
+    /// Measures how often new insights are being generated.
+    fn calculate_insight_rate(&self) -> f32 {
+        if self.workspace.working_memory.is_empty() {
+            return 0.5; // Default neutral
+        }
+
+        // Count high-salience items in working memory (consolidated insights)
+        let insight_count = self.workspace.working_memory
+            .iter()
+            .filter(|item| {
+                // Insights are marked with high salience and often have tags
+                item.original_bid.salience > 0.7 && !item.original_bid.tags.is_empty()
+            })
+            .count();
+
+        let total_items = self.workspace.working_memory.len();
+
+        // Normalize by working memory size
+        (insight_count as f32 / total_items as f32).min(1.0)
+    }
+
+    /// Calculate goal velocity
+    ///
+    /// Measures how fast goals are completing.
+    /// Derived from goals_completed relative to cycle count.
+    fn calculate_goal_velocity(&self) -> f32 {
+        if self.cycle_count < 10 {
+            return 0.5; // Default neutral during warmup
+        }
+
+        // Goal completion rate: goals / cycles
+        let rate = self.goals_completed as f32 / self.cycle_count as f32;
+
+        // Normalize to 0-1 range (assume 0.1 goals/cycle is high)
+        (rate / 0.1).min(1.0)
+    }
+
+    /// Run meta-cognition cycle: Update metrics and generate regulatory bids
+    ///
+    /// This is the Monitor's main loop:
+    /// 1. Calculate raw metrics from workspace state
+    /// 2. Update the Monitor with new measurements
+    /// 3. Check for pathological patterns
+    /// 4. Generate regulatory bids if intervention needed
+    ///
+    /// Returns regulatory bids to inject into attention competition
+    fn run_meta_cognition(&mut self, recent_bids: &[AttentionBid]) -> Vec<AttentionBid> {
+        // Calculate raw metrics
+        let decay_velocity = self.calculate_decay_velocity();
+        let conflict_ratio = self.calculate_conflict_ratio(recent_bids);
+        let insight_rate = self.calculate_insight_rate();
+        let goal_velocity = self.calculate_goal_velocity();
+
+        // Update the Monitor
+        self.monitor.update_metrics(
+            decay_velocity,
+            conflict_ratio,
+            insight_rate,
+            goal_velocity,
+        );
+
+        // Check for interventions
+        let regulatory_bids = self.monitor.check_for_interventions();
+
+        // Convert regulatory bids to attention bids
+        regulatory_bids
+            .into_iter()
+            .map(|rb| {
+                AttentionBid::new("MetaCognition", rb.action.intent())
+                    .with_salience(rb.priority)
+                    .with_urgency(0.9) // Regulatory actions are urgent
+                    .with_tags(vec!["meta-cognition".to_string(), "regulatory".to_string()])
+            })
+            .collect()
+    }
+
+    /// Get current cognitive metrics
+    pub fn cognitive_metrics(&self) -> &CognitiveMetrics {
+        self.monitor.metrics()
+    }
+
+    /// Get meta-cognition monitor stats
+    pub fn monitor_stats(&self) -> crate::brain::meta_cognition::MonitorStats {
+        self.monitor.stats()
+    }
+
+    /// Cognitive cycle with full integration: Goals + Meta-Cognition
+    ///
+    /// This is the complete cognitive cycle:
+    /// 1. Process goals → generate goal bids
+    /// 2. Run meta-cognition → generate regulatory bids
+    /// 3. Merge all bids (regular + goals + regulatory)
+    /// 4. Run attention competition
+    /// 5. Consolidate insights
+    ///
+    /// Returns winner bid and any consolidated insights
+    pub fn full_cognitive_cycle(
+        &mut self,
+        mut bids: Vec<AttentionBid>,
+        consolidation_threshold: f32,
+    ) -> (Option<AttentionBid>, Vec<AttentionBid>) {
+        // Keep a copy of bids for meta-cognition analysis
+        let bids_for_analysis = bids.clone();
+
+        // 1. Process goals → generate goal bids
+        let goal_bids = self.process_goals();
+        bids.extend(goal_bids);
+
+        // 2. Run meta-cognition → generate regulatory bids
+        let regulatory_bids = self.run_meta_cognition(&bids_for_analysis);
+        bids.extend(regulatory_bids);
+
+        // 3. Run regular cognitive cycle with all bids
+        let (winner, insights) = self.cognitive_cycle_with_insights(
+            bids,
+            consolidation_threshold,
+        );
+
+        (winner, insights)
     }
 }
 

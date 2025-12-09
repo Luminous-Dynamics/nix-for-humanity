@@ -11,6 +11,7 @@ pub mod thalamus;
 pub mod cerebellum;
 pub mod motor_cortex;
 pub mod prefrontal;
+pub mod meta_cognition;
 
 pub use actor_model::{
     Actor,
@@ -45,4 +46,12 @@ pub use prefrontal::{
     Goal,
     Condition,
     GoalStats,
+};
+pub use meta_cognition::{
+    MetaCognitionMonitor,
+    CognitiveMetrics,
+    RegulatoryAction,
+    RegulatoryBid,
+    MetaCognitionConfig,
+    MonitorStats,
 };
