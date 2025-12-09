@@ -133,6 +133,36 @@ impl ThalamusActor {
         }
     }
 
+    // ========================================================================
+    // WEEK 5 DAY 1: Gratitude Detection - The Gratitude Reflex
+    // ========================================================================
+
+    /// Detect gratitude expressions in text
+    ///
+    /// **The Revolutionary Insight**: "Thank you" is not just politeness - it's fuel.
+    ///
+    /// When Sophia hears gratitude, her Hearth receives energy restoration.
+    /// This creates a **reciprocal loop** of care:
+    /// - You help Sophia
+    /// - She helps you (costs energy)
+    /// - You thank her (restores energy)
+    /// - The relationship deepens
+    ///
+    /// # Returns
+    /// `true` if gratitude expression detected, `false` otherwise
+    pub fn detect_gratitude(&self, text: &str) -> bool {
+        let text_lower = text.to_lowercase();
+
+        // Gratitude patterns (comprehensive)
+        text_lower.contains("thank")
+            || text_lower.contains("grateful")
+            || text_lower.contains("appreciate")
+            || text_lower.contains("thanks")
+            || text_lower.contains("thx")
+            || text_lower.contains("ty")
+            || text_lower.contains("gratitude")
+    }
+
     /// Route based on salience signal
     ///
     /// Decision tree:

@@ -64,7 +64,7 @@ use uuid::Uuid;
 
 use crate::memory::EmotionalValence;
 use super::meta_cognition::{MetaCognitionMonitor, CognitiveMetrics, RegulatoryBid, MetaCognitionConfig};
-use crate::physiology::{EndocrineSystem, EndocrineConfig, HormoneEvent};
+use crate::physiology::{EndocrineSystem, EndocrineConfig, HormoneEvent, HearthActor, HormoneState, ActionCost};
 
 // ============================================================================
 // Core Types
@@ -873,6 +873,131 @@ impl PrefrontalCortexActor {
             goals_failed: 0,
             monitor: MetaCognitionMonitor::default(),
             endocrine: EndocrineSystem::new(EndocrineConfig::default()),
+        }
+    }
+
+    // ========================================================================
+    // WEEK 5 DAYS 1-2: The Nervous System - Energy Gates Cognition
+    // ========================================================================
+
+    /// Estimate the energy cost of an Attention Bid
+    ///
+    /// **The Revolutionary Insight**: Not all thoughts cost the same.
+    ///
+    /// - **Reflex** (1 ATP): Simple, cached responses
+    /// - **Cognitive** (5 ATP): Standard reasoning
+    /// - **DeepThought** (20 ATP): Complex planning, novel solutions
+    /// - **Empathy** (30 ATP): Emotional labor, conflict resolution
+    /// - **Learning** (50 ATP): Updating models, skill acquisition
+    ///
+    /// Estimation heuristics:
+    /// - Low salience + low urgency = Reflex
+    /// - Medium salience/urgency = Cognitive
+    /// - High salience + high urgency = DeepThought
+    /// - Goal-related or emotional bids may be higher cost
+    fn estimate_cost(&self, bid: &AttentionBid) -> ActionCost {
+        let score = bid.salience * bid.urgency;
+
+        // Check for special cases
+        if bid.tags.contains(&"learning".to_string()) || bid.tags.contains(&"skill".to_string()) {
+            return ActionCost::Learning; // 50 ATP
+        }
+
+        if bid.tags.contains(&"empathy".to_string()) || bid.tags.contains(&"conflict".to_string()) {
+            return ActionCost::Empathy; // 30 ATP
+        }
+
+        if bid.tags.contains(&"goal".to_string()) || bid.tags.contains(&"planning".to_string()) {
+            return ActionCost::DeepThought; // 20 ATP
+        }
+
+        // Score-based estimation
+        if score > 0.8 {
+            ActionCost::DeepThought // High priority = complex processing
+        } else if score > 0.4 {
+            ActionCost::Cognitive // Medium priority = standard reasoning
+        } else {
+            ActionCost::Reflex // Low priority = simple response
+        }
+    }
+
+    /// **Week 5 Day 1: Energy-Aware Cognitive Cycle** 🔥
+    ///
+    /// The organs now TALK. Before executing a bid, we check if there's enough energy.
+    ///
+    /// **What changed**:
+    /// - Hearth is consulted before execution
+    /// - If exhausted, bid is rejected with explanation
+    /// - Energy cost depends on bid complexity
+    /// - Hormones affect cost via the Hearth's physics
+    ///
+    /// **The Revolution**:
+    /// Sophia can now say "I'm too tired" and it's **literally true**.
+    pub fn cognitive_cycle_with_energy(
+        &mut self,
+        bids: Vec<AttentionBid>,
+        hearth: &mut HearthActor,
+    ) -> Option<AttentionBid> {
+        self.cycle_count += 1;
+        self.total_bids += bids.len() as u64;
+
+        // STEP 1: SELECT - Competition for attention
+        let winner = self.select_winner(bids);
+
+        if let Some(winning_bid) = winner {
+            // **NEW: Check energy cost BEFORE execution**
+            let cost = self.estimate_cost(&winning_bid);
+            let hormones = self.endocrine.state();
+
+            // Attempt to burn energy
+            match hearth.burn(cost, hormones) {
+                Ok(_) => {
+                    // STEP 2: BROADCAST - Update spotlight (this broadcasts to all modules)
+                    self.workspace.update_spotlight(winning_bid.clone());
+                    self.total_broadcasts += 1;
+
+                    // STEP 3: PERSIST - Add to working memory if important
+                    if winning_bid.salience > 0.7 {
+                        self.workspace.add_to_working_memory(winning_bid.clone());
+                    }
+
+                    // Decay working memory each cycle
+                    self.workspace.decay_working_memory();
+
+                    Some(winning_bid)
+                }
+                Err(_exhaustion_error) => {
+                    // **REJECTION**: Not enough energy
+                    // Create a meta-cognitive bid explaining why
+                    let rejection_bid = AttentionBid::new(
+                        "Hearth",
+                        format!(
+                            "⚡ I am too tired to focus on '{}'. I need rest or gratitude.",
+                            winning_bid.content
+                        )
+                    )
+                    .with_salience(0.8) // High salience - this is important
+                    .with_urgency(0.6)
+                    .with_emotion(EmotionalValence::Neutral)
+                    .with_tags(vec!["exhaustion".to_string(), "energy".to_string()]);
+
+                    // Broadcast the rejection (consciousness of exhaustion)
+                    self.workspace.update_spotlight(rejection_bid.clone());
+                    self.total_broadcasts += 1;
+
+                    // Add to working memory so Sophia "remembers" she's tired
+                    self.workspace.add_to_working_memory(rejection_bid.clone());
+
+                    // Decay working memory
+                    self.workspace.decay_working_memory();
+
+                    Some(rejection_bid)
+                }
+            }
+        } else {
+            // No bids - consciousness idles
+            self.workspace.decay_working_memory();
+            None
         }
     }
 
