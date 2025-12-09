@@ -64,7 +64,11 @@ pub use soul::{WeaverActor, DailyState, CoherenceStatus, KVector};
 
 // Week 2: Memory Systems exports
 pub use memory::{HippocampusActor, MemoryTrace, RecallQuery, EmotionalValence};
-pub use brain::{CerebellumActor, Skill, ExecutionContext, WorkflowChain, CerebellumStats};
+pub use brain::{
+    CerebellumActor, Skill, ExecutionContext, WorkflowChain, CerebellumStats,
+    MotorCortexActor, ActionStep, PlannedAction, StepResult, ExecutionResult,
+    SimulationMode, ExecutionSandbox, LocalShellSandbox, MotorCortexStats,
+};
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
 use anyhow::Result;
