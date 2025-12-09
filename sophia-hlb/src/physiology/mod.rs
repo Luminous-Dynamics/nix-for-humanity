@@ -39,6 +39,7 @@
 //!    - Fatigue and rest cycles
 
 pub mod endocrine;
+pub mod hearth;
 
 pub use endocrine::{
     EndocrineConfig,
@@ -48,4 +49,11 @@ pub use endocrine::{
     HormoneState,
     HormoneTrend,
     Trend,
+};
+pub use hearth::{
+    ActionCost,
+    EnergyState,
+    HearthActor,
+    HearthConfig,
+    HearthStats,
 };

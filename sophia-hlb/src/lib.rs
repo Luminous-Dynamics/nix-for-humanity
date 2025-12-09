@@ -90,6 +90,8 @@ pub use brain::{
 pub use physiology::{
     EndocrineSystem, EndocrineConfig, EndocrineStats,
     HormoneState, HormoneEvent, HormoneTrend, Trend,
+    HearthActor, HearthConfig, HearthStats,
+    ActionCost, EnergyState,
 };
 
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
