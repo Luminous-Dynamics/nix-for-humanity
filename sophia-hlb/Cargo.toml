@@ -68,6 +68,7 @@ dashmap = "5.5"
 rand = "0.8"
 blake3 = "1.5"
 chrono = "0.4"
+regex = "1.10"  # For Thalamus pattern matching
 
 # Week 0: Memory Arena for HDC
 bumpalo = "3.14"
