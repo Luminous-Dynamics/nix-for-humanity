@@ -50,7 +50,7 @@ pub use nix_understanding::NixUnderstanding;
 
 // Week 0: Deferred Phase 11+ exports
 // pub use semantic_ear::SemanticEar;  // Needs rust-bert
-pub use safety::{SafetyGuardrails, ForbiddenCategory, SafetyStats};
+pub use safety::{SafetyGuardrails, ForbiddenCategory, SafetyStats, AmygdalaActor, ThreatLevel};
 pub use sleep_cycles::{SleepCycleManager, SleepConfig, MemoryType, SleepReport};
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
