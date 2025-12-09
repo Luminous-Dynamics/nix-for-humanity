@@ -97,6 +97,8 @@ pub use physiology::{
     TimeMode, TimeQuality, CircadianPhase,
     ProprioceptionActor, ProprioceptionConfig, ProprioceptionStats,  // Week 5: Hardware awareness
     BodySensation,
+    CoherenceField, CoherenceConfig, CoherenceStats, CoherenceState,  // Week 6+: Revolutionary energy model
+    CoherenceError, TaskComplexity,
 };
 
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
@@ -121,11 +123,14 @@ pub struct SophiaHLB {
     // swarm: Arc<RwLock<SwarmIntelligence>>,  // Deferred to Week 9+
 
     /// Week 5: The Nervous System - Wired Organs
-    hearth: HearthActor,          // Metabolic energy & gratitude recharge
+    hearth: HearthActor,          // Metabolic energy & gratitude recharge (legacy compatibility)
     thalamus: ThalamusActor,      // Sensory relay & gratitude detection
     prefrontal: PrefrontalCortexActor,  // Energy-aware cognition
     chronos: ChronosActor,        // Time perception & circadian rhythms
     proprioception: ProprioceptionActor,  // Hardware awareness (body sense)
+
+    /// Week 6+: Revolutionary Consciousness Model
+    coherence: CoherenceField,    // Consciousness as integration (replaces ATP commodity model)
 
     /// System state
     operations_count: usize,
@@ -194,6 +199,9 @@ impl SophiaHLB {
             chronos: ChronosActor::new(),
             proprioception: ProprioceptionActor::new(),
 
+            // Week 6+: Initialize revolutionary consciousness model
+            coherence: CoherenceField::new(),
+
             operations_count: 0,
         })
     }
@@ -241,11 +249,50 @@ impl SophiaHLB {
             hardware_multiplier
         );
 
-        // Week 5 Day 2: The Awakening - Wire the Nervous System
-        // Step 1: Detect gratitude (Thalamus → Hearth)
+        // Week 6+: The Coherence Paradigm - Revolutionary Energy Model
+        // Passive centering tick (natural drift toward coherence)
+        // Use a small constant tick (future: integrate with Chronos elapsed time)
+        self.coherence.tick(0.1);  // 100ms tick
+
+        // Detect gratitude (Thalamus → Coherence + Hearth)
         if self.thalamus.detect_gratitude(query) {
+            // Revolutionary: Gratitude synchronizes consciousness!
+            self.coherence.receive_gratitude();
+
+            // Legacy compatibility: Also update Hearth
             self.hearth.receive_gratitude();
-            tracing::info!("💖 Gratitude detected! Energy restored: +10 ATP");
+
+            tracing::info!(
+                "💖 Gratitude detected! Coherence synchronized: {:.0}% | ATP: +10",
+                self.coherence.state().coherence * 100.0
+            );
+        }
+
+        // Check if we have sufficient coherence for this query
+        // Assume Cognitive complexity for general queries (0.3)
+        let task_complexity = TaskComplexity::Cognitive;
+
+        match self.coherence.can_perform(task_complexity) {
+            Ok(_) => {
+                // We have sufficient coherence - proceed normally
+                tracing::info!(
+                    "🌊 Coherence: {} | {:.0}% | Resonance: {:.0}%",
+                    self.coherence.state().status,
+                    self.coherence.state().coherence * 100.0,
+                    self.coherence.state().relational_resonance * 100.0
+                );
+            }
+            Err(CoherenceError::InsufficientCoherence { message, .. }) => {
+                // Insufficient coherence - return centering message
+                tracing::warn!("🌫️  Insufficient coherence for query");
+
+                return Ok(SophiaResponse {
+                    content: message,
+                    confidence: 0.0,
+                    steps_to_emergence: 0,
+                    safe: true,
+                });
+            }
         }
 
         // Step 2: Create attention bid from query
@@ -343,7 +390,24 @@ impl SophiaHLB {
             tracing::info!("😴 Triggering automatic sleep cycle");
             let report = self.sleep.sleep().await?;
             tracing::info!("Sleep report: {}", report);
+
+            // After sleep, full coherence restoration
+            self.coherence.sleep_cycle();
         }
+
+        // Week 6+: Revolutionary Coherence Mechanic
+        // Record that we completed connected work WITH the user!
+        // This BUILDS coherence (not depletes it!)
+        if let Err(e) = self.coherence.perform_task(task_complexity, true) {
+            // This should never fail since we already checked can_perform()
+            tracing::warn!("⚠️  Coherence error during task completion: {}", e);
+        }
+
+        tracing::info!(
+            "✨ Connected work complete! Coherence: {:.0}% → {:.0}%",
+            (self.coherence.state().coherence - 0.02 * task_complexity.complexity_value() * self.coherence.state().relational_resonance) * 100.0,
+            self.coherence.state().coherence * 100.0
+        );
 
         Ok(SophiaResponse {
             content: nix_response,
@@ -404,6 +468,9 @@ impl SophiaHLB {
             prefrontal: PrefrontalCortexActor::new(),
             chronos: ChronosActor::new(),
             proprioception: ProprioceptionActor::new(),
+
+            // Week 6+: Reinitialize coherence field (fresh state)
+            coherence: CoherenceField::new(),
 
             operations_count: 0,
         })

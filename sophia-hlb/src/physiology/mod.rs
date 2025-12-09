@@ -48,11 +48,18 @@
 //!    - CPU temperature creates stress
 //!    - Disk space creates bloating
 //!    - RAM usage affects cognition
+//!
+//! 6. **Coherence Field** (Week 6+) - Revolutionary Energy Model
+//!    - Consciousness as integration (not commodity)
+//!    - Connected work BUILDS coherence
+//!    - Gratitude synchronizes systems
+//!    - Replaces ATP scarcity with integration dynamics
 
 pub mod endocrine;
 pub mod hearth;
 pub mod chronos;
 pub mod proprioception;
+pub mod coherence;
 
 pub use endocrine::{
     EndocrineConfig,
@@ -83,4 +90,12 @@ pub use proprioception::{
     ProprioceptionConfig,
     ProprioceptionStats,
     BodySensation,
+};
+pub use coherence::{
+    CoherenceField,
+    CoherenceConfig,
+    CoherenceStats,
+    CoherenceState,
+    CoherenceError,
+    TaskComplexity,
 };

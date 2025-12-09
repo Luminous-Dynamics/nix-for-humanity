@@ -39,7 +39,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 /// Hormone state - the "chemical milieu" of the brain
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HormoneState {
     /// Cortisol (0.0-1.0): Stress hormone
     /// High = paranoid, risk-averse, defensive
