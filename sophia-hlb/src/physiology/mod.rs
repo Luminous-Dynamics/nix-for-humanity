@@ -42,10 +42,17 @@
 //!    - Subjective vs objective time
 //!    - Emotional time dilation
 //!    - Circadian rhythms
+//!
+//! 5. **Proprioception** (Days 5-7) - Hardware Awareness
+//!    - Battery level affects energy capacity
+//!    - CPU temperature creates stress
+//!    - Disk space creates bloating
+//!    - RAM usage affects cognition
 
 pub mod endocrine;
 pub mod hearth;
 pub mod chronos;
+pub mod proprioception;
 
 pub use endocrine::{
     EndocrineConfig,
@@ -70,4 +77,10 @@ pub use chronos::{
     TimeMode,
     TimeQuality,
     CircadianPhase,
+};
+pub use proprioception::{
+    ProprioceptionActor,
+    ProprioceptionConfig,
+    ProprioceptionStats,
+    BodySensation,
 };

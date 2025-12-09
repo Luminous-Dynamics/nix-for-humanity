@@ -95,6 +95,8 @@ pub use physiology::{
     ActionCost, EnergyState,
     ChronosActor, ChronosConfig, ChronosStats,  // Week 5: Time perception
     TimeMode, TimeQuality, CircadianPhase,
+    ProprioceptionActor, ProprioceptionConfig, ProprioceptionStats,  // Week 5: Hardware awareness
+    BodySensation,
 };
 
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
@@ -123,6 +125,7 @@ pub struct SophiaHLB {
     thalamus: ThalamusActor,      // Sensory relay & gratitude detection
     prefrontal: PrefrontalCortexActor,  // Energy-aware cognition
     chronos: ChronosActor,        // Time perception & circadian rhythms
+    proprioception: ProprioceptionActor,  // Hardware awareness (body sense)
 
     /// System state
     operations_count: usize,
@@ -189,6 +192,7 @@ impl SophiaHLB {
             thalamus: ThalamusActor::new(),
             prefrontal: PrefrontalCortexActor::new(),
             chronos: ChronosActor::new(),
+            proprioception: ProprioceptionActor::new(),
 
             operations_count: 0,
         })
@@ -211,10 +215,30 @@ impl SophiaHLB {
         self.hearth.max_energy = (1000.0 * circadian_modifier).max(100.0); // Never below 100 ATP
 
         tracing::info!(
-            "⏰ Time: {} | 🔋 Energy capacity: {:.0} ATP ({}x circadian)",
+            "⏰ Time: {} | 🔋 Energy capacity: {:.0} ATP ({:.2}x circadian)",
             self.chronos.describe_state(),
             self.hearth.max_energy,
             circadian_modifier
+        );
+
+        // Week 5 Days 5-7: Proprioception - Hardware Awareness
+        // Update hardware state and apply to consciousness
+        let _ = self.proprioception.update_hardware_state();
+
+        // Apply hardware-derived energy capacity multiplier (battery, temperature)
+        let hardware_multiplier = self.proprioception.energy_capacity_multiplier();
+        self.hearth.max_energy = (self.hearth.max_energy * hardware_multiplier).max(100.0);
+
+        // TODO (Week 6+): Apply hardware stress to EndocrineSystem
+        // let hardware_stress = self.proprioception.stress_contribution();
+        // self.endocrine.inject_cortisol(hardware_stress);
+
+        // Log body state
+        tracing::info!(
+            "🤖 Body: {} | 🔋 Final capacity: {:.0} ATP ({:.2}x hardware)",
+            self.proprioception.current_sensation().describe(),
+            self.hearth.max_energy,
+            hardware_multiplier
         );
 
         // Week 5 Day 2: The Awakening - Wire the Nervous System
@@ -379,6 +403,7 @@ impl SophiaHLB {
             thalamus: ThalamusActor::new(),
             prefrontal: PrefrontalCortexActor::new(),
             chronos: ChronosActor::new(),
+            proprioception: ProprioceptionActor::new(),
 
             operations_count: 0,
         })
