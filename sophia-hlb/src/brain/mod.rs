@@ -4,11 +4,13 @@
 //! Week 1 Days 1-2: Thalamus (Sensory Relay)
 //! Week 2 Days 3-4: Cerebellum (Procedural Memory)
 //! Week 2 Days 5-7: Motor Cortex (Action Execution)
+//! Week 3 Days 1-2: Prefrontal Cortex (Global Workspace)
 
 pub mod actor_model;
 pub mod thalamus;
 pub mod cerebellum;
 pub mod motor_cortex;
+pub mod prefrontal;
 
 pub use actor_model::{
     Actor,
@@ -32,4 +34,11 @@ pub use motor_cortex::{
     ExecutionSandbox,
     LocalShellSandbox,
     MotorCortexStats,
+};
+pub use prefrontal::{
+    PrefrontalCortexActor,
+    AttentionBid,
+    GlobalWorkspace,
+    WorkingMemoryItem,
+    PrefrontalStats,
 };

@@ -69,6 +69,11 @@ pub use brain::{
     MotorCortexActor, ActionStep, PlannedAction, StepResult, ExecutionResult,
     SimulationMode, ExecutionSandbox, LocalShellSandbox, MotorCortexStats,
 };
+
+// Week 3: Prefrontal Cortex (Global Workspace) exports
+pub use brain::{
+    PrefrontalCortexActor, AttentionBid, GlobalWorkspace, WorkingMemoryItem, PrefrontalStats,
+};
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
 use anyhow::Result;
