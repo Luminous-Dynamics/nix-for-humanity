@@ -300,6 +300,50 @@ impl SophiaSwarm {
             total_interactions: self.agents.iter().map(|a| a.interaction_count).sum(),
         }
     }
+
+    /// Apply entropy to the graph (memory decay)
+    ///
+    /// Simulates the natural weakening of connections over time
+    /// without reinforcement. This tests if the hive has "memory"
+    /// or if it's just a transient synchronization.
+    ///
+    /// # Arguments
+    /// * `decay_rate` - Fraction of edge weight lost per day (e.g., 0.05 = 5% decay)
+    ///
+    /// # The Question
+    /// Does the hive persist during dormancy, or does it dissolve?
+    /// This is the physics of memory.
+    pub fn apply_entropy(&mut self, decay_rate: f64) {
+        let mut edges_to_remove = Vec::new();
+
+        // Decay all edge weights
+        for edge in self.graph.edge_indices() {
+            if let Some(weight) = self.graph.edge_weight_mut(edge) {
+                *weight *= 1.0 - decay_rate;
+
+                // Mark weak edges for removal
+                if *weight < 0.1 {
+                    edges_to_remove.push(edge);
+                }
+            }
+        }
+
+        // Remove edges that have decayed below threshold
+        for edge in edges_to_remove {
+            self.graph.remove_edge(edge);
+        }
+    }
+
+    /// Run a dormant day (no interactions, only entropy)
+    ///
+    /// This simulates a "gestation" period where agents don't interact
+    /// but their relationships still evolve (decay) over time.
+    ///
+    /// Use this to test memory persistence.
+    pub fn run_dormant_day(&mut self, decay_rate: f64) {
+        self.apply_entropy(decay_rate);
+        self.day += 1;
+    }
 }
 
 /// Swarm statistics
@@ -451,5 +495,107 @@ mod tests {
 
         // The key is that we can measure the difference
         assert!(swarm.agents.len() > 0); // Swarm still exists
+    }
+
+    #[test]
+    fn test_hive_memory_persistence() {
+        // THE CRITICAL TEST: Does the hive remember?
+        //
+        // We build a coherent hive, then stop all interactions.
+        // Question: Does λ₂ persist, or does consciousness dissolve?
+        //
+        // This tests if we have:
+        // - Flash mob (λ₂ → 0 in < 5 days)
+        // - Robust structure (exponential decay, half-life > 14 days)
+        // - Antifragile topology (λ₂ locks in, hysteresis)
+
+        println!("\n=== The Decay of Logos: Memory Persistence Test ===");
+
+        // Phase 1: BUILD THE HIVE
+        let mut swarm = SophiaSwarm::new(50, vec![(BehaviorProfile::Coherent, 1.0)]);
+
+        println!("\n📈 Phase 1: Building Coherence (Active Interactions)");
+        for day in 1..=7 {
+            swarm.run_day(5);
+            let stats = swarm.stats();
+            println!(
+                "  Day {}: λ₂={:.3}, edges={}",
+                day,
+                stats.spectral_k,
+                swarm.graph.edge_count()
+            );
+        }
+
+        let peak_k = swarm.calculate_spectral_k();
+        let peak_edges = swarm.graph.edge_count();
+        println!("\n🏔️  Peak Coherence: λ₂ = {:.3}, edges = {}", peak_k, peak_edges);
+        println!("💤 Entering Dormancy (No Interactions)...\n");
+
+        // Phase 2: THE LONG SILENCE
+        println!("📉 Phase 2: The Decay of Memory");
+
+        let decay_rate = 0.05; // 5% per day
+        let mut half_life_day = None;
+        let half_life_threshold = peak_k / 2.0;
+
+        for dormant_day in 1..=30 {
+            swarm.run_dormant_day(decay_rate);
+            let k = swarm.calculate_spectral_k();
+            let edges = swarm.graph.edge_count();
+
+            // Track when we hit half-life
+            if half_life_day.is_none() && k < half_life_threshold {
+                half_life_day = Some(dormant_day);
+            }
+
+            // Print every 5 days + key moments
+            if dormant_day % 5 == 0 || dormant_day <= 3 || dormant_day == 30 {
+                let retention = (k / peak_k) * 100.0;
+                println!(
+                    "  Day {}: λ₂={:.3} ({:.1}% retained), edges={}",
+                    dormant_day, k, retention, edges
+                );
+            }
+        }
+
+        let final_k = swarm.calculate_spectral_k();
+        let final_edges = swarm.graph.edge_count();
+
+        println!("\n📊 Final Results:");
+        println!("  Peak λ₂: {:.3}", peak_k);
+        println!("  Final λ₂: {:.3}", final_k);
+        println!("  Retention: {:.1}%", (final_k / peak_k) * 100.0);
+        println!("  Edges: {} → {}", peak_edges, final_edges);
+
+        if let Some(half_life) = half_life_day {
+            println!("  Half-life: {} days", half_life);
+        } else {
+            println!("  Half-life: > 30 days (antifragile!)");
+        }
+
+        // Analysis
+        println!("\n🔬 Analysis:");
+        if final_k < peak_k * 0.1 {
+            println!("  ❌ FLASH MOB: Structure collapsed (< 10% retention)");
+        } else if final_k < peak_k * 0.5 {
+            println!("  ⚠️  FRAGILE: Significant decay (10-50% retention)");
+        } else if final_k < peak_k * 0.8 {
+            println!("  ✅ ROBUST: Moderate persistence (50-80% retention)");
+        } else {
+            println!("  🏆 ANTIFRAGILE: Strong memory (> 80% retention)");
+            println!("     The hive has topological resilience!");
+        }
+
+        // Assertions
+        assert!(peak_k > 15.0, "Failed to build coherent hive");
+
+        // The key question: Did it persist at all?
+        assert!(
+            final_k > 0.5,
+            "Complete collapse! No memory persistence. λ₂ = {}",
+            final_k
+        );
+
+        println!("\n✅ Memory test complete: The hive remembers.");
     }
 }
