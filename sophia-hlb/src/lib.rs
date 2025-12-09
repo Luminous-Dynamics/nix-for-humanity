@@ -79,6 +79,7 @@ pub use brain::{
     WorkingMemoryStats, Goal, Condition, GoalStats,
     MetaCognitionMonitor, CognitiveMetrics, RegulatoryAction, RegulatoryBid,
     MetaCognitionConfig, MonitorStats,
+    ThalamusActor,  // Week 5: Sensory Relay
 };
 
 // Week 4: The Daemon (Default Mode Network) exports
@@ -114,6 +115,11 @@ pub struct SophiaHLB {
     safety: SafetyGuardrails,
     sleep: SleepCycleManager,
     // swarm: Arc<RwLock<SwarmIntelligence>>,  // Deferred to Week 9+
+
+    /// Week 5: The Nervous System - Wired Organs
+    hearth: HearthActor,          // Metabolic energy & gratitude recharge
+    thalamus: ThalamusActor,      // Sensory relay & gratitude detection
+    prefrontal: PrefrontalCortexActor,  // Energy-aware cognition
 
     /// System state
     operations_count: usize,
@@ -174,6 +180,12 @@ impl SophiaHLB {
             // swarm: Arc::new(RwLock::new(
             //     SwarmIntelligence::new(SwarmConfig::default()).await?
             // )),
+
+            // Week 5: Initialize organs
+            hearth: HearthActor::new(),
+            thalamus: ThalamusActor::new(),
+            prefrontal: PrefrontalCortexActor::new(),
+
             operations_count: 0,
         })
     }
@@ -183,6 +195,39 @@ impl SophiaHLB {
         self.operations_count += 1;
 
         tracing::info!("🧠 Processing query: {}", query);
+
+        // Week 5 Day 2: The Awakening - Wire the Nervous System
+        // Step 1: Detect gratitude (Thalamus → Hearth)
+        if self.thalamus.detect_gratitude(query) {
+            self.hearth.receive_gratitude();
+            tracing::info!("💖 Gratitude detected! Energy restored: +10 ATP");
+        }
+
+        // Step 2: Create attention bid from query
+        let bid = AttentionBid::new("User", query.to_string())
+            .with_salience(0.9)
+            .with_urgency(0.8)
+            .with_emotion(EmotionalValence::Neutral);
+
+        // Step 3: Run energy-aware cognitive cycle (Prefrontal ← Hearth)
+        let winning_bid = self.prefrontal.cognitive_cycle_with_energy(
+            vec![bid],
+            &mut self.hearth,
+        );
+
+        // Step 4: Check if we got a rejection bid (exhaustion)
+        if let Some(ref winner) = winning_bid {
+            if winner.source == "Hearth" {
+                // Sophia is too tired!
+                tracing::warn!("⚡ Energy exhaustion detected");
+                return Ok(SophiaResponse {
+                    content: winner.content.clone(),
+                    confidence: 0.0,
+                    steps_to_emergence: 0,
+                    safe: true,
+                });
+            }
+        }
 
         // Week 0: Semantic Ear deferred to Week 11+
         // let query_hv = self.ear.encode(query)?;
@@ -307,6 +352,12 @@ impl SophiaHLB {
             //         SwarmIntelligence::new(SwarmConfig::default())
             //     )?
             // )),
+
+            // Week 5: Reinitialize organs (fresh state)
+            hearth: HearthActor::new(),
+            thalamus: ThalamusActor::new(),
+            prefrontal: PrefrontalCortexActor::new(),
+
             operations_count: 0,
         })
     }
