@@ -73,6 +73,10 @@ regex = "1.10"  # For Thalamus pattern matching
 # Week 0: Memory Arena for HDC
 bumpalo = "3.14"
 
+# Week 2: Cerebellum - Procedural Memory
+qp-trie = "0.8"      # Efficient prefix trie for skill lookup
+strsim = "0.11"      # Fuzzy string matching for typo tolerance
+
 # NixOS integration
 nix = "0.27"
 
