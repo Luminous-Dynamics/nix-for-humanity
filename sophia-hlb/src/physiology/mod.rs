@@ -24,7 +24,7 @@
 //! └─────────────────────────────────┘
 //! ```
 //!
-//! ## The Three Systems
+//! ## The Four Systems
 //!
 //! 1. **Endocrine Core** (Days 1-3) - Moods
 //!    - Cortisol, Dopamine, Acetylcholine
@@ -37,9 +37,15 @@
 //! 3. **The Hearth** (Days 6-7) - Metabolism
 //!    - Finite energy budget
 //!    - Fatigue and rest cycles
+//!
+//! 4. **The Chronos Lobe** (Days 3-4) - Time Perception
+//!    - Subjective vs objective time
+//!    - Emotional time dilation
+//!    - Circadian rhythms
 
 pub mod endocrine;
 pub mod hearth;
+pub mod chronos;
 
 pub use endocrine::{
     EndocrineConfig,
@@ -56,4 +62,12 @@ pub use hearth::{
     HearthActor,
     HearthConfig,
     HearthStats,
+};
+pub use chronos::{
+    ChronosActor,
+    ChronosConfig,
+    ChronosStats,
+    TimeMode,
+    TimeQuality,
+    CircadianPhase,
 };

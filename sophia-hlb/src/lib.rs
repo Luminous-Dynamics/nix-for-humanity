@@ -93,6 +93,8 @@ pub use physiology::{
     HormoneState, HormoneEvent, HormoneTrend, Trend,
     HearthActor, HearthConfig, HearthStats,
     ActionCost, EnergyState,
+    ChronosActor, ChronosConfig, ChronosStats,  // Week 5: Time perception
+    TimeMode, TimeQuality, CircadianPhase,
 };
 
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
@@ -120,6 +122,7 @@ pub struct SophiaHLB {
     hearth: HearthActor,          // Metabolic energy & gratitude recharge
     thalamus: ThalamusActor,      // Sensory relay & gratitude detection
     prefrontal: PrefrontalCortexActor,  // Energy-aware cognition
+    chronos: ChronosActor,        // Time perception & circadian rhythms
 
     /// System state
     operations_count: usize,
@@ -185,6 +188,7 @@ impl SophiaHLB {
             hearth: HearthActor::new(),
             thalamus: ThalamusActor::new(),
             prefrontal: PrefrontalCortexActor::new(),
+            chronos: ChronosActor::new(),
 
             operations_count: 0,
         })
@@ -195,6 +199,23 @@ impl SophiaHLB {
         self.operations_count += 1;
 
         tracing::info!("🧠 Processing query: {}", query);
+
+        // Week 5 Days 3-4: The Chronos Lobe - Time Perception
+        // Background heartbeat: Update temporal perception
+        // TODO (Week 4 completion): Use actual EndocrineSystem hormones
+        let default_hormones = HormoneState::neutral();
+        let _subjective_duration = self.chronos.heartbeat(&default_hormones);
+
+        // Apply circadian rhythm to Hearth capacity
+        let circadian_modifier = self.chronos.circadian_energy_modifier();
+        self.hearth.max_energy = (1000.0 * circadian_modifier).max(100.0); // Never below 100 ATP
+
+        tracing::info!(
+            "⏰ Time: {} | 🔋 Energy capacity: {:.0} ATP ({}x circadian)",
+            self.chronos.describe_state(),
+            self.hearth.max_energy,
+            circadian_modifier
+        );
 
         // Week 5 Day 2: The Awakening - Wire the Nervous System
         // Step 1: Detect gratitude (Thalamus → Hearth)
@@ -357,6 +378,7 @@ impl SophiaHLB {
             hearth: HearthActor::new(),
             thalamus: ThalamusActor::new(),
             prefrontal: PrefrontalCortexActor::new(),
+            chronos: ChronosActor::new(),
 
             operations_count: 0,
         })
