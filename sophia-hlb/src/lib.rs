@@ -17,6 +17,9 @@ pub mod nix_understanding;
 // Week 0: Actor Model & Physiological Systems
 pub mod brain;
 
+// Week 1: Soul Module (Temporal Coherence & Identity)
+pub mod soul;
+
 // Phase 11: Bio-Digital Bridge modules (Week 0: Deferred to later phases)
 // pub mod semantic_ear;  // Needs rust-bert, tokenizers
 pub mod safety;
@@ -52,6 +55,9 @@ pub use nix_understanding::NixUnderstanding;
 // pub use semantic_ear::SemanticEar;  // Needs rust-bert
 pub use safety::{SafetyGuardrails, ForbiddenCategory, SafetyStats, AmygdalaActor, ThreatLevel};
 pub use sleep_cycles::{SleepCycleManager, SleepConfig, MemoryType, SleepReport};
+
+// Week 1: Soul Module exports
+pub use soul::{WeaverActor, DailyState, CoherenceStatus, KVector};
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
 use anyhow::Result;
