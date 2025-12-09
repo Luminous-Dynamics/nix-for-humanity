@@ -41,4 +41,5 @@ pub use prefrontal::{
     GlobalWorkspace,
     WorkingMemoryItem,
     PrefrontalStats,
+    WorkingMemoryStats,
 };

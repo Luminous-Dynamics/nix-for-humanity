@@ -73,6 +73,7 @@ pub use brain::{
 // Week 3: Prefrontal Cortex (Global Workspace) exports
 pub use brain::{
     PrefrontalCortexActor, AttentionBid, GlobalWorkspace, WorkingMemoryItem, PrefrontalStats,
+    WorkingMemoryStats,
 };
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
