@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use bumpalo::Bump;
 
 /// Semantic space using 10,000D hypervectors
+#[derive(Debug)]
 pub struct SemanticSpace {
     /// Dimensionality (typically 10,000)
     dimension: usize,

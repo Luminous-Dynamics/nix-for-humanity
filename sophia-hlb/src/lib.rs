@@ -81,6 +81,11 @@ pub use brain::{
     MetaCognitionConfig, MonitorStats,
 };
 
+// Week 4: The Daemon (Default Mode Network) exports
+pub use brain::{
+    DaemonActor, DaemonConfig, Insight, DaemonStats,
+};
+
 // Week 4: Physiology exports
 pub use physiology::{
     EndocrineSystem, EndocrineConfig, EndocrineStats,

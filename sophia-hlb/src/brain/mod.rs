@@ -12,6 +12,7 @@ pub mod cerebellum;
 pub mod motor_cortex;
 pub mod prefrontal;
 pub mod meta_cognition;
+pub mod daemon;
 
 pub use actor_model::{
     Actor,
@@ -54,4 +55,10 @@ pub use meta_cognition::{
     RegulatoryBid,
     MetaCognitionConfig,
     MonitorStats,
+};
+pub use daemon::{
+    DaemonActor,
+    DaemonConfig,
+    Insight,
+    DaemonStats,
 };
