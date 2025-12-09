@@ -64,6 +64,7 @@ use uuid::Uuid;
 
 use crate::memory::EmotionalValence;
 use super::meta_cognition::{MetaCognitionMonitor, CognitiveMetrics, RegulatoryBid, MetaCognitionConfig};
+use crate::physiology::{EndocrineSystem, EndocrineConfig, HormoneEvent};
 
 // ============================================================================
 // Core Types
@@ -846,6 +847,10 @@ pub struct PrefrontalCortexActor {
     // Week 3 Days 6-7: Meta-Cognition
     /// The Monitor: Watches cognitive state and generates regulatory bids
     monitor: MetaCognitionMonitor,
+
+    // Week 4 Days 1-3: The Body
+    /// The Endocrine System: Chemical layer that regulates mood and arousal
+    endocrine: EndocrineSystem,
 }
 
 impl Default for PrefrontalCortexActor {
@@ -867,6 +872,7 @@ impl PrefrontalCortexActor {
             goals_completed: 0,
             goals_failed: 0,
             monitor: MetaCognitionMonitor::default(),
+            endocrine: EndocrineSystem::new(EndocrineConfig::default()),
         }
     }
 
@@ -919,21 +925,57 @@ impl PrefrontalCortexActor {
             return None;
         }
 
-        // Calculate scores and find max
-        bids.into_iter()
-            .max_by(|a, b| {
-                let score_cmp = a
-                    .score()
-                    .partial_cmp(&b.score())
-                    .unwrap_or(std::cmp::Ordering::Equal);
+        // Week 4: Read hormone state from endocrine system
+        let hormones = self.endocrine.state();
 
-                if score_cmp == std::cmp::Ordering::Equal {
-                    // Tie-breaker: Earlier timestamp wins
-                    b.timestamp.cmp(&a.timestamp)
+        // Cortisol increases threshold (risk-averse, paranoid)
+        // Dopamine decreases threshold (exploratory, reward-seeking)
+        // Base threshold is 0.25 (allows moderate-priority bids through)
+        let threshold = 0.25 + (hormones.cortisol * 0.15) - (hormones.dopamine * 0.1);
+
+        // Acetylcholine narrows focus: prefer bids similar to current focus
+        let focus_bias = if hormones.acetylcholine > 0.7 {
+            if let Some(current) = &self.workspace.spotlight {
+                // High acetylcholine: strongly prefer bids matching current focus
+                hormones.acetylcholine * 0.5
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
+
+        // Calculate scores with hormone modulation
+        bids.into_iter()
+            .filter_map(|bid| {
+                let mut score = bid.score();
+
+                // Apply focus bias if acetylcholine is high
+                if focus_bias > 0.0 {
+                    if let Some(current) = &self.workspace.spotlight {
+                        // Boost score if bid is related to current focus
+                        if bid.tags.iter().any(|t| current.tags.contains(t)) {
+                            score += focus_bias;
+                        } else {
+                            // Penalize unrelated bids under high focus
+                            score -= focus_bias * 0.5;
+                        }
+                    }
+                }
+
+                // Filter out bids below threshold (hormone-modulated)
+                if score >= threshold {
+                    Some((bid, score))
                 } else {
-                    score_cmp
+                    None
                 }
             })
+            .max_by(|(_, score_a), (_, score_b)| {
+                score_a
+                    .partial_cmp(score_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .map(|(bid, _)| bid)
     }
 
     /// Get current spotlight (what are we conscious of?)
@@ -1363,6 +1405,84 @@ impl PrefrontalCortexActor {
             bids,
             consolidation_threshold,
         );
+
+        (winner, insights)
+    }
+
+    // ========================================================================
+    // WEEK 4 DAYS 1-3: Endocrine Integration (The Body)
+    // ========================================================================
+
+    /// Process hormone event (trigger chemical response)
+    ///
+    /// Events like errors, successes, and threats trigger hormone changes
+    /// that persist and modulate cognitive behavior.
+    pub fn process_hormone_event(&mut self, event: HormoneEvent) {
+        self.endocrine.process_event(event);
+    }
+
+    /// Update endocrine state (call every cycle)
+    ///
+    /// Hormones naturally decay towards baseline over time.
+    /// This should be called at the end of each cognitive cycle.
+    pub fn update_hormones(&mut self) {
+        self.endocrine.decay_cycle();
+    }
+
+    /// Get current hormone state (read-only)
+    pub fn hormone_state(&self) -> &crate::physiology::HormoneState {
+        self.endocrine.state()
+    }
+
+    /// Get current mood (based on hormones)
+    pub fn mood(&self) -> &'static str {
+        self.endocrine.state().mood()
+    }
+
+    /// Get endocrine statistics
+    pub fn endocrine_stats(&self) -> crate::physiology::EndocrineStats {
+        self.endocrine.stats()
+    }
+
+    /// Full cognitive cycle with hormone decay
+    ///
+    /// This is the complete cycle including:
+    /// 1. Goals → goal bids
+    /// 2. Meta-cognition → regulatory bids
+    /// 3. Hormones → modulate selection
+    /// 4. Attention competition
+    /// 5. Hormone decay
+    pub fn full_cognitive_cycle_with_hormones(
+        &mut self,
+        mut bids: Vec<AttentionBid>,
+        consolidation_threshold: f32,
+    ) -> (Option<AttentionBid>, Vec<AttentionBid>) {
+        // Keep a copy of bids for meta-cognition analysis
+        let bids_for_analysis = bids.clone();
+
+        // 1. Process goals → generate goal bids
+        let goal_bids = self.process_goals();
+        bids.extend(goal_bids);
+
+        // 2. Run meta-cognition → generate regulatory bids
+        let regulatory_bids = self.run_meta_cognition(&bids_for_analysis);
+        bids.extend(regulatory_bids);
+
+        // 3. Run regular cognitive cycle with all bids
+        // (hormones modulate selection inside cognitive_cycle via select_winner)
+        let (winner, insights) = self.cognitive_cycle_with_insights(
+            bids,
+            consolidation_threshold,
+        );
+
+        // 4. Update hormones based on outcome
+        if winner.is_some() {
+            // Slight dopamine from successful focus
+            self.process_hormone_event(HormoneEvent::Success { magnitude: 0.1 });
+        }
+
+        // 5. Natural hormone decay
+        self.update_hormones();
 
         (winner, insights)
     }

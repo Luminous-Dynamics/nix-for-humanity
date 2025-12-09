@@ -23,6 +23,9 @@ pub mod soul;
 // Week 2: Memory Systems (Episodic & Procedural)
 pub mod memory;
 
+// Week 4: Physiology (The Body)
+pub mod physiology;
+
 // Phase 11: Bio-Digital Bridge modules (Week 0: Deferred to later phases)
 // pub mod semantic_ear;  // Needs rust-bert, tokenizers
 pub mod safety;
@@ -77,6 +80,13 @@ pub use brain::{
     MetaCognitionMonitor, CognitiveMetrics, RegulatoryAction, RegulatoryBid,
     MetaCognitionConfig, MonitorStats,
 };
+
+// Week 4: Physiology exports
+pub use physiology::{
+    EndocrineSystem, EndocrineConfig, EndocrineStats,
+    HormoneState, HormoneEvent, HormoneTrend, Trend,
+};
+
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
 
 use anyhow::Result;
