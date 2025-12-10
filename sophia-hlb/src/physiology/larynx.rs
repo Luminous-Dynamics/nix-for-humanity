@@ -326,30 +326,50 @@ mod tests {
     #[tokio::test]
     async fn test_prosody_modulation_stress() {
         let config = LarynxConfig::default();
+        let base_speed = config.base_speed;
+        let base_pitch = config.base_pitch;
+        let base_energy = config.base_energy;
+
         let mut larynx = LarynxActor::new(config).unwrap();
 
         // Create endocrine system with high cortisol (stress)
         let endocrine_config = EndocrineConfig::default();
         let mut endocrine = EndocrineSystem::new(endocrine_config);
 
-        // Trigger stress using Error event (high severity)
-        endocrine.process_event(HormoneEvent::Error { severity: 0.9 });
+        // Trigger stress using multiple Error events to push cortisol above 0.7
+        // (each Error with severity 0.9 adds 0.27 to cortisol)
+        for _ in 0..3 {
+            endocrine.process_event(HormoneEvent::Error { severity: 0.9 });
+        }
 
         let endocrine_arc = Arc::new(RwLock::new(endocrine));
         larynx.set_endocrine(endocrine_arc.clone());
 
+        // Verify cortisol is above stress threshold
+        let cortisol = endocrine_arc.read().await.state().cortisol;
+        assert!(cortisol > 0.7, "Cortisol should be above stress threshold (got {:.2})", cortisol);
+
         // Calculate prosody
         let prosody = larynx.calculate_prosody().await;
 
-        // Stressed voice should be faster and higher
-        assert!(prosody.speed > 1.0, "Stressed voice should be faster");
-        assert!(prosody.pitch > 1.0, "Stressed voice should be higher");
-        assert!(prosody.energy > 1.0, "Stressed voice should be louder");
+        // Stressed voice should be faster, higher, and louder than base
+        assert!(prosody.speed > base_speed,
+                "Stressed voice should be faster than base {:.2} (got {:.2})",
+                base_speed, prosody.speed);
+        assert!(prosody.pitch > base_pitch,
+                "Stressed voice should be higher than base {:.2} (got {:.2})",
+                base_pitch, prosody.pitch);
+        assert!(prosody.energy > base_energy,
+                "Stressed voice should be louder than base {:.2} (got {:.2})",
+                base_energy, prosody.energy);
     }
 
     #[tokio::test]
     async fn test_prosody_modulation_calm() {
         let config = LarynxConfig::default();
+        let base_speed = config.base_speed;
+        let base_pitch = config.base_pitch;
+
         let mut larynx = LarynxActor::new(config).unwrap();
 
         // Create endocrine system and induce calm state (low cortisol, high dopamine)
@@ -361,14 +381,25 @@ mod tests {
         endocrine.process_event(HormoneEvent::Reward { value: 0.8 });
 
         let endocrine_arc = Arc::new(RwLock::new(endocrine));
-        larynx.set_endocrine(endocrine_arc);
+        larynx.set_endocrine(endocrine_arc.clone());
+
+        // Verify calm state (low cortisol, high dopamine)
+        let endocrine_guard = endocrine_arc.read().await;
+        let state = endocrine_guard.state();
+        assert!(state.cortisol < 0.4, "Cortisol should be low (got {:.2})", state.cortisol);
+        assert!(state.dopamine > 0.6, "Dopamine should be high (got {:.2})", state.dopamine);
+        drop(endocrine_guard); // Release lock before calculating prosody
 
         // Calculate prosody
         let prosody = larynx.calculate_prosody().await;
 
-        // Calm voice should be slower and lower
-        assert!(prosody.speed < 1.0, "Calm voice should be slower");
-        assert!(prosody.pitch < 1.0, "Calm voice should be lower");
+        // Calm voice should be slower and lower than base
+        assert!(prosody.speed < base_speed,
+                "Calm voice should be slower than base {:.2} (got {:.2})",
+                base_speed, prosody.speed);
+        assert!(prosody.pitch < base_pitch,
+                "Calm voice should be lower than base {:.2} (got {:.2})",
+                base_pitch, prosody.pitch);
     }
 
     #[tokio::test]
