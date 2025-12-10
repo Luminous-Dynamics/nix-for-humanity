@@ -16,12 +16,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
-// ONNX Runtime for model inference
-use ort::{Session, SessionOutputs, Value};
+// ONNX Runtime for model inference (TODO: Activate when implementing ONNX inference)
+// use ort::session::{Session, SessionOutputs};
+// use ort::value::Value;
 
-// HuggingFace Hub for model downloads
-use hf_hub::api::sync::Api;
-use hf_hub::{Cache, Repo, RepoType};
+// HuggingFace Hub for model downloads (TODO: Activate when implementing model downloads)
+// use hf_hub::api::sync::Api;
+// use hf_hub::{Cache, Repo, RepoType};
 
 /// Size of SigLIP image embeddings (768 dimensions)
 pub const SIGLIP_EMBEDDING_DIM: usize = 768;
