@@ -49,6 +49,20 @@ pub struct CognitiveMetrics {
     /// Overall cognitive health score (0.0-1.0)
     /// Derived from weighted combination of metrics
     pub health_score: f32,
+
+    // Week 14 Day 2: Enhanced Meta-Cognitive Monitoring
+
+    /// Cognitive load: Overall mental strain (0.0-1.0)
+    /// - High (>0.7): High strain (conflict + high decay + low insight)
+    /// - Medium (0.3-0.7): Normal mental effort
+    /// - Low (<0.3): Relaxed cognition
+    pub cognitive_load: f32,
+
+    /// Attention focus: Attention stability and quality (0.0-1.0)
+    /// - High (>0.7): Stable, clear attention (low decay + low conflict + steady goals)
+    /// - Medium (0.3-0.7): Normal attention
+    /// - Low (<0.3): Scattered, unstable attention
+    pub attention_focus: f32,
 }
 
 impl CognitiveMetrics {
@@ -60,6 +74,8 @@ impl CognitiveMetrics {
             insight_rate: 0.5,
             goal_velocity: 0.5,
             health_score: 0.5,
+            cognitive_load: 0.5,
+            attention_focus: 0.5,
         }
     }
 
@@ -107,6 +123,24 @@ impl CognitiveMetrics {
         weight_sum += 2.0;
 
         self.health_score = health / weight_sum;
+
+        // Week 14 Day 2: Calculate cognitive load and attention focus
+
+        // Cognitive load: Combination of conflict, decay, and lack of insight
+        // High load = high conflict + high decay + low insight
+        // Low load = low conflict + moderate decay + high insight
+        let load_conflict = self.conflict_ratio; // 0-1, higher = more load
+        let load_decay = self.decay_velocity; // 0-1, higher = more load
+        let load_insight = 1.0 - self.insight_rate; // 0-1, less insight = more load
+        self.cognitive_load = (load_conflict * 0.4 + load_decay * 0.3 + load_insight * 0.3).clamp(0.0, 1.0);
+
+        // Attention focus: Combination of stable decay, low conflict, and steady goals
+        // High focus = low decay (thoughts persist) + low conflict (clear) + steady goals
+        // Low focus = high decay (thoughts scatter) + high conflict + unstable goals
+        let focus_stability = 1.0 - (self.decay_velocity - 0.5).abs() * 2.0; // Ideal at 0.5
+        let focus_clarity = 1.0 - self.conflict_ratio; // Lower conflict = clearer focus
+        let focus_steadiness = self.goal_velocity; // Steady goal progress
+        self.attention_focus = (focus_stability * 0.3 + focus_clarity * 0.4 + focus_steadiness * 0.3).clamp(0.0, 1.0);
     }
 
     /// Detect if in thrashing state (high decay + low goal velocity)
@@ -605,6 +639,8 @@ mod tests {
             insight_rate: 0.6,    // Good
             goal_velocity: 0.5,   // Good
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         metrics.calculate_health();
         assert!(metrics.health_score > 0.8); // Should be healthy
@@ -618,6 +654,8 @@ mod tests {
             insight_rate: 0.3,
             goal_velocity: 0.1,   // Very low
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         assert!(metrics.is_thrashing());
     }
@@ -630,6 +668,8 @@ mod tests {
             insight_rate: 0.3,
             goal_velocity: 0.4,
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         assert!(metrics.is_fixated());
     }
@@ -642,6 +682,8 @@ mod tests {
             insight_rate: 0.1,    // Very low
             goal_velocity: 0.3,
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         assert!(metrics.is_confused());
     }
@@ -654,6 +696,8 @@ mod tests {
             insight_rate: 0.1,    // Very low
             goal_velocity: 0.1,   // Very low
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         assert!(metrics.is_stagnant());
     }
@@ -842,6 +886,8 @@ mod tests {
             insight_rate: 0.1,    // Low insight
             goal_velocity: 0.3,
             health_score: 0.3,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
 
         let tracker = UncertaintyTracker::from_metrics(&metrics);
@@ -858,6 +904,8 @@ mod tests {
             insight_rate: 0.3,
             goal_velocity: 0.1,   // Low goal velocity
             health_score: 0.3,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
 
         let tracker = UncertaintyTracker::from_metrics(&metrics);
@@ -872,6 +920,8 @@ mod tests {
             insight_rate: 0.6,    // Good
             goal_velocity: 0.5,   // Good
             health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
         };
         metrics.calculate_health();
 
@@ -911,5 +961,159 @@ mod tests {
         let wrapped = monitor.wrap_response_with_uncertainty("test response");
         // Should express uncertainty
         assert!(wrapped.contains("I'm not sure") || wrapped.contains("I think"));
+    }
+
+    // Week 14 Day 2: Enhanced Meta-Cognitive Monitoring Tests
+
+    #[test]
+    fn test_cognitive_load_calculation() {
+        let mut metrics = CognitiveMetrics {
+            decay_velocity: 0.8,  // High decay
+            conflict_ratio: 0.7,  // High conflict
+            insight_rate: 0.2,    // Low insight
+            goal_velocity: 0.3,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        metrics.calculate_health();
+
+        // High conflict + high decay + low insight = high cognitive load
+        assert!(metrics.cognitive_load > 0.6, "Expected high cognitive load, got {}", metrics.cognitive_load);
+    }
+
+    #[test]
+    fn test_cognitive_load_low() {
+        let mut metrics = CognitiveMetrics {
+            decay_velocity: 0.4,  // Moderate decay
+            conflict_ratio: 0.3,  // Low conflict
+            insight_rate: 0.7,    // High insight
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        metrics.calculate_health();
+
+        // Low conflict + moderate decay + high insight = low cognitive load
+        assert!(metrics.cognitive_load < 0.5, "Expected low cognitive load, got {}", metrics.cognitive_load);
+    }
+
+    #[test]
+    fn test_attention_focus_high() {
+        let mut metrics = CognitiveMetrics {
+            decay_velocity: 0.5,  // Ideal decay (stable)
+            conflict_ratio: 0.2,  // Low conflict (clear)
+            insight_rate: 0.6,
+            goal_velocity: 0.6,   // Steady goals
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        metrics.calculate_health();
+
+        // Stable decay + low conflict + steady goals = high attention focus
+        assert!(metrics.attention_focus > 0.6, "Expected high attention focus, got {}", metrics.attention_focus);
+    }
+
+    #[test]
+    fn test_attention_focus_low() {
+        let mut metrics = CognitiveMetrics {
+            decay_velocity: 0.9,  // Very high decay (scattered)
+            conflict_ratio: 0.8,  // High conflict
+            insight_rate: 0.3,
+            goal_velocity: 0.2,   // Low goal progress
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        metrics.calculate_health();
+
+        // High decay + high conflict + low goals = low attention focus
+        assert!(metrics.attention_focus < 0.4, "Expected low attention focus, got {}", metrics.attention_focus);
+    }
+
+    #[test]
+    fn test_enhanced_metrics_neutral_state() {
+        let mut metrics = CognitiveMetrics::neutral();
+        metrics.calculate_health();
+
+        // Neutral state should have moderate load and focus
+        assert!(metrics.cognitive_load > 0.3 && metrics.cognitive_load < 0.7,
+                "Neutral cognitive load should be moderate, got {}", metrics.cognitive_load);
+        assert!(metrics.attention_focus > 0.3 && metrics.attention_focus < 0.7,
+                "Neutral attention focus should be moderate, got {}", metrics.attention_focus);
+    }
+
+    #[test]
+    fn test_cognitive_load_inversely_related_to_insight() {
+        let mut low_insight = CognitiveMetrics {
+            decay_velocity: 0.5,
+            conflict_ratio: 0.5,
+            insight_rate: 0.1,  // Very low insight
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        low_insight.calculate_health();
+
+        let mut high_insight = CognitiveMetrics {
+            decay_velocity: 0.5,
+            conflict_ratio: 0.5,
+            insight_rate: 0.8,  // Very high insight
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        high_insight.calculate_health();
+
+        // Lower insight should lead to higher cognitive load
+        assert!(low_insight.cognitive_load > high_insight.cognitive_load,
+                "Low insight ({}) should have higher load than high insight ({})",
+                low_insight.cognitive_load, high_insight.cognitive_load);
+    }
+
+    #[test]
+    fn test_attention_focus_ideal_decay_range() {
+        let mut low_decay = CognitiveMetrics {
+            decay_velocity: 0.2,  // Too low (fixated)
+            conflict_ratio: 0.3,
+            insight_rate: 0.5,
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        low_decay.calculate_health();
+
+        let mut ideal_decay = CognitiveMetrics {
+            decay_velocity: 0.5,  // Ideal
+            conflict_ratio: 0.3,
+            insight_rate: 0.5,
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        ideal_decay.calculate_health();
+
+        let mut high_decay = CognitiveMetrics {
+            decay_velocity: 0.8,  // Too high (scattered)
+            conflict_ratio: 0.3,
+            insight_rate: 0.5,
+            goal_velocity: 0.5,
+            health_score: 0.0,
+            cognitive_load: 0.0,
+            attention_focus: 0.0,
+        };
+        high_decay.calculate_health();
+
+        // Ideal decay (0.5) should have highest attention focus
+        assert!(ideal_decay.attention_focus > low_decay.attention_focus,
+                "Ideal decay should have better focus than too-low decay");
+        assert!(ideal_decay.attention_focus > high_decay.attention_focus,
+                "Ideal decay should have better focus than too-high decay");
     }
 }
