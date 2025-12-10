@@ -36,6 +36,7 @@
             gfortran  # For ndarray-linalg
             openblas  # For ndarray-linalg (BLAS)
             lapack    # For ndarray-linalg (LAPACK)
+            alsa-lib  # For rodio (audio playback)
 
             # Development tools
             rust-analyzer

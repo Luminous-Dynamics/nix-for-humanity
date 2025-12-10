@@ -85,6 +85,12 @@ syn = { version = "2.0", features = ["full", "visit"] }  # Rust syntax parsing (
 ignore = "0.4"       # .gitignore-aware file walking
 git2 = "0.18"        # Git repository interaction
 
+# Week 12 Phase 2a: Voice Output (Larynx) - Kokoro TTS
+ort = { version = "2.0.0-rc.10", features = ["half"] }  # ONNX Runtime for Kokoro-82M model
+rodio = "0.19"       # Audio playback
+hound = "3.5"        # WAV file I/O
+hf-hub = "0.3"       # HuggingFace Hub for model download
+
 # NixOS integration
 nix = "0.27"
 

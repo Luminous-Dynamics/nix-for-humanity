@@ -54,12 +54,24 @@
 //!    - Connected work BUILDS coherence
 //!    - Gratitude synchronizes systems
 //!    - Replaces ATP scarcity with integration dynamics
+//!
+//! 7. **Social Coherence** (Week 11+) - Collective Intelligence
+//!    - Multiple instances synchronize coherence
+//!    - Coherence lending and borrowing
+//!    - Collective learning and wisdom
+//!
+//! 8. **Larynx** (Week 12 Phase 2a) - Voice Output
+//!    - Kokoro TTS with prosody modulation
+//!    - Voice changes based on emotional state
+//!    - Natural, expressive speech synthesis
 
 pub mod endocrine;
 pub mod hearth;
 pub mod chronos;
 pub mod proprioception;
 pub mod coherence;
+pub mod social_coherence;
+pub mod larynx;
 
 pub use endocrine::{
     EndocrineConfig,
@@ -98,4 +110,21 @@ pub use coherence::{
     CoherenceState,
     CoherenceError,
     TaskComplexity,
+    ScatterCause,      // Week 9: Scatter classification
+    ScatterAnalysis,   // Week 9: Scatter diagnosis
+};
+pub use social_coherence::{
+    CoherenceBeacon,         // Week 11: Broadcast coherence state
+    SocialCoherenceField,    // Week 11: Synchronization & collective coherence
+    CoherenceLoan,           // Week 11 Phase 2: Lending protocol
+    CoherenceLendingProtocol, // Week 11 Phase 2: Coherence lending system
+    ThresholdObservation,    // Week 11 Phase 3: Threshold tracking
+    SharedKnowledge,         // Week 11 Phase 3: Collective knowledge pool
+    CollectiveLearning,      // Week 11 Phase 3: Shared learning system
+};
+pub use larynx::{
+    LarynxActor,             // Week 12 Phase 2a: Voice synthesis
+    LarynxConfig,            // Week 12 Phase 2a: Voice configuration
+    LarynxStats,             // Week 12 Phase 2a: Voice statistics
+    ProsodyParams,           // Week 12 Phase 2a: Prosody parameters
 };

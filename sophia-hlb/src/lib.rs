@@ -103,6 +103,7 @@ pub use physiology::{
     CoherenceField, CoherenceConfig, CoherenceStats, CoherenceState,  // Week 6+: Revolutionary energy model
     CoherenceError, TaskComplexity,
     ScatterCause, ScatterAnalysis,  // Week 9: Advanced coherence diagnostics
+    LarynxActor, LarynxConfig, LarynxStats, ProsodyParams,  // Week 12 Phase 2a: Voice output with prosody
 };
 
 // Week 12: Perception & Tool Creation exports
