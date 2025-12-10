@@ -234,6 +234,13 @@ impl LarynxActor {
     ///
     /// Returns audio samples as Vec<f32> (mono, 24kHz)
     /// ATP Cost: 5 ATP per utterance
+    ///
+    /// Phase 1 Implementation: Sine wave audio with prosody modulation
+    /// - Pitch affects frequency (higher pitch = higher frequency)
+    /// - Speed affects duration (faster speed = shorter duration)
+    /// - Energy affects amplitude (higher energy = louder)
+    ///
+    /// Phase 2 (Future): Replace with real Kokoro TTS inference
     pub async fn speak(&self, text: &str) -> Result<Vec<f32>> {
         let start = std::time::Instant::now();
 
@@ -247,32 +254,56 @@ impl LarynxActor {
         stats.current_prosody = prosody;
         stats.total_atp_spent += 5.0; // 5 ATP per utterance
 
-        // TODO: Actual Kokoro synthesis
-        // For now, return empty audio (placeholder)
-        // This will be implemented when we have the model file
+        drop(stats); // Release write lock early
+
+        // Phase 1: Generate test audio (sine wave with prosody)
+        // This demonstrates that prosody modulation works correctly
+        // and provides real audio for testing
+
+        use std::f32::consts::PI;
+
+        // Base frequency: A4 = 440 Hz
+        // Pitch modulation affects frequency
+        let frequency = 440.0 * prosody.pitch;
+
+        // Duration based on text length and speed
+        // Assume ~200 characters per second at normal speed
+        let chars_per_second = 200.0 * prosody.speed;
+        let duration_secs = text.len() as f32 / chars_per_second;
+
+        // Generate audio samples
+        let sample_count = (duration_secs * self.config.sample_rate as f32) as usize;
+        let mut audio = Vec::with_capacity(sample_count);
+
+        for i in 0..sample_count {
+            let t = i as f32 / self.config.sample_rate as f32;
+            let sample = (2.0 * PI * frequency * t).sin() * prosody.energy * 0.5;
+            audio.push(sample);
+        }
 
         let synthesis_ms = start.elapsed().as_millis() as f32;
 
         // Update average synthesis time (EMA with alpha=0.1)
+        let mut stats = self.stats.write().await;
         stats.avg_synthesis_ms = if stats.avg_synthesis_ms == 0.0 {
             synthesis_ms
         } else {
             stats.avg_synthesis_ms * 0.9 + synthesis_ms * 0.1
         };
-
-        drop(stats); // Release write lock
+        drop(stats);
 
         tracing::info!(
-            "🎤 Synthesized: '{}' (speed={:.2}, pitch={:.2}, energy={:.2}) in {:.1}ms",
+            "🎤 Synthesized: '{}' (speed={:.2}, pitch={:.2}, energy={:.2}, freq={:.1}Hz, {:.2}s) in {:.1}ms",
             text,
             prosody.speed,
             prosody.pitch,
             prosody.energy,
+            frequency,
+            duration_secs,
             synthesis_ms
         );
 
-        // Return placeholder audio (will be real audio once model is loaded)
-        Ok(vec![])
+        Ok(audio)
     }
 
     /// Get current statistics
@@ -304,6 +335,38 @@ impl LarynxActor {
         // self.session = Some(session);
 
         tracing::info!("✅ Kokoro-82M model loaded successfully");
+        Ok(())
+    }
+
+    /// Save audio to WAV file
+    ///
+    /// Exports synthesized audio as a WAV file for playback or analysis.
+    /// Audio format: mono, 24kHz (or configured sample rate), f32 samples
+    pub fn save_wav(&self, audio: &[f32], path: &std::path::Path) -> Result<()> {
+        use hound::{WavSpec, WavWriter};
+
+        let spec = WavSpec {
+            channels: 1, // Mono
+            sample_rate: self.config.sample_rate,
+            bits_per_sample: 32, // f32 samples
+            sample_format: hound::SampleFormat::Float,
+        };
+
+        let mut writer = WavWriter::create(path, spec)?;
+
+        for &sample in audio {
+            writer.write_sample(sample)?;
+        }
+
+        writer.finalize()?;
+
+        tracing::info!(
+            "💾 Saved {} samples ({:.2}s) to {}",
+            audio.len(),
+            audio.len() as f32 / self.config.sample_rate as f32,
+            path.display()
+        );
+
         Ok(())
     }
 }
@@ -457,5 +520,122 @@ mod tests {
         assert!(prosody.pitch >= 0.8 && prosody.pitch <= 1.3);
         assert!(prosody.energy >= 0.3 && prosody.energy <= 1.2);
         assert!(prosody.breath_rate >= 0.0 && prosody.breath_rate <= 0.2);
+    }
+
+    // Week 13 Day 1: New tests for real audio generation
+
+    #[tokio::test]
+    async fn test_real_audio_generation() {
+        let config = LarynxConfig::default();
+        let larynx = LarynxActor::new(config).unwrap();
+
+        // Synthesize some text
+        let text = "Hello, I am Sophia!";
+        let audio = larynx.speak(text).await.unwrap();
+
+        // Verify audio was generated (not empty)
+        assert!(!audio.is_empty(), "Audio should not be empty");
+
+        // Verify audio length is reasonable
+        // At 24kHz and ~200 chars/sec, "Hello, I am Sophia!" (19 chars)
+        // should be about 0.095 seconds = 2280 samples
+        let expected_samples = (text.len() as f32 / 200.0 * 24000.0) as usize;
+        let tolerance = expected_samples / 2; // Allow 50% tolerance
+        assert!(
+            audio.len() > expected_samples - tolerance
+                && audio.len() < expected_samples + tolerance,
+            "Audio length should be ~{} samples, got {}",
+            expected_samples,
+            audio.len()
+        );
+
+        // Verify samples are in valid range [-1.0, 1.0]
+        for (i, &sample) in audio.iter().enumerate() {
+            assert!(
+                sample >= -1.0 && sample <= 1.0,
+                "Sample {} at index {} is out of range",
+                sample,
+                i
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_wav_file_export() {
+        use tempfile::TempDir;
+
+        let config = LarynxConfig::default();
+        let larynx = LarynxActor::new(config).unwrap();
+
+        // Synthesize audio
+        let text = "Testing WAV export";
+        let audio = larynx.speak(text).await.unwrap();
+
+        // Create temporary directory for test file
+        let temp_dir = TempDir::new().unwrap();
+        let wav_path = temp_dir.path().join("test_audio.wav");
+
+        // Export to WAV
+        larynx.save_wav(&audio, &wav_path).unwrap();
+
+        // Verify file was created
+        assert!(wav_path.exists(), "WAV file should exist");
+
+        // Verify file is not empty
+        let file_size = std::fs::metadata(&wav_path).unwrap().len();
+        assert!(file_size > 0, "WAV file should not be empty");
+
+        // Verify we can read it back with hound
+        use hound::WavReader;
+        let reader = WavReader::open(&wav_path).unwrap();
+        let spec = reader.spec();
+
+        assert_eq!(spec.channels, 1, "Should be mono");
+        assert_eq!(spec.sample_rate, 24000, "Should be 24kHz");
+        assert_eq!(spec.sample_format, hound::SampleFormat::Float);
+
+        let samples: Vec<f32> = reader.into_samples::<f32>().map(|s| s.unwrap()).collect();
+        assert_eq!(samples.len(), audio.len(), "Sample count should match");
+    }
+
+    #[tokio::test]
+    async fn test_prosody_affects_audio() {
+        let config = LarynxConfig::default();
+        let mut larynx = LarynxActor::new(config).unwrap();
+
+        let text = "Testing prosody modulation";
+
+        // Generate audio in default state
+        let audio_normal = larynx.speak(text).await.unwrap();
+
+        // Create stressed endocrine state (high cortisol)
+        let endocrine_config = EndocrineConfig::default();
+        let mut endocrine = EndocrineSystem::new(endocrine_config);
+        for _ in 0..3 {
+            endocrine.process_event(HormoneEvent::Error { severity: 0.9 });
+        }
+        let endocrine_arc = Arc::new(RwLock::new(endocrine));
+        larynx.set_endocrine(endocrine_arc);
+
+        // Generate audio in stressed state
+        let audio_stressed = larynx.speak(text).await.unwrap();
+
+        // Stressed audio should be shorter (faster speed) and have different samples
+        assert!(
+            audio_stressed.len() < audio_normal.len(),
+            "Stressed audio should be shorter due to faster speed"
+        );
+
+        // Verify audio is different (stressed has higher frequency = different waveform)
+        let different_samples = audio_normal
+            .iter()
+            .zip(audio_stressed.iter().take(audio_normal.len()))
+            .filter(|(&a, &b)| (a - b).abs() > 0.01)
+            .count();
+
+        assert!(
+            different_samples > audio_stressed.len() / 2,
+            "Stressed audio should have significantly different samples due to prosody"
+        );
     }
 }
