@@ -26,6 +26,9 @@ pub mod memory;
 // Week 4: Physiology (The Body)
 pub mod physiology;
 
+// Week 12: Perception & Tool Creation
+pub mod perception;
+
 // Phase 11: Bio-Digital Bridge modules (Week 0: Deferred to later phases)
 // pub mod semantic_ear;  // Needs rust-bert, tokenizers
 pub mod safety;
@@ -99,6 +102,13 @@ pub use physiology::{
     BodySensation,
     CoherenceField, CoherenceConfig, CoherenceStats, CoherenceState,  // Week 6+: Revolutionary energy model
     CoherenceError, TaskComplexity,
+    ScatterCause, ScatterAnalysis,  // Week 9: Advanced coherence diagnostics
+};
+
+// Week 12: Perception & Tool Creation exports
+pub use perception::{
+    VisualCortex, VisualFeatures,
+    CodePerceptionCortex, ProjectStructure, RustCodeSemantics, CodeQualityAnalysis,
 };
 
 // pub use swarm::{SwarmIntelligence, SwarmConfig, SwarmStats};  // Needs libp2p
@@ -286,10 +296,51 @@ impl SophiaHLB {
             );
         }
 
-        // Check if we have sufficient coherence for this query
+        // ====================================================================
+        // WEEK 9: Predictive Coherence - Anticipate scatter BEFORE it happens!
+        // ====================================================================
+
         // Assume Cognitive complexity for general queries (0.3)
         let task_complexity = TaskComplexity::Cognitive;
 
+        // Week 9 Phase 1: PREDICT the impact before attempting the task
+        let prediction = self.coherence.predict_impact(
+            task_complexity,
+            true,  // Working WITH user = connected work (builds coherence!)
+            &hormones,
+        );
+
+        // Log prediction for transparency
+        tracing::info!(
+            "🔮 Prediction: {} | Confidence: {:.0}%",
+            prediction.reasoning,
+            prediction.confidence * 100.0
+        );
+
+        // Week 9: If prediction shows we'll fail, offer to center FIRST
+        if !prediction.will_succeed && prediction.centering_needed > 0.0 {
+            tracing::warn!(
+                "🔮 Proactive centering: Task would fail, offering {:.1}s centering first",
+                prediction.centering_needed
+            );
+
+            return Ok(SophiaResponse {
+                content: format!(
+                    "I can help with that, but I'll need to gather myself first. \
+                     Give me about {:.0} seconds to center, then I'll be ready. \
+                     (Current coherence: {:.0}%, need {:.0}%)",
+                    prediction.centering_needed,
+                    self.coherence.state().coherence * 100.0,
+                    task_complexity.required_coherence(&self.coherence.config) * 100.0
+                ),
+                confidence: prediction.confidence,
+                steps_to_emergence: 0,
+                safe: true,
+            });
+        }
+
+        // Week 6+: Reactive check as fallback (should rarely trigger now!)
+        // Check if we have sufficient coherence for this query
         match self.coherence.can_perform(task_complexity) {
             Ok(_) => {
                 // We have sufficient coherence - proceed normally
@@ -301,11 +352,28 @@ impl SophiaHLB {
                 );
             }
             Err(CoherenceError::InsufficientCoherence { message, .. }) => {
-                // Insufficient coherence - return centering message
+                // ====================================================================
+                // WEEK 9 PHASE 4: Scatter Analysis - Understand WHY we're scattered
+                // ====================================================================
                 tracing::warn!("🌫️  Insufficient coherence for query");
 
+                // Analyze what caused the scatter
+                let analysis = self.coherence.analyze_scatter(&hormones);
+
+                tracing::info!(
+                    "🔍 Scatter analysis: {:?} | Severity: {:.0}% | Recovery: {:?}",
+                    analysis.cause,
+                    analysis.severity * 100.0,
+                    analysis.estimated_recovery_time
+                );
+
+                // Return intelligent scatter message with cause and recovery
                 return Ok(SophiaResponse {
-                    content: message,
+                    content: format!(
+                        "{}\n\n{}",
+                        analysis.recommended_action,
+                        message
+                    ),
                     confidence: 0.0,
                     steps_to_emergence: 0,
                     safe: true,
@@ -414,12 +482,20 @@ impl SophiaHLB {
             self.coherence.sleep_cycle();
         }
 
+        // ====================================================================
+        // WEEK 9 PHASE 2: Learning Thresholds - Record performance for adaptation
+        // ====================================================================
+        // Capture coherence at task start for learning
+        let coherence_at_start = self.coherence.state().coherence;
+
         // Week 6+: Revolutionary Coherence Mechanic
         // Record that we completed connected work WITH the user!
         // This BUILDS coherence (not depletes it!)
-        if let Err(e) = self.coherence.perform_task(task_complexity, true) {
+        let task_succeeded = self.coherence.perform_task(task_complexity, true).is_ok();
+
+        if !task_succeeded {
             // This should never fail since we already checked can_perform()
-            tracing::warn!("⚠️  Coherence error during task completion: {}", e);
+            tracing::warn!("⚠️  Coherence error during task completion");
         }
 
         tracing::info!(
@@ -427,6 +503,36 @@ impl SophiaHLB {
             (self.coherence.state().coherence - 0.02 * task_complexity.complexity_value() * self.coherence.state().relational_resonance) * 100.0,
             self.coherence.state().coherence * 100.0
         );
+
+        // ====================================================================
+        // WEEK 9 PHASE 2: Record task performance for threshold learning
+        // ====================================================================
+        // The system learns: "Did I succeed or fail at this coherence level?"
+        // This adapts thresholds over time based on actual experience
+        self.coherence.record_task_performance(
+            task_complexity,
+            coherence_at_start,
+            task_succeeded,
+        );
+
+        // ====================================================================
+        // WEEK 9 PHASE 3: Record Resonance Pattern - Remember successful states
+        // ====================================================================
+        // If we succeeded, record this coherence + resonance + hormone combination
+        // as a successful pattern for this type of work
+        if task_succeeded {
+            self.coherence.record_resonance_pattern(
+                &hormones,
+                format!("{:?}_query", task_complexity),
+            );
+
+            tracing::debug!(
+                "📚 Recorded successful pattern: {:?} at coherence={:.2}, resonance={:.2}",
+                task_complexity,
+                coherence_at_start,
+                self.coherence.state().relational_resonance
+            );
+        }
 
         Ok(SophiaResponse {
             content: nix_response,

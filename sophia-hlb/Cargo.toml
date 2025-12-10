@@ -77,12 +77,26 @@ bumpalo = "3.14"
 qp-trie = "0.8"      # Efficient prefix trie for skill lookup
 strsim = "0.11"      # Fuzzy string matching for typo tolerance
 
+# Week 12: Perception & Tool Creation
+image = "0.24"       # Image loading and processing
+imageproc = "0.23"   # Computer vision algorithms
+tree-sitter = "0.20" # Incremental parsing for code understanding
+syn = { version = "2.0", features = ["full", "visit"] }  # Rust syntax parsing (self-analysis)
+ignore = "0.4"       # .gitignore-aware file walking
+git2 = "0.18"        # Git repository interaction
+
 # NixOS integration
 nix = "0.27"
 
 [dev-dependencies]
 criterion = "0.5"
 proptest = "1.4"
+tempfile = "3.8"  # For perception tests
+
+# Examples
+[[example]]
+name = "social_coherence_demo"
+path = "demos/social_coherence_demo.rs"
 
 # Benchmarks (TODO: implement)
 # [[bench]]
