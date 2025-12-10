@@ -119,6 +119,28 @@ impl SemanticSpace {
         Ok(result)
     }
 
+    /// Permute vector for sequence encoding
+    ///
+    /// Circular shift right by `shift` positions.
+    /// Essential for representing order in sequences:
+    /// "cat dog" ≠ "dog cat" in HDC space
+    pub fn permute(&self, vector: &[f32], shift: usize) -> Result<Vec<f32>> {
+        if vector.len() != self.dimension {
+            anyhow::bail!("Vector dimension {} doesn't match semantic space dimension {}",
+                         vector.len(), self.dimension);
+        }
+
+        let mut result = vec![0.0; self.dimension];
+        let shift = shift % self.dimension;
+
+        for i in 0..self.dimension {
+            let new_idx = (i + shift) % self.dimension;
+            result[new_idx] = vector[i];
+        }
+
+        Ok(result)
+    }
+
     /// Decode hypervector to text (approximate)
     pub fn decode(&self, vector: &[f32]) -> Result<String> {
         // Find most similar concepts
@@ -290,6 +312,25 @@ impl HdcContext {
         vector.iter().map(|&x| x as f32).collect()
     }
 
+    /// Permute vector for sequence encoding
+    ///
+    /// Circular shift right by `shift` positions
+    /// Essential for representing order in sequences
+    pub fn permute<'a>(&'a self, vector: &[i8], shift: usize) -> &'a [i8] {
+        let dim = vector.len();
+        let result = self.arena.alloc_slice_fill_copy(dim, 0i8);
+
+        // Normalize shift to handle shifts larger than dimension
+        let shift = shift % dim;
+
+        for i in 0..dim {
+            let new_idx = (i + shift) % dim;
+            result[new_idx] = vector[i];
+        }
+
+        result
+    }
+
     /// Reset arena (free all allocations at once)
     ///
     /// **CRITICAL**: Call this after each HDC operation to reclaim memory.
@@ -380,5 +421,109 @@ mod arena_tests {
         assert!(allocated_after < allocated_before,
                 "Arena should have fewer allocations after reset (before: {}, after: {})",
                 allocated_before, allocated_after);
+    }
+
+    // Week 14 Day 1: HDC Operations Foundation Tests
+
+    #[test]
+    fn test_permute_basic() {
+        let ctx = HdcContext::new();
+
+        let vec = vec![1i8, -1, 1, -1, 1];
+
+        // Shift by 1
+        let permuted = ctx.permute(&vec, 1);
+        assert_eq!(permuted, &[1, 1, -1, 1, -1], "Shift by 1");
+
+        // Shift by 2
+        let permuted = ctx.permute(&vec, 2);
+        assert_eq!(permuted, &[-1, 1, 1, -1, 1], "Shift by 2");
+    }
+
+    #[test]
+    fn test_permute_wrapping() {
+        let ctx = HdcContext::new();
+
+        let vec = vec![1i8, -1, 1, -1];
+
+        // Shift by dimension (should wrap around to original)
+        let permuted = ctx.permute(&vec, 4);
+        assert_eq!(permuted, &[1, -1, 1, -1], "Shift by dimension wraps");
+
+        // Shift by dimension + 1
+        let permuted = ctx.permute(&vec, 5);
+        assert_eq!(permuted, &[-1, 1, -1, 1], "Shift > dimension wraps correctly");
+    }
+
+    #[test]
+    fn test_permute_for_sequences() {
+        let ctx = HdcContext::new();
+
+        // Represent "A B" sequence: bind(A, permute(B, 1))
+        // Use more independent vectors (not exact opposites)
+        let a = vec![1i8, 1, -1, 1, -1, -1];
+        let b = vec![1i8, -1, 1, -1, 1, 1];
+
+        let b_permuted = ctx.permute(&b, 1);
+        let sequence_ab = ctx.bind(&a, b_permuted);
+
+        // "B A" sequence: bind(B, permute(A, 1))
+        let a_permuted = ctx.permute(&a, 1);
+        let sequence_ba = ctx.bind(&b, a_permuted);
+
+        // Sequences should be different (order matters in HDC!)
+        assert_ne!(sequence_ab, sequence_ba, "Different sequences should produce different vectors");
+    }
+
+    #[test]
+    fn test_hamming_distance() {
+        // Hamming distance = number of positions where vectors differ
+        let a = vec![1i8, -1, 1, -1, 1, -1];
+        let b = vec![1i8, -1, 1, -1, -1, 1]; // Differs in 2 positions
+
+        let mut distance = 0;
+        for i in 0..a.len() {
+            if a[i] != b[i] {
+                distance += 1;
+            }
+        }
+
+        assert_eq!(distance, 2, "Hamming distance should be 2");
+    }
+
+    #[test]
+    fn test_similarity_with_noise() {
+        let ctx = HdcContext::new();
+
+        // Original vector
+        let original = vec![1i8; 100];
+
+        // Add 10% noise (flip 10 bits)
+        let mut noisy = original.clone();
+        for i in (0..10).step_by(1) {
+            noisy[i] *= -1;
+        }
+
+        // Bundle original with itself (identity)
+        let vectors = vec![&original[..], &original[..]];
+        let bundled = ctx.bundle(&vectors);
+
+        // Bundle should equal original (majority vote)
+        assert_eq!(bundled, &original[..], "Bundle of identical vectors equals original");
+
+        // Bundle original + noisy should be close to original
+        let vectors_noisy = vec![&original[..], &noisy[..]];
+        let bundled_noisy = ctx.bundle(&vectors_noisy);
+
+        // Count matching positions
+        let mut matches = 0;
+        for i in 0..100 {
+            if bundled_noisy[i] == original[i] {
+                matches += 1;
+            }
+        }
+
+        // Should be >90% similar (most bits match)
+        assert!(matches >= 90, "Bundle with 10% noise should be >=90% similar (got {})", matches);
     }
 }
