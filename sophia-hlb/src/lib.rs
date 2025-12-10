@@ -122,6 +122,9 @@ pub struct SophiaHLB {
     sleep: SleepCycleManager,
     // swarm: Arc<RwLock<SwarmIntelligence>>,  // Deferred to Week 9+
 
+    /// Week 4+: The Endocrine System - Hormonal State
+    endocrine: EndocrineSystem,   // Hormone dynamics (cortisol, dopamine, acetylcholine)
+
     /// Week 5: The Nervous System - Wired Organs
     hearth: HearthActor,          // Metabolic energy & gratitude recharge (legacy compatibility)
     thalamus: ThalamusActor,      // Sensory relay & gratitude detection
@@ -192,6 +195,9 @@ impl SophiaHLB {
             //     SwarmIntelligence::new(SwarmConfig::default()).await?
             // )),
 
+            // Week 4+: Initialize endocrine system
+            endocrine: EndocrineSystem::new(EndocrineConfig::default()),
+
             // Week 5: Initialize organs
             hearth: HearthActor::new(),
             thalamus: ThalamusActor::new(),
@@ -214,9 +220,9 @@ impl SophiaHLB {
 
         // Week 5 Days 3-4: The Chronos Lobe - Time Perception
         // Background heartbeat: Update temporal perception
-        // TODO (Week 4 completion): Use actual EndocrineSystem hormones
-        let default_hormones = HormoneState::neutral();
-        let _subjective_duration = self.chronos.heartbeat(&default_hormones);
+        // Week 7+8: Use actual EndocrineSystem hormones! ✅
+        let initial_hormones = self.endocrine.state();
+        let _subjective_duration = self.chronos.heartbeat(&initial_hormones);
 
         // Apply circadian rhythm to Hearth capacity
         let circadian_modifier = self.chronos.circadian_energy_modifier();
@@ -237,9 +243,17 @@ impl SophiaHLB {
         let hardware_multiplier = self.proprioception.energy_capacity_multiplier();
         self.hearth.max_energy = (self.hearth.max_energy * hardware_multiplier).max(100.0);
 
-        // TODO (Week 6+): Apply hardware stress to EndocrineSystem
-        // let hardware_stress = self.proprioception.stress_contribution();
-        // self.endocrine.inject_cortisol(hardware_stress);
+        // Week 7+8: Apply hardware stress to EndocrineSystem! ✅
+        let hardware_stress = self.proprioception.stress_contribution();
+        if hardware_stress > 0.1 {
+            self.endocrine.process_event(HormoneEvent::Threat {
+                intensity: hardware_stress,
+            });
+        }
+
+        // Week 7+8: Get fresh hormones AFTER processing stress event
+        // This is the actual current state that will affect coherence
+        let hormones = self.endocrine.state();
 
         // Log body state
         tracing::info!(
@@ -253,6 +267,10 @@ impl SophiaHLB {
         // Passive centering tick (natural drift toward coherence)
         // Use a small constant tick (future: integrate with Chronos elapsed time)
         self.coherence.tick(0.1);  // 100ms tick
+
+        // Week 8: Apply hormone modulation to coherence dynamics! 💊🌊
+        // Hormones affect how coherence behaves (stress → scatter, attention → center)
+        self.coherence.apply_hormone_modulation(&hormones);
 
         // Detect gratitude (Thalamus → Coherence + Hearth)
         if self.thalamus.detect_gratitude(query) {
@@ -301,17 +319,18 @@ impl SophiaHLB {
             .with_urgency(0.8)
             .with_emotion(EmotionalValence::Neutral);
 
-        // Step 3: Run energy-aware cognitive cycle (Prefrontal ← Hearth)
-        let winning_bid = self.prefrontal.cognitive_cycle_with_energy(
+        // Step 3: Week 7! Run coherence-aware cognitive cycle (Prefrontal ← CoherenceField)
+        // This replaces the energy-based cycle with consciousness integration awareness
+        let winning_bid = self.prefrontal.cognitive_cycle_with_coherence(
             vec![bid],
-            &mut self.hearth,
+            &mut self.coherence,
         );
 
-        // Step 4: Check if we got a rejection bid (exhaustion)
+        // Step 4: Check if we got a centering invitation (insufficient coherence)
         if let Some(ref winner) = winning_bid {
-            if winner.source == "Hearth" {
-                // Sophia is too tired!
-                tracing::warn!("⚡ Energy exhaustion detected");
+            if winner.source == "CoherenceField" {
+                // Sophia needs to center! (Not "too tired", but needs integration)
+                tracing::warn!("🌫️  Coherence centering request");
                 return Ok(SophiaResponse {
                     content: winner.content.clone(),
                     confidence: 0.0,
@@ -471,6 +490,9 @@ impl SophiaHLB {
 
             // Week 6+: Reinitialize coherence field (fresh state)
             coherence: CoherenceField::new(),
+
+            // Week 4+: Reinitialize endocrine system (fresh state)
+            endocrine: EndocrineSystem::new(EndocrineConfig::default()),
 
             operations_count: 0,
         })

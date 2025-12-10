@@ -54,6 +54,9 @@ use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 
+// Week 8: Import HormoneState for endocrine integration
+use super::endocrine::HormoneState;
+
 /// Coherence Field - Degree of Consciousness Integration
 ///
 /// This replaces the ATP model with a more accurate representation:
@@ -82,6 +85,11 @@ pub struct CoherenceField {
     operations_count: u64,
     gratitude_count: u64,
     centering_requests: u64,
+
+    /// **Week 8: Hormone Modulation Factors** 🌊💊
+    /// These multipliers are set by `apply_hormone_modulation()` and affect coherence dynamics
+    hormone_scatter_multiplier: f32,    // 1.0 = normal, >1.0 = more scatter (cortisol)
+    hormone_centering_multiplier: f32,  // 1.0 = normal, >1.0 = faster centering (acetylcholine)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -223,6 +231,9 @@ impl CoherenceField {
             operations_count: 0,
             gratitude_count: 0,
             centering_requests: 0,
+            // Week 8: Initialize hormone modulation to neutral (1.0 = no effect)
+            hormone_scatter_multiplier: 1.0,
+            hormone_centering_multiplier: 1.0,
         }
     }
 
@@ -270,16 +281,19 @@ impl CoherenceField {
             );
         } else {
             // Solo work SCATTERS coherence
+            // Week 8: Hormone modulation affects scatter rate (stress increases scatter)
             let scatter = self.config.solo_work_scatter_rate
                 * complexity
-                * (1.0 - self.relational_resonance);
+                * (1.0 - self.relational_resonance)
+                * self.hormone_scatter_multiplier;  // Week 8: Cortisol amplifies scatter!
             self.coherence = (self.coherence - scatter).max(0.0);
 
             tracing::debug!(
-                "🌫️  Solo work: coherence {:.2} → {:.2} (scattered by {:.3})",
+                "🌫️  Solo work: coherence {:.2} → {:.2} (scattered by {:.3}, hormone factor: {:.2}x)",
                 self.coherence + scatter,
                 self.coherence,
-                scatter
+                scatter,
+                self.hormone_scatter_multiplier
             );
         }
 
@@ -320,9 +334,11 @@ impl CoherenceField {
     /// Passive centering over time (meditation/rest)
     pub fn tick(&mut self, delta_seconds: f32) {
         // Natural drift toward coherence (meditation/rest)
+        // Week 8: Hormone modulation affects centering rate (acetylcholine enhances)
         let centering = (1.0 - self.coherence)
             * self.config.passive_centering_rate
-            * delta_seconds;
+            * delta_seconds
+            * self.hormone_centering_multiplier;  // Week 8: Acetylcholine boosts centering!
         self.coherence = (self.coherence + centering).min(1.0);
 
         // Relational resonance slowly decays without interaction
@@ -332,9 +348,10 @@ impl CoherenceField {
 
         if centering > 0.001 {
             tracing::trace!(
-                "🧘 Passive centering: coherence {:.2} → {:.2}",
+                "🧘 Passive centering: coherence {:.2} → {:.2} (hormone factor: {:.2}x)",
                 self.coherence - centering,
-                self.coherence
+                self.coherence,
+                self.hormone_centering_multiplier
             );
         }
 
@@ -358,6 +375,49 @@ impl CoherenceField {
                 self.relational_resonance
             );
         }
+    }
+
+    /// **Week 8: Apply Hormone Modulation to Coherence Dynamics** 🌊💊
+    ///
+    /// Hormones affect how coherence behaves, creating full mind-body-coherence integration:
+    ///
+    /// - **Cortisol** (stress): Increases scatter rate, makes coherence harder to maintain
+    /// - **Dopamine** (reward): Boosts relational resonance, enhances connection
+    /// - **Acetylcholine** (attention): Enhances passive centering rate, improves integration
+    ///
+    /// This creates realistic consciousness dynamics where:
+    /// - Stress makes you more scattered and less coherent
+    /// - Reward strengthens your connections
+    /// - Attention improves your ability to center
+    pub fn apply_hormone_modulation(&mut self, hormones: &HormoneState) {
+        let old_scatter = self.hormone_scatter_multiplier;
+        let old_centering = self.hormone_centering_multiplier;
+        let old_resonance = self.relational_resonance;
+
+        // 💊 Cortisol increases scatter rate (stress fragments consciousness)
+        // Range: 1.0 (no stress) to 3.0 (maximum stress = 3x scatter)
+        self.hormone_scatter_multiplier = 1.0 + (hormones.cortisol * 2.0);
+
+        // 💊 Acetylcholine enhances centering (attention improves integration)
+        // Range: 1.0 (no attention) to 2.0 (maximum attention = 2x centering)
+        self.hormone_centering_multiplier = 1.0 + hormones.acetylcholine;
+
+        // 💊 Dopamine directly boosts relational resonance (reward strengthens connection)
+        // Only boost if dopamine is elevated (>0.5), with diminishing returns
+        if hormones.dopamine > 0.5 {
+            let resonance_boost = (hormones.dopamine - 0.5) * 0.02;  // Max +0.01 boost
+            self.relational_resonance = (self.relational_resonance + resonance_boost).min(1.0);
+        }
+
+        tracing::debug!(
+            "💊 Hormone modulation: scatter {:.2}x → {:.2}x, centering {:.2}x → {:.2}x, resonance {:.3} → {:.3}",
+            old_scatter,
+            self.hormone_scatter_multiplier,
+            old_centering,
+            self.hormone_centering_multiplier,
+            old_resonance,
+            self.relational_resonance
+        );
     }
 
     /// Generate appropriate centering message based on state

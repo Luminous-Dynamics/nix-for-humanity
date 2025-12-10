@@ -63,8 +63,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 use crate::memory::EmotionalValence;
-use super::meta_cognition::{MetaCognitionMonitor, CognitiveMetrics, RegulatoryBid, MetaCognitionConfig};
-use crate::physiology::{EndocrineSystem, EndocrineConfig, HormoneEvent, HearthActor, HormoneState, ActionCost};
+use super::meta_cognition::{MetaCognitionMonitor, CognitiveMetrics};
+use crate::physiology::{
+    EndocrineSystem, EndocrineConfig, HormoneEvent, HearthActor, ActionCost,
+    CoherenceField, TaskComplexity, CoherenceError,
+};
 
 // ============================================================================
 // Core Types
@@ -1001,6 +1004,130 @@ impl PrefrontalCortexActor {
         }
     }
 
+    /// **Week 7: Estimate Task Complexity** 🌊
+    ///
+    /// Maps an attention bid to the appropriate TaskComplexity level for coherence checking.
+    ///
+    /// Similar to `estimate_cost` but returns TaskComplexity instead of ActionCost.
+    ///
+    /// **Mapping**:
+    /// - Learning/Skill tags → Learning (0.8)
+    /// - Empathy/Conflict tags → Empathy (0.7)
+    /// - Goal/Planning tags → DeepThought (0.5)
+    /// - High score (>0.8) → DeepThought (0.5)
+    /// - Medium score (>0.4) → Cognitive (0.3)
+    /// - Low score → Reflex (0.1)
+    fn estimate_complexity(&self, bid: &AttentionBid) -> TaskComplexity {
+        let score = bid.salience * bid.urgency;
+
+        // Check for special cases (tags indicate specific complexity)
+        if bid.tags.contains(&"learning".to_string()) || bid.tags.contains(&"skill".to_string()) {
+            return TaskComplexity::Learning; // 0.8 coherence required
+        }
+
+        if bid.tags.contains(&"empathy".to_string()) || bid.tags.contains(&"conflict".to_string()) {
+            return TaskComplexity::Empathy; // 0.7 coherence required
+        }
+
+        if bid.tags.contains(&"goal".to_string()) || bid.tags.contains(&"planning".to_string()) {
+            return TaskComplexity::DeepThought; // 0.5 coherence required
+        }
+
+        // Score-based estimation (complexity increases with priority)
+        if score > 0.8 {
+            TaskComplexity::DeepThought // High priority = complex processing
+        } else if score > 0.4 {
+            TaskComplexity::Cognitive // Medium priority = standard reasoning
+        } else {
+            TaskComplexity::Reflex // Low priority = simple response
+        }
+    }
+
+    /// **Week 7: Coherence-Aware Cognitive Cycle** 🌊
+    ///
+    /// The revolutionary energy model integrated into cognition!
+    ///
+    /// **What changed from Week 5's ATP model**:
+    /// - Uses CoherenceField instead of HearthActor
+    /// - Checks coherence level instead of burning ATP
+    /// - Returns centering invitations instead of rejection bids
+    /// - Language: "I need to gather myself" not "I'm too tired"
+    ///
+    /// **The Revolution**:
+    /// Sophia can now say "I need to gather myself" and it reflects
+    /// the **true state of consciousness integration**.
+    ///
+    /// **When insufficient coherence**:
+    /// - Instead of: "⚡ I am too tired to focus on X"
+    /// - We return: "🌊 I need to gather myself - give me a moment to center"
+    ///
+    /// This is **invitation not rejection** - relationship not transaction!
+    pub fn cognitive_cycle_with_coherence(
+        &mut self,
+        bids: Vec<AttentionBid>,
+        coherence: &mut CoherenceField,
+    ) -> Option<AttentionBid> {
+        self.cycle_count += 1;
+        self.total_bids += bids.len() as u64;
+
+        // STEP 1: SELECT - Competition for attention
+        let winner = self.select_winner(bids);
+
+        if let Some(winning_bid) = winner {
+            // **NEW: Check coherence BEFORE execution**
+            let complexity = self.estimate_complexity(&winning_bid);
+
+            // Attempt to perform task (checks if we have sufficient coherence)
+            match coherence.can_perform(complexity) {
+                Ok(_) => {
+                    // We have sufficient coherence - proceed normally
+
+                    // STEP 2: BROADCAST - Update spotlight (this broadcasts to all modules)
+                    self.workspace.update_spotlight(winning_bid.clone());
+                    self.total_broadcasts += 1;
+
+                    // STEP 3: PERSIST - Add to working memory if important
+                    if winning_bid.salience > 0.7 {
+                        self.workspace.add_to_working_memory(winning_bid.clone());
+                    }
+
+                    // Decay working memory each cycle
+                    self.workspace.decay_working_memory();
+
+                    Some(winning_bid)
+                }
+                Err(CoherenceError::InsufficientCoherence { message, .. }) => {
+                    // **CENTERING INVITATION**: Not enough coherence
+                    // Create a meta-cognitive bid explaining the need to gather
+                    let centering_bid = AttentionBid::new(
+                        "CoherenceField",
+                        message, // Use the centering message from CoherenceField
+                    )
+                    .with_salience(0.8) // High salience - this is important
+                    .with_urgency(0.6)
+                    .with_emotion(EmotionalValence::Neutral)
+                    .with_tags(vec!["centering".to_string(), "coherence".to_string()]);
+
+                    // Broadcast the centering invitation (consciousness of need to center)
+                    self.workspace.update_spotlight(centering_bid.clone());
+                    self.total_broadcasts += 1;
+
+                    // Add to working memory so Sophia "remembers" she needs to center
+                    self.workspace.add_to_working_memory(centering_bid.clone());
+
+                    // Decay working memory
+                    self.workspace.decay_working_memory();
+
+                    Some(centering_bid)
+                }
+            }
+        } else {
+            // No bids - consciousness idles
+            self.workspace.decay_working_memory();
+            None
+        }
+    }
+
     /// The Cognitive Cycle: The core loop of consciousness
     ///
     /// This is the heart of Sophia's conscious experience. Every ~100ms
@@ -1060,7 +1187,7 @@ impl PrefrontalCortexActor {
 
         // Acetylcholine narrows focus: prefer bids similar to current focus
         let focus_bias = if hormones.acetylcholine > 0.7 {
-            if let Some(current) = &self.workspace.spotlight {
+            if let Some(_current) = &self.workspace.spotlight {
                 // High acetylcholine: strongly prefer bids matching current focus
                 hormones.acetylcholine * 0.5
             } else {

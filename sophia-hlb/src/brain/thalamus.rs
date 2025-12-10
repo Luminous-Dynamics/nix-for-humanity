@@ -23,7 +23,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use regex::RegexSet;
 use std::collections::VecDeque;
-use tracing::{info, warn, instrument};
+use tracing::{info, instrument};
 
 /// Short-term memory size for novelty detection
 /// In production: upgrade to CuckooFilter for probabilistic O(1)

@@ -66,7 +66,7 @@
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 use std::time::{Duration, Instant};
-use tracing::{info, warn};
+use tracing::info;
 
 // Platform-specific hardware monitoring
 #[cfg(target_os = "linux")]

@@ -62,7 +62,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::memory::{MemoryTrace, HippocampusActor, EmotionalValence};
+use crate::memory::{HippocampusActor, EmotionalValence};
 use crate::hdc::SemanticSpace;
 use crate::physiology::HormoneState;
 use super::{AttentionBid, Goal};
