@@ -8,26 +8,26 @@
 //! ## Architecture
 //!
 //! ```text
-//! ┌──────────────────────┐
-//! │  EndocrineSystem     │  Emotional State
-//! │  - Cortisol (stress) │
-//! │  - Oxytocin (bonding)│
-//! │  - Dopamine (reward) │
-//! └──────────┬───────────┘
+//! ┌─────────────────────────┐
+//! │  EndocrineSystem        │  Emotional State
+//! │  - Cortisol (stress)    │
+//! │  - Dopamine (reward)    │
+//! │  - Acetylcholine(focus) │
+//! └──────────┬──────────────┘
 //!            │
 //!            ▼ Prosody Modulation
-//! ┌──────────────────────┐
-//! │  LarynxActor         │  Voice Synthesis
-//! │  - Kokoro-82M TTS    │
-//! │  - Pitch control     │
-//! │  - Speed control     │
-//! │  - Energy control    │
-//! └──────────┬───────────┘
+//! ┌─────────────────────────┐
+//! │  LarynxActor            │  Voice Synthesis
+//! │  - Kokoro-82M TTS       │
+//! │  - Pitch control        │
+//! │  - Speed control        │
+//! │  - Energy control       │
+//! └──────────┬──────────────┘
 //!            │
 //!            ▼ Audio Output
-//! ┌──────────────────────┐
-//! │  Audio Playback      │  rodio
-//! └──────────────────────┘
+//! ┌─────────────────────────┐
+//! │  Audio Playback         │  rodio
+//! └─────────────────────────┘
 //! ```
 //!
 //! ## Prosody Modulation Rules
@@ -37,7 +37,7 @@
 //!   - Pitch: +8% higher
 //!   - Energy: +10% more intense
 //!
-//! - **High Oxytocin (>0.7)** - Bonding/Warmth:
+//! - **Calm State (Low Cortisol + High Dopamine)** - Relaxed/Positive:
 //!   - Speed: -8% slower
 //!   - Pitch: -4% lower
 //!   - Energy: -5% softer
@@ -52,8 +52,8 @@
 //!   - Pitch: -5% lower
 //!   - Energy: -12% quieter
 
-use anyhow::{Context, Result};
-use std::path::{Path, PathBuf};
+use anyhow::Result;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -180,7 +180,7 @@ impl LarynxActor {
         };
 
         let endocrine = endocrine.read().await;
-        let state = endocrine.get_current_state();
+        let state = endocrine.state();
 
         let mut prosody = ProsodyParams {
             speed: self.config.base_speed,
@@ -197,8 +197,9 @@ impl LarynxActor {
             prosody.breath_rate += 0.03; // More frequent breaths (anxiety)
         }
 
-        // High Oxytocin (Bonding) -> Slow, Warm, Soft
-        if state.oxytocin > 0.7 {
+        // Calm State (Low Cortisol + High Dopamine) -> Slow, Warm, Soft
+        // This represents a relaxed, positive emotional state
+        if state.cortisol < 0.4 && state.dopamine > 0.6 {
             prosody.speed *= 0.92; // 8% slower
             prosody.pitch *= 0.96; // 4% lower
             prosody.energy *= 0.95; // 5% softer
@@ -331,8 +332,8 @@ mod tests {
         let endocrine_config = EndocrineConfig::default();
         let mut endocrine = EndocrineSystem::new(endocrine_config);
 
-        // Trigger stress
-        endocrine.process_event(&HormoneEvent::StressTriggered).await;
+        // Trigger stress using Error event (high severity)
+        endocrine.process_event(HormoneEvent::Error { severity: 0.9 });
 
         let endocrine_arc = Arc::new(RwLock::new(endocrine));
         larynx.set_endocrine(endocrine_arc.clone());
@@ -351,12 +352,13 @@ mod tests {
         let config = LarynxConfig::default();
         let mut larynx = LarynxActor::new(config).unwrap();
 
-        // Create endocrine system with high oxytocin (bonding/calm)
+        // Create endocrine system and induce calm state (low cortisol, high dopamine)
         let endocrine_config = EndocrineConfig::default();
         let mut endocrine = EndocrineSystem::new(endocrine_config);
 
-        // Trigger bonding (increases oxytocin)
-        endocrine.process_event(&HormoneEvent::SocialBondingDetected).await;
+        // Trigger success/reward to increase dopamine and decrease cortisol
+        endocrine.process_event(HormoneEvent::Success { magnitude: 0.8 });
+        endocrine.process_event(HormoneEvent::Reward { value: 0.8 });
 
         let endocrine_arc = Arc::new(RwLock::new(endocrine));
         larynx.set_endocrine(endocrine_arc);
@@ -408,9 +410,9 @@ mod tests {
         let endocrine_config = EndocrineConfig::default();
         let mut endocrine = EndocrineSystem::new(endocrine_config);
 
-        // Trigger multiple stress events
+        // Trigger multiple stress events using Error events
         for _ in 0..10 {
-            endocrine.process_event(&HormoneEvent::StressTriggered).await;
+            endocrine.process_event(HormoneEvent::Error { severity: 0.9 });
         }
 
         let endocrine_arc = Arc::new(RwLock::new(endocrine));
