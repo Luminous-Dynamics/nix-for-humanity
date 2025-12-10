@@ -22,11 +22,12 @@ Performance Target: <1ms recall for recent memories, <10ms for deep search
 */
 
 use crate::brain::actor_model::{Actor, ActorPriority, OrganMessage};
-use crate::hdc::SemanticSpace;
+use crate::hdc::{SemanticSpace, HdcContext}; // Week 14 Day 3: Add HDC support
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::sync::{Arc, Mutex}; // Week 14 Day 3: Thread-safe HDC access
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn, instrument};
 
@@ -64,6 +65,11 @@ pub struct MemoryTrace {
     /// Holographic hypervector (10,000D)
     /// Encodes: Context ⊗ Content ⊗ Emotion
     pub encoding: Vec<f32>,
+
+    /// Week 14 Day 3: Optional HDC bipolar encoding for fast similarity search
+    /// Bipolar hypervector (+1/-1) for Hamming distance operations
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hdc_encoding: Option<Vec<i8>>,
 
     /// Emotional valence
     pub emotion: EmotionalValence,
@@ -106,6 +112,7 @@ impl MemoryTrace {
             id,
             timestamp,
             encoding,
+            hdc_encoding: None, // Week 14 Day 3: HDC encoding generated on demand
             emotion,
             tags: context_tags,
             content,
@@ -243,6 +250,9 @@ pub struct HippocampusActor {
     /// Semantic space for encoding
     semantic: SemanticSpace,
 
+    /// Week 14 Day 3: HDC context for fast bipolar operations (thread-safe)
+    hdc: Arc<Mutex<HdcContext>>,
+
     /// Memory store (bounded FIFO)
     memories: VecDeque<MemoryTrace>,
 
@@ -266,6 +276,7 @@ impl HippocampusActor {
     pub fn with_capacity(dimensions: usize, max_memories: usize) -> Result<Self> {
         Ok(Self {
             semantic: SemanticSpace::new(dimensions)?,
+            hdc: Arc::new(Mutex::new(HdcContext::new())),  // Week 14 Day 3: Thread-safe HDC context
             memories: VecDeque::with_capacity(max_memories),
             max_memories,
             next_id: 0,
@@ -393,6 +404,150 @@ impl HippocampusActor {
         self.memories.len()
     }
 
+    /// Week 14 Day 3: Generate HDC bipolar encoding for a memory
+    ///
+    /// Converts floating-point holographic encoding to bipolar (+1/-1)
+    /// for fast Hamming distance operations
+    pub fn generate_hdc_encoding(&mut self, memory_id: u64) -> Result<()> {
+        // Find the memory
+        let memory = self.memories.iter_mut()
+            .find(|m| m.id == memory_id)
+            .ok_or_else(|| anyhow::anyhow!("Memory {} not found", memory_id))?;
+
+        // Convert float encoding to bipolar using sign
+        let hdc_encoding: Vec<i8> = memory.encoding.iter()
+            .map(|&x| if x >= 0.0 { 1 } else { -1 })
+            .collect();
+
+        memory.hdc_encoding = Some(hdc_encoding);
+        Ok(())
+    }
+
+    /// Week 14 Day 3: Recall using HDC Hamming distance
+    ///
+    /// Fast similarity search using bipolar encodings.
+    /// Automatically generates HDC encodings if needed.
+    pub fn hdc_recall(&mut self, query: RecallQuery) -> Result<Vec<RecallResult>> {
+        // Encode query as HDC
+        let query_float = self.semantic.encode(&query.query)?;
+        let query_hdc: Vec<i8> = query_float.iter()
+            .map(|&x| if x >= 0.0 { 1 } else { -1 })
+            .collect();
+
+        // Generate HDC encodings for memories that don't have them
+        let memory_ids: Vec<u64> = self.memories.iter()
+            .filter(|m| m.hdc_encoding.is_none())
+            .map(|m| m.id)
+            .collect();
+
+        for id in memory_ids {
+            self.generate_hdc_encoding(id)?;
+        }
+
+        // Search using Hamming distance
+        let mut results: Vec<RecallResult> = self.memories.iter_mut()
+            .filter(|trace| {
+                // Apply filters (same as regular recall)
+                if let Some(after) = query.after_timestamp {
+                    if trace.timestamp < after { return false; }
+                }
+                if let Some(before) = query.before_timestamp {
+                    if trace.timestamp > before { return false; }
+                }
+                if let Some(emotion) = query.emotion_filter {
+                    if trace.emotion != emotion { return false; }
+                }
+                if !query.context_tags.is_empty() {
+                    let has_any_tag = query.context_tags.iter()
+                        .any(|tag| trace.tags.contains(tag));
+                    if !has_any_tag { return false; }
+                }
+                true
+            })
+            .filter_map(|trace| {
+                let hdc_enc = trace.hdc_encoding.as_ref()?;
+
+                // Hamming similarity (normalized to 0.0-1.0)
+                let similarity = hamming_similarity(&query_hdc, hdc_enc);
+
+                // Strengthen on recall
+                trace.strengthen();
+
+                Some(RecallResult {
+                    trace: trace.clone(),
+                    similarity,
+                })
+            })
+            .filter(|result| result.similarity >= query.threshold)
+            .collect();
+
+        // Sort by similarity (descending)
+        results.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap());
+        results.truncate(query.top_k);
+
+        // Apply natural decay
+        for trace in self.memories.iter_mut() {
+            trace.decay(self.decay_rate);
+        }
+
+        info!(
+            query = %query.query,
+            results = results.len(),
+            "HDC memory recall complete"
+        );
+
+        Ok(results)
+    }
+
+    /// Week 14 Day 3: Encode temporal sequence using HDC permutation
+    ///
+    /// Creates a single hypervector representing an ordered sequence of events.
+    /// Uses permutation to represent order: seq = event1 + perm(event2) + perm²(event3) + ...
+    pub fn encode_sequence(&self, memory_ids: &[u64]) -> Result<Vec<i8>> {
+        if memory_ids.is_empty() {
+            return Err(anyhow::anyhow!("Cannot encode empty sequence"));
+        }
+
+        // Get first memory to determine dimensions
+        let first_memory = self.get_memory(memory_ids[0])
+            .ok_or_else(|| anyhow::anyhow!("Memory {} not found", memory_ids[0]))?;
+        let dim = first_memory.encoding.len();
+
+        // Lock HDC context for thread-safe access
+        let hdc = self.hdc.lock().unwrap();
+        let mut sequence_hv = vec![0i32; dim]; // Use i32 for accumulation to avoid overflow
+
+        for (i, &id) in memory_ids.iter().enumerate() {
+            let memory = self.get_memory(id)
+                .ok_or_else(|| anyhow::anyhow!("Memory {} not found", id))?;
+
+            // Get or generate HDC encoding
+            let hdc_enc = if let Some(ref enc) = memory.hdc_encoding {
+                enc.clone()
+            } else {
+                // Generate on-the-fly
+                memory.encoding.iter()
+                    .map(|&x| if x >= 0.0 { 1 } else { -1 })
+                    .collect()
+            };
+
+            // Permute by position (rotate by i positions)
+            let permuted = hdc.permute(&hdc_enc, i);
+
+            // Add to sequence (bundling)
+            for j in 0..dim {
+                sequence_hv[j] += permuted[j] as i32;
+            }
+        }
+
+        // Convert to bipolar using majority rule
+        let final_hv: Vec<i8> = sequence_hv.iter()
+            .map(|&x| if x >= 0 { 1 } else { -1 })
+            .collect();
+
+        Ok(final_hv)
+    }
+
     /// Get memory statistics
     pub fn stats(&self) -> MemoryStats {
         let total = self.memories.len();
@@ -440,6 +595,22 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> Result<f32> {
     }
 
     Ok(dot / (norm_a * norm_b))
+}
+
+/// Week 14 Day 3: Hamming similarity between bipolar vectors
+///
+/// Normalized similarity (0.0 = opposite, 1.0 = identical)
+/// Formula: similarity = (dim - hamming_distance) / dim
+fn hamming_similarity(a: &[i8], b: &[i8]) -> f32 {
+    if a.len() != b.len() {
+        return 0.0;
+    }
+
+    let matches: usize = a.iter().zip(b.iter())
+        .filter(|(&x, &y)| x == y)
+        .count();
+
+    matches as f32 / a.len() as f32
 }
 
 #[async_trait]
@@ -696,5 +867,185 @@ mod tests {
         // Verify normalization
         let norm: f32 = encoding.iter().map(|x| x * x).sum::<f32>().sqrt();
         assert!((norm - 1.0).abs() < 1e-3);
+    }
+
+    // Week 14 Day 3: HDC Enhancement Tests
+
+    #[test]
+    fn test_hdc_encoding_generation() {
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        let id = hippo.remember(
+            "test memory".to_string(),
+            vec!["test".to_string()],
+            EmotionalValence::Neutral,
+        ).unwrap();
+
+        // Initially, HDC encoding should be None
+        let memory_before = hippo.get_memory(id).unwrap();
+        assert!(memory_before.hdc_encoding.is_none());
+
+        // Generate HDC encoding
+        hippo.generate_hdc_encoding(id).unwrap();
+
+        // Now HDC encoding should exist
+        let memory_after = hippo.get_memory(id).unwrap();
+        assert!(memory_after.hdc_encoding.is_some());
+
+        let hdc_enc = memory_after.hdc_encoding.as_ref().unwrap();
+        assert_eq!(hdc_enc.len(), 10_000);
+
+        // All values should be +1 or -1
+        for &val in hdc_enc.iter() {
+            assert!(val == 1 || val == -1);
+        }
+    }
+
+    #[test]
+    fn test_hdc_recall() {
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        let id1 = hippo.remember(
+            "installed firefox".to_string(),
+            vec!["browser".to_string()],
+            EmotionalValence::Positive,
+        ).unwrap();
+
+        let id2 = hippo.remember(
+            "installed vim".to_string(),
+            vec!["editor".to_string()],
+            EmotionalValence::Neutral,
+        ).unwrap();
+
+        // HDC recall should automatically generate encodings
+        let query = RecallQuery {
+            query: "browser".to_string(),
+            threshold: 0.0, // Accept reasonable similarity
+            top_k: 10,
+            ..Default::default()
+        };
+
+        let results = hippo.hdc_recall(query).unwrap();
+
+        // Should get at least some results
+        assert!(!results.is_empty(), "HDC recall should return results");
+
+        // Verify HDC encodings were generated
+        let mem1 = hippo.get_memory(id1).unwrap();
+        let mem2 = hippo.get_memory(id2).unwrap();
+        assert!(mem1.hdc_encoding.is_some(), "HDC encoding should be generated for memory 1");
+        assert!(mem2.hdc_encoding.is_some(), "HDC encoding should be generated for memory 2");
+    }
+
+    #[test]
+    fn test_sequence_encoding() {
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Create a sequence of memories
+        let id1 = hippo.remember(
+            "first step".to_string(),
+            vec!["sequence".to_string()],
+            EmotionalValence::Neutral,
+        ).unwrap();
+
+        let id2 = hippo.remember(
+            "second step".to_string(),
+            vec!["sequence".to_string()],
+            EmotionalValence::Neutral,
+        ).unwrap();
+
+        let id3 = hippo.remember(
+            "third step".to_string(),
+            vec!["sequence".to_string()],
+            EmotionalValence::Neutral,
+        ).unwrap();
+
+        // Encode the sequence
+        let sequence_hv = hippo.encode_sequence(&[id1, id2, id3]).unwrap();
+
+        assert_eq!(sequence_hv.len(), 10_000);
+
+        // All values should be +1 or -1
+        for &val in sequence_hv.iter() {
+            assert!(val == 1 || val == -1);
+        }
+
+        // Different orderings should produce different encodings
+        let reverse_hv = hippo.encode_sequence(&[id3, id2, id1]).unwrap();
+
+        // Count differences (sequences should be different due to permutation)
+        let differences: usize = sequence_hv.iter().zip(reverse_hv.iter())
+            .filter(|(&a, &b)| a != b)
+            .count();
+
+        // At least 25% should be different (permutation should significantly change encoding)
+        // Note: Similar semantic content creates similar vectors, reducing divergence after bundling
+        assert!(differences > 2500,
+                "Different orderings should produce significantly different encodings ({})",
+                differences);
+    }
+
+    #[test]
+    fn test_hamming_similarity() {
+        // Identical vectors
+        let a = vec![1i8, -1, 1, -1, 1];
+        let b = vec![1i8, -1, 1, -1, 1];
+        assert_eq!(hamming_similarity(&a, &b), 1.0);
+
+        // Opposite vectors
+        let c = vec![1i8, -1, 1, -1, 1];
+        let d = vec![-1i8, 1, -1, 1, -1];
+        assert_eq!(hamming_similarity(&c, &d), 0.0);
+
+        // Half matching
+        let e = vec![1i8, -1, 1, -1];
+        let f = vec![1i8, -1, -1, 1];
+        assert_eq!(hamming_similarity(&e, &f), 0.5);
+    }
+
+    #[test]
+    fn test_hdc_recall_with_filters() {
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        hippo.remember(
+            "positive memory".to_string(),
+            vec!["tag1".to_string()],
+            EmotionalValence::Positive,
+        ).unwrap();
+
+        let neg_id = hippo.remember(
+            "negative memory".to_string(),
+            vec!["tag2".to_string()],
+            EmotionalValence::Negative,
+        ).unwrap();
+
+        // HDC recall with emotional filter
+        let query = RecallQuery {
+            query: "memory".to_string(),
+            emotion_filter: Some(EmotionalValence::Negative),
+            threshold: 0.0,
+            top_k: 10,
+            ..Default::default()
+        };
+
+        let results = hippo.hdc_recall(query).unwrap();
+
+        // Should only get negative memory
+        for result in &results {
+            assert_eq!(result.trace.emotion, EmotionalValence::Negative);
+        }
+
+        // Verify encoding was generated
+        let neg_mem = hippo.get_memory(neg_id).unwrap();
+        assert!(neg_mem.hdc_encoding.is_some());
+    }
+
+    #[test]
+    fn test_empty_sequence_encoding() {
+        let hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Empty sequence should error
+        let result = hippo.encode_sequence(&[]);
+        assert!(result.is_err());
     }
 }

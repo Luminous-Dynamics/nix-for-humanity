@@ -515,6 +515,7 @@ mod tests {
             id: 0,
             timestamp: now,
             encoding: vec![0.0; 10_000],
+            hdc_encoding: None,  // Week 14 Day 3: Optional HDC encoding
             emotion,
             tags,
             content: content.to_string(),
