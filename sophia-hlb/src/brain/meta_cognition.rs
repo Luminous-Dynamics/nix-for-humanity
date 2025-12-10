@@ -492,6 +492,98 @@ pub struct MonitorStats {
     pub is_ready: bool,
 }
 
+/// Quick Win: Uncertainty-Aware Response System
+///
+/// This provides simple confidence-based response modification,
+/// allowing Sophia to express when she's uncertain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UncertaintyTracker {
+    /// Current confidence level (0.0-1.0)
+    confidence: f32,
+
+    /// Factors contributing to uncertainty
+    uncertainty_factors: Vec<String>,
+}
+
+impl UncertaintyTracker {
+    /// Create a new uncertainty tracker with given confidence
+    pub fn new(confidence: f32) -> Self {
+        Self {
+            confidence: confidence.clamp(0.0, 1.0),
+            uncertainty_factors: Vec::new(),
+        }
+    }
+
+    /// Add a factor contributing to uncertainty
+    pub fn add_uncertainty_factor(&mut self, factor: impl Into<String>) {
+        self.uncertainty_factors.push(factor.into());
+    }
+
+    /// Get current confidence level
+    pub fn confidence(&self) -> f32 {
+        self.confidence
+    }
+
+    /// Update confidence level
+    pub fn set_confidence(&mut self, confidence: f32) {
+        self.confidence = confidence.clamp(0.0, 1.0);
+    }
+
+    /// Get uncertainty factors
+    pub fn uncertainty_factors(&self) -> &[String] {
+        &self.uncertainty_factors
+    }
+
+    /// Wrap a response with appropriate uncertainty acknowledgment
+    pub fn wrap_response(&self, response: impl Into<String>) -> String {
+        let response = response.into();
+
+        if self.confidence < 0.5 {
+            // Low confidence: Explicitly acknowledge uncertainty
+            format!("I'm not sure about this, but here's my understanding: {}", response)
+        } else if self.confidence < 0.7 {
+            // Medium confidence: Mild uncertainty
+            format!("I think {}, though I'm not completely certain.", response)
+        } else {
+            // High confidence: Return response as-is
+            response
+        }
+    }
+
+    /// Create from cognitive metrics
+    pub fn from_metrics(metrics: &CognitiveMetrics) -> Self {
+        let mut tracker = Self::new(metrics.health_score);
+
+        // Add factors based on cognitive state
+        if metrics.is_confused() {
+            tracker.add_uncertainty_factor("High cognitive noise detected");
+        }
+        if metrics.is_stagnant() {
+            tracker.add_uncertainty_factor("Limited recent learning");
+        }
+        if metrics.is_thrashing() {
+            tracker.add_uncertainty_factor("Difficulty maintaining focus");
+        }
+        if metrics.is_fixated() {
+            tracker.add_uncertainty_factor("May be overly focused on single perspective");
+        }
+
+        tracker
+    }
+}
+
+impl MetaCognitionMonitor {
+    /// Get uncertainty tracker from current metrics (Quick Win feature)
+    pub fn uncertainty_tracker(&self) -> UncertaintyTracker {
+        UncertaintyTracker::from_metrics(&self.metrics)
+    }
+
+    /// Wrap a response with uncertainty acknowledgment based on current state
+    pub fn wrap_response_with_uncertainty(&self, response: impl Into<String>) -> String {
+        self.uncertainty_tracker().wrap_response(response)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -685,5 +777,139 @@ mod tests {
         let stats = monitor.stats();
         assert_eq!(stats.cycle_count, 15);
         assert!(stats.is_ready);
+    }
+
+    // Quick Win: Uncertainty-Aware Response Tests
+    #[test]
+    fn test_uncertainty_tracker_creation() {
+        let tracker = UncertaintyTracker::new(0.7);
+        assert_eq!(tracker.confidence(), 0.7);
+        assert!(tracker.uncertainty_factors().is_empty());
+    }
+
+    #[test]
+    fn test_uncertainty_tracker_clamping() {
+        let tracker1 = UncertaintyTracker::new(1.5); // Over 1.0
+        assert_eq!(tracker1.confidence(), 1.0);
+
+        let tracker2 = UncertaintyTracker::new(-0.5); // Below 0.0
+        assert_eq!(tracker2.confidence(), 0.0);
+    }
+
+    #[test]
+    fn test_uncertainty_factors() {
+        let mut tracker = UncertaintyTracker::new(0.5);
+        tracker.add_uncertainty_factor("Test factor 1");
+        tracker.add_uncertainty_factor("Test factor 2");
+
+        assert_eq!(tracker.uncertainty_factors().len(), 2);
+        assert_eq!(tracker.uncertainty_factors()[0], "Test factor 1");
+    }
+
+    #[test]
+    fn test_low_confidence_response() {
+        let tracker = UncertaintyTracker::new(0.3);
+        let wrapped = tracker.wrap_response("the answer is 42");
+
+        assert!(wrapped.contains("I'm not sure"));
+        assert!(wrapped.contains("the answer is 42"));
+    }
+
+    #[test]
+    fn test_medium_confidence_response() {
+        let tracker = UncertaintyTracker::new(0.6);
+        let wrapped = tracker.wrap_response("the answer is 42");
+
+        assert!(wrapped.contains("I think"));
+        assert!(wrapped.contains("not completely certain"));
+        assert!(wrapped.contains("the answer is 42"));
+    }
+
+    #[test]
+    fn test_high_confidence_response() {
+        let tracker = UncertaintyTracker::new(0.9);
+        let wrapped = tracker.wrap_response("the answer is 42");
+
+        // Should return response as-is
+        assert_eq!(wrapped, "the answer is 42");
+    }
+
+    #[test]
+    fn test_uncertainty_from_confused_metrics() {
+        let metrics = CognitiveMetrics {
+            decay_velocity: 0.5,
+            conflict_ratio: 0.8,  // High conflict
+            insight_rate: 0.1,    // Low insight
+            goal_velocity: 0.3,
+            health_score: 0.3,
+        };
+
+        let tracker = UncertaintyTracker::from_metrics(&metrics);
+        assert!(tracker.confidence() < 0.5); // Low confidence due to confusion
+        assert!(!tracker.uncertainty_factors().is_empty());
+        assert!(tracker.uncertainty_factors().iter().any(|f| f.contains("cognitive noise")));
+    }
+
+    #[test]
+    fn test_uncertainty_from_thrashing_metrics() {
+        let metrics = CognitiveMetrics {
+            decay_velocity: 0.9,  // High decay
+            conflict_ratio: 0.5,
+            insight_rate: 0.3,
+            goal_velocity: 0.1,   // Low goal velocity
+            health_score: 0.3,
+        };
+
+        let tracker = UncertaintyTracker::from_metrics(&metrics);
+        assert!(tracker.uncertainty_factors().iter().any(|f| f.contains("focus")));
+    }
+
+    #[test]
+    fn test_uncertainty_from_healthy_metrics() {
+        let mut metrics = CognitiveMetrics {
+            decay_velocity: 0.5,  // Ideal
+            conflict_ratio: 0.4,  // Ideal
+            insight_rate: 0.6,    // Good
+            goal_velocity: 0.5,   // Good
+            health_score: 0.0,
+        };
+        metrics.calculate_health();
+
+        let tracker = UncertaintyTracker::from_metrics(&metrics);
+        assert!(tracker.confidence() > 0.7); // High confidence
+        assert!(tracker.uncertainty_factors().is_empty()); // No pathologies
+    }
+
+    #[test]
+    fn test_monitor_wrap_response_with_uncertainty() {
+        let mut monitor = MetaCognitionMonitor::default();
+
+        // Warmup with normal values
+        for _ in 0..10 {
+            monitor.update_metrics(0.5, 0.5, 0.5, 0.5);
+        }
+
+        let wrapped = monitor.wrap_response_with_uncertainty("test response");
+        // With healthy metrics, should have high confidence
+        assert!(wrapped.contains("test response"));
+    }
+
+    #[test]
+    fn test_monitor_uncertain_response_when_confused() {
+        let mut monitor = MetaCognitionMonitor::default();
+
+        // Warmup
+        for _ in 0..10 {
+            monitor.update_metrics(0.5, 0.5, 0.5, 0.5);
+        }
+
+        // Create confusion
+        for _ in 0..20 {
+            monitor.update_metrics(0.5, 0.8, 0.1, 0.3);
+        }
+
+        let wrapped = monitor.wrap_response_with_uncertainty("test response");
+        // Should express uncertainty
+        assert!(wrapped.contains("I'm not sure") || wrapped.contains("I think"));
     }
 }
