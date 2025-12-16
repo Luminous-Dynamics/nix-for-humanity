@@ -162,7 +162,7 @@ Total Runtime:              ~10MB
 ## 🧪 Example Usage
 
 ```rust
-use sophia_hlb::SophiaHLB;
+use symthaea::SophiaHLB;
 
 #[tokio::main]
 async fn main() -> Result<()> {

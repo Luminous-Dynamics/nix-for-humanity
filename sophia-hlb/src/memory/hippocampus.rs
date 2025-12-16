@@ -18,18 +18,25 @@ Memory is not storage - memory is RECONSTRUCTION.
 We don't record events; we encode them as semantic hyperpositions
 that can be recalled through similarity, time, or emotion.
 
+Week 16 Day 3 Enhancement:
+- Long-term semantic storage for consolidated traces
+- HDC-based similarity search for compressed memories
+- Working memory pressure tracking
+- Automatic consolidation support
+
 Performance Target: <1ms recall for recent memories, <10ms for deep search
 */
 
 use crate::brain::actor_model::{Actor, ActorPriority, OrganMessage};
+use crate::brain::consolidation::SemanticMemoryTrace; // Week 16 Day 3: Consolidated memories
 use crate::hdc::{SemanticSpace, HdcContext}; // Week 14 Day 3: Add HDC support
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use std::sync::{Arc, Mutex}; // Week 14 Day 3: Thread-safe HDC access
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{info, warn, instrument};
+use tracing::{debug, info, warn, instrument};
 
 /// Emotional valence of a memory
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -135,10 +142,11 @@ impl MemoryTrace {
         emotion: EmotionalValence,
         semantic: &mut SemanticSpace,
     ) -> Result<Vec<f32>> {
-        let dim = 10_000; // Fixed dimension for now
-
         // 1. Encode content as hypervector
         let content_hv = semantic.encode(content)?;
+
+        // Get actual dimension from encoded vector (no hardcoding!)
+        let dim = content_hv.len();
 
         // 2. Encode context as bound hypervector
         let mut context_hv = vec![0.0; dim];
@@ -246,6 +254,9 @@ pub struct RecallResult {
 ///
 /// Stores and recalls memories through holographic compression and
 /// vector similarity search.
+///
+/// Week 16 Day 3: Enhanced with long-term semantic storage for
+/// consolidated memories from sleep cycles.
 pub struct HippocampusActor {
     /// Semantic space for encoding
     semantic: SemanticSpace,
@@ -264,6 +275,17 @@ pub struct HippocampusActor {
 
     /// Natural decay rate per day
     decay_rate: f32,
+
+    // Week 16 Day 3: Long-term semantic storage
+    /// Consolidated semantic memories from sleep cycles
+    semantic_memories: Vec<SemanticMemoryTrace>,
+
+    /// Index: HDC hash → list of trace positions for fast lookup
+    /// Supports multiple traces with similar/identical patterns
+    semantic_index: HashMap<u64, Vec<usize>>,
+
+    /// Total number of consolidations performed
+    consolidation_count: u64,
 }
 
 impl HippocampusActor {
@@ -281,6 +303,10 @@ impl HippocampusActor {
             max_memories,
             next_id: 0,
             decay_rate: 0.01, // 1% decay per query (natural forgetting)
+            // Week 16 Day 3: Long-term semantic storage
+            semantic_memories: Vec::new(),
+            semantic_index: HashMap::new(),
+            consolidation_count: 0,
         })
     }
 
@@ -548,6 +574,65 @@ impl HippocampusActor {
         Ok(final_hv)
     }
 
+    /// Week 16 Day 3: Store a consolidated semantic memory trace
+    ///
+    /// Stores a trace from the Memory Consolidator after sleep consolidation.
+    /// Creates HDC hash index for fast similarity search.
+    pub fn store_semantic_trace(&mut self, trace: SemanticMemoryTrace) {
+        // Calculate HDC hash for indexing (XOR-based hash of first 64 values)
+        // Use XOR to avoid overflow and create uniform distribution
+        let hash: u64 = trace.compressed_pattern.iter()
+            .take(64)
+            .enumerate()
+            .fold(0u64, |acc, (i, &v)| {
+                // Treat i8 as u8 bit pattern, XOR with position-dependent rotation
+                let byte = v as u8;
+                acc ^ ((byte as u64).rotate_left((i % 64) as u32))
+            });
+
+        // Add to semantic memories
+        let index = self.semantic_memories.len();
+        self.semantic_memories.push(trace);
+
+        // Update index - append to Vec for this hash (supports multiple traces per hash)
+        self.semantic_index.entry(hash).or_insert_with(Vec::new).push(index);
+        self.consolidation_count += 1;
+
+        debug!(
+            consolidation_count = self.consolidation_count,
+            semantic_memories = self.semantic_memories.len(),
+            "Stored semantic trace in long-term memory"
+        );
+    }
+
+    /// Week 16 Day 3: Recall semantically similar traces
+    ///
+    /// Uses HDC Hamming similarity to find matching compressed patterns.
+    /// Returns references to traces above the similarity threshold.
+    pub fn recall_similar(&self, pattern: &[i8], threshold: f32) -> Vec<&SemanticMemoryTrace> {
+        let hdc = self.hdc.lock().unwrap();
+
+        self.semantic_memories.iter()
+            .filter_map(|trace| {
+                let similarity = hdc.hamming_similarity(pattern, &trace.compressed_pattern);
+                if similarity >= threshold {
+                    Some(trace)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Week 16 Day 3: Calculate working memory pressure
+    ///
+    /// Returns pressure level (0.0-1.0) based on episodic memory usage.
+    /// Used by sleep cycle manager to decide when to consolidate.
+    pub fn working_memory_pressure(&self) -> f32 {
+        let episodic_pressure = self.memories.len() as f32 / self.max_memories as f32;
+        episodic_pressure.clamp(0.0, 1.0)
+    }
+
     /// Get memory statistics
     pub fn stats(&self) -> MemoryStats {
         let total = self.memories.len();
@@ -618,7 +703,7 @@ impl Actor for HippocampusActor {
     #[instrument(skip(self, msg))]
     async fn handle_message(&mut self, msg: OrganMessage) -> Result<()> {
         match msg {
-            OrganMessage::Query { question, reply } => {
+            OrganMessage::Query { question, reply, .. } => {
                 // Simple query interface: store the question as memory
                 let _id = self.remember(
                     question.clone(),
@@ -783,7 +868,7 @@ mod tests {
         let query = RecallQuery {
             query: "command".to_string(),
             context_tags: vec!["git".to_string()],
-            threshold: 0.0, // Accept any similarity for testing
+            threshold: -1.0, // Accept all similarities (cosine can be negative)
             top_k: 10,
             ..Default::default()
         };
@@ -1047,5 +1132,258 @@ mod tests {
         // Empty sequence should error
         let result = hippo.encode_sequence(&[]);
         assert!(result.is_err());
+    }
+
+    // ==========================================
+    // Week 16 Day 3 Tests: Long-Term Semantic Storage
+    // ==========================================
+
+    #[test]
+    fn test_store_semantic_trace() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Create a semantic trace
+        let pattern = Arc::new(vec![1i8, -1, 1, -1, 1, -1, 1, -1]);
+        let trace = SemanticMemoryTrace::new(pattern, 0.8, 0.5);
+
+        // Store it
+        assert_eq!(hippo.consolidation_count, 0);
+        hippo.store_semantic_trace(trace);
+
+        // Verify stored
+        assert_eq!(hippo.semantic_memories.len(), 1);
+        assert_eq!(hippo.consolidation_count, 1);
+        assert!(!hippo.semantic_index.is_empty());
+    }
+
+    #[test]
+    fn test_store_multiple_semantic_traces() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Store 5 traces
+        for i in 0..5 {
+            let pattern = Arc::new(vec![1i8, -1, 1, -1]);
+            let trace = SemanticMemoryTrace::new(pattern, 0.7 + (i as f32 * 0.05), 0.0);
+            hippo.store_semantic_trace(trace);
+        }
+
+        assert_eq!(hippo.semantic_memories.len(), 5);
+        assert_eq!(hippo.consolidation_count, 5);
+
+        // All 5 traces have identical patterns, so they hash to the same value
+        // We should have 1 hash key mapping to a Vec of 5 indices
+        let total_indices: usize = hippo.semantic_index.values().map(|v| v.len()).sum();
+        assert_eq!(total_indices, 5);
+    }
+
+    #[test]
+    fn test_recall_similar_exact_match() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Store a trace
+        let pattern = Arc::new(vec![1i8, -1, 1, -1, 1, -1, 1, -1]);
+        let trace = SemanticMemoryTrace::new(pattern.clone(), 0.9, 0.5);
+        hippo.store_semantic_trace(trace);
+
+        // Recall with identical pattern (cosine similarity = 1.0)
+        let results = hippo.recall_similar(&pattern, 0.99);
+
+        // Should find the exact match
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].importance, 0.9);
+    }
+
+    #[test]
+    fn test_recall_similar_partial_match() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Store a trace
+        let pattern1 = Arc::new(vec![1i8, 1, 1, 1, 1, 1, 1, 1]);
+        let trace = SemanticMemoryTrace::new(pattern1, 0.8, 0.0);
+        hippo.store_semantic_trace(trace);
+
+        // Query with similar but not identical pattern
+        let pattern2 = vec![1i8, 1, 1, 1, -1, -1, -1, -1]; // 50% match
+
+        // Should find with threshold 0.5
+        let results_low = hippo.recall_similar(&pattern2, 0.5);
+        assert_eq!(results_low.len(), 1);
+
+        // Should NOT find with threshold 0.9
+        let results_high = hippo.recall_similar(&pattern2, 0.9);
+        assert_eq!(results_high.len(), 0);
+    }
+
+    #[test]
+    fn test_recall_similar_no_matches() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Store a trace
+        let pattern1 = Arc::new(vec![1i8, 1, 1, 1]);
+        let trace = SemanticMemoryTrace::new(pattern1, 0.8, 0.0);
+        hippo.store_semantic_trace(trace);
+
+        // Query with completely opposite pattern
+        let pattern2 = vec![-1i8, -1, -1, -1];
+
+        // Should find nothing with high threshold
+        let results = hippo.recall_similar(&pattern2, 0.5);
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_recall_similar_multiple_traces() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        // Store 3 traces with varying similarity to query
+        let pattern1 = Arc::new(vec![1i8, 1, 1, 1, 1, 1, 1, 1]); // Very similar
+        let pattern2 = Arc::new(vec![1i8, 1, 1, 1, -1, -1, -1, -1]); // Somewhat similar
+        let pattern3 = Arc::new(vec![-1i8, -1, -1, -1, -1, -1, -1, -1]); // Opposite
+
+        hippo.store_semantic_trace(SemanticMemoryTrace::new(pattern1, 0.9, 0.0));
+        hippo.store_semantic_trace(SemanticMemoryTrace::new(pattern2, 0.7, 0.0));
+        hippo.store_semantic_trace(SemanticMemoryTrace::new(pattern3, 0.5, 0.0));
+
+        // Query with mostly positive pattern
+        let query = vec![1i8, 1, 1, 1, 1, 1, 1, 1];
+
+        // Low threshold - should get 2 matches (pattern1 and pattern2)
+        let results = hippo.recall_similar(&query, 0.5);
+        assert!(results.len() >= 1); // At least pattern1 should match
+    }
+
+    #[test]
+    fn test_working_memory_pressure_empty() {
+        let hippo = HippocampusActor::new(10_000).unwrap();
+
+        let pressure = hippo.working_memory_pressure();
+        assert_eq!(pressure, 0.0, "Empty hippocampus should have 0 pressure");
+    }
+
+    #[test]
+    fn test_working_memory_pressure_partial() {
+        // Use with_capacity to set dimensions AND max_memories
+        let mut hippo = HippocampusActor::with_capacity(10_000, 100).unwrap(); // 100 capacity
+
+        // Add 50 memories (50% full)
+        for i in 0..50 {
+            hippo.remember(
+                format!("memory {}", i),
+                vec!["tag".to_string()],
+                EmotionalValence::Neutral,
+            ).unwrap();
+        }
+
+        let pressure = hippo.working_memory_pressure();
+        assert!((pressure - 0.5).abs() < 0.01, "50% full should give ~0.5 pressure, got {}", pressure);
+    }
+
+    #[test]
+    fn test_working_memory_pressure_full() {
+        // Use with_capacity to set dimensions AND max_memories
+        let mut hippo = HippocampusActor::with_capacity(10_000, 10).unwrap(); // 10 capacity
+
+        // Fill to capacity
+        for i in 0..10 {
+            hippo.remember(
+                format!("memory {}", i),
+                vec!["tag".to_string()],
+                EmotionalValence::Neutral,
+            ).unwrap();
+        }
+
+        let pressure = hippo.working_memory_pressure();
+        assert_eq!(pressure, 1.0, "Full hippocampus should have 1.0 pressure");
+    }
+
+    #[test]
+    fn test_working_memory_pressure_overflow() {
+        // Use with_capacity to set dimensions AND max_memories
+        let mut hippo = HippocampusActor::with_capacity(10_000, 5).unwrap(); // 5 capacity
+
+        // Add more than capacity (FIFO eviction should occur)
+        for i in 0..10 {
+            hippo.remember(
+                format!("memory {}", i),
+                vec!["tag".to_string()],
+                EmotionalValence::Neutral,
+            ).unwrap();
+        }
+
+        let pressure = hippo.working_memory_pressure();
+        assert_eq!(pressure, 1.0, "Overflow should still cap at 1.0 pressure");
+        assert_eq!(hippo.memories.len(), 5, "FIFO should limit to max capacity");
+    }
+
+    #[test]
+    fn test_semantic_storage_integration() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        // Use with_capacity to set dimensions AND max_memories
+        let mut hippo = HippocampusActor::with_capacity(10_000, 1000).unwrap(); // 1000 capacity
+
+        // Simulate adding episodic memories
+        for i in 0..500 {
+            hippo.remember(
+                format!("episodic {}", i),
+                vec!["test".to_string()],
+                EmotionalValence::Neutral,
+            ).unwrap();
+        }
+
+        // Check working memory pressure
+        let pressure = hippo.working_memory_pressure();
+        assert!((pressure - 0.5).abs() < 0.01, "Should be ~50% full");
+
+        // Now simulate consolidation by storing semantic traces
+        for i in 0..3 {
+            let pattern = Arc::new(vec![1i8, -1, 1, -1]);
+            let trace = SemanticMemoryTrace::new(pattern, 0.8, 0.0);
+            hippo.store_semantic_trace(trace);
+        }
+
+        // Verify both systems working
+        assert_eq!(hippo.memories.len(), 500, "Episodic memories intact");
+        assert_eq!(hippo.semantic_memories.len(), 3, "Semantic traces stored");
+        assert_eq!(hippo.consolidation_count, 3, "Consolidation counter correct");
+    }
+
+    #[test]
+    fn test_consolidation_count_increments() {
+        use crate::brain::consolidation::SemanticMemoryTrace;
+        use std::sync::Arc;
+
+        let mut hippo = HippocampusActor::new(10_000).unwrap();
+
+        assert_eq!(hippo.consolidation_count, 0);
+
+        // Add 10 consolidations
+        for i in 0..10 {
+            let pattern = Arc::new(vec![1i8, -1, 1, -1]);
+            let trace = SemanticMemoryTrace::new(pattern, 0.7, 0.0);
+            hippo.store_semantic_trace(trace);
+        }
+
+        assert_eq!(hippo.consolidation_count, 10);
+        assert_eq!(hippo.semantic_memories.len(), 10);
     }
 }

@@ -10,7 +10,7 @@ This test verifies that Proprioception is wired correctly:
 6. Network status affects connectivity feelings
 */
 
-use sophia_hlb::{
+use symthaea::{
     SophiaHLB, ProprioceptionActor, BodySensation,
 };
 use std::thread::sleep;

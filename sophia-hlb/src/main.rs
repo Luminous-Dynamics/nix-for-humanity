@@ -4,23 +4,23 @@ Showcases all Phase 10 + Phase 11 features in action
 */
 
 use anyhow::Result;
-use sophia_hlb::SophiaHLB;
+use symthaea::SophiaHLB;
 use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Initialize logging
     tracing_subscriber::fmt()
-        .with_env_filter("sophia_hlb=info")
+        .with_env_filter("symthaea=info")
         .init();
 
-    println!("\n🌟 Sophia: Holographic Liquid Brain - Phase 11 Demo");
+    println!("\n🌟 Symthaea: Holographic Liquid Brain - Phase 11 Demo");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     // Initialize complete system (Phase 10 + Phase 11)
     let mut sophia = SophiaHLB::new(10_000, 1_000).await?;
 
-    println!("✅ Sophia initialized with:");
+    println!("✅ Symthaea initialized with:");
     println!("   • HDC Semantic Space (10,000D)");
     println!("   • Liquid Time-Constant Network (1,000 neurons)");
     println!("   • Autopoietic Consciousness Graph");
@@ -89,14 +89,14 @@ async fn main() -> Result<()> {
 
     // Demo 5: Pause and resume (serialization)
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("💾 Demo 5: Consciousness Persistence");
+    println!("💾 Demo 5: Consciousness Persistence (graph-only)");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     sophia.pause("consciousness.bin")?;
-    println!("✅ Consciousness saved to consciousness.bin");
+    println!("✅ Graph-only snapshot saved to consciousness.bin");
 
     let sophia2 = SophiaHLB::resume("consciousness.bin")?;
-    println!("✅ Consciousness restored from disk\n");
+    println!("⚠️  Graph restored; other subsystems reinitialized\n");
 
     let intro2 = sophia2.introspect();
     println!("Restored consciousness level: {:.1}%", intro2.consciousness_level * 100.0);

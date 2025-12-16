@@ -12,7 +12,7 @@ NOTE: This is a unit-level integration test that verifies the organs are
 wired correctly, without requiring the full Sophia pipeline to be operational.
 */
 
-use sophia_hlb::{
+use symthaea::{
     SophiaHLB, ThalamusActor, HearthActor, PrefrontalCortexActor,
     AttentionBid, EmotionalValence, HearthConfig, ActionCost,
 };

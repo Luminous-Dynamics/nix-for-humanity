@@ -8,7 +8,7 @@ This test verifies that the Chronos Lobe is wired correctly:
 4. Background heartbeat continues even without user interaction
 */
 
-use sophia_hlb::{
+use symthaea::{
     SophiaHLB, ChronosActor, HormoneState, TimeQuality, CircadianPhase,
 };
 use std::thread::sleep;

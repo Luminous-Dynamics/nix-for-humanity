@@ -14,7 +14,7 @@
 //! Deep Work → Acetylcholine ↑ → Coherence Stability ↑ → Sustained Focus
 //! ```
 
-use sophia_hlb::{
+use symthaea::{
     EndocrineSystem, EndocrineConfig, HormoneEvent, CoherenceField,
     TaskComplexity,
 };

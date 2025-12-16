@@ -5,6 +5,8 @@
 //! Week 2 Days 3-4: Cerebellum (Procedural Memory)
 //! Week 2 Days 5-7: Motor Cortex (Action Execution)
 //! Week 3 Days 1-2: Prefrontal Cortex (Global Workspace)
+//! Week 16 Day 1: Sleep Cycle Manager (Memory Consolidation)
+//! Week 16 Day 2: Memory Consolidation Core (HDC-based compression)
 
 pub mod actor_model;
 pub mod thalamus;
@@ -13,6 +15,8 @@ pub mod motor_cortex;
 pub mod prefrontal;
 pub mod meta_cognition;
 pub mod daemon;
+pub mod sleep;
+pub mod consolidation;
 
 pub use actor_model::{
     Actor,
@@ -61,4 +65,14 @@ pub use daemon::{
     DaemonConfig,
     Insight,
     DaemonStats,
+};
+pub use sleep::{
+    SleepCycleManager,
+    SleepState,
+    SleepConfig,
+};
+pub use consolidation::{
+    MemoryConsolidator,
+    SemanticMemoryTrace,
+    ConsolidationConfig,
 };

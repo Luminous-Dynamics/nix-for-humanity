@@ -15,7 +15,7 @@ This test verifies the revolutionary shift from ATP (commodity) to Coherence (in
 - After: "I need to gather myself - give me a moment to center"
 */
 
-use sophia_hlb::{
+use symthaea::{
     SophiaHLB, CoherenceField, TaskComplexity, CoherenceConfig,
 };
 use std::thread::sleep;

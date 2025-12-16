@@ -239,7 +239,7 @@ impl Actor for ThalamusActor {
     async fn handle_message(&mut self, msg: OrganMessage) -> Result<()> {
         match msg {
             // Case A: Semantic Vector Input (from Ear/EmbeddingGemma)
-            OrganMessage::Input { data, reply } => {
+            OrganMessage::Input { data, reply, .. } => {
                 let signal = self.assess_salience(None, Some(&data));
                 let decision = self.route(&signal);
 
@@ -252,7 +252,7 @@ impl Actor for ThalamusActor {
             }
 
             // Case B: Raw Text Query (from CLI/User)
-            OrganMessage::Query { question, reply } => {
+            OrganMessage::Query { question, reply, .. } => {
                 let signal = self.assess_salience(Some(&question), None);
                 let decision = self.route(&signal);
 

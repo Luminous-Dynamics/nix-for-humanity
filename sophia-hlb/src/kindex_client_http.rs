@@ -27,7 +27,7 @@ impl RealKIndexClient {
     ///
     /// # Example
     /// ```no_run
-    /// use sophia_hlb::kindex_client_http::RealKIndexClient;
+    /// use symthaea::kindex_client_http::RealKIndexClient;
     ///
     /// let client = RealKIndexClient::new("http://localhost:8000".to_string());
     /// ```

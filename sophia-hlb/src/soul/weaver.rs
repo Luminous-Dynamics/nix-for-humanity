@@ -457,7 +457,7 @@ impl Actor for WeaverActor {
     #[instrument(skip(self, msg))]
     async fn handle_message(&mut self, msg: OrganMessage) -> Result<()> {
         match msg {
-            OrganMessage::Query { question, reply } => {
+            OrganMessage::Query { question, reply, .. } => {
                 // Query about identity/narrative
                 if question.contains("who am i") || question.contains("identity") {
                     let (continuous, score) = self.verify_identity_continuity();

@@ -71,6 +71,7 @@ pub mod chronos;
 pub mod proprioception;
 pub mod coherence;
 pub mod social_coherence;
+#[cfg(feature = "audio")]
 pub mod larynx;
 
 pub use endocrine::{
@@ -122,6 +123,7 @@ pub use social_coherence::{
     SharedKnowledge,         // Week 11 Phase 3: Collective knowledge pool
     CollectiveLearning,      // Week 11 Phase 3: Shared learning system
 };
+#[cfg(feature = "audio")]
 pub use larynx::{
     LarynxActor,             // Week 12 Phase 2a: Voice synthesis
     LarynxConfig,            // Week 12 Phase 2a: Voice configuration

@@ -103,8 +103,9 @@ pub use physiology::{
     CoherenceField, CoherenceConfig, CoherenceStats, CoherenceState,  // Week 6+: Revolutionary energy model
     CoherenceError, TaskComplexity,
     ScatterCause, ScatterAnalysis,  // Week 9: Advanced coherence diagnostics
-    LarynxActor, LarynxConfig, LarynxStats, ProsodyParams,  // Week 12 Phase 2a: Voice output with prosody
 };
+#[cfg(feature = "audio")]
+pub use physiology::{LarynxActor, LarynxConfig, LarynxStats, ProsodyParams};  // Week 12 Phase 2a: Voice output with prosody
 
 // Week 12: Perception & Tool Creation exports
 pub use perception::{
@@ -229,6 +230,15 @@ impl SophiaHLB {
 
         tracing::info!("🧠 Processing query: {}", query);
 
+        // Build initial attention bid from user query
+        let bid = AttentionBid::new("User", query.to_string())
+            .with_salience(0.9)
+            .with_urgency(0.8)
+            .with_emotion(EmotionalValence::Neutral);
+
+        // Derive task complexity from the bid so we reuse the same signal everywhere
+        let mut task_complexity = self.prefrontal.estimate_complexity(&bid);
+
         // Week 5 Days 3-4: The Chronos Lobe - Time Perception
         // Background heartbeat: Update temporal perception
         // Week 7+8: Use actual EndocrineSystem hormones! ✅
@@ -300,9 +310,6 @@ impl SophiaHLB {
         // ====================================================================
         // WEEK 9: Predictive Coherence - Anticipate scatter BEFORE it happens!
         // ====================================================================
-
-        // Assume Cognitive complexity for general queries (0.3)
-        let task_complexity = TaskComplexity::Cognitive;
 
         // Week 9 Phase 1: PREDICT the impact before attempting the task
         let prediction = self.coherence.predict_impact(
@@ -382,13 +389,7 @@ impl SophiaHLB {
             }
         }
 
-        // Step 2: Create attention bid from query
-        let bid = AttentionBid::new("User", query.to_string())
-            .with_salience(0.9)
-            .with_urgency(0.8)
-            .with_emotion(EmotionalValence::Neutral);
-
-        // Step 3: Week 7! Run coherence-aware cognitive cycle (Prefrontal ← CoherenceField)
+        // Step 2: Week 7! Run coherence-aware cognitive cycle (Prefrontal ← CoherenceField)
         // This replaces the energy-based cycle with consciousness integration awareness
         let winning_bid = self.prefrontal.cognitive_cycle_with_coherence(
             vec![bid],
@@ -407,6 +408,8 @@ impl SophiaHLB {
                     safe: true,
                 });
             }
+            // Align task complexity with the actual winning bid
+            task_complexity = self.prefrontal.estimate_complexity(winner);
         }
 
         // Week 0: Semantic Ear deferred to Week 11+
@@ -555,22 +558,34 @@ impl SophiaHLB {
         }
     }
 
-    /// Pause consciousness (serialize to disk)
+    /// Pause consciousness (graph-only snapshot)
+    ///
+    /// Note: This currently saves only the `ConsciousnessGraph`. All other
+    /// subsystems will be reinitialized on resume.
     pub fn pause(&self, path: &str) -> Result<()> {
         let data = bincode::serialize(&self.consciousness)?;
         std::fs::write(path, data)?;
 
-        tracing::info!("💾 Consciousness paused to: {}", path);
+        tracing::info!(
+            "💾 Graph-only snapshot saved to {} (other state reinitializes on resume)",
+            path
+        );
 
         Ok(())
     }
 
-    /// Resume consciousness (deserialize from disk)
+    /// Resume consciousness (graph-only restore)
+    ///
+    /// Note: Only the `ConsciousnessGraph` is restored. Other subsystems are
+    /// reinitialized with fresh state.
     pub fn resume(path: &str) -> Result<Self> {
         let data = std::fs::read(path)?;
         let consciousness: ConsciousnessGraph = bincode::deserialize(&data)?;
 
-        tracing::info!("▶️  Consciousness resumed from: {}", path);
+        tracing::warn!(
+            "▶️  Graph-only resume from {} (all other subsystems reinitialized)",
+            path
+        );
 
         // Reconstruct (simplified - real version would persist more)
         Ok(Self {

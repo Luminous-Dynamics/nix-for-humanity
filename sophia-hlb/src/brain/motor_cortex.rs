@@ -46,7 +46,7 @@ impl ActionStep {
             tags: vec![],
             can_rollback: false,
             rollback_command: None,
-            estimated_risk: 0.5, // Default medium risk
+            estimated_risk: 0.9, // Default conservative risk until computed
         }
     }
 
@@ -73,7 +73,8 @@ impl ActionStep {
 
     /// Calculate risk based on command patterns
     pub fn estimate_risk(&mut self) {
-        let cmd_lower = self.command.to_lowercase();
+        let cmd_lower = format!("{} {}", self.command, self.args.join(" "))
+            .to_lowercase();
 
         // High-risk patterns
         if cmd_lower.contains("rm -rf") || cmd_lower.contains("/boot")
@@ -191,6 +192,14 @@ pub struct RollbackPoint {
     pub created_at: u64,
 }
 
+fn contains_shell_meta(command: &str) -> bool {
+    command.contains('|')
+        || command.contains('&')
+        || command.contains(';')
+        || command.contains('>')
+        || command.contains('<')
+}
+
 // ============================================================================
 // EXECUTION SANDBOX ABSTRACTION
 // ============================================================================
@@ -232,12 +241,70 @@ impl LocalShellSandbox {
         self
     }
 
+    /// Normalize the command/args, rejecting shell metacharacters.
+    fn resolve_command(&self, step: &ActionStep) -> Result<(String, Vec<String>)> {
+        if step.command.trim().is_empty() {
+            return Err(anyhow!("Empty command"));
+        }
+
+        if contains_shell_meta(&step.command) {
+            return Err(anyhow!(
+                "Shell syntax not allowed; provide program name and arguments without pipes/redirects"
+            ));
+        }
+
+        // If args are provided explicitly, the command must be a single token
+        if !step.args.is_empty() {
+            if step.command.split_whitespace().count() > 1 {
+                return Err(anyhow!(
+                    "Inline args are not allowed when args are provided separately"
+                ));
+            }
+            return Ok((step.command.clone(), step.args.clone()));
+        }
+
+        let mut parts = step.command.split_whitespace();
+        let program = parts
+            .next()
+            .ok_or_else(|| anyhow!("Empty command"))?
+            .to_string();
+        let args = parts.map(|s| s.to_string()).collect();
+        Ok((program, args))
+    }
+
+    fn resolve_raw_command(&self, command: &str) -> Result<(String, Vec<String>)> {
+        if command.trim().is_empty() {
+            return Err(anyhow!("Empty command"));
+        }
+        if contains_shell_meta(command) {
+            return Err(anyhow!("Shell syntax not allowed in rollback commands"));
+        }
+        let mut parts = command.split_whitespace();
+        let program = parts
+            .next()
+            .ok_or_else(|| anyhow!("Empty command"))?
+            .to_string();
+        let args = parts.map(|s| s.to_string()).collect();
+        Ok((program, args))
+    }
+
     /// Check if command is safe to run
     fn is_safe_command(&self, step: &ActionStep) -> Result<()> {
-        if !self.allow_destructive && step.estimated_risk > 0.7 {
+        // Normalize the command; this enforces no shell metacharacters.
+        let _ = self.resolve_command(step)?;
+
+        // Always compute a fresh risk score so defaults don't bypass safety
+        let mut effective_risk = step.estimated_risk;
+        if effective_risk >= 0.9 {
+            let mut tmp = step.clone();
+            tmp.estimate_risk();
+            effective_risk = tmp.estimated_risk;
+        }
+
+        if !self.allow_destructive && effective_risk > 0.7 {
             return Err(anyhow!(
                 "Destructive command blocked (risk: {:.2}): {}",
-                step.estimated_risk, step.command
+                effective_risk, step.command
             ));
         }
 
@@ -252,13 +319,12 @@ impl LocalShellSandbox {
 
     /// Validate command syntax and prerequisites
     async fn validate_command(&self, step: &ActionStep) -> Result<()> {
-        // Check if command exists
-        let cmd_name = step.command.split_whitespace().next()
-            .ok_or_else(|| anyhow!("Empty command"))?;
+        // Normalize first (enforces no shell metacharacters)
+        let (cmd_name, _) = self.resolve_command(step)?;
 
         // Use 'which' to check command existence
         let which_result = Command::new("which")
-            .arg(cmd_name)
+            .arg(&cmd_name)
             .output()
             .await?;
 
@@ -336,12 +402,15 @@ impl ExecutionSandbox for LocalShellSandbox {
         // Final safety check
         self.is_safe_command(step)?;
 
-        // Build command
-        let mut cmd = Command::new("sh");
-        cmd.arg("-c")
-           .arg(&step.command)
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
+        // Validate program availability before executing
+        self.validate_command(step).await?;
+
+        // Build command without shell wrapping
+        let (program, args) = self.resolve_command(step)?;
+        let mut cmd = Command::new(&program);
+        cmd.args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         // Execute with timeout
         let output = tokio::time::timeout(
@@ -394,13 +463,13 @@ impl ExecutionSandbox for LocalShellSandbox {
 
         let rollback_cmd = step.rollback_command.as_ref()
             .ok_or_else(|| anyhow!("Rollback command missing"))?;
+        let (program, args) = self.resolve_raw_command(rollback_cmd)?;
 
         info!("🔄 Rolling back: {} - {}", step.description, rollback_cmd);
 
-        // Execute rollback command
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(rollback_cmd)
+        // Execute rollback command without shell
+        let output = Command::new(&program)
+            .args(&args)
             .output()
             .await?;
 
@@ -478,10 +547,14 @@ impl MotorCortexActor {
         );
 
         for (idx, cmd) in skill.sequence.iter().enumerate() {
+            let mut parts = cmd.split_whitespace();
+            let program = parts.next().unwrap_or("").to_string();
+            let args: Vec<String> = parts.map(|s| s.to_string()).collect();
+
             let mut step = ActionStep::new(
                 format!("Step {}: {}", idx + 1, cmd),
-                cmd.clone()
-            );
+                program
+            ).with_args(args);
             step.estimate_risk();
             step.tags = skill.context_tags.clone();
 
@@ -503,11 +576,16 @@ impl MotorCortexActor {
     }
 
     /// Execute a planned action with full safety and rollback support
-    pub async fn execute_action(&mut self, action: PlannedAction) -> Result<ExecutionResult> {
+    pub async fn execute_action(&mut self, mut action: PlannedAction) -> Result<ExecutionResult> {
         let action_id = action.id;
         let action_name = action.name.clone();
 
         info!("🚀 Executing action: {} (mode: {:?})", action_name, action.simulation_mode);
+
+        // Pre-compute risk for all steps based on command patterns
+        for step in &mut action.steps {
+            step.estimate_risk();
+        }
 
         // Step 1: Ghost Run (Pre-flight simulation)
         if action.simulation_mode == SimulationMode::DryRun
@@ -701,24 +779,25 @@ mod tests {
 
     #[tokio::test]
     async fn test_action_step_creation() {
-        let step = ActionStep::new("Test command", "echo hello")
-            .with_args(vec!["world".to_string()])
+        let step = ActionStep::new("Test command", "echo")
+            .with_args(vec!["hello".to_string(), "world".to_string()])
             .with_tags(vec!["test".to_string()])
             .with_risk(0.3);
 
         assert_eq!(step.description, "Test command");
-        assert_eq!(step.command, "echo hello");
-        assert_eq!(step.args, vec!["world"]);
+        assert_eq!(step.command, "echo");
+        assert_eq!(step.args, vec!["hello", "world"]);
         assert_eq!(step.estimated_risk, 0.3);
     }
 
     #[tokio::test]
     async fn test_risk_estimation() {
-        let mut safe_step = ActionStep::new("List files", "ls -la");
+        let mut safe_step = ActionStep::new("List files", "ls").with_args(vec!["-la".into()]);
         safe_step.estimate_risk();
         assert!(safe_step.estimated_risk < 0.3, "ls should be low risk");
 
-        let mut dangerous_step = ActionStep::new("Remove all", "rm -rf /tmp/test");
+        let mut dangerous_step = ActionStep::new("Remove all", "rm")
+            .with_args(vec!["-rf".into(), "/tmp/test".into()]);
         dangerous_step.estimate_risk();
         assert!(dangerous_step.estimated_risk > 0.7, "rm should be high risk");
     }
@@ -726,8 +805,8 @@ mod tests {
     #[tokio::test]
     async fn test_planned_action() {
         let action = PlannedAction::new("Test workflow", "Run tests")
-            .add_step(ActionStep::new("Step 1", "echo test1"))
-            .add_step(ActionStep::new("Step 2", "echo test2"));
+            .add_step(ActionStep::new("Step 1", "echo").with_args(vec!["test1".into()]))
+            .add_step(ActionStep::new("Step 2", "echo").with_args(vec!["test2".into()]));
 
         assert_eq!(action.steps.len(), 2);
         assert_eq!(action.name, "Test workflow");
@@ -736,7 +815,8 @@ mod tests {
     #[tokio::test]
     async fn test_local_sandbox_dry_run() {
         let sandbox = LocalShellSandbox::new();
-        let step = ActionStep::new("Echo test", "echo hello");
+        // Use a simple builtin that should always be available
+        let step = ActionStep::new("True test", "true").with_risk(0.1);
 
         let result = sandbox.dry_run(&step).await.unwrap();
         assert!(result.success);
@@ -746,7 +826,8 @@ mod tests {
     #[tokio::test]
     async fn test_local_sandbox_blocks_dangerous() {
         let sandbox = LocalShellSandbox::new(); // Not allowing destructive
-        let mut step = ActionStep::new("Dangerous", "rm -rf /tmp/test");
+        let mut step = ActionStep::new("Dangerous", "rm")
+            .with_args(vec!["-rf".into(), "/tmp/test".into()]);
         step.estimate_risk();
 
         let result = sandbox.dry_run(&step).await.unwrap();
@@ -757,7 +838,7 @@ mod tests {
     #[tokio::test]
     async fn test_local_sandbox_execute() {
         let sandbox = LocalShellSandbox::new().allow_destructive();
-        let step = ActionStep::new("Echo test", "echo 'hello world'");
+        let step = ActionStep::new("Echo test", "echo").with_args(vec!["hello world".into()]);
 
         let result = sandbox.execute(&step).await.unwrap();
         assert!(result.success);
@@ -781,7 +862,7 @@ mod tests {
         let mut motor = MotorCortexActor::new(sandbox);
 
         let action = PlannedAction::new("Test", "Test action")
-            .add_step(ActionStep::new("Echo", "echo test"));
+            .add_step(ActionStep::new("Echo", "echo").with_args(vec!["test".into()]));
 
         motor.queue_action(action);
         assert_eq!(motor.stats().queued_actions, 1);
@@ -793,7 +874,7 @@ mod tests {
         let mut motor = MotorCortexActor::new(sandbox);
 
         let action = PlannedAction::new("Test dry-run", "Test action")
-            .add_step(ActionStep::new("Echo", "echo test"));
+            .add_step(ActionStep::new("Echo", "true").with_risk(0.1));
 
         let result = motor.execute_action(action).await.unwrap();
         assert!(result.overall_success);
@@ -805,7 +886,7 @@ mod tests {
         let mut motor = MotorCortexActor::new(sandbox);
 
         let mut action = PlannedAction::new("Test real", "Test real execution")
-            .add_step(ActionStep::new("Echo", "echo 'real test'"));
+            .add_step(ActionStep::new("Echo", "echo").with_args(vec!["real test".into()]));
         action.simulation_mode = SimulationMode::RealRun;
 
         let result = motor.execute_action(action).await.unwrap();
@@ -821,7 +902,8 @@ mod tests {
 
         let mut action = PlannedAction::new("Test rollback", "Test rollback")
             .add_step(
-                ActionStep::new("Create file", "touch /tmp/sophia_test.txt")
+                ActionStep::new("Create file", "touch")
+                    .with_args(vec!["/tmp/sophia_test.txt".into()])
                     .with_rollback("rm /tmp/sophia_test.txt")
             )
             .add_step(ActionStep::new("Fail", "false")); // This will fail

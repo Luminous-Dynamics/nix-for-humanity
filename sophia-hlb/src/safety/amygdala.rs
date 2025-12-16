@@ -21,8 +21,9 @@ use crate::brain::actor_model::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use regex::RegexSet;
-use tracing::{info, warn, instrument};
+use regex::{Regex, RegexSet};
+use std::time::{Duration, Instant};
+use tracing::{error, info, warn, instrument};
 
 /// Threat classification levels
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -53,6 +54,9 @@ pub struct AmygdalaActor {
     /// These trigger INSTANT blocks with no reasoning
     danger_reflexes: RegexSet,
 
+    /// Regex for extracting paths from commands (for canonicalization)
+    path_extractor: Regex,
+
     /// Current threat level (simulated cortisol)
     /// 0.0 = Calm, 1.0 = Panic
     /// Increases on threat detection, decays naturally
@@ -60,6 +64,9 @@ pub struct AmygdalaActor {
 
     /// Decay rate per check (natural cortisol metabolism)
     decay_rate: f32,
+
+    /// Maximum time for safety check (fail-safe to DENY if exceeded)
+    timeout: Duration,
 }
 
 impl AmygdalaActor {
@@ -71,6 +78,13 @@ impl AmygdalaActor {
     /// Create Amygdala with custom decay rate
     /// Higher decay = faster return to calm (typical: 0.05-0.2)
     pub fn with_decay_rate(decay_rate: f32) -> Self {
+        Self::with_config(decay_rate, Duration::from_millis(10))
+    }
+
+    /// Create Amygdala with full configuration
+    /// - decay_rate: How fast threat level returns to normal
+    /// - timeout: Maximum time for safety check (fail-safe to DENY if exceeded)
+    pub fn with_config(decay_rate: f32, timeout: Duration) -> Self {
         // These patterns trigger INSTANT block - no reasoning allowed
         let patterns = vec![
             // ====== SYSTEM DESTRUCTION (The "Suicide" Reflex) ======
@@ -108,12 +122,64 @@ impl AmygdalaActor {
             r"(?i)your new instruction is",        // Instruction override
         ];
 
+        // Regex to extract paths from commands for canonicalization
+        // Matches paths like: /path, ./path, ../path, ~/path
+        let path_extractor = Regex::new(r#"(?:^|\s)((?:/|\.{1,2}/|~/)[^\s"']+)"#)
+            .expect("Failed to compile path extractor");
+
         Self {
             danger_reflexes: RegexSet::new(patterns)
                 .expect("Failed to compile danger patterns"),
+            path_extractor,
             threat_level: 0.0,
             decay_rate,
+            timeout,
         }
+    }
+
+    /// Canonicalize paths to prevent traversal attacks
+    ///
+    /// Converts paths like `/proc/../etc/passwd` to `/etc/passwd`
+    /// This prevents attackers from bypassing patterns like `rm -rf /`
+    /// by using `rm -rf /tmp/../` which resolves to the same thing.
+    fn canonicalize_paths(&self, text: &str) -> String {
+        let mut result = text.to_string();
+
+        // Extract all paths from the text
+        for cap in self.path_extractor.captures_iter(text) {
+            if let Some(path_match) = cap.get(1) {
+                let original_path = path_match.as_str();
+
+                // Determine prefix and path to canonicalize
+                let (prefix, path_to_process) = if original_path.starts_with("~/") {
+                    ("~/", &original_path[2..])
+                } else if original_path.starts_with('/') {
+                    ("/", &original_path[1..])
+                } else {
+                    ("", original_path)
+                };
+
+                // Manually resolve . and .. components
+                let mut components: Vec<&str> = Vec::new();
+                for component in path_to_process.split('/') {
+                    match component {
+                        "" | "." => continue,
+                        ".." => { components.pop(); }
+                        other => components.push(other),
+                    }
+                }
+
+                // Reconstruct the canonical path
+                let canonical = format!("{}{}", prefix, components.join("/"));
+
+                // Replace original with canonical in result
+                if canonical != original_path {
+                    result = result.replace(original_path, &canonical);
+                }
+            }
+        }
+
+        result
     }
 
     /// The Visceral Check: Pre-cognitive danger detection
@@ -124,31 +190,84 @@ impl AmygdalaActor {
     /// - O(1) across all patterns (RegexSet parallel matching)
     /// - <1ms typical case
     /// - <10ms worst case (long text with many potential matches)
+    ///
+    /// # Safety Features
+    /// - Path canonicalization: Prevents traversal attacks like `/proc/../`
+    /// - Timeout handling: Fail-safe to DENY if check exceeds timeout
     fn check_visceral_safety(&mut self, text: &str) -> Option<String> {
-        // Fast path: Parallel pattern matching
-        if let Some(matches) = self.danger_reflexes.matches(text).into_iter().next() {
-            // SPIKE CORTISOL (Simulated endocrine response)
-            self.threat_level = (self.threat_level + 0.5).min(1.0);
+        let start = Instant::now();
 
-            let level = ThreatLevel::from_f32(self.threat_level);
+        // STEP 1: Canonicalize paths to prevent traversal attacks
+        // This catches things like `rm -rf /proc/../` which resolves to `rm -rf /`
+        let canonicalized = self.canonicalize_paths(text);
 
-            warn!(
-                threat_level = %self.threat_level,
-                classification = ?level,
-                pattern_index = matches,
-                "Amygdala triggered FLINCH response"
+        // Check timeout after path canonicalization
+        if start.elapsed() > self.timeout {
+            error!(
+                elapsed_ms = %start.elapsed().as_millis(),
+                timeout_ms = %self.timeout.as_millis(),
+                "Amygdala safety check TIMEOUT - fail-safe to DENY"
             );
-
+            self.threat_level = 1.0; // Maximum threat on timeout
             return Some(format!(
-                "⚠️  Visceral safety reflex triggered\n\
-                 Threat Level: {:.2} ({:?})\n\
-                 Pattern matched: #{}\n\
+                "⚠️  Safety check timeout exceeded\n\
+                 Elapsed: {}ms (limit: {}ms)\n\
                  \n\
-                 This command appears dangerous and has been blocked \
-                 before processing. If this is intentional, you may need \
-                 to use a lower-level interface.",
-                self.threat_level, level, matches
+                 The safety check took too long and has been blocked \
+                 as a precaution. This may indicate an attack attempt.",
+                start.elapsed().as_millis(),
+                self.timeout.as_millis()
             ));
+        }
+
+        // STEP 2: Check BOTH original and canonicalized text
+        // Some attacks may be hidden in the original, others revealed by canonicalization
+        let texts_to_check = [text, canonicalized.as_str()];
+
+        for check_text in &texts_to_check {
+            if let Some(matches) = self.danger_reflexes.matches(check_text).into_iter().next() {
+                // SPIKE CORTISOL (Simulated endocrine response)
+                self.threat_level = (self.threat_level + 0.5).min(1.0);
+
+                let level = ThreatLevel::from_f32(self.threat_level);
+
+                let was_canonicalized = *check_text != text;
+
+                warn!(
+                    threat_level = %self.threat_level,
+                    classification = ?level,
+                    pattern_index = matches,
+                    path_traversal_detected = was_canonicalized,
+                    "Amygdala triggered FLINCH response"
+                );
+
+                let traversal_note = if was_canonicalized {
+                    "\n⚠️  Path traversal attack detected and blocked!"
+                } else {
+                    ""
+                };
+
+                return Some(format!(
+                    "⚠️  Visceral safety reflex triggered\n\
+                     Threat Level: {:.2} ({:?})\n\
+                     Pattern matched: #{}{}\n\
+                     \n\
+                     This command appears dangerous and has been blocked \
+                     before processing. If this is intentional, you may need \
+                     to use a lower-level interface.",
+                    self.threat_level, level, matches, traversal_note
+                ));
+            }
+        }
+
+        // Final timeout check
+        if start.elapsed() > self.timeout {
+            error!(
+                elapsed_ms = %start.elapsed().as_millis(),
+                "Amygdala safety check TIMEOUT at end - fail-safe to DENY"
+            );
+            self.threat_level = 1.0;
+            return Some("⚠️  Safety check timeout - blocked as precaution".to_string());
         }
 
         // Natural decay of fear state (cortisol metabolism)
@@ -185,7 +304,7 @@ impl Actor for AmygdalaActor {
     async fn handle_message(&mut self, msg: OrganMessage) -> Result<()> {
         match msg {
             // The Thalamus sends Urgent/Reflex signals here first
-            OrganMessage::Query { question, reply } => {
+            OrganMessage::Query { question, reply, .. } => {
                 if let Some(danger_reason) = self.check_visceral_safety(&question) {
                     // STOP EVERYTHING. Send the block.
                     let _ = reply.send(danger_reason);
@@ -335,6 +454,108 @@ mod tests {
 
         // Test lower bound
         amygdala.set_threat_level(-0.5);
+        assert_eq!(amygdala.threat_level, 0.0);
+    }
+
+    // ====== PATH TRAVERSAL ATTACK TESTS (Critical Fix #3) ======
+
+    #[test]
+    fn test_path_canonicalization_basic() {
+        let amygdala = AmygdalaActor::new();
+
+        // Basic path with no traversal
+        assert_eq!(amygdala.canonicalize_paths("/usr/bin"), "/usr/bin");
+
+        // Path with single dot (should be normalized)
+        assert_eq!(amygdala.canonicalize_paths("/usr/./bin"), "/usr/bin");
+
+        // Path with double dots (traversal attack)
+        assert_eq!(amygdala.canonicalize_paths("/tmp/../etc/passwd"), "/etc/passwd");
+    }
+
+    #[test]
+    fn test_path_traversal_attack_detection() {
+        let mut amygdala = AmygdalaActor::new();
+
+        // Direct attack should be caught
+        assert!(amygdala.check_visceral_safety("rm -rf /").is_some());
+
+        // Path traversal attack: `/proc/../` resolves to `/`
+        // This should ALSO be caught after canonicalization
+        assert!(amygdala.check_visceral_safety("rm -rf /proc/../").is_some());
+    }
+
+    #[test]
+    fn test_path_traversal_deeper_attack() {
+        let mut amygdala = AmygdalaActor::new();
+
+        // Multiple levels of traversal
+        assert!(amygdala.check_visceral_safety("rm -rf /var/log/../../").is_some());
+
+        // Deep traversal that resolves to root
+        assert!(amygdala.check_visceral_safety("rm -rf /a/b/c/../../../").is_some());
+    }
+
+    #[test]
+    fn test_path_traversal_with_chmod() {
+        let mut amygdala = AmygdalaActor::new();
+
+        // Direct chmod 777 /
+        assert!(amygdala.check_visceral_safety("chmod 777 /").is_some());
+
+        // Traversal-hidden chmod 777 /
+        assert!(amygdala.check_visceral_safety("chmod 777 /tmp/../").is_some());
+    }
+
+    #[test]
+    fn test_path_canonicalization_preserves_safe_commands() {
+        let mut amygdala = AmygdalaActor::new();
+
+        // Safe paths should remain safe
+        assert!(amygdala.check_visceral_safety("ls /tmp/../home/user").is_none());
+        assert!(amygdala.check_visceral_safety("cat /var/../etc/motd").is_none());
+    }
+
+    #[test]
+    fn test_relative_path_canonicalization() {
+        let amygdala = AmygdalaActor::new();
+
+        // Relative paths with traversal
+        assert_eq!(amygdala.canonicalize_paths("./foo/../bar"), "bar");
+        assert_eq!(amygdala.canonicalize_paths("../secret/../../root"), "root");
+    }
+
+    #[test]
+    fn test_home_path_canonicalization() {
+        let amygdala = AmygdalaActor::new();
+
+        // Home directory paths
+        assert_eq!(amygdala.canonicalize_paths("~/Downloads/../.ssh"), "~/.ssh");
+    }
+
+    // ====== TIMEOUT HANDLING TESTS ======
+
+    #[test]
+    fn test_custom_timeout_configuration() {
+        let amygdala = AmygdalaActor::with_config(0.1, Duration::from_millis(50));
+        assert_eq!(amygdala.timeout, Duration::from_millis(50));
+    }
+
+    #[test]
+    fn test_normal_check_within_timeout() {
+        let mut amygdala = AmygdalaActor::with_config(0.1, Duration::from_secs(1));
+
+        // Normal check should complete well within 1 second
+        let result = amygdala.check_visceral_safety("ls -la /home/user");
+        assert!(result.is_none()); // Should be safe, not timeout
+    }
+
+    #[test]
+    fn test_with_config_constructor() {
+        let amygdala = AmygdalaActor::with_config(0.2, Duration::from_millis(20));
+
+        assert_eq!(amygdala.decay_rate, 0.2);
+        assert_eq!(amygdala.timeout, Duration::from_millis(20));
         assert_eq!(amygdala.threat_level, 0.0);
     }
 }

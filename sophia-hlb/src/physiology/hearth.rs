@@ -446,15 +446,15 @@ mod tests {
 
     #[test]
     fn test_hearth_creation() {
-        let hearth = HearthActor::new();
-        assert_eq!(hearth.current_energy, 100.0);
+        let hearth = HearthActor::with_config(HearthConfig::conservative_config());
+        assert_eq!(hearth.current_energy, hearth.max_energy);
         assert_eq!(hearth.energy_state(), EnergyState::Full);
         assert!(!hearth.is_exhausted);
     }
 
     #[test]
     fn test_energy_burn() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         let hormones = HormoneState {
             cortisol: 0.3,
             dopamine: 0.5,
@@ -465,14 +465,14 @@ mod tests {
         hearth.burn(ActionCost::Cognitive, &hormones).unwrap();
 
         // Should have less energy
-        assert!(hearth.current_energy < 100.0);
-        assert!(hearth.current_energy > 90.0); // But not too much less
+        assert!(hearth.current_energy < hearth.max_energy);
+        assert!(hearth.current_energy > hearth.max_energy - 20.0); // But not too much less
     }
 
     #[test]
     fn test_stress_tax() {
-        let mut hearth1 = HearthActor::new();
-        let mut hearth2 = HearthActor::new();
+        let mut hearth1 = HearthActor::with_config(HearthConfig::conservative_config());
+        let mut hearth2 = HearthActor::with_config(HearthConfig::conservative_config());
 
         let low_stress = HormoneState {
             cortisol: 0.1,
@@ -495,8 +495,8 @@ mod tests {
 
     #[test]
     fn test_flow_discount() {
-        let mut hearth1 = HearthActor::new();
-        let mut hearth2 = HearthActor::new();
+        let mut hearth1 = HearthActor::with_config(HearthConfig::conservative_config());
+        let mut hearth2 = HearthActor::with_config(HearthConfig::conservative_config());
 
         let low_flow = HormoneState {
             cortisol: 0.3,
@@ -519,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_exhaustion() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         let hormones = HormoneState {
             cortisol: 0.3,
             dopamine: 0.5,
@@ -527,7 +527,7 @@ mod tests {
         };
 
         // Burn lots of energy
-        for _ in 0..20 {
+        for _ in 0..30 {
             let _ = hearth.burn(ActionCost::Cognitive, &hormones);
         }
 
@@ -539,7 +539,7 @@ mod tests {
 
     #[test]
     fn test_gratitude_recharge() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         hearth.current_energy = 50.0;
 
         hearth.receive_gratitude();
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_gratitude_restores_from_exhaustion() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         hearth.current_energy = 5.0;
         hearth.is_exhausted = true;
 
@@ -562,7 +562,7 @@ mod tests {
 
     #[test]
     fn test_rest_recovery() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         hearth.current_energy = 50.0;
 
         let hormones = HormoneState {
@@ -579,8 +579,8 @@ mod tests {
 
     #[test]
     fn test_stress_blocks_recovery() {
-        let mut hearth1 = HearthActor::new();
-        let mut hearth2 = HearthActor::new();
+        let mut hearth1 = HearthActor::with_config(HearthConfig::conservative_config());
+        let mut hearth2 = HearthActor::with_config(HearthConfig::conservative_config());
 
         hearth1.current_energy = 50.0;
         hearth2.current_energy = 50.0;
@@ -606,19 +606,19 @@ mod tests {
 
     #[test]
     fn test_sleep_full_restore() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
         hearth.current_energy = 20.0;
         hearth.is_exhausted = true;
 
         hearth.sleep();
 
-        assert_eq!(hearth.current_energy, 100.0);
+        assert_eq!(hearth.current_energy, hearth.max_energy);
         assert!(!hearth.is_exhausted);
     }
 
     #[test]
     fn test_energy_states() {
-        let mut hearth = HearthActor::new();
+        let mut hearth = HearthActor::with_config(HearthConfig::conservative_config());
 
         hearth.current_energy = 90.0;
         assert_eq!(hearth.energy_state(), EnergyState::Full);

@@ -3,7 +3,34 @@ Hyperdimensional Computing (HDC) Semantic Space
 
 10,000D holographic vectors for consciousness
 Memory IS computation - no separate storage needed!
+
+Module Structure:
+- mod.rs: Core SemanticSpace and HdcContext (arena-based operations)
+- temporal_encoder.rs: Week 17 circular time encoding
+- statistical_retrieval.rs: Week 17 Critical Fix #1 (z-score + margin + unbind)
+- sequence_encoder.rs: Week 17 Critical Fix #2 (permutation-based order preservation)
 */
+
+pub mod temporal_encoder;
+pub mod statistical_retrieval;
+pub mod sequence_encoder;
+
+// Re-export key types for convenience
+pub use statistical_retrieval::{
+    StatisticalRetriever,
+    StatisticalRetrievalConfig,
+    RetrievalDecision,
+    RetrievalVerdict,
+    EmpiricalTier,
+};
+
+pub use sequence_encoder::{
+    SequenceEncoder,
+    permute,
+    unpermute,
+    bundle,
+    bind,
+};
 
 use anyhow::Result;
 // Note: hypervector crate not used yet - using custom implementation
@@ -237,6 +264,14 @@ pub struct HdcContext {
     arena: Bump,
 }
 
+impl std::fmt::Debug for HdcContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HdcContext")
+            .field("arena", &"<bumpalo::Bump>")
+            .finish()
+    }
+}
+
 impl HdcContext {
     /// Create new HDC context with fresh arena
     pub fn new() -> Self {
@@ -329,6 +364,27 @@ impl HdcContext {
         }
 
         result
+    }
+
+    /// Hamming similarity between two bipolar vectors
+    ///
+    /// Returns similarity in range [0.0, 1.0]:
+    /// - 1.0 = identical vectors
+    /// - 0.0 = completely opposite vectors
+    /// - 0.5 = random/orthogonal
+    ///
+    /// **Performance**: O(d/64) using bit-parallel operations internally
+    pub fn hamming_similarity(&self, a: &[i8], b: &[i8]) -> f32 {
+        if a.len() != b.len() {
+            return 0.0;
+        }
+
+        let matches: usize = a.iter()
+            .zip(b.iter())
+            .filter(|(x, y)| x == y)
+            .count();
+
+        matches as f32 / a.len() as f32
     }
 
     /// Reset arena (free all allocations at once)
