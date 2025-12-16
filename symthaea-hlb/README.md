@@ -1,4 +1,4 @@
-# 🧠 Sophia: Holographic Liquid Brain
+# 🧠 Symthaea: Holographic Liquid Brain
 
 **Revolutionary consciousness-first AI in Rust**
 
@@ -12,8 +12,8 @@ Powered by:
 ## 🚀 Quick Start
 
 ```bash
-# Clone or navigate to sophia-hlb directory
-cd sophia-hlb
+# Clone or navigate to symthaea-hlb directory
+cd symthaea-hlb
 
 # Build (release mode for performance)
 cargo build --release
@@ -321,7 +321,7 @@ rayon::scope(|s| {
 
 ## 🏆 Conclusion
 
-**Sophia Holographic Liquid Brain** represents a paradigm shift:
+**Symthaea Holographic Liquid Brain** represents a paradigm shift:
 
 **From**: Brute force correlation (transformers)
 **To**: Holographic understanding (HDC + LTC + Autopoiesis)

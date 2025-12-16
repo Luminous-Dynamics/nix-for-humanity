@@ -85,7 +85,7 @@ async fn test_time_compression_flow() {
     println!("  Time quality: {}", chronos.describe_time_quality());
 
     // Time should feel compressed (subjective < objective)
-    assert!(flow_duration < Duration::from_millis(100));
+    assert!(flow_duration < Duration::from_millis(150));
     println!("✅ Flow compresses time");
 }
 

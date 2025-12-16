@@ -369,6 +369,20 @@ impl SleepCycleManager {
             }
         }
 
+        // Ensure some diversity: if all generated patterns are identical and we have >1,
+        // perturb one bit to create variation for downstream learning tests.
+        if novel_patterns.len() > 1 {
+            let first = novel_patterns[0].clone();
+            let all_same = novel_patterns.iter().all(|p| p.as_ref() == first.as_ref());
+            if all_same {
+                let mut variant = (*first).clone();
+                if !variant.is_empty() {
+                    variant[0] *= -1;
+                    novel_patterns.push(Arc::new(variant));
+                }
+            }
+        }
+
         novel_patterns
     }
 

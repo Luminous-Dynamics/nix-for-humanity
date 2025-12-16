@@ -1,5 +1,5 @@
 {
-  description = "Sophia HLB - Holographic Liquid Brain";
+  description = "Symthaea HLB - Holographic Liquid Brain";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -49,7 +49,7 @@
 
           # Environment variables for OpenSSL and BLAS
           shellHook = ''
-            echo "🌟 Entering Sophia HLB development environment"
+            echo "🌟 Entering Symthaea HLB development environment"
             echo "📦 Rust version: $(rustc --version)"
             echo "🔧 Cargo version: $(cargo --version)"
             echo ""
@@ -75,7 +75,7 @@
 
         # Optional: Package for building release
         packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "sophia-hlb";
+          pname = "symthaea-hlb";
           version = "0.1.0";
           src = ./.;
 
