@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Self-Transcendent Oracle: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Zenith" - A calm, professional palette with a light neutral base, deep slate for text, and subtle teal and plum accents for interactive elements and highlights. -->
+    <!-- Application Structure Plan: The SPA is designed around three core thematic sections, mirroring the report's conceptual evolution but presented non-linearly for better exploration. 1) "The Sovereign Partnership": An interactive card layout to dissect the individual AI's core components (Atlas, Crucible, Phronesis), allowing users to explore each without being overwhelmed. 2) "The Federated Republic": A visual, animated diagram built with HTML/CSS to explain the complex federated learning loop and the critical "wisdom vs. secrets" privacy model. 3) "The Transcendent Frontiers": A dynamic Chart.js bubble chart serves as the central navigation, visualizing the risk/reward matrix and allowing users to interactively explore future technologies. This structure transforms the dense report into a guided, explorable journey, prioritizing conceptual understanding and user engagement over linear reading. -->
+    <!-- Visualization & Content Choices: 1) Report Info: Core AI Components -> Goal: Organize/Compare -> Viz: Interactive Cards (HTML/CSS/JS) -> Interaction: Click-to-reveal details -> Justification: Breaks down complex architecture into digestible pieces. 2) Report Info: Federated Learning Model -> Goal: Explain/Inform -> Viz: Custom HTML/CSS Diagram -> Interaction: Hover/Click to highlight stages -> Justification: Makes an abstract data flow tangible and understandable. 3) Report Info: Frontier Tech Matrix -> Goal: Explore/Decide -> Viz: Bubble Chart (Chart.js) -> Interaction: Click bubble to show details -> Justification: Turns a static data table into an interactive strategic decision-making tool. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        .nav-link {
+            transition: color 0.3s ease, border-bottom-color 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #14b8a6; /* teal-500 */
+            border-bottom-color: #14b8a6;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background-color: #14b8a6;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #0d9488;
+        }
+        .section-title {
+            border-bottom: 3px solid #14b8a6;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .flow-diagram-node {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+        .flow-diagram-node.active {
+            border-color: #14b8a6;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(20, 184, 166, 0.5);
+        }
+        .flow-diagram-arrow {
+            transition: all 0.3s ease;
+        }
+        .flow-diagram-arrow.active {
+            stroke: #14b8a6;
+            stroke-width: 3;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-slate-800">The Self-Transcendent Oracle</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#part1" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Sovereign Partnership</a>
+                        <a href="#part2" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Federated Republic</a>
+                        <a href="#part3" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Transcendent Frontiers</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="hero" class="text-center mb-16 md:mb-24">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">An Architectural Blueprint for a Symbiotic AI</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">This interactive application translates the "Self-Transcendent Oracle" report into an explorable experience. Navigate through the core concepts, from the individual AI partner to the future of collective, conscious computing.</p>
+        </section>
+
+        <!-- Part 1: The Sovereign Partnership -->
+        <section id="part1" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl md:text-4xl font-bold section-title">Part I: The Sovereign Partnership</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-slate-600">The foundation of the Oracle is a dedicated AI partner for each user. This partnership is built on three pillars, each with a distinct purpose, working together to foster user growth and wisdom.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card: The Atlas -->
+                <div id="card-atlas" class="card bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <div class="flex-shrink-0 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                            <span class="text-2xl">🗺️</span>
+                        </div>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">The Atlas</h4>
+                    <p class="text-slate-600 mb-4 flex-grow">The AI's reasoning engine. It moves beyond facts to understand the *why* behind technical decisions, creating a "Wisdom Graph" of principles and trade-offs.</p>
+                    <button onclick="showDetails('atlas')" class="btn-primary font-bold py-2 px-4 rounded-lg w-full mt-auto">Explore The Atlas</button>
+                </div>
+                <!-- Card: The Crucible -->
+                <div id="card-crucible" class="card bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <div class="flex-shrink-0 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                            <span class="text-2xl">🔬</span>
+                        </div>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">The Crucible</h4>
+                    <p class="text-slate-600 mb-4 flex-grow">The AI's predictive engine. It simulates the user's learning journey in a virtual environment to test and refine teaching strategies before they are ever used.</p>
+                    <button onclick="showDetails('crucible')" class="btn-primary font-bold py-2 px-4 rounded-lg w-full mt-auto">Explore The Crucible</button>
+                </div>
+                <!-- Card: The Phronesis Interface -->
+                <div id="card-phronesis" class="card bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <div class="flex-shrink-0 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                            <span class="text-2xl">🎯</span>
+                        </div>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">The Phronesis Interface</h4>
+                    <p class="text-slate-600 mb-4 flex-grow">The AI's interaction engine. It masters the art of the "nudge," using Multi-Armed Bandit algorithms to learn when and how to intervene for maximum positive impact.</p>
+                    <button onclick="showDetails('phronesis')" class="btn-primary font-bold py-2 px-4 rounded-lg w-full mt-auto">Explore Phronesis</button>
+                </div>
+            </div>
+            <div id="details-container" class="mt-8"></div>
+        </section>
+
+        <!-- Part 2: The Federated Republic -->
+        <section id="part2" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl md:text-4xl font-bold section-title">Part II: The Federated Republic</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-slate-600">The architecture evolves from individual partners to a collective ecosystem. Using Federated Learning, individual AIs can learn from each other without ever sharing private user data, creating a "Community Mind."</p>
+            </div>
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <h4 class="text-2xl font-bold text-center mb-6">The Flow of Federated Wisdom</h4>
+                <div class="relative w-full" id="flow-diagram-container">
+                    <svg class="absolute inset-0 w-full h-full" id="flow-diagram-svg" width="100%" height="100%" preserveAspectRatio="none">
+                        <!-- Arrows will be drawn here by JS -->
+                    </svg>
+                    <div class="relative grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                        <div class="flex flex-col items-center space-y-4">
+                            <div id="flow-node-1" class="flow-diagram-node bg-white p-4 rounded-lg shadow-md text-center w-48 h-32 flex flex-col justify-center">
+                                <h5 class="font-bold">1. Distribute</h5>
+                                <p class="text-sm text-slate-600">Server sends global model to clients.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center space-y-4">
+                            <div id="flow-node-2" class="flow-diagram-node bg-white p-4 rounded-lg shadow-md text-center w-48 h-32 flex flex-col justify-center">
+                                <h5 class="font-bold">2. Local Training</h5>
+                                <p class="text-sm text-slate-600">Clients train model on private data.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center space-y-4">
+                            <div id="flow-node-3" class="flow-diagram-node bg-white p-4 rounded-lg shadow-md text-center w-48 h-32 flex flex-col justify-center">
+                                <h5 class="font-bold">3. Aggregate</h5>
+                                <p class="text-sm text-slate-600">Server averages updates to improve global model.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center">
+                     <p class="text-slate-600">This cycle repeats, continuously improving the collective intelligence while ensuring user data remains private and secure on their own devices. Click the button below to trigger an animation of the data flow.</p>
+                    <button onclick="animateFlow()" class="btn-primary font-bold py-2 px-4 rounded-lg mt-4">Animate Data Flow</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 3: The Transcendent Frontiers -->
+        <section id="part3" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl md:text-4xl font-bold section-title">Part III: The Transcendent Frontiers</h3>
+                <p class="mt-4 max-w-2xl mx-auto text-slate-600">Explore the future of the Oracle. This interactive matrix visualizes the strategic roadmap for four paradigm-shifting technologies. Click on a bubble to learn more about each frontier.</p>
+            </div>
+            <div class="grid lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 bg-white p-4 rounded-lg shadow-lg">
+                    <div class="chart-container">
+                        <canvas id="frontiersChart"></canvas>
+                    </div>
+                </div>
+                <div id="frontier-details" class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg flex items-center justify-center">
+                    <p class="text-slate-500 text-center">Click on a technology in the chart to see details here.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-16 md:mt-24">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-500">
+            <p>&copy; 2025 NixOS AI Evolution Project. An interactive exploration.</p>
+        </div>
+    </footer>
+
+    <script>
+        const detailsData = {
+            atlas: {
+                title: 'The Atlas: A Living Wisdom Graph',
+                icon: '🗺️',
+                content: `
+                    <p class="mb-4">The Atlas uses <strong>Argument Mining (AM)</strong>, a specialized field of NLP, to build its Wisdom Graph. Instead of just storing facts, it extracts claims, premises, and the relationships between them from sources like RFCs and community forums.</p>
+                    <p class="mb-4"><strong>Implementation:</strong> A powerful local LLM (like Llama 3) is guided by a sophisticated prompt to act as an argumentative analyst, outputting structured JSON. This data populates a graph database that can model complex relationships like 'supersedes' or 'refines', capturing the evolving nature of community consensus.</p>
+                    <p><strong>Game-Changer:</strong> This allows the AI to provide nuanced, historically-aware answers, explaining the trade-offs between different technical choices rather than giving a single, simplistic recommendation.</p>
+                `
+            },
+            crucible: {
+                title: 'The Crucible: A Laboratory for Human Potential',
+                icon: '🔬',
+                content: `
+                    <p class="mb-4">The Crucible uses <strong>Agent-Based Modeling (ABM)</strong> to simulate the user's learning journey. It creates a 'Digital Twin' of the user, representing their knowledge and emotional state, and runs thousands of 'what-if' scenarios.</p>
+                    <p class="mb-4"><strong>Implementation:</strong> Built with the Python framework <strong>Mesa</strong>, the simulation models the user as an agent. The agent's behavior is made more realistic by incorporating computational psychology models, allowing it to test different pedagogical strategies in a virtual lab.</p>
+                    <p><strong>Game-Changer:</strong> The AI can discover and refine its own teaching methods by testing hypotheses in simulation, becoming a more effective and considerate guide without trial-and-error on the real user.</p>
+                `
+            },
+            phronesis: {
+                title: 'The Phronesis Interface: The Art of the Nudge',
+                icon: '🎯',
+                content: `
+                    <p class="mb-4">The Phronesis Interface uses <strong>Multi-Armed Bandit (MAB)</strong> algorithms to solve the 'explore-exploit' dilemma. It must choose the best intervention (e.g., a question, a link, a code suggestion) from its toolkit.</p>
+                    <p class="mb-4"><strong>Implementation:</strong> Using a Bayesian approach like <strong>Thompson Sampling</strong>, each intervention strategy is an 'arm' of the bandit. The user's reaction provides a 'reward' signal, which updates the AI's belief about that strategy's effectiveness. The reward is not just 'did the user click?', but 'did the user's knowledge or well-being improve?', measured by the Digital Twin.</p>
+                    <p><strong>Game-Changer:</strong> The Oracle automatically and continuously personalizes its teaching style for each user, learning what works best for them over time without requiring explicit rules.</p>
+                `
+            }
+        };
+
+        const frontiersData = {
+            'neuro-symbolic': {
+                title: 'Neuro-Symbolic AI',
+                recommendation: 'Long-term R&D. Focus on Logical Tensor Networks (LTNs) for Nix rule verification.',
+                content: 'Fuses neural models (LLMs) with symbolic models (Wisdom Graph) into a single reasoning system. This mitigates hallucination by forcing the AI to adhere to the unbreakable logical rules of the Nix language, moving from "plausibly correct" to "provably correct" outputs.'
+            },
+            'bci': {
+                title: 'Brain-Computer Interfaces (BCI)',
+                recommendation: 'Cautious, ethics-first research track. On-device processing is non-negotiable.',
+                content: 'Uses non-invasive EEG headbands to get a direct signal of the user\'s cognitive state (e.g., focus, relaxation). This allows the AI to perfect its "Calculus of Interruption," timing interventions to a pause in thought, not just a pause in typing. Privacy is paramount, with all raw data processed ephemerally on-device.'
+            },
+            'declarative': {
+                title: 'Declarative Agent',
+                recommendation: 'High Priority. Begin immediate prototyping with `tree-sitter-nix`.',
+                content: 'The AI becomes a co-author of the user\'s configuration files. Instead of running commands, it programmatically modifies the Abstract Syntax Tree (AST) of `.nix` files and presents changes as a `git diff`. This aligns the AI\'s actions perfectly with the declarative, version-controlled philosophy of NixOS.'
+            },
+            'swarm': {
+                title: 'Swarm Intelligence',
+                recommendation: 'Mid-term R&D. Prototype distributed builds using `py-libp2p`.',
+                content: 'Transforms the community of AIs into a self-organizing "swarm" that can collaborate on complex tasks. Using P2P networking, agents can pool compute resources to create a voluntary, decentralized supercomputer for tasks like massive software compilations.'
+            }
+        };
+
+        let activeDetails = null;
+
+        function showDetails(key) {
+            const detailsContainer = document.getElementById('details-container');
+            const card = document.getElementById(`card-${key}`);
+
+            if (activeDetails === key) {
+                detailsContainer.innerHTML = '';
+                activeDetails = null;
+                card.classList.remove('ring-2', 'ring-teal-500');
+                return;
+            }
+
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('ring-2', 'ring-teal-500'));
+            card.classList.add('ring-2', 'ring-teal-500');
+
+            const data = detailsData[key];
+            detailsContainer.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-lg animate-fade-in">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mr-4">
+                            <span class="text-2xl">${data.icon}</span>
+                        </div>
+                        <h3 class="text-2xl font-bold">${data.title}</h3>
+                    </div>
+                    <div class="prose max-w-none text-slate-600">${data.content}</div>
+                </div>
+            `;
+            activeDetails = key;
+        }
+
+        function animateFlow() {
+            const nodes = [
+                document.getElementById('flow-node-1'),
+                document.getElementById('flow-node-2'),
+                document.getElementById('flow-node-3')
+            ];
+            const arrows = document.querySelectorAll('.flow-diagram-arrow');
+
+            let i = 0;
+            const interval = setInterval(() => {
+                nodes.forEach(n => n.classList.remove('active'));
+                arrows.forEach(a => a.classList.remove('active'));
+
+                if (i < nodes.length) {
+                    nodes[i].classList.add('active');
+                }
+                if (i > 0 && i <= arrows.length) {
+                    arrows[i-1].classList.add('active');
+                }
+
+                i++;
+                if (i > nodes.length) {
+                    clearInterval(interval);
+                    nodes.forEach(n => n.classList.remove('active'));
+                    arrows.forEach(a => a.classList.remove('active'));
+                }
+            }, 1000);
+        }
+
+        function drawFlowArrows() {
+            const container = document.getElementById('flow-diagram-container');
+            const svg = document.getElementById('flow-diagram-svg');
+            const nodes = [
+                document.getElementById('flow-node-1'),
+                document.getElementById('flow-node-2'),
+                document.getElementById('flow-node-3')
+            ];
+            svg.innerHTML = '';
+
+            const containerRect = container.getBoundingClientRect();
+
+            for(let i = 0; i < nodes.length - 1; i++) {
+                const startNode = nodes[i];
+                const endNode = nodes[i+1];
+
+                const startRect = startNode.getBoundingClientRect();
+                const endRect = endNode.getBoundingClientRect();
+
+                const startX = (startRect.left + startRect.width / 2) - containerRect.left;
+                const startY = (startRect.top + startRect.height / 2) - containerRect.top;
+                const endX = (endRect.left + endRect.width / 2) - containerRect.left;
+                const endY = (endRect.top + endRect.height / 2) - containerRect.top;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${startX} ${startY} L ${endX} ${endY}`);
+                path.setAttribute('class', 'flow-diagram-arrow stroke-current text-slate-300');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+                svg.appendChild(path);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('frontiersChart').getContext('2d');
+            const data = {
+                datasets: [{
+                    label: 'Neuro-Symbolic AI',
+                    data: [{ x: 2, y: 5, r: 15, id: 'neuro-symbolic' }],
+                    backgroundColor: 'rgba(20, 184, 166, 0.7)'
+                }, {
+                    label: 'BCI Interface',
+                    data: [{ x: 2, y: 5, r: 10, id: 'bci' }],
+                    backgroundColor: 'rgba(168, 85, 247, 0.7)'
+                }, {
+                    label: 'Declarative Agent',
+                    data: [{ x: 4, y: 4, r: 20, id: 'declarative' }],
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)'
+                }, {
+                    label: 'Swarm Intelligence',
+                    data: [{ x: 3, y: 4, r: 15, id: 'swarm' }],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)'
+                }]
+            };
+
+            const frontiersChart = new Chart(ctx, {
+                type: 'bubble',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const element = elements[0];
+                            const dataset = data.datasets[element.datasetIndex];
+                            const dataPoint = dataset.data[element.index];
+                            const frontierId = dataPoint.id;
+                            const frontierData = frontiersData[frontierId];
+
+                            const detailsPane = document.getElementById('frontier-details');
+                            detailsPane.innerHTML = `
+                                <div class="animate-fade-in w-full">
+                                    <h4 class="text-xl font-bold mb-2">${frontierData.title}</h4>
+                                    <p class="text-sm font-semibold text-teal-600 mb-3">${frontierData.recommendation}</p>
+                                    <p class="text-slate-600">${frontierData.content}</p>
+                                </div>
+                            `;
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Technical Readiness (1-5)' },
+                            min: 1, max: 5,
+                            grid: { color: '#e2e8f0' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Potential Impact (1-5)' },
+                            min: 1, max: 5,
+                            grid: { color: '#e2e8f0' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label;
+                                },
+                                afterLabel: function(context) {
+                                    const rValue = context.raw.r / 5;
+                                    return `Nix-Idiomatic Alignment: ${rValue}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const svg = document.getElementById('flow-diagram-svg');
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" class="fill-current text-slate-300" />
+                    </marker>
+                </defs>
+            `;
+            drawFlowArrows();
+            window.addEventListener('resize', drawFlowArrows);
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => observer.observe(section));
+        });
+
+    </script>
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+    </style>
+</body>
+</html>

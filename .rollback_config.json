@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-09-27T05:58:46.636740",
+  "classifier": "simple",
+  "traffic_pct": 0,
+  "previous_classifier": "production",
+  "metrics_snapshot": {
+    "confidence": 0.75,
+    "latency_ms": 0.2,
+    "agreement_rate": 0.23
+  }
+}

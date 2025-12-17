@@ -9,13 +9,14 @@ from pathlib import Path
 import click
 
 # Import with fallback
+UI_IMPORT_ERROR = None
 try:
     from ..gui import UIGeneratorCLI, UserContext
 
     UI_AVAILABLE = True
 except ImportError as e:
-    click.echo(f"⚠️ UI generation module not available: {e}", err=True)
     UI_AVAILABLE = False
+    UI_IMPORT_ERROR = str(e)
     UIGeneratorCLI = None
     UserContext = None
 
@@ -38,7 +39,9 @@ def ui(ctx):
     """
     if not UI_AVAILABLE:
         click.echo("❌ UI generation module not installed", err=True)
-        click.echo("   Install with: poetry add textual", err=True)
+        if UI_IMPORT_ERROR:
+            click.echo(f"   Import error: {UI_IMPORT_ERROR}", err=True)
+        click.echo("   Install with: poetry install --with tui", err=True)
         ctx.exit(1)
 
     # Initialize CLI in context

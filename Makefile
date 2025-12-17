@@ -18,6 +18,26 @@ install: ## Install production dependencies
 	@echo "$(GREEN)Installing production dependencies...$(NC)"
 	poetry install
 
+install-core: ## Install only core (no ML/voice/web extras)
+	@echo "$(GREEN)Installing core dependencies...$(NC)"
+	poetry install --without dev
+
+install-ml: ## Install core + ML extras
+	@echo "$(GREEN)Installing core + ML extras...$(NC)"
+	poetry install --without dev --with ml
+
+install-voice: ## Install core + voice extras
+	@echo "$(GREEN)Installing core + voice extras...$(NC)"
+	poetry install --without dev --with voice
+
+install-web: ## Install core + web extras
+	@echo "$(GREEN)Installing core + web extras...$(NC)"
+	poetry install --without dev --with web
+
+install-all-extras: ## Install core + all extras (ml, voice, web)
+	@echo "$(GREEN)Installing core + all extras...$(NC)"
+	poetry install --without dev --with ml,voice,web
+
 dev: ## Install all dependencies including dev tools
 	@echo "$(GREEN)Installing development dependencies...$(NC)"
 	poetry install --with dev
@@ -36,6 +56,12 @@ test-unit: ## Run unit tests only
 test-integration: ## Run integration tests
 	@echo "$(GREEN)Running integration tests...$(NC)"
 	poetry run pytest tests/integration/ -v
+
+ci-lite: ## Quick CI-lite: version sync + smoke + minimal pytest (native init skipped)
+	@echo "$(GREEN)Running CI-lite checks...$(NC)"
+	@python tools/check_version_sync.py
+	@make smoke
+	@echo "$(GREEN)CI-lite checks passed (version + smoke)$(NC)"
 
 test-consciousness: ## Test adaptive personas and learning
 	@echo "$(GREEN)Testing consciousness systems...$(NC)"
@@ -150,6 +176,16 @@ release: build ## Create a release
 	@echo "  2. Create git tag: git tag v$$(poetry version -s)"
 	@echo "  3. Push tag: git push origin v$$(poetry version -s)"
 	@echo "  4. GitHub Actions will handle the rest!"
+
+version-sync: ## Ensure VERSION and pyproject.toml match
+	@echo "$(GREEN)Checking version sync...$(NC)"
+	@python tools/check_version_sync.py
+
+smoke: ## Quick smoke: version sync + CLI help (no native init)
+	@echo "$(GREEN)Running smoke checks...$(NC)"
+	@python tools/check_version_sync.py
+	@LUMINOUS_SKIP_NATIVE_INIT=true LUMINOUS_SKIP_ONBOARDING=1 poetry run ask-nix --help >/dev/null
+	@echo "$(GREEN)Smoke checks passed$(NC)"
 
 # Special consciousness-first commands
 awaken: ## Start your development session mindfully

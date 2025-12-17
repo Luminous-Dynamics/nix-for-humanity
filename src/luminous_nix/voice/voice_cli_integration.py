@@ -11,7 +11,7 @@ from typing import Optional
 
 from .sacred_voice_interface import VoiceConfig, InterruptionLevel
 from .voice_nlp_bridge import VoiceNLPBridge, create_voice_bridge
-from ..core.backend import LuminousNixBackend
+from ..core.engine import LuminousNixBackend
 
 logger = logging.getLogger(__name__)
 

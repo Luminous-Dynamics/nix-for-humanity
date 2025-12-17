@@ -30,6 +30,10 @@ try:
     from .nixos_doctor import NixOSDoctor
     from .first_run_wizard import FirstRunWizard
     from .plugin_system import PluginManager as PluginSystem
+
+    # Week 9-10: PQC Integration
+    from .key_manager import KeyManager
+    from .backup_manager import BackupManager
     
     # Smart features
     from .smart_package_discovery import get_smart_discovery
@@ -113,6 +117,10 @@ __all__ = [
     "SearchCache",
     "ProgressIndicator",
     "progress_context",
+
+    # Week 9-10: PQC Integration
+    "KeyManager",
+    "BackupManager",
     
     # Backward compatibility
     "RealNixBackend",

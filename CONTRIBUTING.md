@@ -43,10 +43,33 @@ cd luminous-nix
 nix-shell
 
 # Install Python dependencies
-poetry install
+poetry install  # or choose a profile:
+#   poetry install --without dev            # core only
+#   poetry install --without dev --with ml  # core + ML
+#   poetry install --without dev --with voice
+#   poetry install --without dev --with web
 
-# Run tests to verify setup
-poetry run pytest tests/
+# Run tests to verify setup (avoid native nix init on non-Nix/CI)
+LUMINOUS_SKIP_NATIVE_INIT=true poetry run pytest tests/
+
+# Lockfile note: the current poetry.lock may reflect an older, heavier set.
+# Regenerate with `poetry lock` (requires network) to align with the slim profiles.
+
+# Optional UI extras
+# To enable the UI commands without import warnings, install the TUI extras:
+#   poetry install --without dev --with tui
+
+Environment flags you may need:
+- `LUMINOUS_SKIP_NATIVE_INIT=true` — skip native nix detection (CI/non-Nix/preview-only).
+- `LUMINOUS_DRY_RUN=true` — force preview mode; never execute nix commands.
+- `LUMINOUS_SKIP_CONFIRM=true` — auto-confirm low-risk actions (use cautiously).
+- `LUMINOUS_EXECUTE=true` — execute commands (overrides dry-run); use sparingly.
+
+Validated workflows to focus on:
+- Platform: NixOS with nix tools (full), non-NixOS = preview-only (`LUMINOUS_SKIP_NATIVE_INIT=true`).
+- Core verbs: install/remove/search/list in dry-run/preview mode.
+- Optional stacks: TUI (`--with tui`), ML (`--with ml`), voice (`--with voice`), web (`--with web`) — off by default.
+- Legacy commands (env/doctor/packages/preview) are not included in the core build; expect “no such command” unless a future optional module adds them.
 ```
 
 #### Development Workflow

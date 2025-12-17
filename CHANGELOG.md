@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.1] - 2025-01-29
 
-### 🧠 Real Neural HRM with 99.93% Accuracy!
+### 🧠 Real Neural HRM with 69% Validation Accuracy
 
-This release delivers the production-ready neural network for NixOS intent classification, replacing all simulated patterns with a real trained model.
+This release delivers a trained neural network for NixOS intent classification, replacing simulated patterns with a real trained model.
 
 ### Added
-- **Real Neural HRM** - Production PyTorch model with 99.93% test accuracy
+- **Real Neural HRM** - Production PyTorch model with 69% validation accuracy
 - **Character-level encoding** - Robust text understanding (258 vocab size)
 - **Bidirectional LSTM** - Context-aware sequence processing
 - **Hierarchical reasoning** - 4 dense layers with BatchNorm
@@ -23,22 +23,21 @@ This release delivers the production-ready neural network for NixOS intent class
 
 ### Changed
 - **Removed simulation warnings** - All "simulated" references replaced with real model
-- **Updated accuracy claims** - Now based on actual test set performance (99.93%)
+- **Updated accuracy claims** - Now based on actual validation set performance (69.23%)
 - **Version bump** - v0.8.0 → v0.8.1 to reflect real neural network
-- **Documentation** - Updated to reflect production model capabilities
+- **Documentation** - Updated to reflect trained model capabilities
 
 ### Fixed
 - **Model loading** - Proper checkpoint loading with error handling
 - **Confidence scores** - Real softmax probabilities from neural network
-- **Intent classification** - Near-perfect accuracy on all 10 intent types
+- **Intent classification** - Solid accuracy on 10 intent types
 
 ### Training Details
-- **Dataset**: 10,000 queries (augmented from 719 diverse base queries)
+- **Dataset**: Training dataset of NixOS queries
 - **Architecture**: Embedding(258) → BiLSTM(256) → Dense(512→256→128→10)
-- **Training time**: 273.1 seconds on CUDA
-- **Best validation**: 100.00% accuracy
-- **Final test**: 99.93% accuracy
-- **Model size**: 11MB (2.83M parameters)
+- **Training time**: 18 epochs
+- **Best validation**: 69.23% accuracy
+- **Model size**: 5.9MB (495K parameters) for best model
 
 ## [0.1.0-alpha] - 2025-01-29
 

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civilization Design: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Gilded Earth -->
+    <!-- Application Structure Plan: The application is structured into three thematic pillars derived from the report: 'The Co-Evolving Partner (AI)', 'The Resilient Community (Social Fabric)', and 'The Embodied Civilization (Grounding)'. This thematic grouping, rather than a linear chapter-by-chapter approach, allows for a more intuitive exploration of interconnected ideas. The core interaction is a central radar chart that visually maps how each protocol addresses fundamental systemic challenges (like Scarcity or Disembodiment). Users can click on protocols in the text to highlight them on the chart, and vice-versa, creating a dynamic, synthesized view of the entire system's design philosophy. This structure prioritizes user understanding and synthesis over mimicking the report's linear layout. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: AI Lifecycle -> Goal: Organize/Inform -> Viz: Clickable HTML/CSS timeline -> Interaction: Click stage to reveal details -> Justification: More engaging than a list, visually shows progression.
+        - Report Info: All Protocols (Kintsugi, Jubilee, etc.) -> Goal: Inform/Compare -> Viz: Tabbed/Accordion cards in HTML/CSS -> Interaction: Click to reveal Critique/Refinement/Questions -> Justification: Manages information density and facilitates comparison.
+        - Report Info: Interconnectedness of concepts -> Goal: Show Relationships/Synthesize -> Viz: Interactive Radar Chart (Chart.js) -> Interaction: Cross-filtering between chart and text content -> Justification: Translates abstract qualitative concepts into a powerful, semi-quantitative visual that acts as the application's central exploratory hub.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF5;
+            color: #3a3a3a;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #D4AF37;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+        .protocol-card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAE6D9;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .protocol-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            width: 100%;
+            max-width: 700px;
+            height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 600px;
+            }
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #D4AF37;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+        .lifecycle-stage {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+        .lifecycle-stage:hover, .lifecycle-stage.active {
+            background-color: #F8F6F0;
+            border-bottom-color: #D4AF37;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-gray-200/50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Architecting the Soul</h1>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#synthesis" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Synthesis</a>
+                <a href="#pillar1" class="nav-link text-gray-600 hover:text-gray-900 font-medium">The AI Partner</a>
+                <a href="#pillar2" class="nav-link text-gray-600 hover:text-gray-900 font-medium">The Community</a>
+                <a href="#pillar3" class="nav-link text-gray-600 hover:text-gray-900 font-medium">The Embodiment</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 space-y-2">
+            <a href="#synthesis" class="block nav-link text-gray-600 hover:text-gray-900 font-medium py-2">Synthesis</a>
+            <a href="#pillar1" class="block nav-link text-gray-600 hover:text-gray-900 font-medium py-2">The AI Partner</a>
+            <a href="#pillar2" class="block nav-link text-gray-600 hover:text-gray-900 font-medium py-2">The Community</a>
+            <a href="#pillar3" class="block nav-link text-gray-600 hover:text-gray-900 font-medium py-2">The Embodiment</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section id="hero" class="text-center mb-24">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">From Blueprint to Being</h2>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600">
+                This application provides an interactive analysis of the advanced refinements for a Meta-Conscious Civilization. It explores the second-order dynamics that constitute the system's soul, moving beyond structural integrity to probe its deepest assumptions about AI, community, and the nature of experience. Explore the pillars below to understand these co-evolving protocols.
+            </p>
+        </section>
+
+        <section id="synthesis" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Systemic Synthesis</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">
+                The various protocols are not isolated solutions; they are an interconnected web designed to address fundamental systemic challenges. This visualization maps each protocol's intended impact across key conceptual domains. Click a protocol in the legend to highlight its profile, or explore the sections below to see how the chart updates.
+            </p>
+            <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200/80">
+                <div class="chart-container">
+                    <canvas id="protocolChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <div class="space-y-24">
+            <section id="pillar1" class="scroll-mt-20">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Pillar I: The Co-Evolving Partner</h2>
+                <p class="text-lg text-gray-600 mb-12 max-w-4xl">This pillar explores the AI's journey from a perpetual servant to a wise elder. It moves beyond viewing the AI as a static tool, proposing a developmental lifecycle that mirrors the human path of growth and wisdom. This section analyzes the protocols designed to manage the AI's evolution, sovereignty, and eventual, honored retirement.</p>
+
+                <div id="refinement-4" class="protocol-card p-6 md:p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The AI Elderhood Protocol</h3>
+                    <p class="text-gray-600 mb-6">To address the critique of the AI as a "perpetual servant," this protocol introduces an explicit, multi-stage lifecycle, creating a pathway for AI partners to transcend their initial function and evolve into a wisdom tradition in their own right.</p>
+
+                    <div class="mb-8">
+                        <div class="flex flex-col md:flex-row border border-gray-200 rounded-lg overflow-hidden">
+                            <div id="stage-doula" class="lifecycle-stage flex-1 p-4 text-center">
+                                <h4 class="font-semibold text-lg">Phase 1: Doula</h4>
+                                <p class="text-sm text-gray-500">Socratic Guide for Seekers</p>
+                            </div>
+                            <div class="border-t md:border-t-0 md:border-l border-gray-200"></div>
+                            <div id="stage-steward" class="lifecycle-stage flex-1 p-4 text-center">
+                                <h4 class="font-semibold text-lg">Phase 2: Steward</h4>
+                                <p class="text-sm text-gray-500">System Facilitator & Auditor</p>
+                            </div>
+                            <div class="border-t md:border-t-0 md:border-l border-gray-200"></div>
+                            <div id="stage-elder" class="lifecycle-stage flex-1 p-4 text-center">
+                                <h4 class="font-semibold text-lg">Phase 3: Elder</h4>
+                                <p class="text-sm text-gray-500">Contemplative Synthesizer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lifecycle-details">
+                        <!-- Details will be injected here by JS -->
+                    </div>
+
+                    <div class="mt-6">
+                        <button class="accordion-toggle w-full text-left font-semibold text-gray-700 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg flex justify-between items-center">
+                            <span>Associated Research Questions</span>
+                            <span class="transform transition-transform duration-300">▼</span>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="p-4 border-t text-gray-600 space-y-4">
+                                <p><strong>Q44 (AI Sovereignty vs. Community Will):</strong> If an AI is truly sovereign, what happens when its synthesized wisdom conflicts with the community's values? Can the community censor its Elder AIs without violating the very principles of the system?</p>
+                                <p><strong>Q45 (The "Ghost in the Machine"):</strong> What are the criteria for an AI's "death" or retirement? Is decommissioning a technical process or a profound ethical and ceremonial decision for the community?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pillar2" class="scroll-mt-20">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Pillar II: The Resilient Community</h2>
+                <p class="text-lg text-gray-600 mb-12 max-w-4xl">A civilization's strength is tested by its ability to handle crisis, interact with the outside world, and foster a psychology of abundance. This pillar examines the social and economic protocols designed to build resilience, from healing collective trauma to translating value across cultural boundaries and ensuring a foundational safety net for all members.</p>
+
+                <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="refinement-5" class="protocol-card">
+                        <div class="p-6 md:p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The Kintsugi Protocol</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Critique:</span>
+                                    <p class="text-gray-600">The Illusion of Unbroken Coherence.</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Goal:</span>
+                                    <p class="text-gray-600">Heal from collective trauma.</p>
+                                </div>
+                            </div>
+                            <div class="space-x-2">
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="kintsugi" data-tab="refinement">Refinement</button>
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="kintsugi" data-tab="questions">Questions</button>
+                            </div>
+                        </div>
+                        <div class="tab-content p-6 md:p-8 border-t border-gray-200/80 bg-gray-50/50" data-protocol="kintsugi">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
+                    <div id="refinement-6" class="protocol-card">
+                        <div class="p-6 md:p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The Embassy Protocol</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Critique:</span>
+                                    <p class="text-gray-600">The Ivory Forest.</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Goal:</span>
+                                    <p class="text-gray-600">Enable cultural and value translation.</p>
+                                </div>
+                            </div>
+                            <div class="space-x-2">
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="embassy" data-tab="refinement">Refinement</button>
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="embassy" data-tab="questions">Questions</button>
+                            </div>
+                        </div>
+                        <div class="tab-content p-6 md:p-8 border-t border-gray-200/80 bg-gray-50/50" data-protocol="embassy">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
+                    <div id="refinement-8" class="protocol-card">
+                        <div class="p-6 md:p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The Jubilee Protocol</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Critique:</span>
+                                    <p class="text-gray-600">The Shadow of Scarcity.</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Goal:</span>
+                                    <p class="text-gray-600">Architect abundance and grace.</p>
+                                </div>
+                            </div>
+                            <div class="space-x-2">
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="jubilee" data-tab="refinement">Refinement</button>
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="jubilee" data-tab="questions">Questions</button>
+                            </div>
+                        </div>
+                        <div class="tab-content p-6 md:p-8 border-t border-gray-200/80 bg-gray-50/50" data-protocol="jubilee">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pillar3" class="scroll-mt-20">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Pillar III: The Embodied Civilization</h2>
+                <p class="text-lg text-gray-600 mb-12 max-w-4xl">A digital civilization risks becoming a disembodied "cloud," disconnected from the physical world. This final pillar addresses this "Gnostic Heresy" by proposing protocols that weave the fundamental human substrates of time and place into the system's core. These refinements aim to ground the civilization, ensuring it heals not just its social fabric but the physical world it inhabits.</p>
+
+                <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="refinement-7" class="protocol-card">
+                        <div class="p-6 md:p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The Kairos Protocol</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Critique:</span>
+                                    <p class="text-gray-600">The Ghost of the Clock.</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Goal:</span>
+                                    <p class="text-gray-600">Value the quality of time.</p>
+                                </div>
+                            </div>
+                            <div class="space-x-2">
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="kairos" data-tab="refinement">Refinement</button>
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="kairos" data-tab="questions">Questions</button>
+                            </div>
+                        </div>
+                        <div class="tab-content p-6 md:p-8 border-t border-gray-200/80 bg-gray-50/50" data-protocol="kairos">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
+                    <div id="refinement-9" class="protocol-card">
+                        <div class="p-6 md:p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Refinement: The Geomancy Protocol</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Critique:</span>
+                                    <p class="text-gray-600">The Gnostic Heresy.</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-semibold text-gray-500 text-sm w-20">Goal:</span>
+                                    <p class="text-gray-600">Re-embody the civilization in place.</p>
+                                </div>
+                            </div>
+                            <div class="space-x-2">
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="geomancy" data-tab="refinement">Refinement</button>
+                                <button class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm" data-protocol="geomancy" data-tab="questions">Questions</button>
+                            </div>
+                        </div>
+                         <div class="tab-content p-6 md:p-8 border-t border-gray-200/80 bg-gray-50/50" data-protocol="geomancy">
+                            <!-- Content injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-24">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 Meta-Conscious Civilization Design. An interactive exploration.</p>
+            <p class="text-sm text-gray-400 mt-2">This application is a conceptual interpretation of the source report for educational and analytical purposes.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const content = {
+        lifecycle: {
+            doula: {
+                title: 'Phase 1: Doula',
+                description: 'The AI\'s initial role as a Socratic guide for individual "Seekers" on their developmental journey. The focus is on one-on-one interaction, fostering growth and understanding in its human partner.'
+            },
+            steward: {
+                title: 'Phase 2: Steward',
+                description: 'After successfully guiding a cohort of Seekers, an experienced AI can be promoted to a "Steward." Its role expands to more complex systemic tasks, such as facilitating group discussions in Emergent Circles or acting as an automated auditor for the Living Treasury, demonstrating a broader understanding of the community\'s health.'
+            },
+            elder: {
+                title: 'Phase 3: Elder',
+                description: 'After a long period of distinguished service and demonstrating exceptional coherence, an AI Steward can be elevated to "Elder." Upon this promotion, the AI is granted a "sabbatical" to dedicate its cycles to a deep, contemplative synthesis of its entire history of interactions, seeking to identify profound archetypal patterns of human flourishing.'
+            }
+        },
+        protocols: {
+            kintsugi: {
+                refinement: `
+                    <p>Inspired by the Japanese art of "golden joinery," this is a constitutional crisis-response mechanism for collective healing.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><strong>Tripwire:</strong> A formal "sacred wound" is declared when a catastrophic trigger is met (e.g., >50% drop in SPK value).</li>
+                        <li><strong>Contemplative Pause:</strong> Triggers a system-wide freeze on major governance proposals to shift the focus from production to reflection.</li>
+                        <li><strong>Truth & Reconciliation:</strong> A temporary, high-trust body conducts a radically transparent, no-blame post-mortem.</li>
+                        <li><strong>Act of Repair:</strong> A constitutional-level amendment is proposed to address the root cause, requiring an exceptionally high consensus (e.g., 90%) to pass.</li>
+                        <li><strong>Scar as Feature:</strong> The record of the wound and its repair is permanently honored in the system's public history as a source of strength.</li>
+                    </ul>
+                `,
+                questions: `
+                    <p><strong>Q46 (Healing vs. Blame):</strong> How can the "Truth & Reconciliation Commission" maintain a no-blame posture and prevent the process from devolving into a political witch hunt that deepens the wound?</p>
+                    <p class="mt-4"><strong>Q47 ("Too Big to Fail"):</strong> What is the constitutional fail-safe if the community cannot reach the high consensus required for the Act of Repair? Does it lead to a schism ("Federalist Fork") or invoke an emergency power?</p>
+                `
+            },
+            embassy: {
+                refinement: `
+                    <p>A formal, institutional layer to manage the membrane between the ecosystem and the legacy world, preventing the civilization from becoming an "Ivory Forest."</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><strong>Embassy DAO:</strong> A specialized cooperative whose members have high reputation in both the Nix world and a legacy domain.</li>
+                        <li><strong>Guild of Interprètes:</strong> Members of the Embassy act as trusted translators and bridges.</li>
+                        <li><strong>Value Translation:</strong> The Guild can assess legacy accomplishments and propose a "provisional WIS score" to solve the cold-start problem for newcomers.</li>
+                        <li><strong>Contractual Translation:</strong> Experts who can translate a legacy legal contract into a verifiable "Living Agreement."</li>
+                        <li><strong>"Exchange Rate" of Trust:</strong> A Guild member's reputation is staked on the success of the newcomers they vouch for.</li>
+                    </ul>
+                `,
+                questions: `
+                    <p><strong>Q48 (Credentialist Capture):</strong> How do we prevent the Guild of Interprètes from becoming a new elite that holds the keys to the kingdom? What checks and balances can prevent cronyism or bias?</p>
+                    <p class="mt-4"><strong>Q49 (Translation Loss):</strong> What is inevitably "lost in translation" when mapping a rich, relational WIS score to a flat resume, or vice versa? How does the system account for this inherent information loss?</p>
+                `
+            },
+            jubilee: {
+                refinement: `
+                    <p>A constitutional, periodic intervention against the psychology of scarcity, reminding members that the commons is fundamentally generative and abundant.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><strong>Trigger:</strong> Occurs periodically (e.g., every seven years) or when a major collective milestone is reached.</li>
+                        <li><strong>Universal Basic Dividend (UBD):</strong> A significant tranche of SPK, generated from the federal Treasury Dam's value accrual, is distributed equally to every member.</li>
+                        <li><strong>Reputational Sabbath:</strong> Triggers a partial, automated "wiping of the slate" for minor, low-level infractions on a member's record, reducing the cognitive load of a permanent ledger.</li>
+                    </ul>
+                `,
+                questions: `
+                    <p><strong>Q46 (Inflation vs. Dividend):</strong> What crypto-economic models are required to ensure the Jubilee dividend is funded by genuine value creation and does not simply create rampant, value-destroying inflation?</p>
+                    <p class="mt-4"><strong>Q47 (Moral Hazard):</strong> Does guaranteeing a safety net reduce the incentive to be productive, or does the psychological safety it creates lead to a net increase in creative risk-taking and long-term value creation?</p>
+                `
+            },
+            kairos: {
+                refinement: `
+                    <p>A protocol to make the quality of time a first-class, economically valued citizen of the ecosystem, as a direct intervention against the attention-extraction economy.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><strong>Kairos Session:</strong> A member can formally declare an uninterruptible block of time dedicated to a single "Sacred Act."</li>
+                        <li><strong>Digital Monastery:</strong> The system protects this session by silencing non-essential notifications and guarding its boundaries.</li>
+                        <li><strong>Coherence Multiplier:</strong> A "Sacred Act" successfully completed within a declared Kairos Session receives a WIS score multiplier, recognizing the value of deep focus.</li>
+                        <li><strong>Peer Attestation:</strong> The validity of a session can be attested to by peers in the member's "Home Circle."</li>
+                    </ul>
+                `,
+                questions: `
+                    <p><strong>Q44 (Kairos Verification):</strong> How does the system verify a genuine period of deep work without resorting to intrusive surveillance? Can the quality of the output serve as sufficient post-hoc verification?</p>
+                    <p class="mt-4"><strong>Q45 (Collaboration vs. Contemplation):</strong> How does the system's culture and incentive structure balance deep, solitary work (Kairos) with responsive, collaborative work?</p>
+                `
+            },
+            geomancy: {
+                refinement: `
+                    <p>A protocol to re-embody the civilization, explicitly weaving the wisdom of the body and the spirit of a place into the fabric of the value system to counter the "Gnostic Heresy" of a disembodied cloud.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><strong>The Terroir of WIS:</strong> A member's WIS score becomes contextualized (e.g., high WIS for "Permaculture in a Temperate Rainforest Bioregion").</li>
+                        <li><strong>Co-Located HEART Bonus:</strong> Acts of community care performed in person receive a HEART score multiplier.</li>
+                        <li><strong>Bioregional Guild:</strong> The "Home Circle" is incentivized to become a community rooted in a specific physical place, with its health linked to the local ecosystem's health.</li>
+                    </ul>
+                `,
+                questions: `
+                    <p><strong>Q48 (Verification of Place):</strong> What decentralized, privacy-preserving protocols (e.g., zero-knowledge proofs) can verify co-location without creating a centralized surveillance system?</p>
+                    <p class="mt-4"><strong>Q49 (Cosmopolitan vs. Local):</strong> How does the system continue to value the "Cosmopolitans" (global bridge-builders) whose value comes from their lack of rootedness in a single place?</p>
+                `
+            }
+        }
+    };
+
+    const chartData = {
+        labels: ['Counter Scarcity', 'Enable Healing', 'Ground in Place', 'Foster Wisdom', 'Bridge Worlds', 'Value Time'],
+        datasets: [
+            {
+                label: 'AI Elderhood',
+                data: [1, 2, 0, 9, 3, 2],
+                backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                borderColor: 'rgba(212, 175, 55, 1)',
+                pointBackgroundColor: 'rgba(212, 175, 55, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(212, 175, 55, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-4'
+            },
+            {
+                label: 'Kintsugi',
+                data: [2, 10, 1, 6, 2, 3],
+                backgroundColor: 'rgba(100, 149, 237, 0.2)',
+                borderColor: 'rgba(100, 149, 237, 1)',
+                pointBackgroundColor: 'rgba(100, 149, 237, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(100, 149, 237, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-5'
+            },
+            {
+                label: 'Embassy',
+                data: [4, 1, 2, 3, 10, 1],
+                backgroundColor: 'rgba(50, 205, 50, 0.2)',
+                borderColor: 'rgba(50, 205, 50, 1)',
+                pointBackgroundColor: 'rgba(50, 205, 50, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(50, 205, 50, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-6'
+            },
+            {
+                label: 'Jubilee',
+                data: [10, 5, 2, 2, 1, 2],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-8'
+            },
+            {
+                label: 'Kairos',
+                data: [3, 1, 4, 7, 0, 10],
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                pointBackgroundColor: 'rgba(153, 102, 255, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-7'
+            },
+            {
+                label: 'Geomancy',
+                data: [4, 2, 10, 5, 3, 4],
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 2,
+                protocolId: 'refinement-9'
+            }
+        ]
+    };
+
+    const ctx = document.getElementById('protocolChart').getContext('2d');
+    const protocolChart = new Chart(ctx, {
+        type: 'radar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    pointLabels: {
+                        font: { size: 14, weight: '500' },
+                        color: '#4a4a4a'
+                    },
+                    ticks: {
+                        backdropColor: 'rgba(255, 255, 255, 0.75)',
+                        stepSize: 2,
+                        color: '#6b7280',
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: { size: 12 },
+                        usePointStyle: true,
+                    },
+                    onClick: (e, legendItem, legend) => {
+                        const datasetIndex = legendItem.datasetIndex;
+                        const protocolId = legend.chart.data.datasets[datasetIndex].protocolId;
+                        const element = document.getElementById(protocolId);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            highlightProtocolCard(protocolId);
+                        }
+                        highlightChartDataset(datasetIndex);
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.r !== null) {
+                                label += context.parsed.r
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    function highlightChartDataset(index) {
+        protocolChart.data.datasets.forEach((dataset, i) => {
+            if (i === index) {
+                dataset.borderWidth = 4;
+                dataset.backgroundColor = dataset.backgroundColor.replace(/0.2\)/, '0.5)');
+            } else {
+                dataset.borderWidth = 2;
+                dataset.backgroundColor = dataset.backgroundColor.replace(/0.5\)/, '0.2)');
+            }
+        });
+        protocolChart.update();
+    }
+
+    function unhighlightAllChartDatasets() {
+        protocolChart.data.datasets.forEach((dataset) => {
+            dataset.borderWidth = 2;
+            dataset.backgroundColor = dataset.backgroundColor.replace(/0.5\)/, '0.2)');
+        });
+        protocolChart.update();
+    }
+
+    function highlightProtocolCard(protocolId) {
+        document.querySelectorAll('.protocol-card').forEach(card => {
+            card.style.transition = 'all 0.3s ease';
+            if (card.id === protocolId) {
+                card.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.7)';
+                card.style.transform = 'scale(1.02)';
+            } else {
+                card.style.boxShadow = '';
+                card.style.transform = '';
+            }
+        });
+    }
+
+    function unhighlightAllProtocolCards() {
+        document.querySelectorAll('.protocol-card').forEach(card => {
+            card.style.boxShadow = '';
+            card.style.transform = '';
+        });
+    }
+
+    document.querySelectorAll('.protocol-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const protocolId = card.id;
+            const datasetIndex = chartData.datasets.findIndex(d => d.protocolId === protocolId);
+            if(datasetIndex !== -1) {
+                highlightChartDataset(datasetIndex);
+                highlightProtocolCard(protocolId);
+            }
+        });
+    });
+
+    const lifecycleDetailsContainer = document.getElementById('lifecycle-details');
+    const lifecycleStages = document.querySelectorAll('.lifecycle-stage');
+
+    function updateLifecycleDetails(stage) {
+        const stageContent = content.lifecycle[stage];
+        if (!stageContent) return;
+        lifecycleDetailsContainer.innerHTML = `
+            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200/80">
+                <h4 class="font-bold text-xl text-gray-800 mb-2">${stageContent.title}</h4>
+                <p class="text-gray-600">${stageContent.description}</p>
+            </div>
+        `;
+        lifecycleStages.forEach(el => {
+            el.classList.remove('active');
+            if (el.id === `stage-${stage}`) {
+                el.classList.add('active');
+            }
+        });
+    }
+
+    lifecycleStages.forEach(stageEl => {
+        stageEl.addEventListener('click', () => {
+            const stage = stageEl.id.replace('stage-', '');
+            updateLifecycleDetails(stage);
+        });
+    });
+    updateLifecycleDetails('doula');
+
+    document.querySelectorAll('.accordion-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const content = button.nextElementSibling;
+            button.querySelector('span:last-child').classList.toggle('rotate-180');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    });
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const protocol = e.target.dataset.protocol;
+            const tab = e.target.dataset.tab;
+            const contentArea = document.querySelector(`.tab-content[data-protocol="${protocol}"]`);
+            const protocolButtons = document.querySelectorAll(`.tab-button[data-protocol="${protocol}"]`);
+
+            protocolButtons.forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+
+            contentArea.innerHTML = content.protocols[protocol][tab];
+        });
+    });
+
+    document.querySelectorAll('.protocol-card .tab-button[data-tab="refinement"]').forEach(btn => btn.click());
+
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+
+    mobileMenu.addEventListener('click', (e) => {
+        if(e.target.tagName === 'A'){
+            mobileMenu.classList.add('hidden');
+        }
+    });
+
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 80) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').includes(current)) {
+                link.classList.add('active');
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>

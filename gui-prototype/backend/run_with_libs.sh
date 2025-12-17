@@ -1,0 +1,1 @@
+/srv/luminous-dynamics/11-meta-consciousness/luminous-nix/run_with_libs.sh

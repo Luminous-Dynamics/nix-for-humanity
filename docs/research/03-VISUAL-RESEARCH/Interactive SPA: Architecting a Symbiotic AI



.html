@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecting Symbiosis: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutrals" - A calming and professional palette with a light beige background, dark text for readability, and a muted teal/blue for accents. This creates a focused, harmonious, and non-distracting environment suitable for digesting complex technical information. -->
+    <!-- Application Structure Plan: A single-page, thematic dashboard structure was chosen over a linear document format to enhance usability. Users can immediately grasp the high-level concepts via a sticky navigation bar (Reasoning, Intelligence, Pedagogy, Verification) and jump to any section, facilitating non-linear exploration. This structure breaks down the dense report into manageable, interactive modules. Each module uses visualization and interaction (e.g., clickable diagrams, toggles, charts) to make abstract concepts concrete, catering to different learning styles and allowing users to control the depth of information they engage with. The final sections synthesize the concepts by visualizing the integrated architecture and a phased roadmap, providing a clear, actionable summary. This design prioritizes user-driven discovery and understanding over passive reading. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Ladder of Abstraction -> Goal: Organize/Inform -> Viz: HTML/CSS Flowchart -> Interaction: Scroll-to-section links -> Justification: Provides an immediate, high-level map of the report's core metaphor.
+        - Report Info: ReAct Cycle -> Goal: Explain Process -> Viz: HTML/CSS Diagram -> Interaction: Click-to-reveal details -> Justification: Deconstructs the complex cycle into understandable, interactive parts.
+        - Report Info: Active Learning Efficiency -> Goal: Compare -> Viz: Chart.js Bar Chart -> Interaction: Static chart with clear labels -> Justification: Quantitatively demonstrates the core benefit of the technology in a visually compelling way.
+        - Report Info: ZKML vs. Federated Learning -> Goal: Compare -> Viz: HTML Table -> Interaction: Hover-to-highlight -> Justification: A classic, clear method for direct feature comparison.
+        - Report Info: P2P GossipSub -> Goal: Explain Process -> Viz: Animated HTML/CSS nodes -> Interaction: Button-triggered CSS animation -> Justification: Dynamically visualizes the abstract concept of message propagation, making it intuitive.
+        - Report Info: BKT-SRS Flywheel -> Goal: Explain Cycle -> Viz: HTML/CSS Circular Diagram -> Interaction: Click-to-reveal stage details -> Justification: Effectively shows the continuous, cyclical relationship between the two systems.
+        - Report Info: Software Assurance Spectrum -> Goal: Compare -> Viz: Chart.js Bar Chart -> Interaction: Clickable bars to show details -> Justification: Visually represents the trade-offs between different verification methods.
+        - Report Info: Phased Roadmap -> Goal: Organize/Inform -> Viz: Interactive HTML/CSS Timeline -> Interaction: Click-to-expand phase details -> Justification: Presents the complex implementation plan in a digestible, step-by-step format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF5;
+            color: #333D4B;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+            padding-bottom: 4px;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2C7A7B;
+            transition: width 0.3s ease;
+        }
+        .nav-link.active::after, .nav-link:hover::after {
+            width: 100%;
+        }
+        .tech-card {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .gossip-node {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            background-color: #E6FFFA;
+            border: 2px solid #38B2AC;
+            color: #2C7A7B;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+        .gossip-node:hover {
+            transform: scale(1.1);
+        }
+        .gossip-message {
+            width: 12px;
+            height: 12px;
+            background-color: #F56565;
+            border-radius: 50%;
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        .animate-gossip {
+            animation: gossip-propagate 4s ease-out forwards;
+        }
+        @keyframes gossip-propagate {
+            0% { opacity: 1; transform: scale(0.5) translate(0, 0); }
+            25% { transform: translate(120px, -50px); }
+            50% { transform: translate(240px, 0px); }
+            75% { transform: translate(120px, 50px); }
+            100% { opacity: 0; transform: translate(0, 0); }
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -31px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #FFFFFF;
+            border: 4px solid #4A5568;
+            z-index: 1;
+            transition: background-color 0.3s ease;
+        }
+        .timeline-item.active::before {
+            background-color: #38B2AC;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Architecting Symbiosis</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#reasoning" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Reasoning</a>
+                <a href="#intelligence" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Intelligence</a>
+                <a href="#pedagogy" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Pedagogy</a>
+                <a href="#verification" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Verification</a>
+                <a href="#synthesis" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Synthesis</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="hero" class="text-center mb-24">
+            <h2 class="text-4xl md:text-5xl font-bold mb-4">From Tool to Transcendent Partner</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12">This application provides an interactive exploration of the technologies required to evolve an AI from a simple tool to a symbiotic partner. Navigate the "Ladder of Abstraction" to understand the journey from executing tasks to generating wisdom.</p>
+
+            <div class="relative w-full max-w-xs mx-auto">
+                <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-gray-300 -translate-x-1/2"></div>
+                <div class="space-y-16">
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-teal-500 border-4 border-white shadow-lg z-10"></div>
+                        <h3 class="mt-4 text-xl font-semibold">1. Proactive Reasoning</h3>
+                        <p class="text-gray-500">Giving the AI an "inner world."</p>
+                    </div>
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-teal-500 border-4 border-white shadow-lg z-10"></div>
+                        <h3 class="mt-4 text-xl font-semibold">2. Collective Intelligence</h3>
+                        <p class="text-gray-500">Weaving a private, resilient community mind.</p>
+                    </div>
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-teal-500 border-4 border-white shadow-lg z-10"></div>
+                        <h3 class="mt-4 text-xl font-semibold">3. Knowledge Transference</h3>
+                        <p class="text-gray-500">Making the system a teacher.</p>
+                    </div>
+                     <div class="relative flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-teal-500 border-4 border-white shadow-lg z-10"></div>
+                        <h3 class="mt-4 text-xl font-semibold">4. Verifiable Correctness</h3>
+                        <p class="text-gray-500">Building on a foundation of trust.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="reasoning" class="py-20">
+            <h2 class="text-3xl font-bold text-center mb-4">Part I: The Proactive, Reasoning Agent</h2>
+            <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">The first step is to transform the AI from a passive tool into an agent with an internal world. This requires giving it a structured way to "think" before it acts and a curiosity to learn when it's uncertain. Explore the two core technologies that enable this leap.</p>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="tech-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">The ReAct (Reason+Act) Cycle</h3>
+                    <p class="text-gray-600 mb-6">ReAct allows an LLM to "think out loud," combining internal reasoning with external tool use. This makes its actions more effective, transparent, and debuggable. Click the steps below to see an example.</p>
+                    <div id="react-diagram" class="space-y-4">
+                        <div data-content="The user is reporting a general problem. I need to gather specific data. The best tool for this is `network_diagnostics`." class="react-step cursor-pointer p-4 border-l-4 border-blue-300 bg-blue-50 rounded-r-lg">
+                            <h4 class="font-bold text-blue-800">1. Thought →</h4>
+                        </div>
+                        <div data-content="Execute the command: `network_diagnostics.run(interface='wlan0')` to get concrete data from the system." class="react-step cursor-pointer p-4 border-l-4 border-purple-300 bg-purple-50 rounded-r-lg">
+                            <h4 class="font-bold text-purple-800">2. Action →</h4>
+                        </div>
+                        <div data-content="The tool returns: `{'ping_ms': 350, 'packet_loss': 0.15, 'channel': '6 (crowded)'}`. This is new information." class="react-step cursor-pointer p-4 border-l-4 border-green-300 bg-green-50 rounded-r-lg">
+                            <h4 class="font-bold text-green-800">3. Observation</h4>
+                        </div>
+                    </div>
+                    <div id="react-output" class="mt-4 p-4 bg-gray-100 rounded-lg text-gray-700 min-h-[80px]">
+                        Click a step to see its description.
+                    </div>
+                </div>
+
+                <div class="tech-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Active Learning Efficiency</h3>
+                    <p class="text-gray-600 mb-6">Active Learning allows the AI to ask for help when it's uncertain, focusing its learning on the most informative examples. This drastically reduces the amount of labeled data needed to achieve high accuracy compared to random sampling.</p>
+                    <div class="chart-container">
+                        <canvas id="activeLearningChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="intelligence" class="py-20 bg-white rounded-2xl">
+             <h2 class="text-3xl font-bold text-center mb-4">Part II: Next-Generation Collective Intelligence</h2>
+            <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">To grow in wisdom, the AI must learn from a community. This section explores how to build a "community mind" that is both powerful and sovereign, using technologies that guarantee privacy and resilience without relying on a central server.</p>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="tech-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Verifiable Learning: ZKML</h3>
+                    <p class="text-gray-600 mb-6">Zero-Knowledge Machine Learning (ZKML) is the ultimate privacy sanctuary. It allows users to contribute to a collective model by submitting a cryptographic "proof" of their update, without revealing their private data. This removes the need to trust a central server.</p>
+                     <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 px-4 bg-gray-100 font-semibold border-b">Feature</th>
+                                    <th class="py-2 px-4 bg-gray-100 font-semibold border-b">Federated Learning</th>
+                                    <th class="py-2 px-4 bg-gray-100 font-semibold border-b text-teal-600">ZKML (The Goal)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-2 px-4 border-b">Privacy Guarantee</td>
+                                    <td class="py-2 px-4 border-b">Statistical</td>
+                                    <td class="py-2 px-4 border-b font-medium">Mathematical</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-2 px-4 border-b">Trust Requirement</td>
+                                    <td class="py-2 px-4 border-b">Trust central server</td>
+                                    <td class="py-2 px-4 border-b font-medium">Trustless (via crypto)</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-2 px-4 border-b">Data Revealed</td>
+                                    <td class="py-2 px-4 border-b">Aggregated updates</td>
+                                    <td class="py-2 px-4 border-b font-medium">Nothing but proof</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tech-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Decentralized Knowledge: P2P Gossip</h3>
+                    <p class="text-gray-600 mb-6">A Peer-to-Peer (P2P) network using the `GossipSub` protocol allows for a resilient, censorship-resistant way to share community insights. Click the button to visualize how a new insight propagates through the network.</p>
+                    <div class="relative h-48 w-full">
+                        <div class="gossip-node" style="top: 50%; left: 10%; transform: translateY(-50%);">P1</div>
+                        <div class="gossip-node" style="top: 20%; left: 40%;">P2</div>
+                        <div class="gossip-node" style="top: 80%; left: 40%; transform: translateY(-50%);">P3</div>
+                        <div class="gossip-node" style="top: 50%; left: 70%; transform: translateY(-50%);">P4</div>
+                        <div class="gossip-node" style="top: 20%; left: 90%;">P5</div>
+                        <div id="gossip-message" class="gossip-message" style="top: 50%; left: 10%;"></div>
+                    </div>
+                    <button id="gossip-btn" class="w-full mt-4 bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition-colors">Publish Insight</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="pedagogy" class="py-20">
+            <h2 class="text-3xl font-bold text-center mb-4">Part III: The System as a Teacher</h2>
+            <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">The AI's ultimate goal is to make itself unnecessary by transferring knowledge to the user. This requires a system that can model the user's mastery of concepts and intelligently schedule reviews to ensure knowledge "sticks" for the long term.</p>
+
+            <div class="tech-card rounded-lg p-8 max-w-4xl mx-auto">
+                <h3 class="text-2xl font-semibold mb-4 text-center">The BKT-SRS Flywheel</h3>
+                <p class="text-gray-600 mb-8 text-center">This closed-loop system combines Bayesian Knowledge Tracing (BKT) to track initial learning with a Spaced Repetition System (SRS) to manage long-term memory. Click each stage to understand its role.</p>
+                <div class="relative w-full aspect-square max-w-lg mx-auto">
+                    <div id="flywheel-diagram" class="relative w-full h-full">
+                        <div class="flywheel-step absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2" data-content="**BKT:** User's successful interactions cause mastery probability to rise. **Trigger:** When mastery probability > 95%, a 'flashcard' is created for the SRS.">
+                            <button class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-blue-100 text-blue-800 font-semibold flex items-center justify-center text-center p-2 border-2 border-blue-200 hover:bg-blue-200 transition">1. Initial Mastery</button>
+                        </div>
+                        <div class="flywheel-step absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2" data-content="**SRS:** The new flashcard is scheduled for its first review in a short interval (e.g., 1 day). The SRS now 'owns' long-term scheduling for this concept.">
+                            <button class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-green-100 text-green-800 font-semibold flex items-center justify-center text-center p-2 border-2 border-green-200 hover:bg-green-200 transition">2. Scheduling</button>
+                        </div>
+                        <div class="flywheel-step absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2" data-content="**SRS:** At the scheduled time, the AI presents a review. **Feedback:** The user's performance updates both the SRS interval and the BKT mastery probability.">
+                            <button class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-yellow-100 text-yellow-800 font-semibold flex items-center justify-center text-center p-2 border-2 border-yellow-200 hover:bg-yellow-200 transition">3. Proactive Review</button>
+                        </div>
+                        <div class="flywheel-step absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2" data-content="**BKT & SRS:** A failed review provides a strong signal of forgetting. The BKT probability drops, and the SRS resets the review interval to be much sooner, re-introducing the concept into the learning cycle.">
+                            <button class="h-24 w-24 md:h-32 md:w-32 rounded-full bg-red-100 text-red-800 font-semibold flex items-center justify-center text-center p-2 border-2 border-red-200 hover:bg-red-200 transition">4. Forgetting Detected</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="flywheel-output" class="mt-8 p-6 bg-gray-100 rounded-lg text-gray-700 min-h-[100px] text-center">
+                    Click a stage of the flywheel to see its description.
+                </div>
+            </div>
+        </section>
+
+        <section id="verification" class="py-20 bg-white rounded-2xl">
+            <h2 class="text-3xl font-bold text-center mb-4">Part IV: The Unassailable Foundation</h2>
+            <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">Trust is paramount. The system's most critical components must be more than just well-tested; they must be mathematically proven to be correct. Formal verification provides this highest level of software assurance, proving the absence of entire classes of bugs.</p>
+            <div class="tech-card rounded-lg p-6">
+                <h3 class="text-2xl font-semibold mb-4">The Spectrum of Software Assurance</h3>
+                <p class="text-gray-600 mb-6">Different methods provide different levels of assurance. This chart compares traditional testing against more rigorous formal methods, highlighting the trade-offs between the strength of the guarantee and the effort required.</p>
+                <div class="chart-container">
+                    <canvas id="assuranceChart"></canvas>
+                </div>
+                <div id="assurance-details" class="mt-6 p-4 bg-gray-100 rounded-lg text-gray-700 hidden"></div>
+            </div>
+        </section>
+
+        <section id="synthesis" class="py-20">
+            <h2 class="text-3xl font-bold text-center mb-4">Synthesis: Roadmap to Symbiosis</h2>
+            <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">Implementing this architecture is a journey. The following is a proposed phased roadmap for a solo architect, designed to manage complexity and deliver value incrementally, moving steadily up the ladder of abstraction.</p>
+
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="w-full md:w-1/3">
+                    <div id="timeline-nav" class="relative border-l-2 border-gray-300 ml-8 space-y-12">
+                        <div id="timeline-item-1" class="timeline-item pl-8 cursor-pointer active">
+                            <h4 class="font-bold text-lg">Phase 1: The Reasoning Core</h4>
+                            <p class="text-sm text-gray-500">Months 1-3</p>
+                        </div>
+                        <div id="timeline-item-2" class="timeline-item pl-8 cursor-pointer">
+                            <h4 class="font-bold text-lg">Phase 2: The Teaching Loop</h4>
+                            <p class="text-sm text-gray-500">Months 4-6</p>
+                        </div>
+                        <div id="timeline-item-3" class="timeline-item pl-8 cursor-pointer">
+                            <h4 class="font-bold text-lg">Phase 3: The Resilient Community</h4>
+                            <p class="text-sm text-gray-500">Months 7-9</p>
+                        </div>
+                        <div id="timeline-item-4" class="timeline-item pl-8 cursor-pointer">
+                            <h4 class="font-bold text-lg">Phase 4: The Unassailable Foundation</h4>
+                            <p class="text-sm text-gray-500">Months 10-12</p>
+                        </div>
+                        <div id="timeline-item-5" class="timeline-item pl-8 cursor-pointer">
+                            <h4 class="font-bold text-lg">Phase 5: The Private Collective</h4>
+                            <p class="text-sm text-gray-500">Month 13+</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-2/3">
+                    <div id="timeline-content" class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <!-- Content will be injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-20">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 Architecting Symbiosis. An interactive exploration.</p>
+            <p class="text-sm text-gray-400 mt-2">This application is a conceptual visualization based on the provided technical report.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('main section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-30% 0px -70% 0px' });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const reactSteps = document.querySelectorAll('.react-step');
+            const reactOutput = document.getElementById('react-output');
+            reactSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    reactOutput.innerHTML = step.dataset.content;
+                });
+            });
+
+            const activeLearningCtx = document.getElementById('activeLearningChart').getContext('2d');
+            new Chart(activeLearningCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Random Sampling', 'Active Learning'],
+                    datasets: [{
+                        label: 'Labeled Examples Needed for 95% Accuracy',
+                        data: [10000, 800],
+                        backgroundColor: [
+                            'rgba(254, 202, 202, 0.6)',
+                            'rgba(147, 197, 253, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(59, 130, 246, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Labeled Examples'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Data Efficiency Comparison' }
+                    }
+                }
+            });
+
+            const gossipBtn = document.getElementById('gossip-btn');
+            const gossipMessage = document.getElementById('gossip-message');
+            gossipBtn.addEventListener('click', () => {
+                gossipMessage.classList.remove('animate-gossip');
+                void gossipMessage.offsetWidth;
+                gossipMessage.classList.add('animate-gossip');
+            });
+
+            const flywheelSteps = document.querySelectorAll('.flywheel-step');
+            const flywheelOutput = document.getElementById('flywheel-output');
+            flywheelSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    flywheelOutput.innerHTML = step.dataset.content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800">$1</strong>');
+                });
+            });
+            const flywheelDiagram = document.getElementById('flywheel-diagram');
+            const radius = flywheelDiagram.offsetWidth / 2.5;
+            flywheelSteps.forEach((step, i) => {
+                const angle = (i * 90 - 90) * (Math.PI / 180);
+                step.style.left = `${50 + (radius / flywheelDiagram.offsetWidth * 100) * Math.cos(angle)}%`;
+                step.style.top = `${50 + (radius / flywheelDiagram.offsetHeight * 100) * Math.sin(angle)}%`;
+            });
+
+            const assuranceCtx = document.getElementById('assuranceChart').getContext('2d');
+            const assuranceData = {
+                labels: ['Unit Testing', 'Concolic Testing (CrossHair)', 'Formal Verification (Lean)'],
+                datasets: [
+                    {
+                        label: 'Guarantee Level (1-10)',
+                        data: [3, 7, 10],
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Developer Effort (1-10)',
+                        data: [4, 6, 9],
+                        backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            };
+            const assuranceChart = new Chart(assuranceCtx, {
+                type: 'bar',
+                data: assuranceData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: { display: true, text: 'Relative Score' }
+                        }
+                    },
+                    plugins: {
+                        title: { display: true, text: 'Assurance vs. Effort' },
+                        tooltip: { enabled: true }
+                    },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const details = [
+                                "<strong>Unit/Integration Testing:</strong> Verifies behavior for specific, developer-written examples. Finds the presence of known bugs. Best for general application logic.",
+                                "<strong>Concolic Testing (CrossHair):</strong> Verifies that defined properties (contracts) hold for all explored execution paths. Finds entire classes of bugs. Ideal for data validation logic and state machines.",
+                                "<strong>Formal Verification (Lean):</strong> Mathematically proves the absence of entire classes of bugs for all possible inputs. The highest level of assurance, reserved for core security and cryptographic components."
+                            ];
+                            const detailsEl = document.getElementById('assurance-details');
+                            detailsEl.innerHTML = details[index];
+                            detailsEl.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+
+            const timelineNav = document.getElementById('timeline-nav');
+            const timelineContent = document.getElementById('timeline-content');
+            const timelineItems = document.querySelectorAll('.timeline-item');
+
+            const roadmapData = [
+                {
+                    title: "Phase 1: The Reasoning Core",
+                    duration: "Months 1-3",
+                    focus: "Give the AI an internal world.",
+                    actions: "Implement the <strong>ReAct agent architecture</strong> as the primary interaction model. Simultaneously, implement <strong>Active Learning</strong> with uncertainty sampling for the core intent recognition model.",
+                    outcome: "An agent that can use tools, whose behavior is transparent, and that actively learns from the user's most ambiguous commands."
+                },
+                {
+                    title: "Phase 2: The Teaching Loop",
+                    duration: "Months 4-6",
+                    focus: "Transform the agent into a teacher.",
+                    actions: "Implement the <strong>BKT-SRS flywheel</strong>. Use interaction data from Phase 1 to build initial BKT models for key user skills. Integrate a simple SM-2 algorithm to schedule proactive reviews.",
+                    outcome: "A system that not only answers questions but actively works to transfer its knowledge to the user for long-term retention."
+                },
+                {
+                    title: "Phase 3: The Resilient Community",
+                    duration: "Months 7-9",
+                    focus: "Connect the user to the collective.",
+                    actions: "Integrate `libp2p` and implement a <strong>`GossipSub`-based P2P network</strong> for sharing non-private, community-discovered insights. Define a clear, signed data schema for these insights.",
+                    outcome: "The agent can now augment its reasoning with wisdom from a decentralized community, providing more effective solutions."
+                },
+                {
+                    title: "Phase 4: The Unassailable Foundation",
+                    duration: "Months 10-12",
+                    focus: "Harden the core of the system.",
+                    actions: "Apply formal methods. Use <strong>CrossHair</strong> for Python-based state machines. Begin specifying and proving correctness of P2P logic using <strong>AI-Assisted Formal Verification with Lean</strong>.",
+                    outcome: "The system's core security guarantees are mathematically proven, establishing a foundation of unassailable trust."
+                },
+                {
+                    title: "Phase 5: The Private Collective",
+                    duration: "Month 13+",
+                    focus: "Achieve the ultimate vision of private, collective intelligence.",
+                    actions: "Integrate a <strong>ZKML toolkit like EZKL</strong>. Replace any centralized aggregation with a fully decentralized system where users contribute via ZK proofs over the P2P network.",
+                    outcome: "A truly sovereign collective intelligence that learns from its community with absolute mathematical guarantees of individual privacy."
+                }
+            ];
+
+            function updateTimelineContent(index) {
+                const data = roadmapData[index];
+                timelineContent.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-2">${data.title}</h3>
+                    <p class="text-sm text-gray-500 mb-4">${data.duration}</p>
+                    <div class="space-y-3">
+                        <div><strong class="font-semibold">Focus:</strong> ${data.focus}</div>
+                        <div><strong class="font-semibold">Actions:</strong> ${data.actions}</div>
+                        <div><strong class="font-semibold">Outcome:</strong> ${data.outcome}</div>
+                    </div>
+                `;
+                timelineItems.forEach((item, i) => {
+                    item.classList.toggle('active', i === index);
+                });
+            }
+
+            timelineNav.addEventListener('click', (e) => {
+                const targetItem = e.target.closest('.timeline-item');
+                if (targetItem) {
+                    const index = Array.from(timelineItems).indexOf(targetItem);
+                    updateTimelineContent(index);
+                }
+            });
+
+            updateTimelineContent(0);
+        });
+    </script>
+</body>
+</html>

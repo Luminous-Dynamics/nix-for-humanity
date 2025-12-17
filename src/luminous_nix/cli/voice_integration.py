@@ -28,7 +28,7 @@ class VoiceEnabledCLI:
     def __init__(
         self,
         enable_voice: bool = True,
-        tts_engine: str = "espeak-ng",
+        tts_engine: str = "piper",  # Piper primary, espeak-ng fallback
         auto_speak: bool = False,
     ):
         """

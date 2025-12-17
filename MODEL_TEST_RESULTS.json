@@ -1,0 +1,1410 @@
+{
+  "timestamp": "2025-12-03 12:33:16",
+  "results": [
+    {
+      "model": "hrm_neural_best",
+      "available": true,
+      "categories": {
+        "package_management": {
+          "category": "package_management",
+          "results": [
+            {
+              "query": "install firefox",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            },
+            {
+              "query": "remove vim",
+              "expected": "remove",
+              "predicted": "remove",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "update my system",
+              "expected": "update",
+              "predicted": "update",
+              "confidence": 0.85,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": true
+            },
+            {
+              "query": "search for text editor",
+              "expected": "search",
+              "predicted": "search",
+              "confidence": 0.85,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": true
+            },
+            {
+              "query": "upgrade all packages",
+              "expected": "upgrade",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": false
+            },
+            {
+              "query": "install neovim and ripgrep",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.000476837158203125,
+              "correct": true
+            },
+            {
+              "query": "uninstall docker",
+              "expected": "remove",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": false
+            },
+            {
+              "query": "list installed packages",
+              "expected": "list",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.75625,
+          "avg_response_time_ms": 0.0015497207641601562,
+          "accuracy": 0.625,
+          "num_queries": 8,
+          "correct": 5
+        },
+        "configuration": {
+          "category": "configuration",
+          "results": [
+            {
+              "query": "setup nginx web server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0040531158447265625,
+              "correct": true
+            },
+            {
+              "query": "configure postgresql database",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.003814697265625,
+              "correct": true
+            },
+            {
+              "query": "enable docker service",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            },
+            {
+              "query": "create systemd service for my app",
+              "expected": "configure",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0054836273193359375,
+              "correct": false
+            },
+            {
+              "query": "configure firewall rules",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            },
+            {
+              "query": "setup SSH server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "enable printing support",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8142857142857143,
+          "avg_response_time_ms": 0.003882816859654018,
+          "accuracy": 0.8571428571428571,
+          "num_queries": 7,
+          "correct": 6
+        },
+        "errors": {
+          "category": "errors",
+          "results": [
+            {
+              "query": "error: attribute 'neovim' missing",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "collision between firefox packages",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0054836273193359375,
+              "correct": false
+            },
+            {
+              "query": "build failed out of memory",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "permission denied /etc/nixos",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.00476837158203125,
+              "correct": false
+            },
+            {
+              "query": "command not found: nix-shell",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": false
+            },
+            {
+              "query": "hash mismatch",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.00286102294921875,
+              "correct": false
+            },
+            {
+              "query": "dependency conflict",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6714285714285715,
+          "avg_response_time_ms": 0.0039849962506975445,
+          "accuracy": 0.2857142857142857,
+          "num_queries": 7,
+          "correct": 2
+        },
+        "flakes": {
+          "category": "flakes",
+          "results": [
+            {
+              "query": "create a flake for python project",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.003337860107421875,
+              "correct": true
+            },
+            {
+              "query": "migrate to flakes",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "update flake inputs",
+              "expected": "flake",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": false
+            },
+            {
+              "query": "generate flake.nix",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "use flake for dev environment",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0019073486328125,
+              "correct": true
+            },
+            {
+              "query": "convert to flake-based config",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8083333333333332,
+          "avg_response_time_ms": 0.0025033950805664062,
+          "accuracy": 0.8333333333333334,
+          "num_queries": 6,
+          "correct": 5
+        },
+        "system_management": {
+          "category": "system_management",
+          "results": [
+            {
+              "query": "check system health",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": true
+            },
+            {
+              "query": "find safe rollback point",
+              "expected": "system",
+              "predicted": "search",
+              "confidence": 0.6,
+              "response_time_ms": 0.00286102294921875,
+              "correct": false
+            },
+            {
+              "query": "optimize disk space",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.004291534423828125,
+              "correct": false
+            },
+            {
+              "query": "audit security vulnerabilities",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": false
+            },
+            {
+              "query": "list all generations",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.002384185791015625,
+              "correct": true
+            },
+            {
+              "query": "check service status",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.725,
+          "avg_response_time_ms": 0.0032186508178710938,
+          "accuracy": 0.5,
+          "num_queries": 6,
+          "correct": 3
+        },
+        "development": {
+          "category": "development",
+          "results": [
+            {
+              "query": "setup rust development environment",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.002384185791015625,
+              "correct": false
+            },
+            {
+              "query": "create python shell with poetry",
+              "expected": "devenv",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": false
+            },
+            {
+              "query": "configure nodejs project",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": false
+            },
+            {
+              "query": "install docker for development",
+              "expected": "devenv",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.0007152557373046875,
+              "correct": false
+            },
+            {
+              "query": "setup vscode with nix",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6,
+          "avg_response_time_ms": 0.002384185791015625,
+          "accuracy": 0.0,
+          "num_queries": 5,
+          "correct": 0
+        },
+        "explanation": {
+          "category": "explanation",
+          "results": [
+            {
+              "query": "what does nixos-rebuild switch do",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.003814697265625,
+              "correct": true
+            },
+            {
+              "query": "explain nix-env -iA",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            },
+            {
+              "query": "how do flakes work",
+              "expected": "explain",
+              "predicted": "flake",
+              "confidence": 0.6,
+              "response_time_ms": 0.001430511474609375,
+              "correct": false
+            },
+            {
+              "query": "what is a derivation",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "explain nix store",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0019073486328125,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8,
+          "avg_response_time_ms": 0.0024318695068359375,
+          "accuracy": 0.8,
+          "num_queries": 5,
+          "correct": 4
+        }
+      },
+      "overall": {
+        "avg_confidence": 0.7420454545454546,
+        "avg_response_time_ms": 0.00286102294921875,
+        "accuracy": 0.5681818181818182,
+        "total_queries": 44,
+        "total_correct": 25
+      }
+    },
+    {
+      "model": "hrm_neural_demo",
+      "available": true,
+      "categories": {
+        "package_management": {
+          "category": "package_management",
+          "results": [
+            {
+              "query": "install firefox",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "remove vim",
+              "expected": "remove",
+              "predicted": "remove",
+              "confidence": 0.85,
+              "response_time_ms": 0.001430511474609375,
+              "correct": true
+            },
+            {
+              "query": "update my system",
+              "expected": "update",
+              "predicted": "update",
+              "confidence": 0.85,
+              "response_time_ms": 0.001430511474609375,
+              "correct": true
+            },
+            {
+              "query": "search for text editor",
+              "expected": "search",
+              "predicted": "search",
+              "confidence": 0.85,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": true
+            },
+            {
+              "query": "upgrade all packages",
+              "expected": "upgrade",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": false
+            },
+            {
+              "query": "install neovim and ripgrep",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.000476837158203125,
+              "correct": true
+            },
+            {
+              "query": "uninstall docker",
+              "expected": "remove",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.0002384185791015625,
+              "correct": false
+            },
+            {
+              "query": "list installed packages",
+              "expected": "list",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.000476837158203125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.75625,
+          "avg_response_time_ms": 0.0010728836059570312,
+          "accuracy": 0.625,
+          "num_queries": 8,
+          "correct": 5
+        },
+        "configuration": {
+          "category": "configuration",
+          "results": [
+            {
+              "query": "setup nginx web server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.002384185791015625,
+              "correct": true
+            },
+            {
+              "query": "configure postgresql database",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            },
+            {
+              "query": "enable docker service",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            },
+            {
+              "query": "create systemd service for my app",
+              "expected": "configure",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.005245208740234375,
+              "correct": false
+            },
+            {
+              "query": "configure firewall rules",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": true
+            },
+            {
+              "query": "setup SSH server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "enable printing support",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8142857142857143,
+          "avg_response_time_ms": 0.003440039498465402,
+          "accuracy": 0.8571428571428571,
+          "num_queries": 7,
+          "correct": 6
+        },
+        "errors": {
+          "category": "errors",
+          "results": [
+            {
+              "query": "error: attribute 'neovim' missing",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "collision between firefox packages",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.005245208740234375,
+              "correct": false
+            },
+            {
+              "query": "build failed out of memory",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "permission denied /etc/nixos",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.005245208740234375,
+              "correct": false
+            },
+            {
+              "query": "command not found: nix-shell",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": false
+            },
+            {
+              "query": "hash mismatch",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": false
+            },
+            {
+              "query": "dependency conflict",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.00476837158203125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6714285714285715,
+          "avg_response_time_ms": 0.004087175641741071,
+          "accuracy": 0.2857142857142857,
+          "num_queries": 7,
+          "correct": 2
+        },
+        "flakes": {
+          "category": "flakes",
+          "results": [
+            {
+              "query": "create a flake for python project",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.003337860107421875,
+              "correct": true
+            },
+            {
+              "query": "migrate to flakes",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "update flake inputs",
+              "expected": "flake",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.001430511474609375,
+              "correct": false
+            },
+            {
+              "query": "generate flake.nix",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "use flake for dev environment",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "convert to flake-based config",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8083333333333332,
+          "avg_response_time_ms": 0.0027020772298177085,
+          "accuracy": 0.8333333333333334,
+          "num_queries": 6,
+          "correct": 5
+        },
+        "system_management": {
+          "category": "system_management",
+          "results": [
+            {
+              "query": "check system health",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "find safe rollback point",
+              "expected": "system",
+              "predicted": "search",
+              "confidence": 0.6,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": false
+            },
+            {
+              "query": "optimize disk space",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": false
+            },
+            {
+              "query": "audit security vulnerabilities",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0035762786865234375,
+              "correct": false
+            },
+            {
+              "query": "list all generations",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.004291534423828125,
+              "correct": true
+            },
+            {
+              "query": "check service status",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.725,
+          "avg_response_time_ms": 0.0034570693969726562,
+          "accuracy": 0.5,
+          "num_queries": 6,
+          "correct": 3
+        },
+        "development": {
+          "category": "development",
+          "results": [
+            {
+              "query": "setup rust development environment",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": false
+            },
+            {
+              "query": "create python shell with poetry",
+              "expected": "devenv",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.00476837158203125,
+              "correct": false
+            },
+            {
+              "query": "configure nodejs project",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.003337860107421875,
+              "correct": false
+            },
+            {
+              "query": "install docker for development",
+              "expected": "devenv",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.00095367431640625,
+              "correct": false
+            },
+            {
+              "query": "setup vscode with nix",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.002384185791015625,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6,
+          "avg_response_time_ms": 0.0027179718017578125,
+          "accuracy": 0.0,
+          "num_queries": 5,
+          "correct": 0
+        },
+        "explanation": {
+          "category": "explanation",
+          "results": [
+            {
+              "query": "what does nixos-rebuild switch do",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": true
+            },
+            {
+              "query": "explain nix-env -iA",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            },
+            {
+              "query": "how do flakes work",
+              "expected": "explain",
+              "predicted": "flake",
+              "confidence": 0.6,
+              "response_time_ms": 0.001430511474609375,
+              "correct": false
+            },
+            {
+              "query": "what is a derivation",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0019073486328125,
+              "correct": true
+            },
+            {
+              "query": "explain nix store",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.003814697265625,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8,
+          "avg_response_time_ms": 0.0030040740966796875,
+          "accuracy": 0.8,
+          "num_queries": 5,
+          "correct": 4
+        }
+      },
+      "overall": {
+        "avg_confidence": 0.7420454545454546,
+        "avg_response_time_ms": 0.00288269736550071,
+        "accuracy": 0.5681818181818182,
+        "total_queries": 44,
+        "total_correct": 25
+      }
+    },
+    {
+      "model": "hrm_simple_best",
+      "available": true,
+      "categories": {
+        "package_management": {
+          "category": "package_management",
+          "results": [
+            {
+              "query": "install firefox",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": true
+            },
+            {
+              "query": "remove vim",
+              "expected": "remove",
+              "predicted": "remove",
+              "confidence": 0.85,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": true
+            },
+            {
+              "query": "update my system",
+              "expected": "update",
+              "predicted": "update",
+              "confidence": 0.85,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": true
+            },
+            {
+              "query": "search for text editor",
+              "expected": "search",
+              "predicted": "search",
+              "confidence": 0.85,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": true
+            },
+            {
+              "query": "upgrade all packages",
+              "expected": "upgrade",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.0011920928955078125,
+              "correct": false
+            },
+            {
+              "query": "install neovim and ripgrep",
+              "expected": "install",
+              "predicted": "install",
+              "confidence": 0.85,
+              "response_time_ms": 0.0007152557373046875,
+              "correct": true
+            },
+            {
+              "query": "uninstall docker",
+              "expected": "remove",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.000476837158203125,
+              "correct": false
+            },
+            {
+              "query": "list installed packages",
+              "expected": "list",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.000476837158203125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.75625,
+          "avg_response_time_ms": 0.0010132789611816406,
+          "accuracy": 0.625,
+          "num_queries": 8,
+          "correct": 5
+        },
+        "configuration": {
+          "category": "configuration",
+          "results": [
+            {
+              "query": "setup nginx web server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "configure postgresql database",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "enable docker service",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "create systemd service for my app",
+              "expected": "configure",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.003337860107421875,
+              "correct": false
+            },
+            {
+              "query": "configure firewall rules",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": true
+            },
+            {
+              "query": "setup SSH server",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "enable printing support",
+              "expected": "configure",
+              "predicted": "configure",
+              "confidence": 0.85,
+              "response_time_ms": 0.003337860107421875,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8142857142857143,
+          "avg_response_time_ms": 0.002758843558175223,
+          "accuracy": 0.8571428571428571,
+          "num_queries": 7,
+          "correct": 6
+        },
+        "errors": {
+          "category": "errors",
+          "results": [
+            {
+              "query": "error: attribute 'neovim' missing",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            },
+            {
+              "query": "collision between firefox packages",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.005245208740234375,
+              "correct": false
+            },
+            {
+              "query": "build failed out of memory",
+              "expected": "error",
+              "predicted": "error",
+              "confidence": 0.85,
+              "response_time_ms": 0.00286102294921875,
+              "correct": true
+            },
+            {
+              "query": "permission denied /etc/nixos",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": false
+            },
+            {
+              "query": "command not found: nix-shell",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": false
+            },
+            {
+              "query": "hash mismatch",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": false
+            },
+            {
+              "query": "dependency conflict",
+              "expected": "error",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6714285714285715,
+          "avg_response_time_ms": 0.004291534423828125,
+          "accuracy": 0.2857142857142857,
+          "num_queries": 7,
+          "correct": 2
+        },
+        "flakes": {
+          "category": "flakes",
+          "results": [
+            {
+              "query": "create a flake for python project",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            },
+            {
+              "query": "migrate to flakes",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "update flake inputs",
+              "expected": "flake",
+              "predicted": "update",
+              "confidence": 0.6,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": false
+            },
+            {
+              "query": "generate flake.nix",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            },
+            {
+              "query": "use flake for dev environment",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0021457672119140625,
+              "correct": true
+            },
+            {
+              "query": "convert to flake-based config",
+              "expected": "flake",
+              "predicted": "flake",
+              "confidence": 0.85,
+              "response_time_ms": 0.0026226043701171875,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8083333333333332,
+          "avg_response_time_ms": 0.002384185791015625,
+          "accuracy": 0.8333333333333334,
+          "num_queries": 6,
+          "correct": 5
+        },
+        "system_management": {
+          "category": "system_management",
+          "results": [
+            {
+              "query": "check system health",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.003337860107421875,
+              "correct": true
+            },
+            {
+              "query": "find safe rollback point",
+              "expected": "system",
+              "predicted": "search",
+              "confidence": 0.6,
+              "response_time_ms": 0.002384185791015625,
+              "correct": false
+            },
+            {
+              "query": "optimize disk space",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.0045299530029296875,
+              "correct": false
+            },
+            {
+              "query": "audit security vulnerabilities",
+              "expected": "system",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.005245208740234375,
+              "correct": false
+            },
+            {
+              "query": "list all generations",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": true
+            },
+            {
+              "query": "check service status",
+              "expected": "system",
+              "predicted": "system",
+              "confidence": 0.85,
+              "response_time_ms": 0.004291534423828125,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.725,
+          "avg_response_time_ms": 0.004132588704427083,
+          "accuracy": 0.5,
+          "num_queries": 6,
+          "correct": 3
+        },
+        "development": {
+          "category": "development",
+          "results": [
+            {
+              "query": "setup rust development environment",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.003814697265625,
+              "correct": false
+            },
+            {
+              "query": "create python shell with poetry",
+              "expected": "devenv",
+              "predicted": "unknown",
+              "confidence": 0.6,
+              "response_time_ms": 0.00476837158203125,
+              "correct": false
+            },
+            {
+              "query": "configure nodejs project",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.0016689300537109375,
+              "correct": false
+            },
+            {
+              "query": "install docker for development",
+              "expected": "devenv",
+              "predicted": "install",
+              "confidence": 0.6,
+              "response_time_ms": 0.0007152557373046875,
+              "correct": false
+            },
+            {
+              "query": "setup vscode with nix",
+              "expected": "devenv",
+              "predicted": "configure",
+              "confidence": 0.6,
+              "response_time_ms": 0.00286102294921875,
+              "correct": false
+            }
+          ],
+          "avg_confidence": 0.6,
+          "avg_response_time_ms": 0.002765655517578125,
+          "accuracy": 0.0,
+          "num_queries": 5,
+          "correct": 0
+        },
+        "explanation": {
+          "category": "explanation",
+          "results": [
+            {
+              "query": "what does nixos-rebuild switch do",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0050067901611328125,
+              "correct": true
+            },
+            {
+              "query": "explain nix-env -iA",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.003814697265625,
+              "correct": true
+            },
+            {
+              "query": "how do flakes work",
+              "expected": "explain",
+              "predicted": "flake",
+              "confidence": 0.6,
+              "response_time_ms": 0.00286102294921875,
+              "correct": false
+            },
+            {
+              "query": "what is a derivation",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.004291534423828125,
+              "correct": true
+            },
+            {
+              "query": "explain nix store",
+              "expected": "explain",
+              "predicted": "explain",
+              "confidence": 0.85,
+              "response_time_ms": 0.0030994415283203125,
+              "correct": true
+            }
+          ],
+          "avg_confidence": 0.8,
+          "avg_response_time_ms": 0.003814697265625,
+          "accuracy": 0.8,
+          "num_queries": 5,
+          "correct": 4
+        }
+      },
+      "overall": {
+        "avg_confidence": 0.7420454545454546,
+        "avg_response_time_ms": 0.0029423020102761007,
+        "accuracy": 0.5681818181818182,
+        "total_queries": 44,
+        "total_correct": 25
+      }
+    }
+  ],
+  "gaps": {
+    "low_accuracy_categories": [
+      {
+        "model": "hrm_neural_best",
+        "category": "package_management",
+        "accuracy": 0.625,
+        "confidence": 0.75625
+      },
+      {
+        "model": "hrm_neural_best",
+        "category": "errors",
+        "accuracy": 0.2857142857142857,
+        "confidence": 0.6714285714285715
+      },
+      {
+        "model": "hrm_neural_best",
+        "category": "system_management",
+        "accuracy": 0.5,
+        "confidence": 0.725
+      },
+      {
+        "model": "hrm_neural_best",
+        "category": "development",
+        "accuracy": 0.0,
+        "confidence": 0.6
+      },
+      {
+        "model": "hrm_neural_demo",
+        "category": "package_management",
+        "accuracy": 0.625,
+        "confidence": 0.75625
+      },
+      {
+        "model": "hrm_neural_demo",
+        "category": "errors",
+        "accuracy": 0.2857142857142857,
+        "confidence": 0.6714285714285715
+      },
+      {
+        "model": "hrm_neural_demo",
+        "category": "system_management",
+        "accuracy": 0.5,
+        "confidence": 0.725
+      },
+      {
+        "model": "hrm_neural_demo",
+        "category": "development",
+        "accuracy": 0.0,
+        "confidence": 0.6
+      },
+      {
+        "model": "hrm_simple_best",
+        "category": "package_management",
+        "accuracy": 0.625,
+        "confidence": 0.75625
+      },
+      {
+        "model": "hrm_simple_best",
+        "category": "errors",
+        "accuracy": 0.2857142857142857,
+        "confidence": 0.6714285714285715
+      },
+      {
+        "model": "hrm_simple_best",
+        "category": "system_management",
+        "accuracy": 0.5,
+        "confidence": 0.725
+      },
+      {
+        "model": "hrm_simple_best",
+        "category": "development",
+        "accuracy": 0.0,
+        "confidence": 0.6
+      }
+    ],
+    "slow_categories": [],
+    "missing_capabilities": []
+  },
+  "recommendations": [
+    {
+      "model_name": "hrm_package_management_specialist",
+      "reason": "Low accuracy (62.5%) in package_management",
+      "priority": "medium"
+    },
+    {
+      "model_name": "hrm_errors_specialist",
+      "reason": "Low accuracy (28.6%) in errors",
+      "priority": "high"
+    },
+    {
+      "model_name": "hrm_system_management_specialist",
+      "reason": "Low accuracy (50.0%) in system_management",
+      "priority": "medium"
+    },
+    {
+      "model_name": "hrm_development_specialist",
+      "reason": "Low accuracy (0.0%) in development",
+      "priority": "high"
+    }
+  ]
+}

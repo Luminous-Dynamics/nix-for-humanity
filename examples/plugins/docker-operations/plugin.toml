@@ -1,0 +1,27 @@
+[plugin]
+name = "docker-operations"
+version = "1.0.0"
+api_version = "1.0"
+
+[plugin.metadata]
+author = "Luminous Dynamics"
+email = "dev@luminousdynamics.org"
+description = "Adds Docker container operations to Luminous Nix"
+license = "MIT"
+
+[plugin.entry_points]
+module = "main"
+class = "DockerOperationsPlugin"
+
+[plugin.provides]
+operation_types = ["DOCKER_RUN", "DOCKER_STOP", "DOCKER_PS"]
+
+[plugin.permissions]
+required = [
+    "operations:execute",
+    "filesystem:read"
+]
+
+[plugin.requirements]
+luminous_nix = ">=0.4.0"
+python = ">=3.11"

@@ -290,6 +290,28 @@ class UnifiedNixAssistant:
                 if self.verbose_level > 0:
                     print(f"⚠️ Could not initialize plugin manager: {e}")
 
+        # Initialize Sophia consciousness-aware intelligence
+        self.sophia_assistant = None
+        try:
+            from luminous_nix.mycelix import get_sophia_cli_assistant
+
+            # Get user ID from environment
+            user_id = os.environ.get("USER", "default_user")
+            self.sophia_assistant = get_sophia_cli_assistant(user_id=user_id)
+
+            if self.verbose_level > 0:
+                print("🌟 Sophia consciousness-aware intelligence enabled")
+                print("   • 9-layer unified consciousness system")
+                print("   • Emotional awareness & pattern recognition")
+                print("   • Proactive assistance & timing wisdom")
+        except ImportError:
+            # Sophia not available - that's okay
+            if self.verbose_level > 1:
+                print("ℹ️ Sophia intelligence not available")
+        except Exception as e:
+            if self.verbose_level > 0:
+                print(f"⚠️ Could not initialize Sophia: {e}")
+
     def set_personality(self, personality: str):
         """Set the response personality"""
         self.personality = personality
@@ -298,6 +320,31 @@ class UnifiedNixAssistant:
         """Confirmation callback for command executor"""
         response = input(f"Execute: {command.description}? (y/N): ")
         return response.lower() == "y"
+
+    def _process_with_sophia(
+        self, command: str, success: bool, error: str = None, duration_ms: float = 0
+    ):
+        """Process command result with Sophia for consciousness-aware insights"""
+        if not self.sophia_assistant:
+            return
+
+        try:
+            # Let Sophia process the command
+            response = self.sophia_assistant.process_command(
+                command=command,
+                success=success,
+                error=error,
+                duration_ms=duration_ms,
+            )
+
+            # Display Sophia's insights if she has any
+            if response:
+                formatted = self.sophia_assistant.format_response_for_cli(response)
+                print(formatted)
+
+        except Exception as e:
+            if self.verbose_level > 1:
+                print(f"⚠️ Sophia processing error: {e}")
 
     def _execute_intent(self, intent_result):
         """Execute based on recognized intent"""
@@ -1277,6 +1324,9 @@ class UnifiedNixAssistant:
 
     def _install_package_robust(self, package: str):
         """Install a package using robust architecture"""
+        import time
+        start_time = time.time()
+
         if self.command_executor:
             # Create install command
             cmd = self.command_executor.create_command(
@@ -1285,6 +1335,7 @@ class UnifiedNixAssistant:
 
             # Execute with preview
             result = self.command_executor.execute(cmd, preview_first=True)
+            duration_ms = (time.time() - start_time) * 1000
 
             # Handle result - Check for PREVIEWED status as success in dry-run mode
             if result.success() or (
@@ -1305,6 +1356,13 @@ class UnifiedNixAssistant:
                 else:
                     print(f"✅ {package} installed successfully!")
 
+                # Process with Sophia
+                self._process_with_sophia(
+                    command=f"nix profile install nixpkgs#{package}",
+                    success=True,
+                    duration_ms=duration_ms,
+                )
+
                 # Update conversation state
                 if self.conversation_state:
                     self.conversation_state.add_turn(
@@ -1320,6 +1378,14 @@ class UnifiedNixAssistant:
                     if suggestion:
                         print(f"\n💡 {suggestion}")
             else:
+                # Process failure with Sophia
+                self._process_with_sophia(
+                    command=f"nix profile install nixpkgs#{package}",
+                    success=False,
+                    error=result.stderr or "Installation failed",
+                    duration_ms=duration_ms,
+                )
+
                 # Use error recovery only for actual errors, not dry-run previews
                 if self.error_recovery and result.stderr:
                     context = self.error_recovery.analyze_error(
@@ -1444,6 +1510,9 @@ class UnifiedNixAssistant:
 
     def _remove_package_robust(self, package: str):
         """Remove a package using robust architecture"""
+        import time
+        start_time = time.time()
+
         if self.command_executor:
             # Create remove command
             cmd = self.command_executor.create_command(
@@ -1452,6 +1521,7 @@ class UnifiedNixAssistant:
 
             # Execute with preview
             result = self.command_executor.execute(cmd, preview_first=True)
+            duration_ms = (time.time() - start_time) * 1000
 
             # Handle result - Check for PREVIEWED status as success in dry-run mode
             if result.success() or (
@@ -1472,6 +1542,13 @@ class UnifiedNixAssistant:
                 else:
                     print(f"✅ {package} removed successfully!")
 
+                # Process with Sophia
+                self._process_with_sophia(
+                    command=f"nix profile remove {package}",
+                    success=True,
+                    duration_ms=duration_ms,
+                )
+
                 # Update conversation state
                 if self.conversation_state:
                     self.conversation_state.add_turn(
@@ -1482,6 +1559,14 @@ class UnifiedNixAssistant:
                         success=True,
                     )
             else:
+                # Process failure with Sophia
+                self._process_with_sophia(
+                    command=f"nix profile remove {package}",
+                    success=False,
+                    error=result.stderr or "Removal failed",
+                    duration_ms=duration_ms,
+                )
+
                 # Use error recovery only for actual errors, not dry-run previews
                 if self.error_recovery and result.stderr:
                     context = self.error_recovery.analyze_error(
@@ -1662,10 +1747,9 @@ class UnifiedNixAssistant:
                         if len(parts) >= 2:
                             print(f"  • {parts[0]} ({parts[1]})")
 
-                    if len(result.stdout.strip().split("\n")) > 10:
-                        print(
-                            f"  ... and {len(result.stdout.strip().split('\n')) - 10} more"
-                        )
+                    total_lines = len(result.stdout.strip().split("\n"))
+                    if total_lines > 10:
+                        print(f"  ... and {total_lines - 10} more")
                 else:
                     print(f"No packages found matching '{term}'")
 

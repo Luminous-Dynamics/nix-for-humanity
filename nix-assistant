@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# 🤖 Luminous Nix AI Assistant
+# Natural conversation interface - just talk or type naturally!
+
+set -e
+
+# Colors for beautiful output
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if in nix dev environment
+if [ -z "$IN_NIX_SHELL" ]; then
+    echo -e "${YELLOW}⚠️  Not in Nix shell. Entering development environment...${NC}"
+    nix develop --command "$0" "$@"
+    exit $?
+fi
+
+# Parse arguments
+MODE="text"
+VOICE_PERSONALITY="gentle"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --voice|-v)
+            MODE="voice"
+            shift
+            ;;
+        --text|-t)
+            MODE="text"
+            shift
+            ;;
+        --personality)
+            VOICE_PERSONALITY="$2"
+            shift 2
+            ;;
+        --help|-h)
+            cat << EOF
+🤖 Luminous Nix AI Assistant
+
+A natural conversational AI for NixOS - just talk or type naturally!
+
+USAGE:
+    ./nix-assistant [OPTIONS]
+
+OPTIONS:
+    --voice, -v              Voice conversation mode
+    --text, -t               Text conversation mode (default)
+    --personality TYPE       Voice personality: gentle, energetic, professional
+    --help, -h               Show this help
+
+EXAMPLES:
+    # Text conversation (like ChatGPT)
+    ./nix-assistant
+
+    # Voice conversation
+    ./nix-assistant --voice
+
+    # Voice with energetic personality
+    ./nix-assistant --voice --personality energetic
+
+WHAT YOU CAN DO:
+    Just talk naturally! Examples:
+
+    • "I need to install Firefox"
+    • "How do I set up a Python development environment?"
+    • "What's wrong with this error message?"
+    • "Can you help me configure nginx?"
+    • "Show me what's installed on my system"
+
+    The AI understands natural conversation!
+
+SPECIAL FEATURES:
+    • Multi-turn conversations (remembers context)
+    • Voice input and output
+    • Skill-adaptive responses (learns your level)
+    • Complete system awareness
+    • Flake-first recommendations
+
+For more info: See docs/POC_COMPLETE_QUICKSTART.md
+EOF
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Clear screen for better experience
+clear
+
+# Show welcome banner
+cat << "EOF"
+╔═══════════════════════════════════════════════════════════════╗
+║                                                                ║
+║            🤖 Luminous Nix AI Assistant                       ║
+║                                                                ║
+║         Natural Conversation Interface for NixOS              ║
+║                                                                ║
+╚═══════════════════════════════════════════════════════════════╝
+EOF
+
+echo ""
+
+if [ "$MODE" = "voice" ]; then
+    echo -e "${CYAN}🎤 Starting Voice Conversation Mode...${NC}"
+    echo -e "${YELLOW}   Speak naturally - I'm listening!${NC}"
+    echo ""
+
+    # Start voice mode
+    poetry run python -m luminous_nix.cli chat --voice --personality "$VOICE_PERSONALITY"
+else
+    echo -e "${CYAN}💬 Starting Text Conversation Mode...${NC}"
+    echo -e "${YELLOW}   Type naturally - just chat with me!${NC}"
+    echo ""
+
+    # Start text conversation mode
+    poetry run ask-nix chat
+fi

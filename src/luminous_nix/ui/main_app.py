@@ -1,5 +1,4 @@
 """
-from typing import Optional
 🌟 Luminous Nix TUI - The Main Application
 
 A consciousness-first terminal interface that embodies our AI partner
@@ -7,7 +6,9 @@ through beautiful visual presence and adaptive complexity.
 """
 
 import asyncio
+import logging
 from datetime import datetime
+from typing import Optional
 
 from rich.text import Text
 from textual.app import App, ComposeResult
@@ -20,6 +21,20 @@ from .adaptive_interface import AdaptiveInterface, ComplexityLevel, UserFlowStat
 from .backend_connector import TUIBackendConnector, TUIState
 from .consciousness_orb import AIState, ConsciousnessOrb, EmotionalState
 from .visual_orb_integration import VisualOrbBridge
+
+# Import UX-TUI integration for adaptive behavior
+try:
+    from .ux_tui_integration import (
+        UXTUIBridge,
+        get_ux_tui_bridge,
+        get_adaptive_config,
+        get_complexity_level,
+        format_for_user,
+        record_interaction,
+    )
+    UX_TUI_AVAILABLE = True
+except ImportError:
+    UX_TUI_AVAILABLE = False
 
 try:
     from ..api.schema import Context, Request
@@ -129,6 +144,14 @@ class LuminousNixTUI(App):
         # Use our new backend connector
         self.backend = TUIBackendConnector(mindful_mode=mindful_mode)
 
+        # Initialize UX-TUI Bridge for adaptive behavior
+        self.ux_bridge: UXTUIBridge | None = None
+        if UX_TUI_AVAILABLE:
+            try:
+                self.ux_bridge = get_ux_tui_bridge()
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"Could not initialize UX bridge: {e}")
+
         # Subscribe to backend state updates
         self.backend.subscribe_state(self._on_backend_state_update)
         self.backend.subscribe_messages(self._on_backend_message)
@@ -141,6 +164,7 @@ class LuminousNixTUI(App):
         self.adaptive_interface: AdaptiveInterface | None = None
         self.conversation: ConversationPanel | None = None
         self.visual_orb_bridge: VisualOrbBridge | None = None
+        self._interaction_start_time: datetime | None = None
 
     def compose(self) -> ComposeResult:
         """Compose the UI"""
@@ -181,8 +205,11 @@ class LuminousNixTUI(App):
         # Focus on input
         self.query_one("#main-input", Input).focus()
 
-        # Welcome message based on mindful mode
-        if self.backend.core.mindful_mode:
+        # Welcome message - use UX bridge for personalization if available
+        if self.ux_bridge:
+            welcome_msg = self.ux_bridge.get_welcome_message()
+            self.add_ai_message(welcome_msg)
+        elif self.backend.core.mindful_mode:
             self.add_ai_message(
                 "🕉️ Welcome to Luminous Nix! I honor your presence. "
                 "Together we flow in consciousness-first computing. "
@@ -219,17 +246,34 @@ class LuminousNixTUI(App):
             asyncio.create_task(self.visual_orb_bridge.start_sync_loop(get_tui_context))
 
     def _sync_visual_state(self) -> None:
-        """Sync visual state with backend"""
+        """Sync visual state with backend and UX bridge"""
         # Get current backend state
         state = self.backend.get_current_state()
 
-        # Update UI elements based on state
+        # Update UI elements based on UX bridge or backend state
         if self.adaptive_interface:
-            # Update complexity based on user experience
-            if state["success_rate"] > 0.8:
-                self.adaptive_interface.complexity_level = ComplexityLevel.INTERMEDIATE
-            elif state["success_rate"] < 0.5:
-                self.adaptive_interface.complexity_level = ComplexityLevel.BEGINNER
+            if self.ux_bridge:
+                # Use UX bridge for adaptive complexity
+                from .adaptive_complexity import UIComplexityLevel
+                ux_level = self.ux_bridge.get_complexity_level()
+
+                # Map UIComplexityLevel to AdaptiveInterface's ComplexityLevel
+                level_map = {
+                    UIComplexityLevel.MINIMAL: ComplexityLevel.BEGINNER,
+                    UIComplexityLevel.SIMPLE: ComplexityLevel.BEGINNER,
+                    UIComplexityLevel.STANDARD: ComplexityLevel.INTERMEDIATE,
+                    UIComplexityLevel.ADVANCED: ComplexityLevel.FOCUSED,
+                    UIComplexityLevel.EXPERT: ComplexityLevel.EXPERT,
+                }
+                self.adaptive_interface.complexity_level = level_map.get(
+                    ux_level, ComplexityLevel.INTERMEDIATE
+                )
+            else:
+                # Fallback: Update complexity based on user experience
+                if state["success_rate"] > 0.8:
+                    self.adaptive_interface.complexity_level = ComplexityLevel.INTERMEDIATE
+                elif state["success_rate"] < 0.5:
+                    self.adaptive_interface.complexity_level = ComplexityLevel.BEGINNER
 
         # Update consciousness field visualization if available
         if hasattr(self, "field_viz"):
@@ -281,6 +325,9 @@ class LuminousNixTUI(App):
         user_input = event.value.strip()
         if not user_input:
             return
+
+        # Track interaction start time for learning
+        self._interaction_start_time = datetime.now()
 
         # Clear input
         event.input.value = ""
@@ -336,6 +383,27 @@ class LuminousNixTUI(App):
                     )
                 return
 
+            # Personality mode switching
+            if user_input.lower().startswith("mode ") or user_input.lower() == "mode":
+                if self.ux_bridge:
+                    if user_input.lower() == "mode":
+                        # Show available modes
+                        modes = ["minimal", "friendly", "encouraging", "playful", "sacred",
+                                 "professional", "teacher", "companion", "hacker", "zen"]
+                        current = self.ux_bridge.get_personality_style()
+                        self.add_ai_message(
+                            f"🎭 Available modes: {', '.join(modes)}\n"
+                            f"Current: {current}\n"
+                            f"Usage: mode <name>"
+                        )
+                    else:
+                        style = user_input[5:].strip().lower()
+                        response = self.ux_bridge.set_personality_style(style)
+                        self.add_ai_message(f"✨ {style.upper()} mode activated\n{response}")
+                else:
+                    self.add_ai_message("🎭 Personality modes not available")
+                return
+
             # Process through the backend connector
             response = await self.backend.process_query(user_input, dry_run=True)
 
@@ -363,11 +431,23 @@ class LuminousNixTUI(App):
                 self.orb.set_state(AIState.ERROR, EmotionalState.CONCERNED)
                 self.add_ai_message(f"❌ {response.message or response.error}")
 
+            # Record successful interaction through UX bridge
+            if self.ux_bridge and self._interaction_start_time:
+                exec_time = (datetime.now() - self._interaction_start_time).total_seconds()
+                self.ux_bridge.record_tui_interaction(
+                    user_input, exec_time, response.success
+                )
+
         except Exception as e:
             # Handle errors gracefully
             self.orb.set_state(AIState.ERROR, EmotionalState.CONFUSED)
             self.add_ai_message(f"Sorry, I encountered an error: {str(e)}")
             self.add_ai_message("Try 'help' to see what I can do!")
+
+            # Record failed interaction through UX bridge
+            if self.ux_bridge and self._interaction_start_time:
+                exec_time = (datetime.now() - self._interaction_start_time).total_seconds()
+                self.ux_bridge.record_tui_interaction(user_input, exec_time, False)
 
         # Return to idle
         await asyncio.sleep(0.5)

@@ -553,7 +553,7 @@ class NativeOperationsManager:
 
     def _get_speedup_factor(self, op: NativeOperationType) -> str:
         """Estimate speedup from native API"""
-        2-5 seconds_ops = [
+        slow_ops = [
             NativeOperationType.LIST_GENERATIONS,
             NativeOperationType.SHOW_CONFIG_OPTIONS,
             NativeOperationType.SYSTEM_INFO,
@@ -565,7 +565,7 @@ class NativeOperationsManager:
             NativeOperationType.SEARCH_PACKAGES,
         ]
 
-        if op in 2-5 seconds_ops:
+        if op in slow_ops:
             return "∞x (2-5 seconds)"
         if op in fast_ops:
             return "10-50x"

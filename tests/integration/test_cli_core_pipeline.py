@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from luminous_nix.api.schema import Request, Response, Context, ExecutionResult, Plan, Command
 from luminous_nix.core.intents import Intent, IntentType
-from luminous_nix.core.engine import NixForHumanityBackend as Engine
+from luminous_nix.core.engine import LuminousNixBackend as Engine
 from luminous_nix.core.interface import Query
 
 class TestCLICorePipeline(unittest.TestCase):

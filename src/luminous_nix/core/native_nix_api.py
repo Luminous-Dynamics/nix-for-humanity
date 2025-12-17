@@ -6,6 +6,7 @@ This is the actual implementation that uses subprocess
 by using the Python-based nixos-rebuild-ng available in NixOS 25.11
 """
 
+import os
 import json
 import sys
 import time
@@ -25,30 +26,38 @@ class NativeNixAPI:
         """Initialize the native API"""
         self.nixos_rebuild_available = False
         self.nix_api_available = False
+        self.nixos_rebuild = None
+        self.nix = None
+        self.models = None
+        self.services = None
+        self.utils = None
+        self.Action = None
+        self.Remote = None
+        self._init_attempted = False
+
+    def _ensure_native_api_initialized(self) -> None:
+        """Lazy initializer to avoid expensive setup on import/startup."""
+        if self._init_attempted:
+            return
+        self._init_attempted = True
+
+        # Allow tests or non-Nix environments to skip native detection entirely
+        if os.environ.get("LUMINOUS_SKIP_NATIVE_INIT", "").lower() == "true":
+            return
+
         self._init_native_api()
 
     def _init_native_api(self):
         """Initialize the subprocess-based operations"""
 
-        # Try to import nixos-rebuild-ng (NixOS 25.11+)
+        # Try to import nixos-rebuild-ng (NixOS 25.11+) if it is already installed
         try:
-            # Find nixos-rebuild-ng in the Nix store
-            import subprocess
+            # Avoid expensive nix-build discovery: rely on existing Python install
+            from importlib.util import find_spec
 
-            result = subprocess.run(
-                ["nix-build", "<nixpkgs>", "-A", "nixos-rebuild-ng", "--no-out-link"],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
-                rebuild_path = result.stdout.strip()
-                site_packages = (
-                    Path(rebuild_path) / "lib" / "python3.13" / "site-packages"
-                )
-                if site_packages.exists():
-                    sys.path.insert(0, str(site_packages))
+            if find_spec("nixos_rebuild") is None:
+                raise ImportError("nixos_rebuild not installed")
 
-            # Now try to import the modules
             from nixos_rebuild import models, nix, services, utils
             from nixos_rebuild.models import Action, BuildAttr, Flake, Profile
             from nixos_rebuild.process import Remote
@@ -61,14 +70,14 @@ class NativeNixAPI:
             self.Action = Action
             self.Remote = Remote
             self.nixos_rebuild_available = True
-            print("✅ Using nixos-rebuild-ng Python API (NixOS 25.11)")
+            print("✅ Using nixos-rebuild-ng Python API (already installed)")
 
         except ImportError as e:
-            print(f"⚠️  nixos-rebuild-ng not available: {e}")
-            # Fall back to trying the Nix Python bindings
+            # Fall back to trying the Nix Python bindings without failing startup
+            print(f"ℹ️  nixos-rebuild-ng not available: {e}")
             self._try_nix_bindings()
         except Exception as e:
-            print(f"⚠️  Failed to load nixos-rebuild-ng: {e}")
+            print(f"ℹ️  Failed to load nixos-rebuild-ng: {e}")
             self._try_nix_bindings()
 
     def _try_nix_bindings(self):
@@ -99,6 +108,8 @@ class NativeNixAPI:
         Returns: (success, result_path, elapsed_ms)
         """
         start_time = time.time()
+
+        self._ensure_native_api_initialized()
 
         if self.nixos_rebuild_available:
             try:
@@ -145,6 +156,8 @@ class NativeNixAPI:
         """
         start_time = time.time()
 
+        self._ensure_native_api_initialized()
+
         if self.nixos_rebuild_available:
             try:
                 # Map string action to Action enum
@@ -188,6 +201,8 @@ class NativeNixAPI:
         """
         start_time = time.time()
 
+        self._ensure_native_api_initialized()
+
         if self.nix_api_available:
             try:
                 # Use Subprocess calls
@@ -209,6 +224,8 @@ class NativeNixAPI:
         Returns: (success, output, elapsed_ms)
         """
         start_time = time.time()
+
+        self._ensure_native_api_initialized()
 
         # Try native API first if available
         if self.nix_api_available and hasattr(self, "nix_direct"):
@@ -237,6 +254,8 @@ class NativeNixAPI:
         Returns: (generations, elapsed_ms)
         """
         start_time = time.time()
+
+        self._ensure_native_api_initialized()
 
         if self.nixos_rebuild_available:
             try:
@@ -275,6 +294,8 @@ class NativeNixAPI:
         Returns: (success, output, elapsed_ms)
         """
         start_time = time.time()
+
+        self._ensure_native_api_initialized()
 
         if self.nixos_rebuild_available:
             try:

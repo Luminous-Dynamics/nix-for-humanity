@@ -2,6 +2,7 @@
 """
 AI Orchestrator for Luminous Nix
 Intelligently routes queries to HRM (fast reasoning) or Ollama (general knowledge)
+Now with Gemma3+HRM hybrid for enhanced semantic understanding
 """
 
 import time
@@ -12,14 +13,22 @@ from enum import Enum
 
 # Import our AI systems
 # Updated to use migrated HRM v2 (hrm_reasoner.py archived 2025-11-20)
-from .hrm.base.hrm_reasoner_v2 import HierarchicalReasoningModel as HRMNixOSReasoner
-# Note: ReasoningTask and ReasoningResult may need to be imported from v2 as well
+from .hrm.base.hrm_reasoner_v2 import HRMv2NixOSReasoner as HRMNixOSReasoner, ReasoningTask, ReasoningResult
 from .ollama_interface import OllamaInterface, OllamaConfig
+
+# Import the Gemma3+HRM hybrid (restored 2025-12-02)
+try:
+    from .gemma3_hrm_hybrid import Gemma3HRMHybrid, ReasoningResult as HybridReasoningResult
+    GEMMA_HYBRID_AVAILABLE = True
+except ImportError:
+    GEMMA_HYBRID_AVAILABLE = False
+    logger.warning("Gemma3+HRM hybrid not available")
 
 logger = logging.getLogger(__name__)
 
 class ModelType(Enum):
     """Available AI models"""
+    GEMMA_HYBRID = "gemma_hybrid"  # Gemma3 + HRM hybrid (best for NixOS)
     HRM = "hrm"
     OLLAMA = "ollama"
     PATTERN = "pattern"  # Fallback pattern matching
@@ -69,28 +78,34 @@ class IntentRouter:
     def classify(self, query: str) -> ModelType:
         """Classify query to determine best model"""
         query_lower = query.lower()
-        
-        # Check for NixOS-specific patterns
+
+        # Check for NixOS-specific patterns - use Gemma3+HRM hybrid for better understanding
         for category, patterns in self.nixos_patterns.items():
             if any(pattern in query_lower for pattern in patterns):
-                logger.debug(f"Routing to HRM: {category} pattern detected")
-                return ModelType.HRM
-        
+                # Use hybrid for complex NixOS queries (if available)
+                if GEMMA_HYBRID_AVAILABLE:
+                    logger.debug(f"Routing to Gemma3+HRM hybrid: {category} pattern detected")
+                    return ModelType.GEMMA_HYBRID
+                else:
+                    logger.debug(f"Routing to HRM: {category} pattern detected")
+                    return ModelType.HRM
+
         # Check for general knowledge patterns
         if any(pattern in query_lower for pattern in self.general_patterns):
             logger.debug("Routing to Ollama: general knowledge query")
             return ModelType.OLLAMA
-        
-        # Default heuristic: short technical queries → HRM, longer → Ollama
+
+        # Default heuristic: short technical queries → Hybrid/HRM, longer → Ollama
         word_count = len(query.split())
         if word_count < 10 and any(tech in query_lower for tech in ['nix', 'package', 'install', 'build']):
-            return ModelType.HRM
-        
+            return ModelType.GEMMA_HYBRID if GEMMA_HYBRID_AVAILABLE else ModelType.HRM
+
         return ModelType.OLLAMA
     
     def get_confidence_threshold(self, model: ModelType) -> float:
         """Get minimum confidence threshold for model"""
         thresholds = {
+            ModelType.GEMMA_HYBRID: 0.80,  # Slightly lower due to better understanding
             ModelType.HRM: 0.85,
             ModelType.OLLAMA: 0.60,
             ModelType.PATTERN: 0.40
@@ -106,26 +121,42 @@ class AIOrchestrator:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize orchestrator with all AI models"""
         self.config = config or {}
-        
+
         # Initialize models
+        self.gemma_hybrid = None
         self.hrm = None
         self.ollama = None
         self.router = IntentRouter()
-        
+
         # Performance tracking
         self.metrics = {
+            'gemma_hybrid_queries': 0,
             'hrm_queries': 0,
             'ollama_queries': 0,
             'pattern_fallbacks': 0,
             'total_response_time': 0.0
         }
-        
+
         # Initialize models lazily
         self._init_models()
     
     def _init_models(self):
         """Initialize AI models based on configuration"""
-        # Initialize HRM if enabled
+        # Initialize Gemma3+HRM hybrid first (best for NixOS)
+        if GEMMA_HYBRID_AVAILABLE and self.config.get('gemma_hybrid_enabled', True):
+            try:
+                gemma_model = self.config.get('gemma_model', 'gemma3:2b')
+                hrm_model_path = self.config.get('hrm_model_path')
+                self.gemma_hybrid = Gemma3HRMHybrid(
+                    gemma_model=gemma_model,
+                    hrm_model_path=hrm_model_path
+                )
+                logger.info(f"✅ Gemma3+HRM hybrid initialized (model: {gemma_model})")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Gemma3+HRM hybrid: {e}")
+                self.gemma_hybrid = None
+
+        # Initialize HRM if enabled (fallback for simple queries)
         if self.config.get('hrm_enabled', True):
             try:
                 self.hrm = HRMNixOSReasoner()
@@ -134,7 +165,7 @@ class AIOrchestrator:
             except Exception as e:
                 logger.warning(f"Failed to initialize HRM: {e}")
                 self.hrm = None
-        
+
         # Initialize Ollama if enabled
         if self.config.get('ollama_enabled', True):
             try:
@@ -173,7 +204,9 @@ class AIOrchestrator:
         
         # Route to appropriate model
         try:
-            if model_to_use == ModelType.HRM and self.hrm:
+            if model_to_use == ModelType.GEMMA_HYBRID and self.gemma_hybrid:
+                result = self._process_with_gemma_hybrid(query, timeout)
+            elif model_to_use == ModelType.HRM and self.hrm:
                 result = self._process_with_hrm(query, timeout)
             elif model_to_use == ModelType.OLLAMA and self.ollama:
                 result = self._process_with_ollama(query, timeout)
@@ -230,7 +263,45 @@ class AIOrchestrator:
             fallback_used=False,
             metadata={'reasoning_depth': hrm_result.reasoning_depth}
         )
-    
+
+    def _process_with_gemma_hybrid(self, query: str, timeout: float) -> OrchestrationResult:
+        """Process query with Gemma3+HRM hybrid for enhanced NixOS understanding"""
+        logger.debug(f"Processing with Gemma3+HRM hybrid: {query[:50]}...")
+
+        # Process with hybrid system
+        start = time.time()
+        hybrid_result = self.gemma_hybrid.process_query(query)
+        elapsed = (time.time() - start) * 1000
+
+        self.metrics['gemma_hybrid_queries'] += 1
+
+        # Check confidence threshold
+        confidence_threshold = self.router.get_confidence_threshold(ModelType.GEMMA_HYBRID)
+        if hybrid_result.confidence < confidence_threshold and self.ollama:
+            logger.debug(f"Hybrid confidence low ({hybrid_result.confidence:.2f}), checking with Ollama")
+            return self._process_with_ollama(query, timeout)
+
+        # Convert hybrid result to orchestration result
+        # The hybrid returns more structured information
+        response_text = f"Intent: {hybrid_result.intent.value}\n"
+        if hybrid_result.entities:
+            response_text += f"Entities: {', '.join(str(v) for v in hybrid_result.entities.values())}\n"
+        response_text += f"\nReasoning:\n" + "\n".join(f"  {step}" for step in hybrid_result.reasoning_path)
+
+        return OrchestrationResult(
+            response=response_text,
+            model_used=ModelType.GEMMA_HYBRID,
+            confidence=hybrid_result.confidence,
+            response_time_ms=elapsed,
+            reasoning_steps=hybrid_result.reasoning_path,
+            fallback_used=False,
+            metadata={
+                'intent': hybrid_result.intent.value,
+                'entities': hybrid_result.entities,
+                'model_contributions': hybrid_result.model_contributions
+            }
+        )
+
     def _process_with_ollama(self, 
                             query: str, 
                             timeout: float,
@@ -350,47 +421,57 @@ class AIOrchestrator:
     def process_batch(self, queries: List[str]) -> List[OrchestrationResult]:
         """Process multiple queries efficiently"""
         results = []
-        
+
         # Group by model type for efficiency
+        hybrid_queries = []
         hrm_queries = []
         ollama_queries = []
-        
+
         for query in queries:
             model = self.router.classify(query)
-            if model == ModelType.HRM:
+            if model == ModelType.GEMMA_HYBRID:
+                hybrid_queries.append(query)
+            elif model == ModelType.HRM:
                 hrm_queries.append(query)
             else:
                 ollama_queries.append(query)
-        
+
+        # Process Gemma3+HRM hybrid queries (fast with better understanding)
+        for query in hybrid_queries:
+            results.append(self._process_with_gemma_hybrid(query, timeout=2.0))
+
         # Process HRM queries (fast)
         for query in hrm_queries:
             results.append(self._process_with_hrm(query, timeout=1.0))
-        
+
         # Process Ollama queries (slower)
         for query in ollama_queries:
             results.append(self._process_with_ollama(query, timeout=5.0))
-        
+
         return results
     
     def get_metrics(self) -> Dict[str, Any]:
         """Get performance metrics"""
         total_queries = sum([
+            self.metrics['gemma_hybrid_queries'],
             self.metrics['hrm_queries'],
             self.metrics['ollama_queries'],
             self.metrics['pattern_fallbacks']
         ])
-        
+
         if total_queries == 0:
             avg_response_time = 0
         else:
             avg_response_time = self.metrics['total_response_time'] / total_queries
-        
+
         return {
             'total_queries': total_queries,
+            'gemma_hybrid_queries': self.metrics['gemma_hybrid_queries'],
             'hrm_queries': self.metrics['hrm_queries'],
             'ollama_queries': self.metrics['ollama_queries'],
             'pattern_fallbacks': self.metrics['pattern_fallbacks'],
             'average_response_time_ms': avg_response_time,
+            'hybrid_percentage': (self.metrics['gemma_hybrid_queries'] / total_queries * 100) if total_queries > 0 else 0,
             'hrm_percentage': (self.metrics['hrm_queries'] / total_queries * 100) if total_queries > 0 else 0
         }
     

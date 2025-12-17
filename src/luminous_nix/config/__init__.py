@@ -22,6 +22,7 @@ from .schema import (
     ResponseFormat,
     UIConfig,
 )
+from .settings import Settings, get_settings, set_settings
 
 __all__ = [
     "ConfigManager",
@@ -38,4 +39,7 @@ __all__ = [
     "ConfigLoader",
     "ProfileManager",
     "UserProfile",
+    "Settings",
+    "get_settings",
+    "set_settings",
 ]

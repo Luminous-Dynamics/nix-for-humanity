@@ -1,335 +1,421 @@
 """
-Plugin Manager - Manages plugin lifecycle and registration
+Main plugin manager.
 
-This is the heart of our extensibility - allowing the community
-to extend Luminous Nix without touching core code.
+Central coordination of plugin system: discovery, loading, and lifecycle.
 """
 
-from typing import Dict, List, Optional, Any
-from pathlib import Path
-import importlib.util
-import json
 import logging
+from typing import Dict, List, Optional, Set
+from pathlib import Path
 
-from .base import Plugin, PluginInfo
-
-logger = logging.getLogger(__name__)
+from .base import Plugin, PluginConfig, PluginContext, PluginInfo, PluginStatus
+from .discovery import PluginDiscovery, PluginManifest
+from .lifecycle import PluginLifecycleManager
+from .validator import PluginValidator
+from .config import PluginConfigManager
+from .errors import (
+    PluginNotFoundError,
+    PluginValidationError,
+    PluginLoadError
+)
 
 
 class PluginManager:
     """
-    Manages plugins for Luminous Nix.
-    
-    Features:
-    - Dynamic plugin loading
-    - Dependency management
-    - Hook system
-    - Plugin isolation
+    Central plugin management system.
+
+    Coordinates plugin discovery, validation, loading, and lifecycle.
     """
-    
-    def __init__(self, plugin_dir: Optional[Path] = None):
+
+    def __init__(self, config: Optional[PluginConfig] = None, auto_load: bool = False):
         """
         Initialize plugin manager.
-        
+
         Args:
-            plugin_dir: Directory containing plugins
+            config: Plugin configuration (uses defaults if None)
+            auto_load: Whether to automatically load plugins from config
         """
-        self.plugin_dir = plugin_dir or Path.home() / ".config" / "luminous-nix" / "plugins"
-        self.plugin_dir.mkdir(parents=True, exist_ok=True)
-        
-        self.plugins: Dict[str, Plugin] = {}
-        self.commands: Dict[str, callable] = {}
-        self.hooks: Dict[str, List[callable]] = {
-            "pre_search": [],
-            "post_search": [],
-            "pre_install": [],
-            "post_install": [],
-            "pre_remove": [],
-            "post_remove": [],
+        self.config = config or PluginConfig()
+        self.logger = logging.getLogger(__name__)
+
+        # Systems
+        self.discovery = PluginDiscovery(self.config)
+        self.validator = PluginValidator(self.config)
+        self.lifecycle = PluginLifecycleManager(self.config)
+        self.config_manager = PluginConfigManager()
+
+        # Plugin registry
+        self._plugins: Dict[str, Plugin] = {}
+        self._manifests: Dict[str, PluginManifest] = {}
+
+        # Plugin type registry
+        self._plugins_by_type: Dict[str, List[Plugin]] = {
+            "operation": [],
+            "security": [],
+            "hook": [],
+            "ai": []
         }
-        
-        # Plugin context with services
-        self.context = {}
-        
-    def set_context(self, context: Dict[str, Any]):
+
+        # Core system references (set by integrate_with_core)
+        self._state_manager = None
+        self._security = None
+        self._ai = None
+        self._executor = None
+
+        self.logger.info("Plugin manager initialized")
+
+        # Auto-load plugins if requested
+        if auto_load:
+            self.auto_load_plugins()
+
+    def discover_plugins(self) -> List[PluginManifest]:
         """
-        Set plugin context with services.
-        
-        Args:
-            context: Dictionary with services like SearchService, CacheService, etc.
-        """
-        self.context = context
-    
-    def load_plugin(self, plugin_path: Path) -> bool:
-        """
-        Load a plugin from file.
-        
-        Args:
-            plugin_path: Path to plugin file
-            
+        Discover all available plugins.
+
         Returns:
-            True if loaded successfully
+            List of discovered plugin manifests
         """
-        try:
-            # Load plugin module
-            spec = importlib.util.spec_from_file_location(
-                f"plugin_{plugin_path.stem}",
-                plugin_path
-            )
-            
-            if not spec or not spec.loader:
-                logger.error(f"Failed to load plugin spec: {plugin_path}")
-                return False
-            
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            # Find Plugin class
-            plugin_class = None
-            for name in dir(module):
-                obj = getattr(module, name)
-                if (isinstance(obj, type) and 
-                    issubclass(obj, Plugin) and 
-                    obj != Plugin):
-                    plugin_class = obj
-                    break
-            
-            if not plugin_class:
-                logger.error(f"No Plugin class found in {plugin_path}")
-                return False
-            
-            # 2-5 secondsiate plugin
-            plugin = plugin_class()
-            
-            # Initialize plugin
-            if not plugin.initialize(self.context):
-                logger.error(f"Plugin initialization failed: {plugin_path}")
-                return False
-            
-            # Register plugin
-            info = plugin.get_info()
-            self.plugins[info.name] = plugin
-            
-            # Register commands
-            for cmd_name, handler in plugin.get_commands().items():
-                self.register_command(info.name, cmd_name, handler)
-            
-            logger.info(f"Loaded plugin: {info.name} v{info.version}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to load plugin {plugin_path}: {e}")
-            return False
-    
-    def load_all_plugins(self):
-        """Load all plugins from plugin directory"""
-        
-        # Load built-in plugins first
-        self._load_builtin_plugins()
-        
-        # Load user plugins
-        for plugin_file in self.plugin_dir.glob("*.py"):
-            if not plugin_file.name.startswith("_"):
-                self.load_plugin(plugin_file)
-    
-    def _load_builtin_plugins(self):
-        """Load built-in plugins"""
-        
-        builtin_dir = Path(__file__).parent / "builtin"
-        if builtin_dir.exists():
-            for plugin_file in builtin_dir.glob("*.py"):
-                if not plugin_file.name.startswith("_"):
-                    self.load_plugin(plugin_file)
-    
-    def register_command(self, plugin_name: str, command: str, handler: callable):
+        manifests = self.discovery.discover_all()
+        for manifest in manifests:
+            self._manifests[manifest.name] = manifest
+        return manifests
+
+    def load_plugin(self, plugin_name: str) -> Plugin:
         """
-        Register a plugin command.
-        
+        Load a specific plugin by name.
+
+        Args:
+            plugin_name: Name of plugin to load
+
+        Returns:
+            Loaded and activated plugin
+
+        Raises:
+            PluginNotFoundError: If plugin not found
+            PluginValidationError: If plugin invalid
+            PluginLoadError: If loading fails
+        """
+        # Check if already loaded
+        if plugin_name in self._plugins:
+            self.logger.debug(f"Plugin {plugin_name} already loaded")
+            return self._plugins[plugin_name]
+
+        # Find manifest
+        if plugin_name not in self._manifests:
+            manifest = self.discovery.find_plugin(plugin_name)
+            if not manifest:
+                raise PluginNotFoundError(f"Plugin '{plugin_name}' not found")
+            self._manifests[plugin_name] = manifest
+        else:
+            manifest = self._manifests[plugin_name]
+
+        # Validate (basic validation - security validation is separate)
+        if not self._validate_plugin(manifest):
+            raise PluginValidationError(f"Plugin '{plugin_name}' failed validation")
+
+        # Create context
+        context = self._create_plugin_context(manifest)
+
+        # Load through lifecycle
+        plugin = self.lifecycle.load_plugin(manifest, context)
+
+        # Register
+        self._plugins[plugin_name] = plugin
+        self._plugins_by_type[plugin.type].append(plugin)
+
+        self.logger.info(f"Loaded plugin: {plugin_name} v{manifest.version}")
+        return plugin
+
+    def unload_plugin(self, plugin_name: str):
+        """
+        Unload a plugin.
+
+        Args:
+            plugin_name: Name of plugin to unload
+
+        Note: Gracefully handles unloading nonexistent plugins (no error)
+        """
+        if plugin_name not in self._plugins:
+            self.logger.debug(f"Plugin '{plugin_name}' not loaded, skipping unload")
+            return
+
+        plugin = self._plugins[plugin_name]
+
+        # Unload through lifecycle
+        self.lifecycle.unload_plugin(plugin_name)
+
+        # Unregister
+        del self._plugins[plugin_name]
+        self._plugins_by_type[plugin.type].remove(plugin)
+
+        self.logger.info(f"Unloaded plugin: {plugin_name}")
+
+    def reload_plugin(self, plugin_name: str) -> Plugin:
+        """
+        Reload a plugin (unload and load again).
+
+        Args:
+            plugin_name: Name of plugin to reload
+
+        Returns:
+            Reloaded plugin instance
+
+        Raises:
+            PluginNotFoundError: If plugin not found
+            PluginLoadError: If reload fails
+        """
+        # Unload if loaded
+        if plugin_name in self._plugins:
+            self.unload_plugin(plugin_name)
+
+        # Clear cached manifest to force re-discovery
+        if plugin_name in self._manifests:
+            del self._manifests[plugin_name]
+
+        # Load fresh
+        plugin = self.load_plugin(plugin_name)
+        self.logger.info(f"Reloaded plugin: {plugin_name}")
+        return plugin
+
+    def load_all_plugins(self) -> Dict[str, Plugin]:
+        """
+        Load all discovered plugins.
+
+        Returns:
+            Dict mapping plugin names to loaded plugins
+
+        Note: Failures are logged but don't stop other plugins from loading
+        """
+        manifests = self.discover_plugins()
+        loaded = {}
+
+        for manifest in manifests:
+            try:
+                plugin = self.load_plugin(manifest.name)
+                loaded[manifest.name] = plugin
+            except Exception as e:
+                self.logger.error(f"Failed to load {manifest.name}: {e}")
+
+        self.logger.info(f"Loaded {len(loaded)}/{len(manifests)} plugins")
+        return loaded
+
+    def auto_load_plugins(self) -> Dict[str, Plugin]:
+        """
+        Auto-load plugins from configuration.
+
+        Loads all plugins in the autoload list from config file.
+
+        Returns:
+            Dict mapping plugin names to loaded plugins
+
+        Note: Failures are logged but don't stop other plugins from loading
+        """
+        # Discover plugins first
+        self.discover_plugins()
+
+        # Get autoload list
+        autoload_list = self.config_manager.get_autoload_plugins()
+
+        if not autoload_list:
+            self.logger.debug("No plugins in autoload list")
+            return {}
+
+        self.logger.info(f"Auto-loading {len(autoload_list)} plugin(s)")
+        loaded = {}
+
+        for plugin_name in autoload_list:
+            try:
+                plugin = self.load_plugin(plugin_name)
+                loaded[plugin_name] = plugin
+                self.logger.info(f"Auto-loaded: {plugin_name}")
+            except Exception as e:
+                self.logger.error(f"Failed to auto-load {plugin_name}: {e}")
+
+        self.logger.info(f"Auto-loaded {len(loaded)}/{len(autoload_list)} plugins")
+        return loaded
+
+    def get_plugin(self, plugin_name: str) -> Optional[Plugin]:
+        """
+        Get a loaded plugin by name.
+
         Args:
             plugin_name: Name of plugin
-            command: Command name
-            handler: Command handler
-        """
-        full_command = f"{plugin_name}:{command}"
-        self.commands[full_command] = handler
-        
-        # Also register without prefix if no conflict
-        if command not in self.commands:
-            self.commands[command] = handler
-    
-    def execute_command(self, command: str, *args, **kwargs) -> Any:
-        """
-        Execute a plugin command.
-        
-        Args:
-            command: Command name
-            *args: Command arguments
-            **kwargs: Command keyword arguments
-            
+
         Returns:
-            Command result
+            Plugin if loaded, None otherwise
         """
-        if command in self.commands:
-            handler = self.commands[command]
-            if isinstance(handler, dict):
-                handler = handler["handler"]
-            return handler(*args, **kwargs)
-        
-        # Try with plugin prefix
-        for cmd_name, handler in self.commands.items():
-            if cmd_name.endswith(f":{command}"):
-                if isinstance(handler, dict):
-                    handler = handler["handler"]
-                return handler(*args, **kwargs)
-        
-        raise ValueError(f"Unknown command: {command}")
-    
-    def enhance_search(self, query: str, results: List) -> List:
+        return self._plugins.get(plugin_name)
+
+    def get_plugins_by_type(self, plugin_type: str) -> List[Plugin]:
         """
-        Let plugins enhance search results.
-        
+        Get all loaded plugins of a specific type.
+
         Args:
-            query: Search query
-            results: Current results
-            
+            plugin_type: Type of plugins to get ("operation", "security", "hook", "ai")
+
         Returns:
-            Enhanced results
+            List of plugins of that type
         """
-        # Run pre-search hooks
-        for hook in self.hooks["pre_search"]:
-            hook(query)
-        
-        # Let each plugin enhance results
-        for plugin in self.plugins.values():
-            results = plugin.enhance_search(query, results)
-        
-        # Run post-search hooks
-        for hook in self.hooks["post_search"]:
-            hook(query, results)
-        
-        return results
-    
-    def get_config_templates(self) -> Dict[str, Any]:
+        return self._plugins_by_type.get(plugin_type, [])
+
+    def get_operation_plugins(self) -> List[Plugin]:
         """
-        Get all configuration templates from plugins.
-        
+        Get all loaded operation plugins.
+
         Returns:
-            Dictionary of templates
+            List of operation plugins
         """
-        templates = {}
-        
-        for plugin_name, plugin in self.plugins.items():
-            plugin_templates = plugin.get_config_templates()
-            for template_name, template in plugin_templates.items():
-                full_name = f"{plugin_name}:{template_name}"
-                templates[full_name] = template
-        
-        return templates
-    
-    def trigger_hook(self, hook_name: str, *args, **kwargs):
+        return self.get_plugins_by_type("operation")
+
+    def get_security_plugins(self) -> List[Plugin]:
         """
-        Trigger a hook.
-        
+        Get all loaded security plugins.
+
+        Returns:
+            List of security plugins
+        """
+        return self.get_plugins_by_type("security")
+
+    def get_hook_plugins(self) -> List[Plugin]:
+        """
+        Get all loaded hook plugins.
+
+        Returns:
+            List of hook plugins
+        """
+        return self.get_plugins_by_type("hook")
+
+    def get_ai_plugins(self) -> List[Plugin]:
+        """
+        Get all loaded AI plugins.
+
+        Returns:
+            List of AI plugins
+        """
+        return self.get_plugins_by_type("ai")
+
+    def list_plugins(self, include_inactive: bool = False) -> List[PluginInfo]:
+        """
+        List all plugins.
+
         Args:
-            hook_name: Name of hook
-            *args: Hook arguments
-            **kwargs: Hook keyword arguments
-        """
-        if hook_name in self.hooks:
-            for handler in self.hooks[hook_name]:
-                try:
-                    handler(*args, **kwargs)
-                except Exception as e:
-                    logger.error(f"Hook {hook_name} failed: {e}")
-    
-    def register_hook(self, hook_name: str, handler: callable):
-        """
-        Register a hook handler.
-        
-        Args:
-            hook_name: Name of hook
-            handler: Hook handler
-        """
-        if hook_name not in self.hooks:
-            self.hooks[hook_name] = []
-        self.hooks[hook_name].append(handler)
-    
-    def list_plugins(self) -> List[PluginInfo]:
-        """
-        List all loaded plugins.
-        
+            include_inactive: Include disabled plugins
+
         Returns:
             List of plugin information
         """
-        return [plugin.get_info() for plugin in self.plugins.values()]
-    
-    def get_plugin(self, name: str) -> Optional[Plugin]:
+        plugins = []
+
+        for plugin in self._plugins.values():
+            if not include_inactive and plugin.status != PluginStatus.ACTIVE:
+                continue
+
+            plugins.append(PluginInfo(
+                name=plugin.metadata.name,
+                version=plugin.metadata.version,
+                type=plugin.type,
+                status=plugin.status,
+                description=plugin.metadata.description,
+                author=plugin.metadata.author,
+                enabled=plugin.enabled
+            ))
+
+        return plugins
+
+    def activate_plugin(self, plugin_name: str):
         """
-        Get a specific plugin.
-        
+        Activate a disabled plugin.
+
         Args:
-            name: Plugin name
-            
-        Returns:
-            Plugin instance or None
+            plugin_name: Name of plugin to activate
         """
-        return self.plugins.get(name)
-    
-    def unload_plugin(self, name: str) -> bool:
+        self.lifecycle.activate_plugin(plugin_name)
+
+    def deactivate_plugin(self, plugin_name: str):
         """
-        Unload a plugin.
-        
+        Deactivate an active plugin.
+
         Args:
-            name: Plugin name
-            
-        Returns:
-            True if unloaded successfully
+            plugin_name: Name of plugin to deactivate
         """
-        if name not in self.plugins:
-            return False
-        
-        plugin = self.plugins[name]
-        
-        # Call shutdown
-        plugin.shutdown()
-        
-        # Remove commands
-        commands_to_remove = []
-        for cmd_name in self.commands:
-            if cmd_name.startswith(f"{name}:"):
-                commands_to_remove.append(cmd_name)
-        
-        for cmd in commands_to_remove:
-            del self.commands[cmd]
-        
-        # Remove plugin
-        del self.plugins[name]
-        
-        logger.info(f"Unloaded plugin: {name}")
-        return True
-    
-    def reload_plugin(self, name: str) -> bool:
+        self.lifecycle.deactivate_plugin(plugin_name)
+
+    def integrate_with_core(
+        self,
+        state_manager=None,
+        security=None,
+        ai=None,
+        executor=None
+    ):
         """
-        Reload a plugin.
-        
+        Integrate plugin system with core Luminous Nix systems.
+
+        This allows plugins to access core functionality.
+
         Args:
-            name: Plugin name
-            
-        Returns:
-            True if reloaded successfully
+            state_manager: StateManager instance
+            security: Security system instance
+            ai: AI system instance
+            executor: Executor instance
         """
-        # Find plugin file
-        plugin_file = self.plugin_dir / f"{name}.py"
-        if not plugin_file.exists():
-            # Try builtin
-            plugin_file = Path(__file__).parent / "builtin" / f"{name}.py"
-        
-        if not plugin_file.exists():
-            return False
-        
-        # Unload if loaded
-        if name in self.plugins:
-            self.unload_plugin(name)
-        
-        # Load again
-        return self.load_plugin(plugin_file)
+        self._state_manager = state_manager
+        self._security = security
+        self._ai = ai
+        self._executor = executor
+
+        self.logger.info("Plugin system integrated with core")
+
+    def shutdown(self):
+        """Shutdown plugin system and unload all plugins"""
+        self.lifecycle.shutdown()
+        self._plugins.clear()
+        self._plugins_by_type = {k: [] for k in self._plugins_by_type}
+        self.logger.info("Plugin system shutdown")
+
+    # Private methods
+
+    def _validate_plugin(self, manifest: PluginManifest) -> bool:
+        """
+        Validate plugin using security validator.
+
+        Args:
+            manifest: Plugin manifest
+
+        Returns:
+            True if plugin is valid
+
+        Raises:
+            PluginValidationError: If validation fails
+        """
+        return self.validator.validate(manifest)
+
+    def _create_plugin_context(self, manifest: PluginManifest) -> PluginContext:
+        """
+        Create plugin context.
+
+        Args:
+            manifest: Plugin manifest
+
+        Returns:
+            Plugin context with core systems and permissions
+        """
+        # Create context with core systems
+        context = PluginContext(
+            state_manager=self._state_manager,
+            security=self._security,
+            ai=self._ai,
+            executor=self._executor
+        )
+
+        # Plugin-specific context
+        context.plugin_name = manifest.name
+        context.plugin_dir = manifest.plugin_dir
+
+        # Permissions (for now, grant all requested - security validation will restrict)
+        context.permissions = set(manifest.requires_permissions)
+
+        return context
+
+
+# Export
+__all__ = ['PluginManager']

@@ -91,14 +91,7 @@ class MockNLPPipeline:
         
         # Apply user adaptation
         adapted_response = base_response
-        if self.advanced_learning:
-            try:
-                adapted_response = self.advanced_learning# adapt_response removed - using simple templates
-# 
-                    user_id, base_response, context
-                )
-            except Exception as e:
-                print(f"Learning error: {e}")
+        # Learning adaptation removed - using simple templates
         
         self.interaction_count += 1
         

@@ -5,6 +5,18 @@ This module provides the main CLI entry point and command registration.
 """
 
 import click
+from importlib import metadata
+from pathlib import Path
+
+# Resolve version dynamically to avoid drift with VERSION/pyproject
+try:
+    __version__ = metadata.version("luminous-nix")
+except metadata.PackageNotFoundError:
+    try:
+        repo_root = Path(__file__).resolve().parents[3]
+        __version__ = (repo_root / "VERSION").read_text().strip()
+    except Exception:
+        __version__ = "0.0.0"
 
 from .config_command import config
 from .discover_command import discover_group as discover
@@ -13,6 +25,11 @@ from .flake_command import flake
 from .generation_command import generation
 from .home_command import home
 from .settings_command import settings
+from .version_command import version as version_cmd
+from .packages import packages
+from .preview import preview
+from .search_command import search
+from .version_command import version as version_cmd
 
 # Import Phase 1 advanced features
 try:
@@ -48,6 +65,15 @@ except ImportError:
     modes = None
     health = None
 
+# Import personality/user experience commands
+try:
+    from .personality_command import personality, quick_mode
+    PERSONALITY_AVAILABLE = True
+except ImportError:
+    PERSONALITY_AVAILABLE = False
+    personality = None
+    quick_mode = None
+
 # Import UI generation commands
 try:
     from .ui_command import ui
@@ -66,6 +92,24 @@ except ImportError:
     CACHE_AVAILABLE = False
     cache = None
 
+# Import plugins command
+try:
+    from .plugins_command import plugins
+
+    PLUGINS_AVAILABLE = True
+except ImportError:
+    PLUGINS_AVAILABLE = False
+    plugins = None
+
+# Import chat command
+try:
+    from .chat_command import chat
+
+    CHAT_AVAILABLE = True
+except ImportError:
+    CHAT_AVAILABLE = False
+    chat = None
+
 # Import onboarding wizard
 try:
     from ..onboarding.wizard import OnboardingWizard
@@ -77,7 +121,7 @@ except ImportError:
 
 
 @click.group()
-@click.version_option(version="0.6.0", prog_name="Luminous Nix")
+@click.version_option(version=__version__, prog_name="Luminous Nix")
 @click.pass_context
 def cli(ctx):
     """Luminous Nix - Natural language interface for NixOS
@@ -96,10 +140,58 @@ cli.add_command(error)
 cli.add_command(generation)
 cli.add_command(flake)
 cli.add_command(discover)
+cli.add_command(search)
+cli.add_command(preview)
+cli.add_command(packages)
+cli.add_command(version_cmd, name="version")
+cli.add_command(version_cmd, name="version")
 
 # Add cache command if available
 if CACHE_AVAILABLE and cache:
     cli.add_command(cache)
+
+# Add plugins command if available
+if PLUGINS_AVAILABLE and plugins:
+    cli.add_command(plugins)
+
+# Add chat command if available
+if CHAT_AVAILABLE and chat:
+    cli.add_command(chat)
+
+# Lightweight placeholders to avoid missing-command surprises when optional modules are absent
+@cli.group()
+def env():
+    """Environment inspection (core placeholder)."""
+    pass
+
+
+@env.command()
+@click.option("--json", "as_json", is_flag=True, help="Output JSON summary")
+def show(as_json: bool):
+    """Show basic environment info (placeholder)."""
+    import json as _json
+    summary = {
+        "platform": sys.platform,
+        "native_nix": NATIVE_API_AVAILABLE,
+        "ui_available": UI_AVAILABLE,
+        "voice_available": False,
+        "ml_available": False,
+    }
+    if as_json:
+        click.echo(_json.dumps(summary))
+    else:
+        click.echo("Environment summary (core placeholder):")
+        for k, v in summary.items():
+            click.echo(f"- {k}: {v}")
+
+
+@cli.command()
+def doctor():
+    """Quick environment check (placeholder)."""
+    click.echo("Doctor check (core placeholder):")
+    click.echo("✔ CLI available")
+    click.echo("✔ Core regex intent available")
+    click.echo("⚠ Native Nix may be unavailable; running in preview-only mode")
 
 # Add UI generation command if available
 if UI_AVAILABLE and ui:
@@ -129,6 +221,13 @@ if PHASE3_FEATURES_AVAILABLE:
         cli.add_command(modes)
     if health:
         cli.add_command(health)
+
+# Add personality/user experience commands
+if PERSONALITY_AVAILABLE:
+    if personality:
+        cli.add_command(personality)
+    if quick_mode:
+        cli.add_command(quick_mode, name='mode')
 
 
 # Setup/Onboarding command

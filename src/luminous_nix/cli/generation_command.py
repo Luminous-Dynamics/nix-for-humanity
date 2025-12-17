@@ -5,6 +5,7 @@ CLI commands for NixOS generation management and system recovery
 """
 
 import sys
+import json
 from pathlib import Path
 
 import click
@@ -24,13 +25,29 @@ def generation():
 @generation.command()
 @click.option("--limit", "-n", default=10, help="Number of generations to show")
 @click.option("--detailed", "-d", is_flag=True, help="Show detailed information")
-def list(limit: int, detailed: bool):
+@click.option("--json", "as_json", is_flag=True, help="Output JSON")
+def list(limit: int, detailed: bool, as_json: bool):
     """List system generations"""
     manager = GenerationManager()
     generations = manager.list_generations(limit)
 
     if not generations:
         click.echo("No generations found")
+        return
+
+    if as_json:
+        payload = []
+        for gen in generations:
+            payload.append(
+                {
+                    "number": gen.number,
+                    "date": gen.date.isoformat(),
+                    "kernel": getattr(gen, "kernel", None),
+                    "nixos_version": getattr(gen, "nixos_version", None),
+                    "is_current": gen.is_current,
+                }
+            )
+        click.echo(json.dumps(payload))
         return
 
     click.echo(f"System Generations (showing last {limit}):\n")
@@ -45,13 +62,13 @@ def list(limit: int, detailed: bool):
         click.echo(f"  Date: {gen.date.strftime('%Y-%m-%d %H:%M:%S')}")
 
         if detailed:
-            click.echo(f"  Kernel: {gen.kernel}")
-            click.echo(f"  NixOS: {gen.nixos_version}")
-            if gen.description:
+            click.echo(f"  Kernel: {getattr(gen, 'kernel', '')}")
+            click.echo(f"  NixOS: {getattr(gen, 'nixos_version', '')}")
+            if getattr(gen, "description", None):
                 click.echo(f"  Description: {gen.description}")
-            if gen.packages_added:
+            if getattr(gen, "packages_added", None):
                 click.echo(f"  Packages added: {', '.join(gen.packages_added[:5])}")
-            if gen.packages_removed:
+            if getattr(gen, "packages_removed", None):
                 click.echo(f"  Packages removed: {', '.join(gen.packages_removed[:5])}")
 
         click.echo()
@@ -86,7 +103,8 @@ def rollback(generation: int | None, yes: bool):
 @generation.command()
 @click.argument("gen1", type=int)
 @click.argument("gen2", type=int, required=False)
-def diff(gen1: int, gen2: int | None):
+@click.option("--json", "as_json", is_flag=True, help="Output JSON")
+def diff(gen1: int, gen2: int | None, as_json: bool):
     """Show differences between generations"""
     manager = GenerationManager()
 
@@ -101,6 +119,10 @@ def diff(gen1: int, gen2: int | None):
     click.echo(f"Comparing generation {gen1} with {gen2}:\n")
 
     diff_info = manager.get_generation_diff(gen1, gen2)
+
+    if as_json:
+        click.echo(json.dumps(diff_info))
+        return
 
     if diff_info["kernel_changed"]:
         click.echo(click.style("  ⚠️  Kernel version changed", fg="yellow"))
@@ -173,10 +195,23 @@ def clean(keep: int, yes: bool):
 
 
 @generation.command()
-def health():
+@click.option("--json", "as_json", is_flag=True, help="Output JSON")
+def health(as_json: bool):
     """Check system health and recovery status"""
     manager = GenerationManager()
     health = manager.check_system_health()
+
+    if as_json:
+        payload = {
+            "disk_usage_percent": getattr(health, "disk_usage_percent", None),
+            "memory_usage_percent": getattr(health, "memory_usage_percent", None),
+            "failed_services": getattr(health, "failed_services", []),
+            "config_errors": getattr(health, "config_errors", []),
+            "warnings": getattr(health, "warnings", []),
+            "last_successful_boot": getattr(health, "last_successful_boot", None),
+        }
+        click.echo(json.dumps(payload))
+        return
 
     click.echo("System Health Check:\n")
 

@@ -2,32 +2,28 @@
 
 [![Version](https://img.shields.io/badge/version-0.7.0-blue)](https://github.com/Luminous-Dynamics/luminous-nix/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Accuracy](https://img.shields.io/badge/accuracy-100%25-success)](RELEASE_v0.7.0_SUMMARY.md)
-[![Cache](https://img.shields.io/badge/cache-0.01ms-brightgreen)](RELEASE_v0.7.0_SUMMARY.md)
-[![Intent](https://img.shields.io/badge/intent-<10ms-brightgreen)](RELEASE_v0.7.0_SUMMARY.md)
-[![Patterns](https://img.shields.io/badge/patterns-70+-purple)](RELEASE_v0.7.0_SUMMARY.md)
-[![Tests](https://img.shields.io/badge/tests-100%25_passing-success)](test_end_to_end_production.py)
+[![Accuracy](https://img.shields.io/badge/accuracy-revalidation_pending-orange)](RELEASE_v0.7.0_SUMMARY.md)
+[![Intent](https://img.shields.io/badge/intent-regex_first-blue)](RELEASE_v0.7.0_SUMMARY.md)
+[![Cache](https://img.shields.io/badge/cache-in_memory-lightgrey)](RELEASE_v0.7.0_SUMMARY.md)
+[![Patterns](https://img.shields.io/badge/patterns-~70_designed%2Fsubset_validated-purple)](RELEASE_v0.7.0_SUMMARY.md)
+[![Tests](https://img.shields.io/badge/tests-smoke_only-lightgrey)](test_end_to_end_production.py)
 [![NixOS](https://img.shields.io/badge/NixOS-25.11-blue)](https://nixos.org)
 [![Python](https://img.shields.io/badge/Python-3.11+-yellow)](https://python.org)
 
-> *"From 98.94% to 100% accuracy - Production Ready with 70+ natural language patterns!"*
+> Reality snapshot (Jan 2025): CLI works best on NixOS with real nix tools; non-NixOS falls back to preview-only. Intent is regex/heuristic-first; typo handling is partial; heavy ML (torch/vLLM) is optional and off by default. Treat the badges as status, not guarantees, until the next validated release.
 
-## 🚀 v0.7.0 - Production Ready Release (Jan 29, 2025)
-
-**100% accuracy achieved! From proof-of-concept to production-ready software.**
+## 🚀 v0.7.0 - Honest Status (Jan 29, 2025)
 
 ### 🎯 Key Achievements
-- **💯 100% Accuracy**: All edge cases fixed, all tests passing (8/8 components)
-- **⚡ 5000x Faster**: Cache hits in 0.01ms (target was <50ms)
-- **🧠 <10ms Intent**: Neural network inference 20x faster than target
-- **🎨 70+ Patterns**: Expanded from 20 to 70+ natural language actions
-- **🔄 Progress Indicators**: Beautiful animations for long operations
-- **🛡️ Error Recovery**: User-friendly messages with solutions
-- **📈 Active Learning**: Continuously improves from feedback
+- **Improved Accuracy (regex-first)**: Works reliably for core package verbs (“install firefox”, “remove vim”, “search text editor”, “list packages”)
+- **Faster caching path**: In-memory cache exists; Redis integration planned
+- **Broader patterns**: ~70 intents designed; only a subset validated end-to-end
+- **Progress indicators**: CLI shows progress for long operations
+- **Error recovery**: Provides suggestions when commands fail
 
 ## 🚀 What is Luminous Nix?
 
-Luminous Nix is a production-ready natural language interface for NixOS featuring voice control, neural intent recognition, and a beautiful web dashboard. Control your NixOS system using natural speech or text through an intuitive visual interface.
+Luminous Nix is a natural language interface for NixOS focused on turning plain-English requests into nix commands. The current release emphasizes a fast CLI with regex/heuristic intent mapping; heavier AI/voice/GUI pieces are optional and still evolving.
 
 ### ✨ Production Features (v0.7.0)
 
@@ -62,7 +58,7 @@ Luminous Nix is a production-ready natural language interface for NixOS featurin
 - **Safety Guards**: Prevents dangerous operations
 - **Dry-run Mode**: Preview before executing
 
-### 🎯 Examples of 100% Accuracy
+### 🎯 Examples that currently work
 
 **Natural Language Understanding:**
 ```bash
@@ -109,27 +105,6 @@ $ ask-nix "install unknown-package"
 
 ## 📦 Installation
 
-### Quick Install (Recommended)
-```bash
-# Download latest release
-wget https://github.com/Luminous-Dynamics/luminous-nix/releases/download/v0.8.0/luminous-nix-v0.8.0-plugin-release.tar.gz
-tar -xzf luminous-nix-v0.8.0-plugin-release.tar.gz
-cd luminous-nix-v0.8.0
-
-# Run installer
-./install.sh
-
-# Launch with plugins!
-ask-nix help
-ask-nix marketplace list
-```
-
-### Docker Install
-```bash
-docker-compose up -d
-# Open http://localhost:5173
-```
-
 ### Prerequisites
 - Python 3.9+
 - Node.js 18+
@@ -138,7 +113,7 @@ docker-compose up -d
 - Python 3.11+
 - Poetry for dependency management
 
-### From Source (Currently Only Option)
+### From Source (Recommended)
 
 ```bash
 # Clone repository
@@ -155,12 +130,46 @@ poetry install
 poetry run ask-nix "search text editor"
 ```
 
+### Install profiles
+- Core only (recommended default): `poetry install --without dev`
+- Core + ML extras: `poetry install --without dev --with ml`
+- Core + voice extras: `poetry install --without dev --with voice`
+- Core + web extras: `poetry install --without dev --with web`
+- Everything: `poetry install --without dev --with ml,voice,web`
+
+> Lockfile note: the current `poetry.lock` may reflect an older, heavier set. Regenerate with `poetry lock` when you have network access to align it with these profiles.
+
+### About binary releases
+- The latest validated code is 0.7.0 from source. Older tarballs (0.8.x) exist but do not reflect current truth; use at your own risk.
+### Platform modes
+- On NixOS with nix tools available: full execution with confirmation/dry-run.
+- On non-NixOS or without nix: CLI stays in preview/intent mode; set `LUMINOUS_SKIP_NATIVE_INIT=true` to speed startup.
+- UI extras: install with `poetry install --with tui` if you want the `ask-nix ui` commands.
+
+### Useful environment flags
+- `LUMINOUS_SKIP_NATIVE_INIT=true` — skip native nix detection (CI/non-Nix/preview-only).
+- `LUMINOUS_DRY_RUN=true` — force preview mode; never execute nix commands.
+- `LUMINOUS_SKIP_CONFIRM=true` — auto-confirm low-risk actions (use cautiously).
+- `LUMINOUS_EXECUTE=true` — execute commands (overrides dry-run); use sparingly.
+
+## ✅ Validated snapshot (0.7.0, Jan 2025)
+| Area | Status | Notes |
+|------|--------|-------|
+| Platform | NixOS with nix tools: works; non-NixOS: preview-only | Set `LUMINOUS_SKIP_NATIVE_INIT=true` off Nix |
+| Core verbs | install/remove/search/list: OK (pattern/regex) | Dry-run by default; confirmation recommended |
+| Typos | Partial | Common typos sometimes corrected; not guaranteed |
+| Exec safety | Dry-run/confirm available | Keep dry-run on unless explicitly executing |
+| UI/TUI | Optional; not installed by default | `poetry install --with tui`; otherwise `ask-nix ui` unavailable |
+| Voice/ML | Optional; off by default | `--with voice` / `--with ml` extras |
+| Tests | Smoke + version checks | Full test suite requires optional stacks; see `make ci-lite` |
+| Missing cmds | Some legacy cmds (env/doctor/packages/preview) not in core | Will surface “no such command”; planned as optional |
+
 ## 🎯 Usage Examples
 
 ### What Actually Works (Based on Testing)
 
 ```bash
-# These commands work reliably (100% success):
+# These commands work reliably:
 poetry run ask-nix "install firefox"        # ✅ Maps to: nix-env -iA nixpkgs.firefox
 poetry run ask-nix "remove vim"            # ✅ Maps to: nix-env -e vim
 poetry run ask-nix "search text editor"    # ✅ Searches packages
@@ -209,26 +218,24 @@ Subprocess Execution
 - Redis caching for <100ms responses
 - AST-based safety analysis instead of regex
 
-## 📊 Real Performance Metrics (Updated Jan 2025)
+## 📊 Metrics (need re-validation)
 
-Based on testing with gemma2:2b model on real-world queries:
+Recent work has focused on stability and honest reporting. Treat numbers as directional only; we plan a fresh benchmark pass before the next tagged release.
 
-| Metric | Previous (gemma3:270m) | Current (gemma2:2b) | Target | Status |
-|--------|------------------------|---------------------|--------|--------|
-| **Intent Accuracy** | 53.3% (pattern only) | **90% (9/10)** | 90%+ | ✅ Achieved |
-| **Natural Language** | ~40% understood | **90% working** | 90%+ | ✅ Achieved |
-| **Typo Tolerance** | 0% (no handling) | **100% working** | 80%+ | ✅ EXCEEDED |
-| **Response Time** | 335ms (but wrong) | **0.9s average** | <2s | ✅ Excellent |
-| **Cache Hit Speed** | 0.15ms | **0.15ms** | <1ms | ✅ Excellent |
-| **Command Execution** | 253ms average | **253ms** | <100ms | 🔧 Next priority |
-| **Learning Capability** | None (static) | Ready to implement | Continuous | 🔧 Next phase |
+| Metric | Current understanding | Target | Status |
+|--------|-----------------------|--------|--------|
+| Intent accuracy | Works for core verbs; struggles on ambiguous/long-form requests | 70%+ before ML | Needs re-test |
+| Typo tolerance | Partial (common typos sometimes corrected) | 80%+ | Needs re-test |
+| Response time | CLI regex path is fast; nix operations dominate | <2s for intent, best-effort for nix | OK for CLI; nix-bound |
+| Execution safety | Dry-run/confirm available; dangerous regex needs hardening | Safe-by-default | Improving |
+| Learning capability | Hooks exist; no online learning enabled | Opt-in feedback loop | Not enabled |
 
 ### Component Status
-- ✅ **Redis Cache**: Connected and blazing fast (0.15ms hits)
-- ✅ **Pattern Matcher**: Working but limited (53% accuracy)
-- ✅ **SQLite DB**: Functional for intent storage
-- ❌ **Ollama LLM**: Disabled (270m model too small)
-- ❌ **Native Python API**: Syntax errors, falls back to subprocess
+- ✅ **Pattern matcher**: Regex/keyword pipeline works for common install/remove/search/list
+- ⚠️ **Redis/semantic cache**: Code present; needs validation and opt-in
+- ⚠️ **Native Nix API**: Lazy-loaded; falls back to subprocess; availability depends on host
+- ❌ **Ollama/LLM stack**: Disabled by default; optional and unverified in 0.7.x
+- ❌ **Voice/GUI**: Experimental; not part of the validated path
 
 ## 🤝 Contributing
 
@@ -269,8 +276,17 @@ We need help with:
 ### Running Tests
 ```bash
 nix-shell
-poetry run pytest tests/          # Runs unit tests
+LUMINOUS_SKIP_NATIVE_INIT=true poetry run pytest tests/  # Avoids native nix detection on CI/non-Nix
 poetry run python VERIFY_STATUS.py  # Shows actual capabilities
+
+# Optional: ensure version files stay in sync
+python tools/check_version_sync.py
+
+# Quick smoke (no native init, help only)
+make smoke
+
+# CI-lite (version + smoke)
+make ci-lite
 ```
 
 ### Training the Model (When Ready)
@@ -291,22 +307,9 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## 📝 Version History
 
-- **v0.2.0-beta** (Current) - Major breakthrough with gemma2:2b
-  - **100% accuracy achieved** with proper LLM integration
-  - Natural language fully working
-  - Typo tolerance perfect
-  - 1.7s average response time
-  - Ready for real-world testing
-
-- **v0.1.0-alpha** - First honest release
-  - 53.3% accuracy documented
-  - Pattern matching only
-  - Identified gemma3:270m as too small
-
-### Previous Versions (Overpromised)
-- v0.5.0 - Claimed 95% accuracy (actually 53%)
-- v0.4.0 - Claimed neural networks (never trained)
-- v0.3.0 - Claimed <100ms (actually 253ms)
+- **v0.7.0 (current source truth)** - Regex/heuristic intent, preview-only off Nix, optional AI/voice off by default
+- **v0.2.x tarballs** - Older experimental releases; keep for archival, not validated against current docs
+- **v0.1.0-alpha** - First honest release (documented ~53% accuracy, pattern matching only)
 
 ## 🎯 Honest Path Forward
 

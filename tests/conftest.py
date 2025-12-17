@@ -2,6 +2,7 @@
 import subprocess
 Global test configuration and fixtures.
 """
+import os
 import sys
 from unittest.mock import MagicMock
 from pathlib import Path
@@ -110,9 +111,12 @@ def mock_optional_dependencies():
         sys.modules['rich.table'] = mock_table
         
     # Mock other optional dependencies that might cause issues
+    # Note: Do NOT mock 'click' or 'cryptography' - they are core dependencies
+    # click: needed for CLI testing
+    # cryptography: needed for PQC foundation
     optional_modules = [
         'requests',
-        'click', 
+        # 'click',  # REMOVED - click is a core dependency, mocking it breaks click.testing
         'colorama',
         'blessed',
         'pyperclip',
@@ -127,7 +131,7 @@ def mock_optional_dependencies():
         'websockets',
         'flask_socketio',
         'python_socketio',
-        'cryptography',
+        # 'cryptography',  # REMOVED - cryptography is a core dependency for PQC
         'pandas',
         'numpy',
         'nltk',
@@ -181,6 +185,12 @@ except ImportError:
             pass
     
     pytest = MockPytest()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def disable_native_init():
+    """Prevent native Nix discovery during tests (fast, portable CI)."""
+    os.environ.setdefault("LUMINOUS_SKIP_NATIVE_INIT", "true")
 
 
 @pytest.fixture

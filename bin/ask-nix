@@ -61,7 +61,7 @@ parser = argparse.ArgumentParser(description='Luminous Nix - Natural Language Ni
 parser.add_argument('command', nargs='*', help='Command to execute')
 
 # Version flag
-parser.add_argument('--version', action='version', version='Luminous Nix v0.4.0')
+parser.add_argument('--version', action='version', version='Luminous Nix v0.8.1')
 
 # Essential UX flags
 parser.add_argument('--dry-run', '-n', action='store_true',

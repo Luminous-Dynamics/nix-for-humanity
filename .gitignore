@@ -15,6 +15,13 @@ htmlcov/
 dist/
 build/
 
+# Local caches and backups
+.cache/
+.backup-*/
+.claude-companion/
+.vercel/
+.companion_session.json
+
 # Nix
 result
 result-*
@@ -35,6 +42,16 @@ data/consciousness/*.wal
 .archive-*/
 coverage.json
 test_report.json
+checkpoints/
+datasets/
+npm_datasets/
+models/piper/
+models/vosk/
+tts/
+dist-*/
+releases/
+release-v*/
+rust/target/
 
 # Sensitive
 .env

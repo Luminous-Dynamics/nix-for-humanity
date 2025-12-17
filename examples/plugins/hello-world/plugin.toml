@@ -1,0 +1,25 @@
+[plugin]
+name = "hello-world"
+version = "1.0.0"
+api_version = "1.0"
+
+[plugin.metadata]
+author = "Luminous Dynamics"
+email = "dev@luminousdynamics.org"
+description = "A simple hello world plugin that greets before and after operations"
+license = "MIT"
+homepage = "https://github.com/Luminous-Dynamics/nix-for-humanity"
+
+[plugin.entry_points]
+module = "main"
+class = "HelloWorldPlugin"
+
+[plugin.provides]
+hooks = ["pre_operation", "post_operation"]
+
+[plugin.permissions]
+required = []  # No permissions needed for simple greeting
+
+[plugin.requirements]
+luminous_nix = ">=0.4.0"
+python = ">=3.11"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Real Neural HRM (Hierarchical Reasoning Model) for NixOS intent recognition.
-Uses the trained PyTorch model that achieved 99.93% accuracy!
+Uses the trained PyTorch model that achieved 69% validation accuracy.
 """
 
 import torch
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class HierarchicalReasoningModel(nn.Module):
     """
     The actual HRM Neural Network architecture used in training
-    Achieved 99.93% test accuracy on 10K NixOS queries!
+    Achieved 69% validation accuracy on NixOS intent classification.
     """
     
     def __init__(self, vocab_size: int, num_intents: int, embedding_dim: int = 128,
@@ -87,13 +87,13 @@ class HierarchicalReasoningModel(nn.Module):
 class NeuralHRMReasoner:
     """
     Production HRM using the real trained neural network
-    Achieves 99.93% accuracy on test set!
+    Achieves 69% validation accuracy on intent classification.
     """
     
     def __init__(self, model_path: Optional[str] = None):
         """Initialize with the trained model"""
         
-        # Default to the trained model with 99.93% accuracy
+        # Default to the trained model with 69% validation accuracy
         if model_path is None:
             model_path = Path(__file__).parent.parent.parent.parent / "models" / "hrm-nixos-v1" / "hrm_trained.pt"
         
@@ -111,7 +111,7 @@ class NeuralHRMReasoner:
         # Performance tracking
         self.total_inferences = 0
         self.total_time = 0
-        self.accuracy = 99.93  # From training
+        self.accuracy = 69.23  # Actual validation accuracy from training
         
         # Load the model
         self._load_model()
@@ -167,7 +167,7 @@ class NeuralHRMReasoner:
             self.model.eval()  # Set to evaluation mode
             
             # Log accuracy
-            self.accuracy = checkpoint.get('accuracy', checkpoint.get('test_accuracy', 99.93))
+            self.accuracy = checkpoint.get('accuracy', checkpoint.get('test_accuracy', 69.23))
             val_acc = checkpoint.get('best_val_acc', checkpoint.get('val_accuracy', 100.0))
             
             logger.info(f"✅ HRM model loaded successfully!")
@@ -360,7 +360,7 @@ if __name__ == "__main__":
             "nixos-rebuild switch"
         ]
         
-        print("\n🧪 Testing Real Neural HRM (99.93% accuracy):")
+        print("\n🧪 Testing Real Neural HRM (69% validation accuracy):")
         print("=" * 60)
         
         for query in test_queries:
