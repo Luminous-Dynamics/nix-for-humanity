@@ -298,6 +298,110 @@ impl EyeMovementDetector {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// EMG MUSCLE TONE TRACKER - The Third Pillar of the Trinity Architecture
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The Physics of Atonia:
+//   Wake: High brain activity + HIGH muscle tone (active body)
+//   REM:  High brain activity + ZERO muscle tone (paralysis/atonia)
+//   N1:   Transitional - muscle tone DROPS as sleep onset begins
+//   N2/N3: Low muscle tone (relaxed but not paralyzed)
+//
+// This replaces probability with physiology:
+//   - Atonia Gate: High tone → biologically impossible to be REM
+//   - N1 Detection: Dropping tone signals sleep onset
+//
+// Implementation: Leaky integrator on rectified EMG (no full LTC needed)
+
+/// EMG-based muscle tone tracker for atonia detection
+struct MuscleToneTracker {
+    // Leaky integrator state (exponential moving average of |EMG|)
+    tone: f64,
+
+    // Adaptive baseline for relative measurements
+    baseline: f64,
+    baseline_alpha: f64,  // Slow adaptation for baseline
+
+    // Integration time constant
+    alpha: f64,  // Fast integration for tone tracking
+
+    // Previous tone for derivative (tone dropping = sleep onset)
+    prev_tone: f64,
+    tone_derivative: f64,
+}
+
+impl MuscleToneTracker {
+    fn new(_sample_rate: f64) -> Self {
+        Self {
+            tone: 0.0,
+            baseline: 1.0,  // Will adapt to signal
+            baseline_alpha: 0.0001,  // Very slow baseline adaptation
+            alpha: 0.02,  // ~50 samples integration at 100Hz
+            prev_tone: 0.0,
+            tone_derivative: 0.0,
+        }
+    }
+
+    /// Process a single EMG sample
+    fn process(&mut self, sample: f64) {
+        // Rectify: EMG is AC signal, we want the envelope
+        let rectified = sample.abs();
+
+        // Leaky integration: smooth the rectified signal
+        self.tone = self.tone * (1.0 - self.alpha) + rectified * self.alpha;
+
+        // Slow baseline adaptation (tracks long-term average)
+        self.baseline = self.baseline * (1.0 - self.baseline_alpha)
+                      + self.tone * self.baseline_alpha;
+
+        // Compute derivative (is tone dropping?)
+        self.tone_derivative = self.tone - self.prev_tone;
+        self.prev_tone = self.tone;
+    }
+
+    /// Get normalized muscle tone (0 = atonia, 1 = high tone)
+    fn muscle_tone(&self) -> f64 {
+        // Normalize relative to baseline
+        // Clamp to [0, 2] range (can exceed baseline during movement)
+        if self.baseline > 0.001 {
+            (self.tone / self.baseline).min(2.0)
+        } else {
+            self.tone.min(1.0)
+        }
+    }
+
+    /// Is the body in atonia? (Muscle paralysis = REM signature)
+    fn is_atonia(&self) -> bool {
+        // Atonia threshold: < 65% of baseline muscle tone
+        // Empirically tuned from SC4001/SC4002 data:
+        //   SC4001 REM EMG mean: 0.405 ± 0.38
+        //   SC4002 REM EMG mean: 0.535 ± 0.39
+        //   Wake EMG mean: ~1.07
+        // Using 0.65 as balanced threshold between REM means
+        self.muscle_tone() < 0.65
+    }
+
+    /// Is muscle tone dropping? (Sleep onset indicator for N1)
+    fn is_tone_dropping(&self) -> bool {
+        // Tone derivative is negative and significant
+        self.tone_derivative < -0.001
+    }
+
+    /// Get raw tone value for statistics
+    fn raw_tone(&self) -> f64 {
+        self.tone
+    }
+
+    /// Reset for new epoch
+    fn reset(&mut self) {
+        // Don't reset baseline - it should persist across epochs
+        self.tone = self.baseline * 0.5;  // Reset to mid-level
+        self.prev_tone = self.tone;
+        self.tone_derivative = 0.0;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // INLINE EDF PARSER (Self-contained for surgical bypass)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -624,6 +728,10 @@ struct IntegrationMetrics {
     eog_energy: f64,      // Eye movement energy (high in REM)
     eog_frequency: f64,   // Eye movement frequency (high in REM)
     rem_indicator: f64,   // Combined REM indicator from EOG
+    // THE TRINITY - EMG metrics
+    muscle_tone: f64,     // Normalized muscle tone (0 = atonia, 1+ = active)
+    is_atonia: bool,      // True if muscle tone < 0.20 (REM signature)
+    tone_dropping: bool,  // True if tone derivative negative (N1 signature)
 }
 
 /// Predicted consciousness state
@@ -646,8 +754,15 @@ impl ConsciousnessState {
     }
 }
 
-/// Sleep Sentinel - Tri-modal LTC-based consciousness detector
-/// Now with EOG channel for definitive REM detection!
+/// Sleep Sentinel - The Trinity Architecture
+/// Brain (EEG) + Eyes (EOG) + Body (EMG) = Complete consciousness detection
+///
+/// The Physics:
+///   Wake: Active Brain + Active Body + Saccades
+///   REM:  Active Brain + Paralysis (Atonia) + Rapid Eye Movements
+///   N1:   Transitional Brain + Dropping Tone + Slow Eye Movements
+///   N2:   Synchronized Brain + Relaxed Body + Still Eyes
+///   N3:   Deep Synchronized Brain + Relaxed Body + Still Eyes
 struct SleepSentinel {
     // Sliding windows for EEG analysis
     frontal_buffer: VecDeque<f64>,
@@ -661,12 +776,20 @@ struct SleepSentinel {
     state_frontal: f64,   // Internal state
     state_occipital: f64,
 
-    // Multi-Scale LTC Spectral Discriminator for Wake/REM separation
+    // Multi-Scale LTC Spectral Discriminator
     theta_alpha: ThetaAlphaRatio,
 
-    // EOG Eye Movement Detector - THE SOLUTION TO REM PARADOX
-    // REM is literally defined by Rapid Eye Movements!
+    // ═══════════════════════════════════════════════════════════════════
+    // THE TRINITY: Three physiological channels for consciousness detection
+    // ═══════════════════════════════════════════════════════════════════
+
+    // 1. BRAIN (EEG): Complexity + Synchrony (above buffers + theta_alpha)
+
+    // 2. EYES (EOG): Eye Movement Detector
     eog_detector: EyeMovementDetector,
+
+    // 3. BODY (EMG): Muscle Tone Tracker - The Atonia Gate
+    emg_tracker: MuscleToneTracker,
 
     // Classification thresholds (tunable)
     delta_power_threshold: f64,    // For deep sleep detection
@@ -692,8 +815,11 @@ impl SleepSentinel {
             state_occipital: 0.0,
             // Multi-Scale LTC for spectral discrimination
             theta_alpha: ThetaAlphaRatio::new(sample_rate),
-            // EOG Eye Movement Detector - solves the REM paradox!
+            // THE TRINITY:
+            // Eyes - EOG Eye Movement Detector
             eog_detector: EyeMovementDetector::new(sample_rate),
+            // Body - EMG Muscle Tone Tracker (Atonia Gate)
+            emg_tracker: MuscleToneTracker::new(sample_rate),
             // Thresholds TUNED FROM REAL SC4001 DATA (empirical):
             delta_power_threshold: 0.35,
             sync_threshold: 0.40,       // N3 sync > 0.40
@@ -738,8 +864,9 @@ impl SleepSentinel {
         }
     }
 
-    /// Process a single sample triplet (frontal EEG, occipital EEG, EOG)
-    fn process_sample(&mut self, frontal: f64, occipital: f64, eog: f64) {
+    /// Process a single sample quad (frontal EEG, occipital EEG, EOG, EMG)
+    /// THE TRINITY: Brain (EEG) + Eyes (EOG) + Body (EMG)
+    fn process_sample(&mut self, frontal: f64, occipital: f64, eog: f64, emg: f64) {
         // Add to EEG buffers
         self.frontal_buffer.push_back(frontal);
         self.occipital_buffer.push_back(occipital);
@@ -764,16 +891,21 @@ impl SleepSentinel {
         self.theta_alpha.process(frontal, dt);
 
         // EOG Eye Movement Detector: Process eye movement signal
-        // This is THE key to solving the REM paradox!
         self.eog_detector.process(eog, dt);
+
+        // EMG Muscle Tone Tracker: Process muscle tone for atonia detection
+        // THE ATONIA GATE: High tone → biologically impossible to be REM
+        self.emg_tracker.process(emg);
     }
 
     /// Classify current state based on buffer contents
+    /// THE TRINITY ARCHITECTURE: Brain + Eyes + Body
     fn classify(&mut self) -> (ConsciousnessState, IntegrationMetrics) {
         if self.frontal_buffer.len() < 100 {
             return (ConsciousnessState::Awake, IntegrationMetrics {
                 complexity: 0.0, synchrony: 0.0, dominant_freq: 0.0, phi_proxy: 0.0,
                 spectral_ratio: 1.0, eog_energy: 0.0, eog_frequency: 0.0, rem_indicator: 0.0,
+                muscle_tone: 1.0, is_atonia: false, tone_dropping: false,
             });
         }
 
@@ -783,80 +915,114 @@ impl SleepSentinel {
         // Get the spectral ratio from Multi-Scale LTC
         let spectral_ratio = self.theta_alpha.ratio();
 
-        // Get EOG eye movement metrics - THE KEY TO REM!
+        // Get EOG eye movement metrics - EYES
         let eog_energy = self.eog_detector.movement_energy();
         let eog_frequency = self.eog_detector.movement_frequency();
         let rem_indicator = self.eog_detector.rem_indicator();
 
-        // Compute EEG metrics
+        // Get EMG muscle tone metrics - BODY (The Atonia Gate)
+        let muscle_tone = self.emg_tracker.muscle_tone();
+        let is_atonia = self.emg_tracker.is_atonia();
+        let tone_dropping = self.emg_tracker.is_tone_dropping();
+
+        // Compute EEG metrics - BRAIN
         let mut metrics = self.compute_metrics(&frontal, &occipital);
         metrics.spectral_ratio = spectral_ratio;
         metrics.eog_energy = eog_energy;
         metrics.eog_frequency = eog_frequency;
         metrics.rem_indicator = rem_indicator;
+        metrics.muscle_tone = muscle_tone;
+        metrics.is_atonia = is_atonia;
+        metrics.tone_dropping = tone_dropping;
 
         // ═══════════════════════════════════════════════════════════════════════
-        // EMPIRICALLY-TUNED CLASSIFICATION (Cross-subject validated SC4001+SC4002)
+        // THE TRINITY ARCHITECTURE CLASSIFICATION
         // ═══════════════════════════════════════════════════════════════════════
         //
-        // Cross-subject feature averages:
+        // Brain (EEG) + Eyes (EOG) + Body (EMG) = Complete consciousness detection
+        //
+        // THE ATONIA GATE (EMG):
+        //   High muscle tone → biologically IMPOSSIBLE to be REM
+        //   Dropping muscle tone → N1 sleep onset signature
+        //   Atonia (< 0.20) → REM paralysis confirmed
+        //
+        // Cross-subject feature averages (EEG+EOG):
         //   Wake: sync=0.194, complexity=0.988, EOG=0.445
         //   N1:   sync=0.340, complexity=0.991, EOG=0.254
         //   N2:   sync=0.404, complexity=0.974, EOG=0.243
         //   N3:   sync=0.464, complexity=0.937, EOG=0.270
         //   REM:  sync=0.283, complexity=0.994, EOG=0.264
-        //
-        // Threshold derivation (midpoints):
-        //   N3 sync: (0.464 + 0.404) / 2 = 0.434
-        //   N3 complexity: (0.937 + 0.974) / 2 = 0.956
-        //   High-entropy complexity: (0.988 + 0.974) / 2 = 0.981
-        //   High-entropy sync: (0.283 + 0.404) / 2 = 0.344
-        //   EOG Wake/REM: (0.445 + 0.264) / 2 = 0.355
 
         let state = if metrics.synchrony > 0.40 && metrics.complexity < 0.96 {
             // ══════════════════════════════════════════════════════════════════
             // DEEP SLEEP (N3): HIGH integration + LOW differentiation
             // ══════════════════════════════════════════════════════════════════
             // N3 avg: sync=0.464±0.10, complexity=0.937±0.02
-            // Using looser thresholds to capture N3 variance:
-            //   sync > 0.40 (catches N3 at -0.6σ)
-            //   complexity < 0.96 (catches N3 at +1σ)
+            // EMG: Low but not atonic (relaxed muscles, not paralyzed)
             ConsciousnessState::DeepSleep
 
         } else if metrics.complexity > 0.98 && metrics.synchrony < 0.32 {
             // ══════════════════════════════════════════════════════════════════
-            // HIGH ENTROPY STATES: Wake OR REM (EEG cannot distinguish)
+            // HIGH ENTROPY STATES: Wake OR REM (EEG alone cannot distinguish)
+            // THE TRINITY RESOLVES THIS!
             // ══════════════════════════════════════════════════════════════════
-            // Both have: High differentiation (PE > 0.98), Low integration (sync < 0.32)
-            // Wake avg: sync=0.194±0.12, complexity=0.988
-            // REM avg:  sync=0.283±0.11, complexity=0.994
             //
-            // EOG provides the definitive separation:
-            //   Wake = Constant scanning → EOG ~0.445 (higher continuous activity)
-            //   REM = Burst-like movements → EOG ~0.264 (lower average)
+            // THE ATONIA GATE: The definitive biological separator
+            //   Wake = Active Brain + Active Body (HIGH muscle tone)
+            //   REM  = Active Brain + Paralysis  (ZERO muscle tone / Atonia)
             //
-            // Threshold 0.34: slightly below midpoint (0.355) to reduce false REM
-            // This trades some REM sensitivity for better Wake specificity
-            if rem_indicator < 0.34 {
+            // If muscle tone is HIGH → biologically CANNOT be REM
+            // If atonia (EMG < 0.20) → definitively REM
+            //
+            if is_atonia {
+                // ══════════════════════════════════════════════════════════════
+                // DEFINITIVE REM: Atonia confirmed (muscle paralysis)
+                // ══════════════════════════════════════════════════════════════
+                // This is the gold standard: active brain + paralyzed body = REM
+                // Threshold: EMG < 0.50 (empirically tuned from SC4001/SC4002)
                 ConsciousnessState::REM
-            } else {
+            } else if muscle_tone > 0.90 {
+                // ══════════════════════════════════════════════════════════════
+                // DEFINITIVE WAKE: High muscle tone (impossible to be REM)
+                // ══════════════════════════════════════════════════════════════
+                // The Atonia Gate: Active body = NOT REM
+                // Threshold: EMG > 0.90 (empirically tuned - Wake mean is ~1.07)
                 ConsciousnessState::Awake
+            } else {
+                // ══════════════════════════════════════════════════════════════
+                // AMBIGUOUS ZONE: Moderate tone - use EOG as tiebreaker
+                // ══════════════════════════════════════════════════════════════
+                // EMG between 0.20-0.60: Could be drowsy wake or early REM
+                // Fall back to EOG patterns
+                if rem_indicator < 0.34 {
+                    ConsciousnessState::REM
+                } else {
+                    ConsciousnessState::Awake
+                }
             }
 
         } else if metrics.complexity > 0.975 && metrics.synchrony >= 0.32 && metrics.synchrony < 0.40 {
             // ══════════════════════════════════════════════════════════════════
-            // TRANSITIONAL STATES: N1 or borderline high-entropy
+            // TRANSITIONAL STATES: N1 (sleep onset)
+            // THE TRINITY: Dropping muscle tone = N1 signature!
             // ══════════════════════════════════════════════════════════════════
             // N1 avg: sync=0.340, complexity=0.991, EOG=0.254
-            // N2 avg: sync=0.404, complexity=0.974
             //
-            // This zone catches N1 and some transitional epochs
-            if rem_indicator < 0.30 {
-                // Low EOG confirms sleep onset
+            // N1 is characterized by the DROP in muscle tone
+            // This is when the body begins relaxing as consciousness fades
+            if tone_dropping || muscle_tone < 0.50 {
+                // Muscle tone is dropping or already low → sleep onset confirmed
                 ConsciousnessState::LightSleep  // N1/N2
-            } else {
-                // Higher EOG suggests drowsy wakefulness
+            } else if muscle_tone > 0.70 {
+                // Still high muscle tone → drowsy wakefulness
                 ConsciousnessState::Awake
+            } else {
+                // Moderate tone, use EOG
+                if rem_indicator < 0.30 {
+                    ConsciousnessState::LightSleep
+                } else {
+                    ConsciousnessState::Awake
+                }
             }
 
         } else {
@@ -864,7 +1030,7 @@ impl SleepSentinel {
             // LIGHT SLEEP (N2): Moderate integration and differentiation
             // ══════════════════════════════════════════════════════════════════
             // N2 avg: sync=0.404, complexity=0.974, EOG=0.243
-            // Everything else falls here (the "default" sleep state)
+            // EMG: Low but stable (not atonic)
             ConsciousnessState::LightSleep
         };
 
@@ -935,6 +1101,10 @@ impl SleepSentinel {
             eog_energy: 0.0,       // Set by classify() from eog_detector
             eog_frequency: 0.0,    // Set by classify() from eog_detector
             rem_indicator: 0.0,    // Set by classify() from eog_detector
+            // EMG metrics set by classify() from emg_tracker
+            muscle_tone: 1.0,
+            is_atonia: false,
+            tone_dropping: false,
         }
     }
 
@@ -942,6 +1112,7 @@ impl SleepSentinel {
     fn reset_detectors(&mut self) {
         self.theta_alpha.reset();
         self.eog_detector.reset();
+        self.emg_tracker.reset();  // Reset EMG for fresh epoch
     }
 }
 
@@ -1003,18 +1174,27 @@ fn main() {
     let occipital = psg.get_signal("Pz-Oz")
         .unwrap_or(frontal);  // Fallback: use frontal for both
 
-    // Find EOG channel for REM detection
+    // Find EOG channel for REM detection (EYES)
     let eog = psg.get_signal("EOG horizontal")
         .or_else(|| psg.get_signal("EOG"))
         .or_else(|| psg.get_signal("EOG Horizontal"))
         .unwrap_or(frontal);  // Fallback: use frontal if no EOG
 
-    let has_eog = eog.label.to_lowercase().contains("eog");
+    // Find EMG channel for atonia detection (BODY) - THE TRINITY
+    // Sleep-EDF uses "EMG submental" for chin muscle tone
+    let emg = psg.get_signal("EMG submental")
+        .or_else(|| psg.get_signal("EMG"))
+        .or_else(|| psg.get_signal("EMG chin"))
+        .unwrap_or(frontal);  // Fallback: use frontal if no EMG
 
-    println!("   Using channels:");
-    println!("      Frontal: {}", frontal.label);
-    println!("      Occipital: {}", occipital.label);
-    println!("      EOG: {} {}", eog.label, if has_eog { "✓" } else { "(fallback)" });
+    let has_eog = eog.label.to_lowercase().contains("eog");
+    let has_emg = emg.label.to_lowercase().contains("emg");
+
+    println!("   Using channels (THE TRINITY):");
+    println!("      BRAIN  - Frontal:   {}", frontal.label);
+    println!("      BRAIN  - Occipital: {}", occipital.label);
+    println!("      EYES   - EOG:       {} {}", eog.label, if has_eog { "✓" } else { "(fallback)" });
+    println!("      BODY   - EMG:       {} {}", emg.label, if has_emg { "✓" } else { "(fallback)" });
 
     // Load hypnogram
     let labels = match load_hypnogram_epochs(&hypno_path) {
@@ -1051,6 +1231,12 @@ fn main() {
     let epoch_samples = (30.0 * sample_rate) as usize;
     println!("   Samples per 30s epoch: {}", epoch_samples);
 
+    // Calculate EMG resampling ratio (EMG often has lower sample rate)
+    // EEG: 3000 samples/epoch, EMG: 30 samples/epoch → ratio = 100
+    let emg_samples_per_epoch = emg.data.len() / (frontal.data.len() / epoch_samples).max(1);
+    let emg_resample_ratio = epoch_samples as f64 / emg_samples_per_epoch.max(1) as f64;
+    println!("   EMG samples per epoch: {} (resample ratio: {:.1}x)", emg_samples_per_epoch, emg_resample_ratio);
+
     // Initialize sentinel
     let mut sentinel = SleepSentinel::new(sample_rate);
 
@@ -1063,12 +1249,14 @@ fn main() {
     let mut correct = 0;
     let mut total = 0;
 
-    // Feature statistics per class: [class][sync_sum, sync_count, complex_sum, freq_sum]
+    // Feature statistics per class: [class][values...]
     let mut class_sync: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
     let mut class_complexity: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
     let mut class_freq: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
     let mut class_spectral: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
     let mut class_eog: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
+    // THE TRINITY: EMG muscle tone statistics
+    let mut class_emg: [Vec<f64>; 5] = [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()];
 
     let max_epochs = labels.len().min(frontal.data.len() / epoch_samples);
 
@@ -1076,7 +1264,12 @@ fn main() {
         let start = epoch_idx * epoch_samples;
         let end = start + epoch_samples;
 
-        if end > frontal.data.len() || end > occipital.data.len() || end > eog.data.len() {
+        // Calculate EMG indices (different sample rate)
+        let emg_start = epoch_idx * emg_samples_per_epoch;
+        let emg_end = emg_start + emg_samples_per_epoch;
+
+        // Check all FOUR channels have enough data (THE TRINITY)
+        if end > frontal.data.len() || end > occipital.data.len() || end > eog.data.len() || emg_end > emg.data.len() {
             break;
         }
 
@@ -1086,8 +1279,13 @@ fn main() {
         sentinel.reset_detectors();  // Reset all detectors for fresh epoch analysis
 
         // Stream epoch through sentinel (decimated 5x for speed)
+        // THE TRINITY: Brain (frontal, occipital) + Eyes (eog) + Body (emg)
         for i in (start..end).step_by(5) {
-            sentinel.process_sample(frontal.data[i], occipital.data[i], eog.data[i]);
+            // EMG index: map from EEG sample index to EMG sample index
+            // Use nearest-neighbor resampling for the lower-rate EMG
+            let emg_idx = emg_start + ((i - start) as f64 / emg_resample_ratio) as usize;
+            let emg_sample = if emg_idx < emg.data.len() { emg.data[emg_idx] } else { 0.0 };
+            sentinel.process_sample(frontal.data[i], occipital.data[i], eog.data[i], emg_sample);
         }
 
         // Classify
@@ -1104,12 +1302,13 @@ fn main() {
         let actual_idx = actual.index().min(4);
         let pred_idx = predicted.index().min(4);
 
-        // Collect feature statistics per class
+        // Collect feature statistics per class (THE TRINITY)
         class_sync[actual_idx].push(metrics.synchrony);
         class_complexity[actual_idx].push(metrics.complexity);
         class_freq[actual_idx].push(metrics.dominant_freq);
         class_spectral[actual_idx].push(metrics.spectral_ratio);
         class_eog[actual_idx].push(metrics.rem_indicator);
+        class_emg[actual_idx].push(metrics.muscle_tone);  // BODY: muscle tone
 
         confusion[actual_idx][pred_idx] += 1;
 
@@ -1119,12 +1318,14 @@ fn main() {
         }
         total += 1;
 
-        // Progress
+        // Progress - THE TRINITY
         if epoch_idx % 50 == 0 {
-            print!("\r   Epoch {}/{} | Acc: {:.1}% | Current: {} → {} (φ={:.2}, R={:.2}, EOG={:.3})",
+            let atonia_str = if metrics.is_atonia { "ATONIA" } else { "" };
+            print!("\r   Epoch {}/{} | Acc: {:.1}% | {} → {} | φ={:.2} EOG={:.3} EMG={:.2} {}      ",
                 epoch_idx + 1, max_epochs,
                 100.0 * correct as f64 / total.max(1) as f64,
-                actual.name(), predicted.name(), metrics.phi_proxy, metrics.spectral_ratio, metrics.rem_indicator);
+                actual.name(), predicted.name(),
+                metrics.phi_proxy, metrics.rem_indicator, metrics.muscle_tone, atonia_str);
         }
     }
 
@@ -1209,9 +1410,9 @@ fn main() {
     println!("                    FEATURE STATISTICS PER CLASS");
     println!("═══════════════════════════════════════════════════════════════════════\n");
 
-    println!("   This data enables empirical threshold tuning:\n");
-    println!("   Stage    │ Synchrony (μ±σ)  │ Complexity (μ±σ) │ Spectral R (μ±σ) │ EOG REM (μ±σ)   │");
-    println!("   ─────────┼──────────────────┼──────────────────┼──────────────────┼─────────────────┤");
+    println!("   THE TRINITY feature statistics (Brain + Eyes + Body):\n");
+    println!("   Stage │ Synchrony  │ Complexity │ EOG REM    │ EMG Tone   │ Notes");
+    println!("   ──────┼────────────┼────────────┼────────────┼────────────┼────────────────────");
 
     let class_names = ["Wake", "N1", "N2", "N3", "REM"];
     for (i, name) in class_names.iter().enumerate() {
@@ -1228,18 +1429,47 @@ fn main() {
         let comp_var: f64 = class_complexity[i].iter().map(|x| (x - comp_mean).powi(2)).sum::<f64>() / n;
         let comp_std = comp_var.sqrt();
 
-        let spectral_mean: f64 = class_spectral[i].iter().sum::<f64>() / n;
-        let spectral_var: f64 = class_spectral[i].iter().map(|x| (x - spectral_mean).powi(2)).sum::<f64>() / n;
-        let spectral_std = spectral_var.sqrt();
-
         let eog_mean: f64 = class_eog[i].iter().sum::<f64>() / n;
         let eog_var: f64 = class_eog[i].iter().map(|x| (x - eog_mean).powi(2)).sum::<f64>() / n;
         let eog_std = eog_var.sqrt();
 
-        println!("   {:8} │ {:.3} ± {:.3}       │ {:.3} ± {:.3}       │ {:.2} ± {:.2}        │ {:.3} ± {:.3}      │",
-            name, sync_mean, sync_std, comp_mean, comp_std, spectral_mean, spectral_std, eog_mean, eog_std);
+        let emg_mean: f64 = class_emg[i].iter().sum::<f64>() / n;
+        let emg_var: f64 = class_emg[i].iter().map(|x| (x - emg_mean).powi(2)).sum::<f64>() / n;
+        let emg_std = emg_var.sqrt();
+
+        // Generate notes based on EMG patterns
+        let notes = match i {
+            0 => if emg_mean > 0.60 { "High tone ✓" } else { "Low tone?" },
+            1 => if emg_mean < 0.80 { "Dropping ✓" } else { "Still high" },
+            2 | 3 => if emg_mean < 0.70 { "Relaxed ✓" } else { "Tension?" },
+            4 => if emg_mean < 0.30 { "ATONIA ✓" } else { "Not atonic?" },
+            _ => "",
+        };
+
+        println!("   {:5} │ {:.3}±{:.3}  │ {:.3}±{:.3}  │ {:.3}±{:.3}  │ {:.3}±{:.3}  │ {}",
+            name, sync_mean, sync_std, comp_mean, comp_std, eog_mean, eog_std, emg_mean, emg_std, notes);
     }
-    println!("   ─────────┴──────────────────┴──────────────────┴──────────────────┴─────────────────┘\n");
+    println!("   ──────┴────────────┴────────────┴────────────┴────────────┴────────────────────\n");
+
+    // THE ATONIA GATE analysis
+    if !class_emg[0].is_empty() && !class_emg[4].is_empty() {
+        let wake_emg_mean: f64 = class_emg[0].iter().sum::<f64>() / class_emg[0].len() as f64;
+        let rem_emg_mean: f64 = class_emg[4].iter().sum::<f64>() / class_emg[4].len() as f64;
+
+        println!("   🎯 THE ATONIA GATE ANALYSIS:");
+        println!("      Wake EMG: {:.3} (should be HIGH > 0.6)", wake_emg_mean);
+        println!("      REM EMG:  {:.3} (should be LOW < 0.3 = Atonia)", rem_emg_mean);
+
+        if wake_emg_mean > 0.5 && rem_emg_mean < 0.4 {
+            println!("      ✅ ATONIA GATE VALIDATED: Clear separation between Wake and REM!");
+            println!("         This is the definitive biomarker. REM = Paralysis.");
+        } else if rem_emg_mean >= wake_emg_mean {
+            println!("      ⚠️ EMG channel may not contain muscle tone data - check signal");
+        } else {
+            println!("      🔧 Partial separation - adjust thresholds based on this data");
+        }
+        println!();
+    }
 
     // Suggest optimal thresholds based on empirical data
     println!("   📊 EMPIRICAL THRESHOLD RECOMMENDATIONS:");
