@@ -1,0 +1,14 @@
+[package]
+name = "symthaea-consciousness"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+symthaea-math = { path = "../symthaea-math" }
+symthaea-dynamics = { path = "../symthaea-dynamics" }
+serde = { workspace = true }
+anyhow = { workspace = true }
+petgraph = { workspace = true }
+tracing = { workspace = true }
+# Add other deps as needed (e.g. rand if used)
+rand = { workspace = true }

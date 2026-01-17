@@ -1,0 +1,242 @@
+[package]
+name = "symthaea"
+version = "0.1.0"
+edition = "2021"
+authors = ["Luminous Dynamics <tristan.stoltz@evolvingresonantcocreationism.com>"]
+description = "Symthaea: Holographic Liquid Brain lineage - Consciousness-first AI in Rust"
+license = "MIT"
+repository = "https://github.com/Luminous-Dynamics/symthaea-hlb"
+homepage = "https://luminousdynamics.org"
+documentation = "https://docs.rs/symthaea"
+keywords = ["consciousness", "ai", "hdc", "integrated-information", "neuroscience"]
+categories = ["science", "algorithms", "data-structures"]
+
+[dependencies]
+# Symthaea Core - HDC, Φ engine, and minimal consciousness pipeline
+symthaea-core = { path = "symthaea-core" }
+
+# HDC / Vector Symbolic Architectures
+# hypervector = "0.1"  # Using custom HDC implementation instead
+
+# Neural networks (for LTC implementation)
+ndarray = { version = "0.15", features = ["rayon"] }
+
+# Linear algebra (pure Rust, validated eigenvalue calculations)
+nalgebra = "0.33"
+
+# Burn ML Framework (pure Rust) - for semantic encoding
+burn = { version = "0.14", features = ["ndarray"], optional = true }
+burn-ndarray = { version = "0.14", optional = true }
+# ndarray-linalg = "0.16"  # Removed to avoid external BLAS dependency during tests
+
+# Graph structures (for autopoietic consciousness)
+petgraph = { version = "0.6", features = ["serde-1"] }
+
+# Phase 11: Semantic Ear - Now Active with Qwen3-Embedding
+tokenizers = { version = "0.21", optional = true }  # Tokenization for Qwen3/BGE
+safetensors = { version = "0.4", optional = true }  # Safe tensor loading
+
+# Phase 11: Database Trinity (Deferred to Week 11+)
+# lancedb = { version = "0.4", features = ["remote"] }  # Vector database
+# duckdb = { version = "0.10", features = ["bundled"] }  # Analytical queries
+# cozo = "0.7"  # Datalog reasoning
+
+# Phase 11: Swarm Intelligence (Enabled!)
+libp2p = { version = "0.53", features = ["kad", "gossipsub", "tcp", "noise", "yamux", "tokio", "macros"] }
+
+# Phase 11+: Mycelix Protocol Integration (Deferred to Week 9+)
+uuid = { version = "1.6", features = ["serde", "v4"] }  # Week 3: Enabled for Goal IDs
+mycelix-sdk = { path = "../../../mycelix-workspace/sdk", optional = true, default-features = false, features = ["standalone"] }
+sha3 = { version = "0.10", optional = true }  # For gradient hashing when SDK enabled
+
+# Web Research & Epistemic Verification (Track 6)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+scraper = "0.18"
+html2text = "0.6"
+
+# Core async utilities
+async-trait = "0.1"
+
+# Filesystem utilities
+dirs = "5.0"
+
+# Phase 12: Resonator Networks (FFT for morphogenetic field)
+rustfft = "6.1"
+num-complex = "0.4"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+rayon = "1.8"
+
+# Serialization (for consciousness persistence)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Week 0: Defer Prometheus metrics (needs OpenSSL via hyper)
+# metrics = "0.22"
+# metrics-exporter-prometheus = "0.13"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+parking_lot = "0.12"  # High-performance synchronization primitives
+rusqlite = { version = "0.31", features = ["bundled"] }  # SQLite database (bundled to avoid system dependency)
+once_cell = "1.19"
+dashmap = "5.5"
+rand = "0.8"
+rand_chacha = "0.3"  # Deterministic RNG for reproducible JL projections
+blake3 = "1.5"
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.10"  # For Thalamus pattern matching
+csv = "1.3"     # CSV parsing for benchmark data
+
+# Week 0: Memory Arena for HDC
+bumpalo = "3.14"
+
+# Week 2: Cerebellum - Procedural Memory
+qp-trie = "0.8"      # Efficient prefix trie for skill lookup
+strsim = "0.11"      # Fuzzy string matching for typo tolerance
+
+# Week 12: Perception & Tool Creation
+image = "0.24"       # Image loading and processing
+imageproc = "0.23"   # Computer vision algorithms
+tree-sitter = "0.24" # Incremental parsing for code understanding (updated for tree-sitter-nix 0.3.0)
+syn = { version = "2.0", features = ["full", "visit"] }  # Rust syntax parsing (self-analysis)
+ignore = "0.4"       # .gitignore-aware file walking
+
+# Week 12 Phase 2a: Voice Output (Larynx) - Kokoro TTS (optional)
+# Also used for Qwen3-Embedding and SigLIP vision models
+ort = { version = "2.0.0-rc.10", features = ["half", "load-dynamic", "ndarray"], optional = true }  # ONNX Runtime
+futures = { version = "0.3", optional = true }  # Async TTS streaming
+rodio = { version = "0.19", default-features = false, optional = true }  # Audio playback (no backends by default)
+hound = { version = "3.5", optional = true }        # WAV file I/O
+hf-hub = { version = "0.3", optional = true }       # HuggingFace Hub for model download
+
+# Enhancement #8 Week 4: PyPhi Integration (IIT 3.0 exact Φ calculation)
+pyo3 = { version = "0.22", features = ["auto-initialize"], optional = true }  # Rust-Python bridge for PyPhi
+
+# NixOS integration
+nix = "0.27"
+
+# CLI argument parsing (optional - for service binary)
+clap = { version = "4.4", features = ["derive"], optional = true }
+ctrlc = { version = "3.4", optional = true }  # Ctrl+C signal handling
+
+# Shell Sidecar TUI dependencies (optional)
+crossterm = { version = "0.27", optional = true }
+ratatui = { version = "0.26", optional = true }
+
+# GUI dependencies (optional) - for symthaea-gui
+eframe = { version = "0.27", optional = true }
+egui = { version = "0.27", optional = true }
+
+# IPC Protocol Enhancements
+rmp-serde = "1.3"            # MessagePack binary protocol (A1)
+
+# Syntax Highlighting (B4)
+tree-sitter-nix = "0.3"      # Nix grammar for tree-sitter (updated for compatibility)
+# syntect = "5.2"            # Alternative: regex-based highlighting
+
+# Desktop Notifications (E1)
+zbus = { version = "4.0", optional = true }  # D-Bus for notifications
+
+# Systemd Integration (D1)
+libsystemd = { version = "0.7", optional = true }  # Systemd socket activation
+
+[features]
+default = []
+service = ["clap"]  # Enable symthaea-service binary
+shell = ["crossterm", "ratatui"]  # Enable symthaea-shell TUI binary
+gui = ["eframe", "egui"]  # Enable symthaea-gui binary
+demo = ["clap", "ctrlc"]  # Demo binaries with CLI argument parsing and signal handling
+full = ["service", "shell", "gui", "demo"]  # All binaries
+# Voice features
+voice-tts = ["ort", "hound", "hf-hub"]  # TTS with Kokoro (ONNX) - CPU
+voice-tts-cuda = ["voice-tts", "ort/cuda"]  # TTS with CUDA acceleration (requires CUDA toolkit)
+voice-tts-async = ["voice-tts", "futures"]  # Async/streaming TTS
+voice-stt = ["hound"]  # STT with Whisper (future)
+audio = ["voice-tts", "rodio"]  # Full audio including playback
+audio-cuda = ["voice-tts-cuda", "rodio"]  # Full audio with GPU acceleration
+pyphi = ["pyo3"]  # Enhancement #8 Week 4: Enable PyPhi integration for exact IIT Φ validation
+# Semantic encoding with Burn ML framework
+semantic-burn = ["burn", "burn-ndarray"]  # Pure Rust semantic encoder
+# Perception & Embeddings (Phase 1 Activation)
+embeddings = ["tokenizers", "ort", "hf-hub"]  # Qwen3/BGE text embeddings via ONNX
+vision = ["ort", "hf-hub"]  # SigLIP image embeddings via ONNX
+perception = ["embeddings", "vision"]  # Full multimodal perception stack
+# Database backends (deferred - compile guards only)
+qdrant = []   # Vector database for large-scale memory
+datalog = []  # Datalog reasoning engine
+lance = []    # LanceDB vector storage
+duck = []     # DuckDB analytical queries
+# Desktop integration features
+notifications = ["zbus"]  # E1: D-Bus desktop notifications
+systemd = ["libsystemd"]  # D1: Systemd socket activation
+desktop = ["notifications", "systemd"]
+# Mycelix integration
+mycelix = ["mycelix-sdk", "sha3"]  # Full Mycelix SDK integration for governance
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
+tempfile = "3.8"  # For perception tests
+
+# Binaries
+# Note: Some binaries require specific features or external crates
+
+[[bin]]
+name = "symthaea"
+path = "src/bin/symthaea.rs"
+required-features = ["service"]
+
+[[bin]]
+name = "symthaea-shell"
+path = "src/bin/symthaea-shell.rs"
+required-features = ["shell"]
+
+[[bin]]
+name = "symthaea-gui"
+path = "src/bin/symthaea-gui.rs"
+required-features = ["gui"]
+
+# Demo binaries (no required features)
+[[bin]]
+name = "demo-sentinel"
+path = "src/bin/demo_sentinel.rs"
+required-features = ["demo"]
+
+[[bin]]
+name = "symthaea-mind"
+path = "src/bin/symthaea-mind.rs"
+required-features = ["demo"]
+
+# Examples
+[[example]]
+name = "social_coherence_demo"
+path = "demos/social_coherence_demo.rs"
+
+# Benchmarks
+# Quick suite for CI (~5 min)
+# Standard suite (~30 min)
+# Full consciousness suite (~1 hr)
+# Ethics suite (~45 min)
+# [[bench]]
+# name = "hdc_benchmark"
+# harness = false
+#
+# [[bench]]
+# name = "ltc_benchmark"
+# harness = false
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+
+[profile.bench]
+inherits = "release"

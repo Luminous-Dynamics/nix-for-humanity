@@ -1,0 +1,457 @@
+//! # Primitive Evolution: Concept and Knowledge Evolution
+//!
+//! Provides mechanisms for evolving concepts and knowledge structures
+//! over time through learning and adaptation.
+
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
+use crate::hdc::RealHV;
+
+/// Configuration for the primitive evolver
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvolverConfig {
+    /// Learning rate for concept updates
+    pub learning_rate: f32,
+    /// Mutation rate for exploration
+    pub mutation_rate: f32,
+    /// Population size for evolutionary algorithms
+    pub population_size: usize,
+    /// Number of generations
+    pub generations: usize,
+    /// Selection pressure (higher = more selective)
+    pub selection_pressure: f32,
+    /// History size for tracking evolution
+    pub history_size: usize,
+}
+
+impl Default for EvolverConfig {
+    fn default() -> Self {
+        Self {
+            learning_rate: 0.1,
+            mutation_rate: 0.01,
+            population_size: 50,
+            generations: 100,
+            selection_pressure: 2.0,
+            history_size: 100,
+        }
+    }
+}
+
+/// Result of an evolution operation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvolutionResult {
+    /// Best fitness achieved
+    pub best_fitness: f64,
+    /// Generations completed
+    pub generations_completed: usize,
+    /// Improvement over initial
+    pub improvement: f64,
+    /// Evolution history
+    pub history: Vec<EvolutionSnapshot>,
+    /// Whether convergence was reached
+    pub converged: bool,
+}
+
+/// A snapshot of evolution state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvolutionSnapshot {
+    /// Generation number
+    pub generation: usize,
+    /// Best fitness
+    pub best_fitness: f64,
+    /// Average fitness
+    pub avg_fitness: f64,
+    /// Diversity measure
+    pub diversity: f64,
+}
+
+/// An evolving concept
+#[derive(Debug, Clone)]
+pub struct EvolvingConcept {
+    /// Concept identifier
+    pub id: u64,
+    /// Concept name
+    pub name: String,
+    /// Current hypervector representation
+    pub hv: RealHV,
+    /// Fitness score
+    pub fitness: f64,
+    /// Generation this concept was created
+    pub generation: usize,
+    /// Parent concepts (if any)
+    pub parents: Vec<u64>,
+    /// Mutation count
+    pub mutations: usize,
+}
+
+impl EvolvingConcept {
+    /// Create a new evolving concept
+    pub fn new(id: u64, name: impl Into<String>, hv: RealHV) -> Self {
+        Self {
+            id,
+            name: name.into(),
+            hv,
+            fitness: 0.0,
+            generation: 0,
+            parents: Vec::new(),
+            mutations: 0,
+        }
+    }
+
+    /// Mutate the concept
+    pub fn mutate(&mut self, rate: f32) {
+        self.hv = self.hv.perturb(rate);
+        self.mutations += 1;
+    }
+
+    /// Crossover with another concept
+    pub fn crossover(&self, other: &EvolvingConcept, id: u64) -> EvolvingConcept {
+        let new_hv = self.hv.bundle(&[other.hv.clone()]);
+        let new_name = format!("{}×{}", self.name, other.name);
+
+        let mut child = EvolvingConcept::new(id, new_name, new_hv);
+        child.generation = self.generation.max(other.generation) + 1;
+        child.parents = vec![self.id, other.id];
+        child
+    }
+}
+
+/// The primitive evolver
+#[derive(Debug)]
+pub struct PrimitiveEvolver {
+    /// Configuration
+    config: EvolverConfig,
+    /// Current population
+    population: HashMap<u64, EvolvingConcept>,
+    /// Next concept ID
+    next_id: u64,
+    /// Current generation
+    current_generation: usize,
+    /// Evolution history
+    history: VecDeque<EvolutionSnapshot>,
+    /// Statistics
+    stats: EvolverStats,
+}
+
+/// Statistics for the evolver
+#[derive(Debug, Clone, Default)]
+pub struct EvolverStats {
+    /// Total evolutions run
+    pub total_evolutions: u64,
+    /// Total concepts created
+    pub concepts_created: u64,
+    /// Total mutations
+    pub total_mutations: u64,
+    /// Total crossovers
+    pub total_crossovers: u64,
+    /// Best fitness ever achieved
+    pub best_fitness_ever: f64,
+}
+
+impl PrimitiveEvolver {
+    /// Create a new evolver
+    pub fn new(config: EvolverConfig) -> Self {
+        Self {
+            config,
+            population: HashMap::new(),
+            next_id: 1,
+            current_generation: 0,
+            history: VecDeque::new(),
+            stats: EvolverStats::default(),
+        }
+    }
+
+    /// Add a concept to the population
+    pub fn add_concept(&mut self, mut concept: EvolvingConcept) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        concept.id = id;
+        self.population.insert(id, concept);
+        self.stats.concepts_created += 1;
+        id
+    }
+
+    /// Initialize population randomly
+    pub fn initialize_random(&mut self, dim: usize, count: usize) {
+        for i in 0..count {
+            let hv = RealHV::random(dim);
+            let concept = EvolvingConcept::new(0, format!("concept_{}", i), hv);
+            self.add_concept(concept);
+        }
+    }
+
+    /// Evaluate fitness for a concept
+    pub fn evaluate_fitness<F>(&mut self, id: u64, fitness_fn: F) -> Option<f64>
+    where
+        F: Fn(&RealHV) -> f64,
+    {
+        if let Some(concept) = self.population.get_mut(&id) {
+            let fitness = fitness_fn(&concept.hv);
+            concept.fitness = fitness;
+            if fitness > self.stats.best_fitness_ever {
+                self.stats.best_fitness_ever = fitness;
+            }
+            Some(fitness)
+        } else {
+            None
+        }
+    }
+
+    /// Evaluate all concepts
+    pub fn evaluate_all<F>(&mut self, fitness_fn: F)
+    where
+        F: Fn(&RealHV) -> f64,
+    {
+        for concept in self.population.values_mut() {
+            let fitness = fitness_fn(&concept.hv);
+            concept.fitness = fitness;
+            if fitness > self.stats.best_fitness_ever {
+                self.stats.best_fitness_ever = fitness;
+            }
+        }
+    }
+
+    /// Run one generation of evolution
+    pub fn evolve_generation<F>(&mut self, fitness_fn: F)
+    where
+        F: Fn(&RealHV) -> f64,
+    {
+        // Evaluate fitness
+        self.evaluate_all(&fitness_fn);
+
+        // Record snapshot
+        self.record_snapshot();
+
+        // Selection
+        let selected = self.select();
+
+        // Create new population through crossover and mutation
+        let mut new_population = HashMap::new();
+
+        // Keep best individuals (elitism)
+        let elite_count = (self.config.population_size as f32 * 0.1) as usize;
+        let mut sorted: Vec<_> = self.population.values().cloned().collect();
+        sorted.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+        for concept in sorted.iter().take(elite_count) {
+            new_population.insert(concept.id, concept.clone());
+        }
+
+        // Crossover
+        while new_population.len() < self.config.population_size {
+            if selected.len() >= 2 {
+                let p1_idx = (rand::random::<f32>() * selected.len() as f32) as usize % selected.len();
+                let p2_idx = (rand::random::<f32>() * selected.len() as f32) as usize % selected.len();
+
+                if p1_idx != p2_idx {
+                    let parent1 = &selected[p1_idx];
+                    let parent2 = &selected[p2_idx];
+                    let mut child = parent1.crossover(parent2, self.next_id);
+                    self.next_id += 1;
+
+                    // Mutation
+                    if rand::random::<f32>() < self.config.mutation_rate {
+                        child.mutate(self.config.learning_rate);
+                        self.stats.total_mutations += 1;
+                    }
+
+                    new_population.insert(child.id, child);
+                    self.stats.total_crossovers += 1;
+                }
+            }
+        }
+
+        self.population = new_population;
+        self.current_generation += 1;
+    }
+
+    /// Select individuals for reproduction
+    fn select(&self) -> Vec<EvolvingConcept> {
+        let mut candidates: Vec<_> = self.population.values().cloned().collect();
+        candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+        // Tournament selection
+        let tournament_size = 3;
+        let select_count = self.config.population_size / 2;
+        let mut selected = Vec::with_capacity(select_count);
+
+        for _ in 0..select_count {
+            let mut best: Option<EvolvingConcept> = None;
+            for _ in 0..tournament_size {
+                let idx = (rand::random::<f32>() * candidates.len() as f32) as usize % candidates.len();
+                let candidate = &candidates[idx];
+                if best.as_ref().map_or(true, |b| candidate.fitness > b.fitness) {
+                    best = Some(candidate.clone());
+                }
+            }
+            if let Some(b) = best {
+                selected.push(b);
+            }
+        }
+
+        selected
+    }
+
+    /// Run full evolution
+    pub fn evolve<F>(&mut self, fitness_fn: F) -> EvolutionResult
+    where
+        F: Fn(&RealHV) -> f64 + Copy,
+    {
+        self.stats.total_evolutions += 1;
+
+        let initial_best = self.population.values()
+            .map(|c| c.fitness)
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(0.0);
+
+        let mut converged = false;
+        let convergence_threshold = 0.001;
+        let mut prev_best = 0.0;
+        let mut stagnation = 0;
+
+        for _ in 0..self.config.generations {
+            self.evolve_generation(fitness_fn);
+
+            let current_best = self.population.values()
+                .map(|c| c.fitness)
+                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap_or(0.0);
+
+            if (current_best - prev_best).abs() < convergence_threshold {
+                stagnation += 1;
+                if stagnation >= 10 {
+                    converged = true;
+                    break;
+                }
+            } else {
+                stagnation = 0;
+            }
+            prev_best = current_best;
+        }
+
+        let final_best = self.population.values()
+            .map(|c| c.fitness)
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(0.0);
+
+        EvolutionResult {
+            best_fitness: final_best,
+            generations_completed: self.current_generation,
+            improvement: final_best - initial_best,
+            history: self.history.iter().cloned().collect(),
+            converged,
+        }
+    }
+
+    /// Record evolution snapshot
+    fn record_snapshot(&mut self) {
+        let fitnesses: Vec<f64> = self.population.values().map(|c| c.fitness).collect();
+
+        let best = fitnesses.iter().copied()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(0.0);
+
+        let avg = if fitnesses.is_empty() {
+            0.0
+        } else {
+            fitnesses.iter().sum::<f64>() / fitnesses.len() as f64
+        };
+
+        let diversity = self.calculate_diversity();
+
+        let snapshot = EvolutionSnapshot {
+            generation: self.current_generation,
+            best_fitness: best,
+            avg_fitness: avg,
+            diversity,
+        };
+
+        if self.history.len() >= self.config.history_size {
+            self.history.pop_front();
+        }
+        self.history.push_back(snapshot);
+    }
+
+    /// Calculate population diversity
+    fn calculate_diversity(&self) -> f64 {
+        if self.population.len() < 2 {
+            return 0.0;
+        }
+
+        let concepts: Vec<_> = self.population.values().collect();
+        let mut total_dist = 0.0;
+        let mut count = 0;
+
+        for i in 0..concepts.len() {
+            for j in (i + 1)..concepts.len() {
+                let dist = 1.0 - concepts[i].hv.cosine_similarity(&concepts[j].hv) as f64;
+                total_dist += dist;
+                count += 1;
+            }
+        }
+
+        if count > 0 {
+            total_dist / count as f64
+        } else {
+            0.0
+        }
+    }
+
+    /// Get best concept
+    pub fn best(&self) -> Option<&EvolvingConcept> {
+        self.population.values()
+            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
+    }
+
+    /// Get statistics
+    pub fn stats(&self) -> &EvolverStats {
+        &self.stats
+    }
+
+    /// Get current generation
+    pub fn generation(&self) -> usize {
+        self.current_generation
+    }
+}
+
+impl Default for PrimitiveEvolver {
+    fn default() -> Self {
+        Self::new(EvolverConfig::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_evolver_creation() {
+        let evolver = PrimitiveEvolver::default();
+        assert_eq!(evolver.generation(), 0);
+    }
+
+    #[test]
+    fn test_concept_creation() {
+        let hv = RealHV::random(512);
+        let concept = EvolvingConcept::new(1, "test", hv);
+        assert_eq!(concept.name, "test");
+        assert_eq!(concept.fitness, 0.0);
+    }
+
+    #[test]
+    fn test_mutation() {
+        let hv = RealHV::random(512);
+        let mut concept = EvolvingConcept::new(1, "test", hv.clone());
+        let original = concept.hv.clone();
+        concept.mutate(0.1);
+        // After mutation, the HV should be different
+        assert_eq!(concept.mutations, 1);
+    }
+
+    #[test]
+    fn test_initialize_random() {
+        let mut evolver = PrimitiveEvolver::default();
+        evolver.initialize_random(512, 10);
+        assert_eq!(evolver.population.len(), 10);
+    }
+}

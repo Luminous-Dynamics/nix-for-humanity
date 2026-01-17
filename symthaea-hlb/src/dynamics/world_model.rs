@@ -1,0 +1,471 @@
+//! # Hierarchical World Model
+//!
+//! A multi-level world model using CfC networks for continuous-time
+//! dynamics at each level of abstraction.
+//!
+//! ## Architecture
+//!
+//! ```text
+//! ┌────────────────────────────────────────────────────────────┐
+//! │                  HIERARCHICAL WORLD MODEL                   │
+//! │                                                             │
+//! │  Level 3 (Abstract):  Planning & Goals                      │
+//! │       ↑↓                                                    │
+//! │  Level 2 (Concepts):  Object & Event Representations        │
+//! │       ↑↓                                                    │
+//! │  Level 1 (Features):  Spatial & Temporal Features           │
+//! │       ↑↓                                                    │
+//! │  Level 0 (Sensory):   Raw Sensory Input                     │
+//! └────────────────────────────────────────────────────────────┘
+//! ```
+
+use crate::dynamics::cfc::{CfCNetwork, CfCNetworkConfig, CfCConfig};
+use crate::dynamics::{CrystalizedConcept, DynamicsError, DynamicsResult};
+use ndarray::{Array1, Array2};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+/// Configuration for the hierarchical world model
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorldModelConfig {
+    /// Number of hierarchical levels
+    pub num_levels: usize,
+
+    /// Dimension at each level (ordered from lowest to highest)
+    pub level_dims: Vec<usize>,
+
+    /// Time scale multiplier at each level (higher levels = slower dynamics)
+    pub time_scales: Vec<f32>,
+
+    /// Whether to use bidirectional connections between levels
+    pub bidirectional: bool,
+
+    /// Maximum concepts to store
+    pub max_concepts: usize,
+
+    /// Prediction horizon steps
+    pub prediction_horizon: usize,
+}
+
+impl Default for WorldModelConfig {
+    fn default() -> Self {
+        Self {
+            num_levels: 4,
+            level_dims: vec![64, 128, 256, 128],
+            time_scales: vec![1.0, 2.0, 5.0, 10.0],
+            bidirectional: true,
+            max_concepts: 10000,
+            prediction_horizon: 10,
+        }
+    }
+}
+
+/// A single layer in the world model hierarchy
+#[derive(Debug, Clone)]
+pub struct WorldModelLayer {
+    /// Layer index (0 = lowest/sensory)
+    level: usize,
+
+    /// CfC network for temporal dynamics
+    cfc: CfCNetwork,
+
+    /// Current state representation
+    state: Array1<f32>,
+
+    /// Prediction of next state
+    prediction: Array1<f32>,
+
+    /// Prediction error from lower level
+    prediction_error: Array1<f32>,
+
+    /// Time scale for this level
+    time_scale: f32,
+
+    /// Statistics
+    stats: LayerStats,
+}
+
+/// Statistics for a layer
+#[derive(Debug, Clone, Default)]
+pub struct LayerStats {
+    /// Total updates
+    pub updates: u64,
+
+    /// Average prediction error
+    pub avg_prediction_error: f32,
+
+    /// Maximum prediction error seen
+    pub max_prediction_error: f32,
+}
+
+impl WorldModelLayer {
+    /// Create a new world model layer
+    pub fn new(level: usize, input_dim: usize, hidden_dim: usize, time_scale: f32) -> Self {
+        let cfc_config = CfCNetworkConfig {
+            input_dim,
+            hidden_dim,
+            output_dim: hidden_dim,
+            num_layers: 2,
+            cell_config: CfCConfig {
+                input_dim,
+                hidden_dim,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        Self {
+            level,
+            cfc: CfCNetwork::new(cfc_config),
+            state: Array1::zeros(hidden_dim),
+            prediction: Array1::zeros(hidden_dim),
+            prediction_error: Array1::zeros(hidden_dim),
+            time_scale,
+            stats: LayerStats::default(),
+        }
+    }
+
+    /// Update the layer with new input
+    pub fn update(&mut self, input: &Array1<f32>, dt: f32) -> Array1<f32> {
+        // Adjust time step by level's time scale
+        let adjusted_dt = dt * self.time_scale;
+
+        // Generate prediction error
+        self.prediction_error = &self.state - input;
+
+        // Forward through CfC
+        let output = self.cfc.forward(input, adjusted_dt);
+
+        // Update state
+        self.state = output.clone();
+
+        // Update statistics
+        self.stats.updates += 1;
+        let error_norm: f32 = self.prediction_error.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let n = self.stats.updates as f32;
+        self.stats.avg_prediction_error =
+            (self.stats.avg_prediction_error * (n - 1.0) + error_norm) / n;
+        self.stats.max_prediction_error = self.stats.max_prediction_error.max(error_norm);
+
+        output
+    }
+
+    /// Generate prediction for next state
+    pub fn predict(&mut self, dt: f32) -> Array1<f32> {
+        let adjusted_dt = dt * self.time_scale;
+
+        // Use current state as input to predict next
+        self.prediction = self.cfc.forward(&self.state, adjusted_dt);
+        self.prediction.clone()
+    }
+
+    /// Get current state
+    pub fn state(&self) -> &Array1<f32> {
+        &self.state
+    }
+
+    /// Get prediction error
+    pub fn prediction_error(&self) -> &Array1<f32> {
+        &self.prediction_error
+    }
+
+    /// Get statistics
+    pub fn stats(&self) -> &LayerStats {
+        &self.stats
+    }
+
+    /// Reset the layer
+    pub fn reset(&mut self) {
+        self.cfc.reset();
+        self.state.fill(0.0);
+        self.prediction.fill(0.0);
+        self.prediction_error.fill(0.0);
+    }
+}
+
+/// Hierarchical CfC-based world model
+#[derive(Debug)]
+pub struct HierarchicalCfCWorldModel {
+    /// Configuration
+    config: WorldModelConfig,
+
+    /// Layers in the hierarchy (index 0 = lowest level)
+    layers: Vec<WorldModelLayer>,
+
+    /// Inter-level projection matrices (upward)
+    up_projections: Vec<Array2<f32>>,
+
+    /// Inter-level projection matrices (downward)
+    down_projections: Vec<Array2<f32>>,
+
+    /// Stored concepts
+    concepts: HashMap<u64, CrystalizedConcept>,
+
+    /// Next concept ID
+    next_concept_id: u64,
+
+    /// Global statistics
+    stats: WorldModelStats,
+}
+
+/// Statistics for the world model
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WorldModelStats {
+    /// Total updates across all levels
+    pub total_updates: u64,
+
+    /// Total concepts stored
+    pub concepts_stored: usize,
+
+    /// Total predictions made
+    pub predictions_made: u64,
+
+    /// Average global prediction error
+    pub avg_global_error: f32,
+}
+
+impl HierarchicalCfCWorldModel {
+    /// Create a new hierarchical world model
+    pub fn new(config: WorldModelConfig) -> Self {
+        let mut layers = Vec::with_capacity(config.num_levels);
+
+        // Create layers
+        for i in 0..config.num_levels {
+            let input_dim = if i == 0 {
+                config.level_dims[0]
+            } else {
+                config.level_dims[i - 1]
+            };
+            let hidden_dim = config.level_dims[i];
+            let time_scale = config.time_scales[i];
+
+            layers.push(WorldModelLayer::new(i, input_dim, hidden_dim, time_scale));
+        }
+
+        // Create inter-level projections
+        let mut up_projections = Vec::new();
+        let mut down_projections = Vec::new();
+
+        for i in 0..(config.num_levels - 1) {
+            let lower_dim = config.level_dims[i];
+            let upper_dim = config.level_dims[i + 1];
+
+            // Upward: lower -> upper
+            let scale = (2.0 / (lower_dim + upper_dim) as f32).sqrt();
+            let up_proj = Array2::from_shape_fn((upper_dim, lower_dim), |_| {
+                (rand::random::<f32>() - 0.5) * 2.0 * scale
+            });
+            up_projections.push(up_proj);
+
+            // Downward: upper -> lower
+            let down_proj = Array2::from_shape_fn((lower_dim, upper_dim), |_| {
+                (rand::random::<f32>() - 0.5) * 2.0 * scale
+            });
+            down_projections.push(down_proj);
+        }
+
+        Self {
+            config,
+            layers,
+            up_projections,
+            down_projections,
+            concepts: HashMap::new(),
+            next_concept_id: 1,
+            stats: WorldModelStats::default(),
+        }
+    }
+
+    /// Update the world model with sensory input
+    ///
+    /// # Arguments
+    /// * `sensory_input` - Raw sensory input at the lowest level
+    /// * `dt` - Time step
+    ///
+    /// # Returns
+    /// The highest-level abstract representation
+    pub fn update(&mut self, sensory_input: &Array1<f32>, dt: f32) -> Array1<f32> {
+        // Bottom-up processing
+        let mut current = sensory_input.clone();
+
+        for (i, layer) in self.layers.iter_mut().enumerate() {
+            current = layer.update(&current, dt);
+
+            // Project to next level if not at top
+            if i < self.up_projections.len() {
+                current = self.up_projections[i].dot(&current);
+            }
+        }
+
+        // Top-down processing if bidirectional
+        if self.config.bidirectional {
+            let mut top_down = self.layers.last().unwrap().state().clone();
+
+            for i in (0..self.down_projections.len()).rev() {
+                top_down = self.down_projections[i].dot(&top_down);
+
+                // Combine with layer state
+                let layer_state = self.layers[i].state();
+                top_down = &top_down * 0.5 + layer_state * 0.5;
+            }
+        }
+
+        self.stats.total_updates += 1;
+
+        // Return top-level representation
+        self.layers.last().unwrap().state().clone()
+    }
+
+    /// Make predictions at all levels
+    ///
+    /// # Arguments
+    /// * `dt` - Time step for prediction
+    ///
+    /// # Returns
+    /// Predictions at each level (ordered from lowest to highest)
+    pub fn predict(&mut self, dt: f32) -> Vec<Array1<f32>> {
+        let predictions: Vec<_> = self.layers.iter_mut()
+            .map(|layer| layer.predict(dt))
+            .collect();
+
+        self.stats.predictions_made += 1;
+        predictions
+    }
+
+    /// Multi-step prediction
+    pub fn predict_sequence(&mut self, steps: usize, dt: f32) -> Vec<Vec<Array1<f32>>> {
+        let mut sequence = Vec::with_capacity(steps);
+
+        for _ in 0..steps {
+            sequence.push(self.predict(dt));
+        }
+
+        sequence
+    }
+
+    /// Get state at a specific level
+    pub fn level_state(&self, level: usize) -> Option<&Array1<f32>> {
+        self.layers.get(level).map(|l| l.state())
+    }
+
+    /// Get all layer states
+    pub fn all_states(&self) -> Vec<&Array1<f32>> {
+        self.layers.iter().map(|l| l.state()).collect()
+    }
+
+    /// Store a crystallized concept
+    pub fn store_concept(&mut self, name: impl Into<String>, embedding: Vec<f32>) -> u64 {
+        let id = self.next_concept_id;
+        self.next_concept_id += 1;
+
+        let concept = CrystalizedConcept::new(id, name, embedding);
+        self.concepts.insert(id, concept);
+
+        self.stats.concepts_stored = self.concepts.len();
+        id
+    }
+
+    /// Retrieve a concept by ID
+    pub fn get_concept(&self, id: u64) -> Option<&CrystalizedConcept> {
+        self.concepts.get(&id)
+    }
+
+    /// Find similar concepts
+    pub fn find_similar_concepts(
+        &self,
+        embedding: &[f32],
+        top_k: usize,
+    ) -> Vec<(&CrystalizedConcept, f32)> {
+        let query_mag: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if query_mag == 0.0 {
+            return Vec::new();
+        }
+
+        let mut similarities: Vec<_> = self.concepts.values()
+            .filter_map(|concept| {
+                if concept.embedding.len() != embedding.len() {
+                    return None;
+                }
+
+                let dot: f32 = concept.embedding.iter()
+                    .zip(embedding.iter())
+                    .map(|(a, b)| a * b)
+                    .sum();
+
+                let concept_mag: f32 = concept.embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+                if concept_mag == 0.0 {
+                    return None;
+                }
+
+                let similarity = dot / (query_mag * concept_mag);
+                Some((concept, similarity))
+            })
+            .collect();
+
+        similarities.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        similarities.truncate(top_k);
+        similarities
+    }
+
+    /// Get statistics
+    pub fn stats(&self) -> &WorldModelStats {
+        &self.stats
+    }
+
+    /// Reset the world model
+    pub fn reset(&mut self) {
+        for layer in &mut self.layers {
+            layer.reset();
+        }
+        self.stats = WorldModelStats::default();
+    }
+
+    /// Get configuration
+    pub fn config(&self) -> &WorldModelConfig {
+        &self.config
+    }
+
+    /// Get number of levels
+    pub fn num_levels(&self) -> usize {
+        self.config.num_levels
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_world_model_creation() {
+        let config = WorldModelConfig::default();
+        let model = HierarchicalCfCWorldModel::new(config);
+        assert_eq!(model.num_levels(), 4);
+    }
+
+    #[test]
+    fn test_world_model_update() {
+        let config = WorldModelConfig {
+            num_levels: 3,
+            level_dims: vec![32, 64, 32],
+            time_scales: vec![1.0, 2.0, 4.0],
+            ..Default::default()
+        };
+        let mut model = HierarchicalCfCWorldModel::new(config);
+
+        let input = Array1::from_vec(vec![0.1; 32]);
+        let output = model.update(&input, 0.1);
+
+        assert_eq!(output.len(), 32);
+    }
+
+    #[test]
+    fn test_concept_storage() {
+        let mut model = HierarchicalCfCWorldModel::new(WorldModelConfig::default());
+
+        let id1 = model.store_concept("test_concept", vec![0.1; 64]);
+        let id2 = model.store_concept("another_concept", vec![0.2; 64]);
+
+        assert!(model.get_concept(id1).is_some());
+        assert!(model.get_concept(id2).is_some());
+        assert_eq!(model.stats().concepts_stored, 2);
+    }
+}
