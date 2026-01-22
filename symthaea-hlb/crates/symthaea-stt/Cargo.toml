@@ -1,0 +1,94 @@
+[package]
+name = "symthaea-stt"
+version = "0.1.0"
+edition = "2021"
+authors = ["Luminous Dynamics <tristan.stoltz@evolvingresonantcocreationism.com>"]
+description = "Symthaea Speech-to-Text: HDC + LTC + CfC based acoustic modeling and bioacoustics"
+license = "MIT"
+repository = "https://github.com/Luminous-Dynamics/symthaea-hlb"
+keywords = ["speech", "hdc", "ltc", "neuromorphic", "bioacoustics", "eeg"]
+categories = ["multimedia::audio", "science", "algorithms"]
+
+[lib]
+name = "symthaea_stt"
+path = "src/lib.rs"
+
+# Binaries
+[[bin]]
+name = "stt-train"
+path = "src/bin/symthaea_train.rs"
+
+[[bin]]
+name = "stt-discover"
+path = "src/bin/symthaea_discover.rs"
+
+[[bin]]
+name = "stt-transcribe"
+path = "src/bin/symthaea_transcribe.rs"
+
+[[bin]]
+name = "stt-librispeech"
+path = "src/bin/symthaea_librispeech.rs"
+
+[[bin]]
+name = "stt-bioacoustics"
+path = "src/bin/symthaea_bioacoustics.rs"
+
+[[bin]]
+name = "stt-viz"
+path = "src/bin/symthaea_viz.rs"
+
+[[bin]]
+name = "stt-eval"
+path = "src/bin/symthaea_eval.rs"
+
+[[bin]]
+name = "stt-mirror"
+path = "src/bin/symthaea_mirror.rs"
+
+[[bin]]
+name = "stt-grammar"
+path = "src/bin/grammar_cli.rs"
+
+[dependencies]
+# Core hashing
+blake3 = "1.5"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# Progress bars
+indicatif = "0.17"
+console = "0.15"
+
+# Audio processing
+hound = "3.5"           # WAV reading
+rustfft = "6.2"         # Fast FFT for spectrograms
+claxon = "0.4"          # FLAC reading
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Random number generation (for HDC)
+rand = "0.8"
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.10"
+
+[features]
+default = []
+# Enable FLAC support
+flac = []
+# Enable GPU acceleration (future)
+gpu = []
+# Enable whale/cetacean bioacoustics
+bioacoustics = []
+# Enable EEG/sleep processing
+eeg = []
+
+[[bench]]
+name = "core_benchmarks"
+harness = false
