@@ -72,7 +72,7 @@ repos:
         description: "Check for security issues"
 
   # Documentation checks
-  - repo: https://github.com/pydocstyle/pydocstyle
+  - repo: https://github.com/PyCQA/pydocstyle
     rev: 6.3.0
     hooks:
       - id: pydocstyle
