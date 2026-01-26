@@ -68,7 +68,7 @@ struct Cli {
     spectral_radius: f32,
 
     /// Prior correction scale (0.0 = no correction, 1.0 = full Bayesian debiasing)
-    #[arg(long, default_value = "1.0")]
+    #[arg(long, default_value = "0.0")]
     prior_scale: f32,
 
     /// Skip reservoir and classify on raw stacked features
