@@ -1,3 +1,5 @@
+// Experimental module: fields will be read when GIS integration is wired
+#![allow(dead_code)]
 //! # Socratic Defense System (GIS v2)
 //!
 //! Anti-gaslighting defense mechanism that protects epistemic integrity through

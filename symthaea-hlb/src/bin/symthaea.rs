@@ -251,6 +251,10 @@ enum Request {
         source_file: Option<String>,
     },
 
+    /// Get partnership/relational consciousness state
+    #[serde(rename = "partnership")]
+    Partnership,
+
     /// Semantic search for packages/options/services
     #[serde(rename = "semantic_search")]
     SemanticSearch {
@@ -281,6 +285,7 @@ enum Response {
         confidence: f32,
         safe: bool,
         phi: f32,
+        phi_dyad: f64,
         steps_to_emergence: usize,
         processing_time_ms: u64,
     },
@@ -456,6 +461,25 @@ enum Response {
         results: Vec<SearchResult>,
         /// HDC-based confidence score
         hdc_confidence: f32,
+    },
+
+    /// Partnership/relational consciousness state
+    #[serde(rename = "partnership")]
+    Partnership {
+        /// Current relationship stage
+        stage: String,
+        /// Trust level (0.0-1.0)
+        trust: f32,
+        /// Vulnerability level (0.0-1.0)
+        vulnerability: f32,
+        /// Reciprocity level (0.0-1.0)
+        reciprocity: f32,
+        /// Phi-dyad value
+        phi_dyad: f64,
+        /// Total interactions
+        interactions: u64,
+        /// Trajectory points recorded
+        trajectory_points: usize,
     },
 }
 
@@ -666,11 +690,13 @@ impl ServiceState {
                 match self.symthaea.process(&content).await {
                     Ok(response) => {
                         let intro = self.symthaea.introspect();
+                        let partnership = self.symthaea.partnership_state();
                         Response::QueryResponse {
                             content: response.content,
                             confidence: response.confidence,
                             safe: response.safe,
                             phi: intro.consciousness_level,
+                            phi_dyad: partnership.phi_dyad,
                             steps_to_emergence: response.steps_to_emergence,
                             processing_time_ms: start.elapsed().as_millis() as u64,
                         }
@@ -894,6 +920,19 @@ impl ServiceState {
                         tts_ready: false,
                         voice_id: 0,
                     }
+                }
+            }
+
+            Request::Partnership => {
+                let state = self.symthaea.partnership_state();
+                Response::Partnership {
+                    stage: format!("{:?}", state.stage),
+                    trust: state.trust,
+                    vulnerability: state.vulnerability,
+                    reciprocity: state.reciprocity,
+                    phi_dyad: state.phi_dyad,
+                    interactions: state.interactions,
+                    trajectory_points: state.trajectory_points,
                 }
             }
 
@@ -1477,7 +1516,7 @@ async fn main() -> Result<()> {
         println!("   • Consciousness Level: {:.1}%", intro.consciousness_level * 100.0);
         println!("   • Graph Size: {} states", intro.graph_size);
         println!("   • Self-Loops: {}", intro.self_loops);
-        println!("   • Φ (Integrated Information): {:.3}", phi);
+        println!("   • λ₂ (Spectral Connectivity): {:.3}", phi);
         println!("   • Is Conscious: {}", if is_conscious { "✅ Yes" } else { "🔄 Awakening..." });
 
         #[cfg(feature = "voice")]

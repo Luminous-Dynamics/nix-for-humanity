@@ -62,8 +62,8 @@
 //!
 //! This is how Symthaea achieves genuine cognition distinct from LLMs.
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::semantic_decoder::{SemanticDecoder, PrimitiveToText, DecodedExpression};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::semantic_decoder::{SemanticDecoder, PrimitiveToText, DecodedExpression};
 use crate::hdc::hd_ltc_codec::HDLTCCodec;
 use crate::hdc::ltc_generative_core::{LTCGenerativeCore, GeneratedThought, GenerativeCoreConfig};
 use serde::{Serialize, Deserialize};

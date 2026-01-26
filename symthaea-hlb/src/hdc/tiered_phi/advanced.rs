@@ -5,7 +5,7 @@
 //! - Causal Intervention Analysis (#98): Analyze causal effects of node interventions
 //! - Network Modularity Analysis (#99): Detect consciousness modules and their relationships
 
-use crate::hdc::real_hv::RealHV;
+use symthaea_core::hdc::real_hv::RealHV;
 // Note: HV16 and TieredPhi/ApproximationTier are available via super if needed
 
 #[derive(Debug, Clone)]
@@ -611,9 +611,9 @@ impl Default for PhiTransfer {
 
 /// Convenience function: quick transfer from Ring to target
 pub fn transfer_from_ring(target_components: &[RealHV], target_phi: f64) -> PhiTransferResult {
-    use crate::hdc::consciousness_topology_generators::ConsciousnessTopology;
-    use crate::hdc::phi_real::RealPhiCalculator;
-    use crate::hdc::HDC_DIMENSION;
+    use symthaea_core::hdc::consciousness_topology_generators::ConsciousnessTopology;
+    use symthaea_core::hdc::spectral_connectivity::ConnectivityCalculator;
+    use symthaea_core::hdc::HDC_DIMENSION;
 
     let n = target_components.len().max(8);
     let dim = if target_components.is_empty() {
@@ -624,7 +624,7 @@ pub fn transfer_from_ring(target_components: &[RealHV], target_phi: f64) -> PhiT
 
     // Generate Ring topology for transfer
     let ring = ConsciousnessTopology::ring(n, dim, 42);
-    let ring_phi = RealPhiCalculator::new().compute(&ring.node_representations);
+    let ring_phi = ConnectivityCalculator::new().algebraic_connectivity(&ring.node_representations);
 
     let transfer = PhiTransfer::new();
     transfer.transfer(
@@ -970,9 +970,6 @@ impl PhiCausalAnalyzer {
 
         for node_idx in 0..n {
             let mut node_interventions = Vec::new();
-            let mut knockout_delta = 0.0;
-            let mut amplify_delta = 0.0;
-            let mut dampen_delta = 0.0;
 
             // Knockout
             let knockout_result = self.test_intervention(
@@ -981,7 +978,7 @@ impl PhiCausalAnalyzer {
                 InterventionType::Knockout,
                 baseline_phi,
             );
-            knockout_delta = knockout_result.delta_phi;
+            let knockout_delta = knockout_result.delta_phi;
             node_interventions.push(knockout_result);
 
             // Amplify
@@ -991,7 +988,7 @@ impl PhiCausalAnalyzer {
                 InterventionType::Amplify(self.config.amplify_factor),
                 baseline_phi,
             );
-            amplify_delta = amplify_result.delta_phi;
+            let amplify_delta = amplify_result.delta_phi;
             node_interventions.push(amplify_result);
 
             // Dampen
@@ -1001,7 +998,7 @@ impl PhiCausalAnalyzer {
                 InterventionType::Dampen(self.config.dampen_factor),
                 baseline_phi,
             );
-            dampen_delta = dampen_result.delta_phi;
+            let dampen_delta = dampen_result.delta_phi;
             node_interventions.push(dampen_result);
 
             node_results.push(node_interventions);

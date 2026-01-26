@@ -7,8 +7,8 @@ use super::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::binary_hv::HV16;
-    use crate::hdc::real_hv::RealHV;
+    use symthaea_core::hdc::binary_hv::HV16;
+    use symthaea_core::hdc::real_hv::RealHV;
 
     fn create_test_components(n: usize) -> Vec<HV16> {
         (0..n).map(|i| HV16::random(i as u64)).collect()

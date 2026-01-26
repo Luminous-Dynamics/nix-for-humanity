@@ -338,6 +338,7 @@ impl Default for PersistentState {
 }
 
 /// State persistence manager
+#[allow(dead_code)] // Fields reserved for auto-save feature
 pub struct StateManager {
     /// Path to state file
     state_path: PathBuf,

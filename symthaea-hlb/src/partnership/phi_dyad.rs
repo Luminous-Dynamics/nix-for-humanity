@@ -1,5 +1,5 @@
 use crate::core::{ContinuousHV, HDC_DIMENSION};
-use crate::hdc::relational_consciousness::{RelationalAssessment, RelationMode};
+use symthaea_core::hdc::relational_consciousness::{RelationalAssessment, RelationMode};
 use crate::phi_engine::PhiEngine;
 
 use super::HumanPartnerModel;

@@ -34,7 +34,8 @@ use tree_sitter::{Parser, Node, Tree};
 
 /// Nix AST Parser using tree-sitter
 pub struct NixParser {
-    parser: Parser,
+    /// Internal tree-sitter parser (pub for shell module access)
+    pub(crate) parser: Parser,
 }
 
 /// Parsed Nix configuration
@@ -50,9 +51,11 @@ pub struct NixConfig {
     pub module_args: Vec<String>,
 
     /// Raw AST for advanced queries
+    #[allow(dead_code)] // Reserved for AST traversal
     tree: Option<Tree>,
 
     /// Source text for node extraction
+    #[allow(dead_code)] // Reserved for node extraction
     source: String,
 
     /// Parse errors encountered

@@ -47,8 +47,9 @@
 //! decoder.load_prototypes(&prototypes.as_pairs());
 //! ```
 
-#![warn(missing_docs)]
-#![warn(rustdoc::missing_crate_level_docs)]
+// TODO: Add comprehensive documentation before 1.0 release
+#![allow(missing_docs)]
+#![allow(rustdoc::missing_crate_level_docs)]
 
 pub mod hdc;
 pub mod ltc;
@@ -74,15 +75,20 @@ pub mod hierarchical_scorer;
 pub mod multiscale_scorer;
 pub mod liquid;
 pub mod liquid_hdc;
+pub mod liquid_projection;
+pub mod crystal_reservoir;
+pub mod rls;
 pub mod temporal_grammar;
 pub mod unified_grammar;
+pub mod dtw_align;
+pub mod alignment_loader;
 
 // Physiological signal processing (Project Hypnos / Consciousness Sensing)
 pub mod edf_loader;
 pub mod sleep_sentinel;
 
 // Re-exports for convenience
-pub use hdc::{HV16, bundle, weighted_bundle};
+pub use hdc::{HV16, bundle, weighted_bundle, HDC_DIM, CORE_HDC_DIM, EXPANSION_FACTOR};
 pub use ltc::{LtcCell, LtcConfig, TauSmoother};
 pub use phoneme::{PhonemeDecoder, PhonemeResonator, PhonemeInventory, TemporalDecoder, TemporalConfig};
 pub use lexicon::{CmuDictionary, TextToPhonemes};
@@ -111,6 +117,16 @@ pub use lm::{
 pub use models::{ModelPackage, ModelMetadata, ModelRegistry, ModelInfo};
 pub use edf_loader::{EdfFile, EdfSignal, EdfHeader, SleepStage};
 pub use sleep_sentinel::{ConsciousnessSentinel, ConsciousnessState, BandPowers};
+pub use dtw_align::{DtwAligner, DtwTrainer, DtwAlignment, AlignedSegment};
+pub use alignment_loader::{load_alignments, PhonemeSegment, UtteranceAlignment, WordSegment, id_to_audio_path};
+pub use liquid_projection::{
+    LiquidProjection, LiquidProjectionConfig, PhonemeTargets, RidgeAccumulator,
+    DirectClassifier, DirectClassifierConfig, DirectAccumulator, RandomProjection, RFActivation,
+};
+pub use crystal_reservoir::{
+    GaborFilter, CrystalReservoir, CrystalActivation, OnlinePrototypeClassifier,
+};
+pub use rls::{RlsClassifier, FastRlsClassifier};
 
 /// Crate version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

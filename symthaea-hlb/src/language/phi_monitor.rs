@@ -279,6 +279,7 @@ pub struct PhiMonitor {
 
 /// Tracking for current operation
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for Φ tracking
 struct OperationTracking {
     /// Operation ID
     id: String,
@@ -833,8 +834,9 @@ mod tests {
     fn test_stats_tracking() {
         let mut monitor = PhiMonitor::new();
 
+        // Use delta > 0.05 to trigger Enhanced assessment
         monitor.begin_operation("test", 0.6).unwrap();
-        let _ = monitor.end_operation(0.65, PhiMetadata::default());
+        let _ = monitor.end_operation(0.66, PhiMetadata::default());
 
         assert_eq!(monitor.stats.total_generations, 1);
         assert_eq!(monitor.stats.phi_enhanced, 1);

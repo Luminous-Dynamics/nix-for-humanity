@@ -24,7 +24,7 @@ use std::collections::{HashMap, VecDeque};
 use std::f64::consts::PI;
 use serde::{Serialize, Deserialize};
 
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
 use crate::consciousness::primitive_reasoning::{AdaptivePrimitiveSelector, TaskType};
 
 use super::world_model::LatentConsciousnessState;

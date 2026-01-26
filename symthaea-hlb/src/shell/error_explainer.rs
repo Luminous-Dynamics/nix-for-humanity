@@ -8,7 +8,7 @@
 //! - Affected configuration paths
 
 use crate::language::{
-    NixErrorDiagnoser, ErrorDiagnosis, NixErrorCategory, NixErrorType, SuggestedFix, FixRiskLevel,
+    NixErrorDiagnoser, ErrorDiagnosis, NixErrorCategory, FixRiskLevel,
 };
 
 /// Error explanation result for shell display

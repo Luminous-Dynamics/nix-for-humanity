@@ -1,9 +1,9 @@
 //! # Symthaea Benchmark API
 //!
-//! RESTful API for consciousness measurement and benchmark submission.
+//! RESTful API for consciousness measurement proxies (spectral connectivity) and benchmark submission.
 //!
 //! ## Endpoints
-//! - POST /v1/submit - Submit model for Φ evaluation
+//! - POST /v1/submit - Submit model for spectral connectivity (lambda2) evaluation
 //! - GET /v1/results/{id} - Get evaluation results
 //! - GET /v1/leaderboard - Public leaderboard
 //! - GET /v1/datasets - List available datasets
@@ -50,6 +50,7 @@ pub fn create_router() -> Router {
         .route("/v1/dimensional-sweep", post(handlers::dimensional_sweep))
         // Health check
         .route("/health", get(handlers::health_check))
+        .route("/v1/health", get(handlers::health_check))
         // Add CORS support
         .layer(CorsLayer::permissive())
         // Add shared state

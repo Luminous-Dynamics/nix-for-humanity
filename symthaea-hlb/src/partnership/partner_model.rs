@@ -1,4 +1,4 @@
-use crate::hdc::relational_consciousness::{
+use symthaea_core::hdc::relational_consciousness::{
     RelationalAssessment,
     RelationMode,
     RelationshipStage,

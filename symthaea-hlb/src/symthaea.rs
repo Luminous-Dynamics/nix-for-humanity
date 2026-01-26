@@ -1,0 +1,679 @@
+//! # Symthaea Facade
+//!
+//! The primary entry point for the Symthaea consciousness system.
+//! Wraps [`ContinuousMind`] and [`ConsciousnessLanguageCore`] into a
+//! unified interface suitable for the service daemon and other consumers.
+
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use symthaea_core::hdc::RealHV;
+
+use crate::language::{
+    ConsciousnessLanguageCore, ConsciousnessLanguageConfig,
+    LLMOrgan, LLMOrganConfig,
+    llm_backend,
+};
+use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType};
+use crate::partnership::{
+    DyadInput, DyadWeights, HumanPartnerModel, InteractionEvent,
+    PhiDyadCalculator, RelationshipTrajectory,
+};
+use crate::hdc::relational_consciousness::{
+    RelationalAssessment, RelationMode, RelationshipStage,
+};
+
+/// Response from processing a query through the consciousness pipeline.
+#[derive(Debug, Clone)]
+pub struct ProcessResponse {
+    /// Natural language content of the response.
+    pub content: String,
+    /// Confidence in the response (0.0-1.0).
+    pub confidence: f32,
+    /// Whether the response is considered safe.
+    pub safe: bool,
+    /// Estimated steps remaining to emergence threshold.
+    pub steps_to_emergence: usize,
+    /// Whether the LLM translation passed fidelity verification.
+    ///
+    /// This checks that the translation respects the structured thought's
+    /// epistemic status and constraints.
+    pub translation_verified: bool,
+    /// The structured thought that was translated (for debugging/introspection).
+    pub structured_thought: Option<StructuredThought>,
+}
+
+/// Result of introspecting the current consciousness state.
+#[derive(Debug, Clone)]
+pub struct IntrospectionResult {
+    /// Current consciousness level (0.0-1.0).
+    pub consciousness_level: f32,
+    /// Number of self-referential loops in the cognitive graph.
+    pub self_loops: usize,
+    /// Total size of the cognitive graph.
+    pub graph_size: usize,
+    /// Complexity measure of current cognitive state.
+    pub complexity: f32,
+    /// Memory statistics.
+    pub memory_stats: MemoryStats,
+}
+
+/// Memory statistics for introspection.
+#[derive(Debug, Clone)]
+pub struct MemoryStats {
+    /// Number of items in short-term (working) memory.
+    pub short_term_count: usize,
+    /// Number of items in long-term memory.
+    pub long_term_count: usize,
+}
+
+/// Report from a sleep/consolidation cycle.
+#[derive(Debug, Clone)]
+pub struct SleepReport {
+    /// Number of memories scaled during consolidation.
+    pub scaled: usize,
+    /// Number of memories consolidated (merged).
+    pub consolidated: usize,
+    /// Number of memories pruned (removed).
+    pub pruned: usize,
+    /// Number of patterns extracted during consolidation.
+    pub patterns_extracted: usize,
+}
+
+/// The primary Symthaea consciousness facade.
+///
+/// Integrates the continuous mind (HDC+LTC cognitive processing) with
+/// the consciousness language core (NL understanding and generation)
+/// and the partnership module (relational consciousness tracking).
+pub struct Symthaea {
+    /// Core cognitive system.
+    mind: ContinuousMind,
+    /// Language processing core (used in Phase 3 for conscious NL understanding).
+    #[allow(dead_code)]
+    language: ConsciousnessLanguageCore,
+    /// LLM organ for text generation.
+    llm: LLMOrgan,
+    /// HDC dimension used.
+    hdc_dim: usize,
+    /// Number of LTC neurons (used in Phase 3 for LTC-paced generation).
+    #[allow(dead_code)]
+    ltc_neurons: usize,
+    /// Total interactions processed.
+    interactions: u64,
+    /// Human partner model for relational consciousness.
+    partner: HumanPartnerModel,
+    /// Relationship trajectory tracking.
+    trajectory: RelationshipTrajectory,
+    /// Phi-dyad calculator for relational Phi.
+    dyad_calculator: PhiDyadCalculator,
+    /// Recent AI states for dyad computation (ring buffer).
+    recent_ai_states: Vec<symthaea_core::hdc::unified_hv::ContinuousHV>,
+}
+
+impl Symthaea {
+    /// Create a new Symthaea instance with the given HDC dimension and LTC neuron count.
+    pub async fn new(hdc_dim: usize, ltc_neurons: usize) -> Result<Self> {
+        let mind_config = MindConfig {
+            dimension: hdc_dim,
+            ..MindConfig::default()
+        };
+
+        let mut mind = ContinuousMind::new(mind_config);
+        mind.awaken();
+
+        // Seed working memory with domain knowledge to establish epistemic baseline
+        let seeding_result = mind.seed_memory();
+        tracing::info!(
+            target: "symthaea::init",
+            prototypes = seeding_result.prototypes_seeded,
+            categories = ?seeding_result.categories,
+            "Working memory seeded with a priori knowledge"
+        );
+
+        let language_config = ConsciousnessLanguageConfig {
+            dimension: hdc_dim,
+            ..ConsciousnessLanguageConfig::default()
+        };
+        let language = ConsciousnessLanguageCore::new(language_config);
+
+        let llm_config = LLMOrganConfig {
+            dimension: hdc_dim,
+            ..LLMOrganConfig::default()
+        };
+        let backend = llm_backend::default_backend();
+        let llm = LLMOrgan::with_backend(llm_config, backend);
+
+        Ok(Self {
+            mind,
+            language,
+            llm,
+            hdc_dim,
+            ltc_neurons,
+            interactions: 0,
+            partner: HumanPartnerModel::new("human"),
+            trajectory: RelationshipTrajectory::default(),
+            dyad_calculator: PhiDyadCalculator::new(),
+            recent_ai_states: Vec::new(),
+        })
+    }
+
+    /// Resume from a saved state file.
+    ///
+    /// Loads persisted partnership state, trajectory, and interaction count.
+    /// Reconstructs the mind and language systems fresh (stateless between sessions).
+    pub fn resume(path: &str) -> Result<Self> {
+        let data = std::fs::read_to_string(path)
+            .with_context(|| format!("Failed to read state file: {}", path))?;
+        let state: PersistedState = serde_json::from_str(&data)
+            .with_context(|| "Failed to parse state file")?;
+
+        let hdc_dim = state.hdc_dim;
+        let ltc_neurons = state.ltc_neurons;
+
+        let mind_config = MindConfig {
+            dimension: hdc_dim,
+            ..MindConfig::default()
+        };
+        let mut mind = ContinuousMind::new(mind_config);
+        mind.awaken();
+
+        // Seed working memory on resume as well
+        let seeding_result = mind.seed_memory();
+        tracing::info!(
+            target: "symthaea::init",
+            prototypes = seeding_result.prototypes_seeded,
+            "Resumed with working memory seeded"
+        );
+
+        let language = ConsciousnessLanguageCore::default();
+        let backend = llm_backend::default_backend();
+        let llm = LLMOrgan::with_backend(LLMOrganConfig {
+            dimension: hdc_dim,
+            ..LLMOrganConfig::default()
+        }, backend);
+
+        Ok(Self {
+            mind,
+            language,
+            llm,
+            hdc_dim,
+            ltc_neurons,
+            interactions: state.interactions,
+            partner: state.partner,
+            trajectory: state.trajectory,
+            dyad_calculator: PhiDyadCalculator::new(),
+            recent_ai_states: state.recent_ai_states,
+        })
+    }
+
+    /// Process a query through the full consciousness pipeline.
+    ///
+    /// **Reason-then-Generate Pipeline (LLM as Broca's Area):**
+    ///
+    /// 1. Input → HDC encoding → Mind perceives
+    /// 2. Mind tick → HDC+LTC computes (the BRAIN thinks)
+    /// 3. Extract StructuredThought (articulate what was computed)
+    /// 4. Enrich with partnership context
+    /// 5. LLM Translation (Broca's Area - NOT reasoning!)
+    /// 6. Verify translation fidelity
+    /// 7. Partnership update → Response
+    ///
+    /// **Key Insight**: The LLM does NOT think. It translates pre-computed
+    /// structured thoughts into fluent natural language.
+    pub async fn process(&mut self, content: &str) -> Result<ProcessResponse> {
+        use std::time::Instant;
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let pipeline_start = Instant::now();
+        self.interactions += 1;
+
+        // Generate correlation ID for this request
+        let mut hasher = DefaultHasher::new();
+        content.hash(&mut hasher);
+        self.interactions.hash(&mut hasher);
+        let correlation_id = format!("broca_{:x}", hasher.finish());
+
+        // ====================================================================
+        // PHASE 1: PERCEPTION (Input → HDC encoding + text for classification)
+        // ====================================================================
+        let phase1_start = Instant::now();
+        let input_embedding = self.text_to_hv(content);
+        // Use perceive_text to enable HDC-based intent classification
+        self.mind.perceive_text(content, input_embedding.clone());
+        let phase1_duration = phase1_start.elapsed();
+
+        // ====================================================================
+        // PHASE 2: COGNITION (Mind tick - HDC+LTC THINKS)
+        // ====================================================================
+        let phase2_start = Instant::now();
+        self.mind.tick();
+        let phase2_duration = phase2_start.elapsed();
+
+        // ====================================================================
+        // PHASE 3: EXTRACTION (Articulate what was computed)
+        // ====================================================================
+        // This is the key innovation: we extract WHAT THE MIND COMPUTED,
+        // not what the LLM would make up.
+        let phase3_start = Instant::now();
+        let mut thought = self.mind.extract_structured_thought();
+        let phase3_duration = phase3_start.elapsed();
+
+        // Store original input for context
+        thought.original_input = Some(content.to_string());
+
+        // ====================================================================
+        // PHASE 4: RELATIONAL ENRICHMENT (Add partnership context)
+        // ====================================================================
+        thought.relationship_stage = self.partner.stage;
+        thought.relation_mode = self.partner.mode;
+        thought.trust = self.partner.trust;
+
+        // ====================================================================
+        // PHASE 5: TRANSLATION (Broca's Area - NOT reasoning!)
+        // ====================================================================
+        // The LLM's ONLY job is to convert the structured thought into
+        // fluent natural language. It must NOT add information.
+        let phase5_start = Instant::now();
+        let generation = self.llm.translate_thought(&thought).await;
+        let phase5_duration = phase5_start.elapsed();
+
+        // ====================================================================
+        // PHASE 6: FIDELITY VERIFICATION
+        // ====================================================================
+        // Check that the translation respects the structured thought
+        let translation_verified = self.verify_translation_fidelity(&thought, &generation.text);
+
+        if !translation_verified {
+            tracing::warn!(
+                "Translation fidelity warning: epistemic_status={:?}, text={}",
+                thought.epistemic_status,
+                &generation.text[..generation.text.len().min(100)]
+            );
+        }
+
+        // ====================================================================
+        // PHASE 7: PARTNERSHIP UPDATE
+        // ====================================================================
+        let consciousness = thought.phi as f32;
+        self.update_partnership(content, consciousness);
+
+        // Track AI state for dyad computation
+        let ai_hv = symthaea_core::hdc::unified_hv::ContinuousHV::from_values(
+            input_embedding.values.clone()
+        );
+        self.recent_ai_states.push(ai_hv);
+        if self.recent_ai_states.len() > 8 {
+            self.recent_ai_states.remove(0);
+        }
+
+        // ====================================================================
+        // PHASE 8: RESPONSE ASSEMBLY
+        // ====================================================================
+        let safe = consciousness > 0.1;
+        let steps_to_emergence = if consciousness >= 0.7 {
+            0
+        } else {
+            ((0.7 - consciousness) / 0.01) as usize
+        };
+
+        // ====================================================================
+        // OBSERVABILITY: Structured logging for Broca pipeline
+        // ====================================================================
+        let total_duration = pipeline_start.elapsed();
+
+        // Log at INFO level with structured fields for production observability
+        tracing::info!(
+            target: "symthaea::broca",
+            correlation_id = %correlation_id,
+            epistemic_status = ?thought.epistemic_status,
+            semantic_intent = ?thought.semantic_intent,
+            response_type = ?thought.response_type,
+            phi = thought.phi,
+            coherence = thought.coherence,
+            meta_awareness = thought.meta_awareness,
+            relationship_stage = ?thought.relationship_stage,
+            relation_mode = ?thought.relation_mode,
+            trust = thought.trust,
+            fidelity_verified = translation_verified,
+            phase1_perception_us = phase1_duration.as_micros(),
+            phase2_cognition_us = phase2_duration.as_micros(),
+            phase3_extraction_us = phase3_duration.as_micros(),
+            phase5_translation_us = phase5_duration.as_micros(),
+            total_duration_ms = total_duration.as_millis(),
+            input_len = content.len(),
+            output_len = generation.text.len(),
+            "Broca pipeline complete"
+        );
+
+        // Log epistemic distribution metrics (for aggregation)
+        tracing::debug!(
+            target: "symthaea::broca::metrics",
+            epistemic_status = ?thought.epistemic_status,
+            intent = ?thought.semantic_intent,
+            fidelity = translation_verified,
+            "epistemic_event"
+        );
+
+        // Warn on potential hallucination triggers (high novelty + certain status)
+        if matches!(thought.epistemic_status, crate::mind::structured_thought::EpistemicStatus::Certain)
+            && thought.coherence < 0.3
+        {
+            tracing::warn!(
+                target: "symthaea::broca::security",
+                correlation_id = %correlation_id,
+                coherence = thought.coherence,
+                "Potential hallucination risk: Certain status with low coherence"
+            );
+        }
+
+        Ok(ProcessResponse {
+            content: generation.text,
+            confidence: generation.confidence.min(consciousness),
+            safe,
+            steps_to_emergence,
+            translation_verified,
+            structured_thought: Some(thought),
+        })
+    }
+
+    /// Verify that the LLM translation respects the structured thought.
+    ///
+    /// Checks:
+    /// - Uncertain epistemic status → translation should contain hedging
+    /// - MustInclude constraints → translation should contain required content
+    /// - MustExclude constraints → translation should not contain forbidden content
+    fn verify_translation_fidelity(&self, thought: &StructuredThought, text: &str) -> bool {
+        let text_lower = text.to_lowercase();
+        let mut verified = true;
+
+        // Check 1: Epistemic status hedging
+        if thought.should_hedge() {
+            // Look for hedging language (all lowercase since we compare against text_lower)
+            let has_hedging = text_lower.contains("not sure")
+                || text_lower.contains("uncertain")
+                || text_lower.contains("don't know")
+                || text_lower.contains("possibly")
+                || text_lower.contains("possible")
+                || text_lower.contains("might")
+                || text_lower.contains("perhaps")
+                || text_lower.contains("maybe")
+                || text_lower.contains("i think")
+                || text_lower.contains("it seems")
+                || text_lower.contains("could be")
+                || text_lower.contains("unclear");
+
+            if !has_hedging {
+                tracing::debug!(
+                    "Translation verification: Missing hedging for {:?} epistemic status",
+                    thought.epistemic_status
+                );
+                verified = false;
+            }
+        }
+
+        // Check 2: MustInclude constraints
+        for constraint in &thought.constraints {
+            if constraint.constraint_type == ConstraintType::MustInclude {
+                if !text_lower.contains(&constraint.instruction.to_lowercase()) {
+                    tracing::debug!(
+                        "Translation verification: Missing required content: {}",
+                        constraint.instruction
+                    );
+                    verified = false;
+                }
+            }
+        }
+
+        // Check 3: MustExclude constraints
+        for constraint in &thought.constraints {
+            if constraint.constraint_type == ConstraintType::MustExclude {
+                if text_lower.contains(&constraint.instruction.to_lowercase()) {
+                    tracing::debug!(
+                        "Translation verification: Contains forbidden content: {}",
+                        constraint.instruction
+                    );
+                    verified = false;
+                }
+            }
+        }
+
+        verified
+    }
+
+    /// Introspect the current consciousness state.
+    pub fn introspect(&self) -> IntrospectionResult {
+        let state = self.mind.snapshot();
+        let working_mem = self.mind.working_memory();
+
+        IntrospectionResult {
+            consciousness_level: state.consciousness_level as f32,
+            self_loops: self.compute_self_loops(),
+            graph_size: working_mem.len() + self.mind.active_goals().len(),
+            complexity: state.meta_awareness as f32,
+            memory_stats: MemoryStats {
+                short_term_count: working_mem.len(),
+                long_term_count: self.interactions as usize,
+            },
+        }
+    }
+
+    /// Trigger a sleep/consolidation cycle.
+    pub async fn sleep(&mut self) -> Result<SleepReport> {
+        let before_count = self.mind.working_memory().len();
+
+        // Run multiple dream ticks to consolidate memory
+        for _ in 0..10 {
+            self.mind.tick();
+        }
+
+        let after_count = self.mind.working_memory().len();
+        let consolidated = before_count.saturating_sub(after_count);
+
+        Ok(SleepReport {
+            scaled: after_count,
+            consolidated,
+            pruned: 0,
+            patterns_extracted: consolidated / 2,
+        })
+    }
+
+    /// Save state to a file (pause the system).
+    ///
+    /// Persists partnership state, trajectory, and interaction count.
+    /// Mind and language state are ephemeral and rebuilt on resume.
+    pub fn pause(&self, path: &str) -> Result<()> {
+        let state = PersistedState {
+            hdc_dim: self.hdc_dim,
+            ltc_neurons: self.ltc_neurons,
+            interactions: self.interactions,
+            partner: self.partner.clone(),
+            trajectory: self.trajectory.clone(),
+            recent_ai_states: self.recent_ai_states.clone(),
+        };
+
+        let json = serde_json::to_string_pretty(&state)
+            .context("Failed to serialize state")?;
+        std::fs::write(path, json)
+            .with_context(|| format!("Failed to write state file: {}", path))?;
+        Ok(())
+    }
+
+    /// Get the current partnership state.
+    pub fn partnership_state(&self) -> PartnershipState {
+        let phi_dyad = self.compute_phi_dyad();
+        PartnershipState {
+            stage: self.partner.stage,
+            trust: self.partner.trust,
+            vulnerability: self.partner.vulnerability,
+            reciprocity: self.partner.reciprocity,
+            phi_dyad,
+            interactions: self.partner.interactions_count,
+            trajectory_points: self.trajectory.points().len(),
+        }
+    }
+
+    /// Get a reference to the mind for introspection.
+    ///
+    /// Used primarily for testing and debugging to inspect
+    /// working memory, seeding status, and internal state.
+    pub fn mind(&self) -> &ContinuousMind {
+        &self.mind
+    }
+
+    // ========================================================================
+    // Private helpers
+    // ========================================================================
+
+    /// Convert text to a RealHV embedding using simple hash-based encoding.
+    fn text_to_hv(&self, text: &str) -> RealHV {
+        let mut values = vec![0.0f32; self.hdc_dim];
+        for (i, byte) in text.bytes().enumerate() {
+            let idx = (byte as usize * 31 + i * 7) % self.hdc_dim;
+            values[idx] += 1.0;
+        }
+        // Normalize
+        let magnitude: f32 = values.iter().map(|v| v * v).sum::<f32>().sqrt();
+        if magnitude > 0.0 {
+            for v in values.iter_mut() {
+                *v /= magnitude;
+            }
+        }
+        RealHV::from_values(values)
+    }
+
+    /// Compute self-loops in the cognitive graph (working memory self-similarity).
+    fn compute_self_loops(&self) -> usize {
+        let wm = self.mind.working_memory();
+        let mut loops = 0;
+        for i in 0..wm.len() {
+            for j in (i + 1)..wm.len() {
+                if wm[i].similarity(&wm[j]).abs() > 0.5 {
+                    loops += 1;
+                }
+            }
+        }
+        loops
+    }
+
+    /// Update partnership model based on interaction.
+    fn update_partnership(&mut self, _content: &str, consciousness: f32) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs_f64();
+
+        // Derive interaction quality from consciousness level
+        let depth = (consciousness * 0.5).clamp(0.0, 1.0);
+        let safety = (consciousness * 0.7 + 0.2).clamp(0.0, 1.0);
+        let mutuality = (consciousness * 0.4 + 0.1).clamp(0.0, 1.0);
+
+        let event = InteractionEvent {
+            timestamp: now,
+            depth,
+            emotional_safety: safety,
+            mutuality,
+        };
+        self.partner.update_on_interaction(&event);
+
+        // Create a relational assessment from current state
+        let assessment = RelationalAssessment {
+            agent_a: "symthaea".to_string(),
+            agent_b: self.partner.partner_id.clone(),
+            phi_relation: self.partner.phi_relational,
+            stage: self.partner.stage,
+            synchrony: consciousness as f64 * 0.8,
+            turn_taking_quality: 0.7,
+            mutual_information: mutuality as f64,
+            mode: if self.partner.trust > 0.3 {
+                RelationMode::IThou
+            } else {
+                RelationMode::IIt
+            },
+            num_interactions: self.partner.interactions_count as usize,
+            relationship_age: now,
+            explanation: String::new(),
+        };
+        self.partner.update_from_assessment(&assessment);
+        self.partner.advance_stage_if_ready();
+
+        // Record trajectory point
+        let phi_dyad = self.compute_phi_dyad();
+        self.trajectory.record(now, self.partner.stage, phi_dyad);
+    }
+
+    /// Compute current Phi-dyad value.
+    fn compute_phi_dyad(&self) -> f64 {
+        if self.recent_ai_states.is_empty() {
+            return 0.0;
+        }
+
+        // Generate human states as reflections of AI states (simulated)
+        let human_states: Vec<symthaea_core::hdc::unified_hv::ContinuousHV> =
+            self.recent_ai_states.iter().map(|s| {
+                let mut vals = s.values.clone();
+                // Simple perturbation to simulate distinct human state
+                for v in vals.iter_mut() {
+                    *v *= 0.9;
+                    *v += 0.1;
+                }
+                symthaea_core::hdc::unified_hv::ContinuousHV::from_values(vals).normalize()
+            }).collect();
+
+        let assessment = RelationalAssessment {
+            agent_a: "symthaea".to_string(),
+            agent_b: self.partner.partner_id.clone(),
+            phi_relation: self.partner.phi_relational,
+            stage: self.partner.stage,
+            synchrony: self.partner.trust as f64,
+            turn_taking_quality: 0.7,
+            mutual_information: self.partner.reciprocity as f64,
+            mode: self.partner.mode,
+            num_interactions: self.partner.interactions_count as usize,
+            relationship_age: 0.0,
+            explanation: String::new(),
+        };
+
+        let input = DyadInput {
+            ai_states: &self.recent_ai_states,
+            human_states: &human_states,
+            relational: &assessment,
+            human_model: &self.partner,
+            weights: DyadWeights::default(),
+        };
+
+        self.dyad_calculator.compute(&input).phi_dyad
+    }
+}
+
+/// Serializable state for pause/resume persistence.
+///
+/// Only stores relational state (partnership, trajectory) and configuration.
+/// The mind and language cores are ephemeral and rebuilt on resume.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PersistedState {
+    hdc_dim: usize,
+    ltc_neurons: usize,
+    interactions: u64,
+    partner: HumanPartnerModel,
+    trajectory: RelationshipTrajectory,
+    recent_ai_states: Vec<symthaea_core::hdc::unified_hv::ContinuousHV>,
+}
+
+/// Summary of partnership state for external consumers.
+#[derive(Debug, Clone)]
+pub struct PartnershipState {
+    /// Current relationship stage.
+    pub stage: RelationshipStage,
+    /// Trust level (0.0-1.0).
+    pub trust: f32,
+    /// Vulnerability level (0.0-1.0).
+    pub vulnerability: f32,
+    /// Reciprocity level (0.0-1.0).
+    pub reciprocity: f32,
+    /// Current Phi-dyad value.
+    pub phi_dyad: f64,
+    /// Total interactions.
+    pub interactions: u64,
+    /// Number of trajectory points recorded.
+    pub trajectory_points: usize,
+}

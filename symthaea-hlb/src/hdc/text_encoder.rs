@@ -3,7 +3,7 @@
 //! Encodes text into hyperdimensional vectors using various strategies
 //! including n-gram encoding, positional encoding, and semantic hashing.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

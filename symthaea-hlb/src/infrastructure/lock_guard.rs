@@ -176,7 +176,7 @@ impl<T> ResilientRwLock<T> for RwLock<T> {
 ///
 /// # Usage
 ///
-/// ```rust
+/// ```rust,ignore
 /// // Simple form - uses file:line as context
 /// let guard = lock!(mutex);
 ///

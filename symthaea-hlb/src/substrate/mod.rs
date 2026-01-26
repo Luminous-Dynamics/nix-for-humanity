@@ -32,7 +32,7 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use crate::hdc::{HDC_DIMENSION, PackedBipolar};
+use symthaea_core::hdc::{HDC_DIMENSION, PackedBipolar};
 
 /// Hardware sensor reading
 #[derive(Debug, Clone)]

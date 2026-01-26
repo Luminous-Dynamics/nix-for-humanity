@@ -1,3 +1,4 @@
+#![cfg(feature = "cross_modal_router_module")]
 //! Cross-Modal Attention Router Integration Test Suite
 //!
 //! Tests for the cross-modal attention router covering:

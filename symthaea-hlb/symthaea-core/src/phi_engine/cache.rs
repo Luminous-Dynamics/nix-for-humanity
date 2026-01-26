@@ -21,7 +21,7 @@
 //! ```rust,ignore
 //! use symthaea::phi_engine::{CachedPhiEngine, PhiMethod};
 //!
-//! let mut engine = CachedPhiEngine::new(PhiMethod::Continuous, 100);
+//! let mut engine = CachedPhiEngine::new(PhiMethod::SpectralConnectivity, 100);
 //! let result = engine.compute(&topology.node_representations);
 //!
 //! // Second call with same topology is cached

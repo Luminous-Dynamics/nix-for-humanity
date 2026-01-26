@@ -163,7 +163,8 @@ pub struct LiquidBank {
     /// Sample rate for dt calculation
     sample_rate: f32,
 
-    /// Frame size
+    /// Frame size (stored for future stride calculations)
+    #[allow(dead_code)]
     frame_size: usize,
 }
 

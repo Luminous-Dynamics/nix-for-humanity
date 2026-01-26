@@ -4,21 +4,10 @@ info:
   description: |
     REST API for the Symthaea Consciousness Benchmark Platform.
 
-    Submit AI models for consciousness measurement (Φ calculation),
+    Submit AI models for consciousness measurement proxy (spectral connectivity, lambda2),
     compare against leaderboards, and access benchmark datasets.
 
-    ## Authentication
-
-    - **Free tier**: API key authentication, 10 requests/day
-    - **Pro tier**: API key + higher limits (1000 requests/day)
-    - **Academic**: Free unlimited access with .edu verification
-
-    ## Rate Limits
-
-    Rate limits are returned in response headers:
-    - `X-RateLimit-Limit`: Total requests allowed
-    - `X-RateLimit-Remaining`: Requests remaining
-    - `X-RateLimit-Reset`: Unix timestamp when limit resets
+    Authentication and rate limiting are planned but not enforced in the current API module.
 
   version: 1.0.0
   contact:
@@ -42,6 +31,8 @@ tags:
     description: Submit models for benchmark evaluation
   - name: Results
     description: Retrieve benchmark results
+  - name: Health
+    description: Service health status
   - name: Leaderboard
     description: Public leaderboard and rankings
   - name: Datasets
@@ -50,13 +41,34 @@ tags:
     description: Compare models and topologies
 
 paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Service health status.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  version:
+                    type: string
   /submit:
     post:
       tags:
         - Submissions
       summary: Submit model for consciousness evaluation
       description: |
-        Submit a model architecture description for Φ measurement.
+        Submit a model architecture description for spectral connectivity (lambda2) measurement.
 
         The model description should include:
         - Topology specification (adjacency matrix or edge list)
@@ -69,8 +81,6 @@ paths:
         - Large (1000-10000 nodes): ~5 minutes
 
       operationId: submitModel
-      security:
-        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -102,10 +112,6 @@ paths:
                 $ref: '#/components/schemas/SubmissionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
 
   /results/{submission_id}:
     get:
@@ -116,15 +122,13 @@ paths:
         Retrieve the results of a submitted benchmark evaluation.
 
         Results include:
-        - Φ value (integrated information)
+        - Spectral connectivity (lambda2) value
         - Confidence interval (95%)
         - Ranking among all submissions
         - Comparison with baseline topologies
         - Detailed metrics (algebraic connectivity, spectral gap, etc.)
 
       operationId: getResults
-      security:
-        - ApiKeyAuth: []
       parameters:
         - name: submission_id
           in: path
@@ -146,6 +150,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvaluationResult'
+        '500':
+          description: Evaluation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '202':
           description: Evaluation still in progress
           content:
@@ -161,7 +171,7 @@ paths:
         - Leaderboard
       summary: Get public leaderboard
       description: |
-        Retrieve the public leaderboard ranking all submitted models by Φ value.
+        Retrieve the public leaderboard ranking all submitted models by spectral connectivity (lambda2).
 
         Filtering options:
         - By topology category (ring, hypercube, custom, etc.)
@@ -221,7 +231,7 @@ paths:
         Get detailed rankings for the 19 validated topologies.
 
         Includes:
-        - Mean Φ with standard deviation
+        - Mean spectral connectivity (lambda2) with standard deviation
         - Statistical significance vs baseline (Random)
         - Category classification
         - Trend over time (if multiple submissions)
@@ -244,7 +254,7 @@ paths:
         Get information about available benchmark datasets.
 
         Datasets include:
-        - Consciousness benchmarks (Φ topologies)
+        - Consciousness benchmarks (spectral connectivity topologies)
         - Ethics benchmarks (ETHICS, BBQ, WinoBias)
         - Language benchmarks (NixOS commands)
 
@@ -286,63 +296,21 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /datasets/{dataset_id}/download:
-    get:
-      tags:
-        - Datasets
-      summary: Download dataset
-      description: |
-        Download the full dataset in specified format.
-
-        Available formats:
-        - json: Standard JSON format
-        - csv: Comma-separated values
-        - parquet: Apache Parquet (columnar)
-
-      operationId: downloadDataset
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: dataset_id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: format
-          in: query
-          schema:
-            type: string
-            enum: [json, csv, parquet]
-            default: json
-      responses:
-        '200':
-          description: Dataset file
-          content:
-            application/json:
-              schema:
-                type: object
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-
   /compare:
     post:
       tags:
         - Comparison
       summary: Compare two models
       description: |
-        Compare Φ values between two submitted models or against baseline topologies.
+        Compare spectral connectivity (lambda2) values between two submitted models or against baseline topologies.
 
         Returns:
-        - Absolute difference in Φ
+        - Absolute difference in spectral connectivity (lambda2)
         - Percentage difference
         - Statistical significance (t-test)
         - Effect size (Cohen's d)
 
       operationId: compareModels
-      security:
-        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -371,8 +339,6 @@ paths:
         (e.g., hypercubes from 2D to 7D) to identify optimal dimensionality.
 
       operationId: dimensionalSweep
-      security:
-        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -408,13 +374,6 @@ paths:
                 $ref: '#/components/schemas/SubmissionResponse'
 
 components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: API key for authentication
-
   schemas:
     SubmissionRequest:
       type: object
@@ -427,25 +386,25 @@ components:
           description: Human-readable model name
         topology_type:
           type: string
-          enum: [ring, torus, hypercube, star, random, small_world, custom]
-          description: Predefined topology type (or 'custom' for adjacency matrix)
+          enum: [ring, torus, hypercube, star, random, small_world, dense, custom]
+          description: Predefined topology type (set to custom when using adjacency_matrix, edge_list, or node_representations)
         n_nodes:
           type: integer
           minimum: 2
           maximum: 10000
-          description: Number of nodes (for predefined topologies)
+          description: Number of nodes (ring/small_world require >= 3; torus/hypercube ignore this; custom edge_list can omit to infer)
         dimension:
           type: integer
           minimum: 1
           maximum: 10
-          description: Dimension (for hypercube topology)
+          description: Dimension (for hypercube topology; currently supports 3 or 4)
         adjacency_matrix:
           type: array
           items:
             type: array
             items:
               type: number
-          description: Custom adjacency matrix (for custom topologies)
+          description: Weighted adjacency matrix for custom topology (must be square)
         edge_list:
           type: array
           items:
@@ -454,14 +413,14 @@ components:
               type: integer
             minItems: 2
             maxItems: 2
-          description: List of edges as [source, target] pairs
+          description: Edge list for custom topology (undirected)
         node_representations:
           type: array
           items:
             type: array
             items:
               type: number
-          description: Optional pre-computed node hypervectors (D=16384)
+          description: Precomputed node hypervectors (D=16384)
         description:
           type: string
           maxLength: 500
@@ -522,7 +481,7 @@ components:
         phi:
           type: number
           format: float
-          description: Integrated information (Φ) value
+          description: Spectral connectivity (lambda2) value (not IIT Phi)
         phi_confidence_interval:
           type: object
           properties:
@@ -552,6 +511,7 @@ components:
             properties:
               phi_difference:
                 type: number
+                description: Difference in spectral connectivity (lambda2)
               percent_difference:
                 type: number
               significantly_different:
@@ -609,6 +569,7 @@ components:
                 type: string
               phi:
                 type: number
+                description: Spectral connectivity (lambda2) value
               n_nodes:
                 type: integer
               topology_type:
@@ -639,6 +600,7 @@ components:
                 enum: [uniform, original, tier1, tier2, tier3, baseline]
               mean_phi:
                 type: number
+                description: Mean spectral connectivity (lambda2) value
               std_dev:
                 type: number
               n_samples:
@@ -738,6 +700,7 @@ components:
               type: string
             phi:
               type: number
+              description: Spectral connectivity (lambda2) value
             std_dev:
               type: number
         model_b:
@@ -747,6 +710,7 @@ components:
               type: string
             phi:
               type: number
+              description: Spectral connectivity (lambda2) value
             std_dev:
               type: number
         comparison:
@@ -793,16 +757,6 @@ components:
             code: "INVALID_REQUEST"
             message: "Adjacency matrix must be square"
 
-    Unauthorized:
-      description: Missing or invalid API key
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "UNAUTHORIZED"
-            message: "Invalid or missing API key"
-
     NotFound:
       description: Resource not found
       content:
@@ -812,23 +766,3 @@ components:
           example:
             code: "NOT_FOUND"
             message: "Submission not found"
-
-    RateLimitExceeded:
-      description: Rate limit exceeded
-      headers:
-        X-RateLimit-Limit:
-          schema:
-            type: integer
-        X-RateLimit-Remaining:
-          schema:
-            type: integer
-        X-RateLimit-Reset:
-          schema:
-            type: integer
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "RATE_LIMIT_EXCEEDED"
-            message: "Rate limit exceeded. Try again in 3600 seconds."

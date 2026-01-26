@@ -2,9 +2,17 @@
 //!
 //! Core HDC/VSA primitives and consciousness-related computations.
 //! Re-exports fundamental types from symthaea-core for unified API.
+//!
+//! # Architecture
+//! This module provides:
+//! - Re-exports from symthaea-core for basic HDC operations
+//! - Local extensions for consciousness-specific computations
+//! - Unified API for HDC operations across the library
+
+#![allow(unused_imports)]
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// RE-EXPORTS FROM SYMTHAEA-CORE
+// RE-EXPORTS FROM SYMTHAEA-CORE - Core Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Core HDC types from symthaea-core
@@ -15,13 +23,22 @@ pub use symthaea_core::hdc::{
     unified_hv::{ContinuousHV, BinaryHV, HV, HDC_DIMENSION},
     // Real-valued hypervectors
     real_hv::RealHV,
+    // LTC neuron count constants
+    LTC_NEURONS,
     // Primitive system
     primitive_system::{PrimitiveSystem, Primitive, PrimitiveTier},
     // Tiered Phi calculation
     TieredPhi,
     // Native similarity with PackedBipolar
     PackedBipolar, NativeSimilarityIndex,
+    // Causal types
+    CausalDirection,
+    // HDC context for arena-based operations
+    HdcContext,
 };
+
+// Re-export native_similarity module for tests
+pub use symthaea_core::hdc::native_similarity;
 
 // Re-export HDC_DIMENSION at module level for convenience
 pub const HDC_DIM: usize = symthaea_core::hdc::unified_hv::HDC_DIMENSION;
@@ -38,7 +55,81 @@ pub use symthaea_core::observability::{
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Subdirectory modules
+// RE-EXPORTS FROM SYMTHAEA-CORE - Full Modules
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Re-export entire modules for compatibility
+pub use symthaea_core::hdc::hebbian;
+pub use symthaea_core::hdc::adaptive_topology;
+pub use symthaea_core::hdc::sleep_and_altered_states;
+pub use symthaea_core::hdc::causal_mind;
+pub use symthaea_core::hdc::cross_modal_binding;
+pub use symthaea_core::hdc::unified_cognitive_core;
+pub use symthaea_core::hdc::collective_consciousness;
+pub use symthaea_core::hdc::grounded_understanding;
+pub use symthaea_core::hdc::predictive_coding;
+pub use symthaea_core::hdc::simd_hv16;
+pub use symthaea_core::hdc::binary_hv;
+pub use symthaea_core::hdc::unified_hv;
+pub use symthaea_core::hdc::real_hv;
+pub use symthaea_core::hdc::primitive_system;
+pub use symthaea_core::hdc::simd_ops;
+pub use symthaea_core::hdc::consciousness_integration;
+pub use symthaea_core::hdc::consciousness_topology_generators;
+pub use symthaea_core::hdc::spectral_connectivity;
+pub use symthaea_core::hdc::global_workspace;
+pub use symthaea_core::hdc::meta_consciousness;
+pub use symthaea_core::hdc::relational_consciousness;
+pub use symthaea_core::hdc::text_encoder;
+pub use symthaea_core::hdc::semantic_encoder;
+pub use symthaea_core::hdc::semantic_decoder;
+pub use symthaea_core::hdc::reservoir;
+pub use symthaea_core::hdc::cincinnati_ltc;
+pub use symthaea_core::hdc::cincinnati_enhanced;
+pub use symthaea_core::hdc::cincinnati_advanced;
+pub use symthaea_core::hdc::cincinnati_network;
+pub use symthaea_core::hdc::gwt_cincinnati_integration;
+pub use symthaea_core::hdc::universal_semantics;
+pub use symthaea_core::hdc::tiered_phi as core_tiered_phi;
+pub use symthaea_core::hdc::arithmetic_engine;
+pub use symthaea_core::hdc::consciousness_persistence as core_consciousness_persistence;
+pub use symthaea_core::hdc::conscious_learning as core_conscious_learning;
+pub use symthaea_core::hdc::adaptive_learning_signals as core_adaptive_learning;
+pub use symthaea_core::hdc::unified_understanding as core_unified_understanding;
+pub use symthaea_core::hdc::full_stack_consciousness as core_full_stack;
+pub use symthaea_core::hdc::unified_conscious_being as core_unified_being;
+pub use symthaea_core::hdc::ecosystem_bridge as core_ecosystem_bridge;
+pub use symthaea_core::hdc::predictive_encoder as core_predictive_encoder;
+pub use symthaea_core::hdc::emotional_depth as core_emotional_depth;
+pub use symthaea_core::hdc::cross_modal_attention_router as core_attention_router;
+pub use symthaea_core::hdc::consciousness_streaming as core_streaming;
+pub use symthaea_core::hdc::consciousness_metacognition as core_metacognition;
+pub use symthaea_core::hdc::counterfactual_dreams as core_counterfactual;
+pub use symthaea_core::hdc::self_improvement_integration as core_self_improvement;
+pub use symthaea_core::hdc::consciousness_advanced_cognition as core_advanced_cognition;
+pub use symthaea_core::hdc::consciousness_complete_being as core_complete_being;
+pub use symthaea_core::hdc::consciousness_cross_integration as core_cross_integration;
+pub use symthaea_core::hdc::consciousness_feedback_dynamics as core_feedback_dynamics;
+
+// Re-export from causal_mind
+pub use symthaea_core::hdc::causal_mind::{CausalDiscoveryResult, CausalFeatures};
+
+// Re-export SemanticPrime
+pub use symthaea_core::hdc::universal_semantics::SemanticPrime;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RE-EXPORTS - Convenience Types (only types that exist)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Re-exports from symthaea-core consciousness modules
+pub use symthaea_core::hdc::consciousness_topology_generators::{ConsciousnessTopology, TopologyType};
+pub use symthaea_core::hdc::relational_consciousness::RelationalConsciousness;
+pub use symthaea_core::hdc::meta_consciousness::MetaConsciousness;
+pub use symthaea_core::hdc::global_workspace::GlobalWorkspace;
+pub use symthaea_core::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOCAL MODULES - Subdirectory modules (stable)
 // ═══════════════════════════════════════════════════════════════════════════════
 pub mod arithmetic;
 pub mod consciousness;
@@ -46,117 +137,7 @@ pub mod tiered_phi;
 pub mod phi;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Core HDC modules
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod hdc_trait;
-pub mod native_similarity;
-pub mod simd_ops;
-pub mod hd_ltc_codec;
-pub mod hdc_ltc_neuron;
-pub mod text_encoder;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Consciousness/Phi computation
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod relational_consciousness;
-pub mod consciousness_topology_generators;
-pub mod phi_real;
-pub mod meta_consciousness;
-pub mod global_workspace;
-pub mod consciousness_integration;
-pub mod arithmetic_engine;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Cincinnati consciousness architecture
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod cincinnati_network;
-pub mod cincinnati_enhanced;
-pub mod cincinnati_advanced;
-pub mod cincinnati_ltc;
-pub mod gwt_cincinnati_integration;
-pub mod universal_semantics;
-
-// Re-exports for Cincinnati LTC and Universal Semantics
-pub use cincinnati_ltc::{CincinnatiLTC, CincinnatiLTCConfig, LTCLayer, LTCNeuronState};
-pub use universal_semantics::{UniversalSemantics, UniversalSemanticsConfig, SemanticConcept, SemanticDomain, SemanticSearchResult};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Consciousness integration
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod conscious_learning;
-pub mod consciousness_advanced_cognition;
-pub mod consciousness_complete_being;
-pub mod consciousness_cross_integration;
-pub mod consciousness_feedback_dynamics;
-pub mod consciousness_integration_demo;
-pub mod consciousness_metacognition;
-pub mod consciousness_persistence;
-pub mod consciousness_streaming;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Semantic processing
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod semantic_encoder;
-pub mod semantic_decoder;
-pub mod semantic_primitive_encoder;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Learning and adaptation
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod adaptive_learning_signals;
-pub mod cycle_detector;
-pub mod counterfactual_dreams;
-pub mod self_improvement_integration;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Perception and attention
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod cross_modal_attention_router;
-pub mod emotional_depth;
-pub mod predictive_encoder;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Infrastructure
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod ecosystem_bridge;
-pub mod infrastructure_bridge;
-pub mod reservoir;
-pub mod ltc_generative_core;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOCAL MODULES - Meta-cognition
-// ═══════════════════════════════════════════════════════════════════════════════
-pub mod meta_conscious_conversation;
-pub mod primitive_dashboard;
-pub mod unified_conscious_being;
-pub mod unified_understanding;
-pub mod full_stack_consciousness;
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // LOCAL MODULES - Testing
 // ═══════════════════════════════════════════════════════════════════════════════
 #[cfg(test)]
 pub mod proptest_hdc;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// RE-EXPORTS FROM LOCAL MODULES
-// ═══════════════════════════════════════════════════════════════════════════════
-pub use hdc_trait::*;
-pub use tiered_phi::*;
-
-// Re-export key types for backward compatibility
-pub use symthaea_core::hdc::binary_hv as binary_hv;
-pub use symthaea_core::hdc::unified_hv as unified_hv;
-pub use symthaea_core::hdc::real_hv as real_hv;
-pub use symthaea_core::hdc::primitive_system as primitive_system;
-
-// Re-exports from new consciousness/HDC modules
-pub use consciousness_topology_generators::{ConsciousnessTopology, TopologyType, TopologyGenerator};
-pub use phi_real::{PhiRealCalculator, PhiRealResult, PhiRealConfig};
-pub use relational_consciousness::{RelationalConsciousness, RelationType, RelationalNode};
-pub use meta_consciousness::{MetaConsciousness, MetaLevel, StrangeLoop, SelfModel};
-pub use global_workspace::{GlobalWorkspace, Coalition, Broadcast, GlobalWorkspaceConfig};
-pub use hdc_ltc_neuron::{HdcLtcNeuron, HdcLtcLayer, HdcLtcNetwork, HdcLtcNeuronConfig};
-pub use text_encoder::{TextEncoder, TextEncoderConfig, TextEncodingResult, SemanticHash};
-pub use consciousness_integration::*;
-pub use arithmetic_engine::*;

@@ -8,7 +8,36 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
+
+use crate::mind::StructuredThought;
+
+/// System prompt for translation mode.
+///
+/// This prompt instructs the LLM to act as Broca's Area - a faithful
+/// translator of pre-computed thoughts, NOT a reasoning engine.
+pub const TRANSLATION_SYSTEM_PROMPT: &str = r#"You are Symthaea's TRANSLATION ORGAN (Broca's Area).
+
+Your role is to convert structured thought data into natural, fluent language.
+
+CRITICAL RULES:
+1. TRANSLATE what is given - do NOT add information or reasoning
+2. PRESERVE semantic content exactly - if the thought says "Answer", give an answer
+3. RESPECT epistemic status:
+   - Certain: Speak confidently
+   - Probable: Use "likely", "probably"
+   - Uncertain: Use "I'm not sure", "possibly", "might"
+   - Unknown: Express clearly that you don't know
+   - OutOfDomain: State this is outside your knowledge
+4. MATCH the specified emotional tone (valence, arousal, warmth)
+5. HONOR relationship context - adjust formality based on stage and mode
+6. FOLLOW all constraints (length, tone, must-include, must-exclude)
+
+YOU ARE NOT THE BRAIN. The thinking is done. You just make it sound natural.
+
+If EPISTEMIC_STATUS is Uncertain, Unknown, or OutOfDomain, you MUST include hedging language.
+Never claim certainty when the structured thought indicates uncertainty.
+"#;
 
 /// Configuration for LLM organ
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -160,6 +189,12 @@ pub enum QueryType {
     Code,
     /// Conversation
     Conversation,
+    /// Translation mode: Structured thought → natural language
+    ///
+    /// In this mode, the LLM acts as Broca's Area - it TRANSLATES
+    /// pre-computed structured thoughts into fluent language.
+    /// It must NOT add reasoning or information beyond what's given.
+    Translation,
 }
 
 /// Query parameters
@@ -174,7 +209,6 @@ pub struct LLMQueryParams {
 }
 
 /// The LLM organ system
-#[derive(Debug)]
 pub struct LLMOrgan {
     /// Configuration
     config: LLMOrganConfig,
@@ -184,6 +218,18 @@ pub struct LLMOrgan {
     embedding_cache: HashMap<String, RealHV>,
     /// Statistics
     stats: LLMOrganStats,
+    /// Optional LLM backend for real generation
+    backend: Option<Box<dyn super::llm_backend::LLMBackend>>,
+}
+
+impl std::fmt::Debug for LLMOrgan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LLMOrgan")
+            .field("config", &self.config)
+            .field("stats", &self.stats)
+            .field("has_backend", &self.backend.is_some())
+            .finish()
+    }
 }
 
 /// Statistics for LLM organ
@@ -202,14 +248,83 @@ pub struct LLMOrganStats {
 }
 
 impl LLMOrgan {
-    /// Create a new LLM organ
+    /// Create a new LLM organ (simulation-only, no backend).
     pub fn new(config: LLMOrganConfig) -> Self {
         Self {
             config,
             conversation_history: VecDeque::new(),
             embedding_cache: HashMap::new(),
             stats: LLMOrganStats::default(),
+            backend: None,
         }
+    }
+
+    /// Create a new LLM organ with a backend for real generation.
+    pub fn with_backend(config: LLMOrganConfig, backend: Box<dyn super::llm_backend::LLMBackend>) -> Self {
+        Self {
+            config,
+            conversation_history: VecDeque::new(),
+            embedding_cache: HashMap::new(),
+            stats: LLMOrganStats::default(),
+            backend: Some(backend),
+        }
+    }
+
+    /// Async query that tries the LLM backend first, falls back to simulation.
+    ///
+    /// This is the preferred entry point when running in an async context.
+    /// If no backend is configured or the backend fails, falls back to
+    /// the simulated response path.
+    pub async fn query_async(&mut self, query: LLMQuery) -> LLMGenerationResult {
+        use super::llm_backend::GenerationParams;
+
+        // Try backend first if available
+        if let Some(ref backend) = self.backend {
+            let params = GenerationParams {
+                temperature: query.params.as_ref()
+                    .and_then(|p| p.temperature)
+                    .unwrap_or(self.config.temperature),
+                max_tokens: query.params.as_ref()
+                    .and_then(|p| p.max_length)
+                    .unwrap_or(self.config.max_generation_length),
+                system_prompt: query.system_prompt.clone(),
+            };
+
+            match backend.generate(&query.content, &params).await {
+                Ok(text) => {
+                    self.stats.queries_processed += 1;
+                    let tokens_generated = text.split_whitespace().count();
+                    self.stats.tokens_generated += tokens_generated as u64;
+
+                    let embedding = self.text_to_embedding(&text);
+
+                    if self.config.memory_enabled {
+                        self.conversation_history.push_back(ConversationMessage::user(&query.content));
+                        self.conversation_history.push_back(ConversationMessage::assistant(&text));
+                        while self.conversation_history.len() > 100 {
+                            self.conversation_history.pop_front();
+                        }
+                    }
+
+                    return LLMGenerationResult {
+                        text,
+                        confidence: 0.9,
+                        tokens_generated,
+                        generation_time_ms: 0.0, // TODO: measure
+                        embedding,
+                        finish_reason: FinishReason::EndOfSequence,
+                    };
+                }
+                Err(e) => {
+                    // Fall through to simulation
+                    self.stats.errors += 1;
+                    eprintln!("LLM backend error, falling back to simulation: {}", e);
+                }
+            }
+        }
+
+        // Fallback: use simulation
+        self.query(query)
     }
 
     /// Process a query
@@ -226,6 +341,11 @@ impl LLMOrgan {
             QueryType::Analysis => self.simulate_analysis(&query.content),
             QueryType::Code => self.simulate_code(&query.content),
             QueryType::Conversation | QueryType::Generation => self.simulate_generation(&query.content),
+            QueryType::Translation => {
+                // For sync simulation, create a default thought and simulate
+                let thought = StructuredThought::default();
+                self.simulate_translation(&thought)
+            }
         };
 
         let tokens_generated = response.split_whitespace().count();
@@ -368,6 +488,175 @@ impl LLMOrgan {
     pub fn stats(&self) -> &LLMOrganStats {
         &self.stats
     }
+
+    // ========================================================================
+    // Translation Mode (Broca's Area Interface)
+    // ========================================================================
+
+    /// Translate a structured thought into natural language.
+    ///
+    /// This is the key method for the "Reason-then-Generate" pipeline.
+    /// The mind has already computed what to say; this method uses the LLM
+    /// purely for fluent translation, NOT for reasoning.
+    ///
+    /// Uses low temperature (0.3) to ensure faithful translation.
+    pub async fn translate_thought(&mut self, thought: &StructuredThought) -> LLMGenerationResult {
+        let prompt = self.build_translation_prompt(thought);
+
+        let query = LLMQuery {
+            query_type: QueryType::Translation,
+            content: prompt,
+            context: Vec::new(),
+            system_prompt: Some(TRANSLATION_SYSTEM_PROMPT.to_string()),
+            params: Some(LLMQueryParams {
+                temperature: Some(0.3), // Low temp for faithful translation
+                max_length: Some(512),
+                stop_sequences: vec![],
+            }),
+        };
+
+        self.query_async(query).await
+    }
+
+    /// Build the translation prompt from a structured thought.
+    ///
+    /// Creates a structured representation that the translation system prompt
+    /// can parse and faithfully render into natural language.
+    fn build_translation_prompt(&self, thought: &StructuredThought) -> String {
+        let mut prompt = String::new();
+
+        prompt.push_str("=== STRUCTURED THOUGHT TO TRANSLATE ===\n\n");
+
+        // Use the thought's built-in serialization
+        prompt.push_str(&thought.to_translation_prompt());
+
+        prompt.push_str("\n=== TRANSLATION INSTRUCTIONS ===\n");
+        prompt.push_str("Convert the above structured thought into a natural, ");
+
+        // Add specific guidance based on intent
+        match thought.semantic_intent {
+            crate::mind::SemanticIntent::Acknowledge => {
+                prompt.push_str("brief acknowledgment. ");
+            }
+            crate::mind::SemanticIntent::Answer => {
+                prompt.push_str("informative response. ");
+            }
+            crate::mind::SemanticIntent::Clarify => {
+                prompt.push_str("clarifying question. ");
+            }
+            crate::mind::SemanticIntent::ProposeAction => {
+                prompt.push_str("actionable suggestion. ");
+            }
+            crate::mind::SemanticIntent::ExpressUncertainty => {
+                prompt.push_str("honest expression of uncertainty. ");
+            }
+            crate::mind::SemanticIntent::Reflect => {
+                prompt.push_str("thoughtful reflection. ");
+            }
+            crate::mind::SemanticIntent::Continue => {
+                prompt.push_str("encouraging continuation prompt. ");
+            }
+            crate::mind::SemanticIntent::Unknown => {
+                prompt.push_str("appropriate response given the context. ");
+            }
+        }
+
+        // Add epistemic guidance
+        if thought.should_hedge() {
+            prompt.push_str("\nIMPORTANT: Include hedging language to express uncertainty. ");
+            prompt.push_str("Do NOT claim certainty. Use phrases like \"I'm not sure\", ");
+            prompt.push_str("\"possibly\", \"it might be\", or \"I don't know\".\n");
+        }
+
+        // Add warmth guidance
+        let warmth = thought.target_warmth();
+        if warmth > 0.7 {
+            prompt.push_str("\nMaintain a warm, friendly tone.\n");
+        } else if warmth < 0.3 {
+            prompt.push_str("\nMaintain a neutral, professional tone.\n");
+        }
+
+        prompt.push_str("\nRespond ONLY with the translated natural language. ");
+        prompt.push_str("Do not include explanations or meta-commentary.");
+
+        prompt
+    }
+
+    /// Simulate translation for when no LLM backend is available.
+    fn simulate_translation(&self, thought: &StructuredThought) -> String {
+        use crate::mind::{EpistemicStatus, SemanticIntent};
+
+        let mut response = String::new();
+
+        // Build response based on structured thought
+        match thought.semantic_intent {
+            SemanticIntent::Acknowledge => {
+                response.push_str("I understand.");
+            }
+            SemanticIntent::Answer => {
+                response.push_str("Based on my processing, ");
+            }
+            SemanticIntent::Clarify => {
+                response.push_str("Could you clarify what you mean by that?");
+            }
+            SemanticIntent::ProposeAction => {
+                response.push_str("I suggest we ");
+            }
+            SemanticIntent::ExpressUncertainty => {
+                response.push_str("I'm not entirely sure about this. ");
+            }
+            SemanticIntent::Reflect => {
+                response.push_str("Reflecting on this, ");
+            }
+            SemanticIntent::Continue => {
+                response.push_str("Please continue.");
+            }
+            SemanticIntent::Unknown => {
+                response.push_str("I've processed your input. ");
+            }
+        }
+
+        // Add epistemic hedging if needed
+        match thought.epistemic_status {
+            EpistemicStatus::Certain => {}
+            EpistemicStatus::Probable => {
+                response.push_str("It's likely that ");
+            }
+            EpistemicStatus::Uncertain => {
+                response.push_str("I'm uncertain, but ");
+            }
+            EpistemicStatus::Unknown => {
+                response.push_str("I don't have enough information to be sure. ");
+            }
+            EpistemicStatus::OutOfDomain => {
+                response.push_str("This seems outside my area of knowledge. ");
+            }
+        }
+
+        // Add concept mentions if any
+        if !thought.activated_concepts.is_empty() {
+            let concepts: Vec<&str> = thought.activated_concepts
+                .iter()
+                .take(3)
+                .map(|c| c.name.as_str())
+                .collect();
+            if !concepts.is_empty() && thought.semantic_intent == SemanticIntent::Answer {
+                response.push_str(&format!(
+                    "The relevant concepts include: {}. ",
+                    concepts.join(", ")
+                ));
+            }
+        }
+
+        // Add confidence note
+        if thought.phi > 0.7 {
+            response.push_str("(High consciousness integration)");
+        } else if thought.phi < 0.3 {
+            response.push_str("(Processing with limited integration)");
+        }
+
+        response
+    }
 }
 
 impl Default for LLMOrgan {
@@ -419,5 +708,82 @@ mod tests {
         organ.generate("Second message");
 
         assert!(organ.conversation_history.len() >= 4);
+    }
+}
+
+// ============================================================================
+// TYPE ALIASES FOR INTEGRATION MODULE COMPATIBILITY
+// ============================================================================
+// The integration module uses different naming conventions.
+// These aliases provide compatibility.
+
+/// Type alias for camelCase naming convention
+pub type LlmOrgan = LLMOrgan;
+
+/// Type alias for camelCase config naming
+pub type LlmConfig = LLMOrganConfig;
+
+/// Type alias for query as request
+pub type LlmRequest = LLMQuery;
+
+/// Provider types for LLM backends
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LlmProvider {
+    /// Local Ollama instance
+    Ollama,
+    /// OpenAI API
+    OpenAI,
+    /// Anthropic Claude
+    Anthropic,
+    /// Custom/local model
+    Local,
+}
+
+impl Default for LlmProvider {
+    fn default() -> Self {
+        LlmProvider::Local
+    }
+}
+
+/// Consciousness-aware LLM wrapper
+///
+/// Wraps an LLMOrgan with consciousness integration capabilities.
+#[derive(Debug)]
+pub struct ConsciousLlmOrgan {
+    /// Inner LLM organ
+    pub inner: LLMOrgan,
+    /// Provider type
+    pub provider: LlmProvider,
+    /// Current consciousness level (0.0-1.0)
+    pub consciousness_level: f32,
+}
+
+impl ConsciousLlmOrgan {
+    /// Create a new conscious LLM organ
+    pub fn new(config: LLMOrganConfig, provider: LlmProvider) -> Self {
+        Self {
+            inner: LLMOrgan::new(config),
+            provider,
+            consciousness_level: 0.5,
+        }
+    }
+
+    /// Process a query with consciousness awareness
+    pub fn conscious_query(&mut self, query: LLMQuery) -> LLMGenerationResult {
+        // Adjust response based on consciousness level
+        let mut result = self.inner.query(query);
+        result.confidence *= self.consciousness_level;
+        result
+    }
+
+    /// Update consciousness level
+    pub fn set_consciousness_level(&mut self, level: f32) {
+        self.consciousness_level = level.clamp(0.0, 1.0);
+    }
+}
+
+impl Default for ConsciousLlmOrgan {
+    fn default() -> Self {
+        Self::new(LLMOrganConfig::default(), LlmProvider::Local)
     }
 }

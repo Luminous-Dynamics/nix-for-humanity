@@ -35,8 +35,8 @@
 //! let validated = service.get_validated_discoveries(0.5);
 //! ```
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::primitive_system::{Primitive, PrimitiveTier, PrimitiveSystem};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::{Primitive, PrimitiveTier, PrimitiveSystem};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::{Sender, Receiver, channel};

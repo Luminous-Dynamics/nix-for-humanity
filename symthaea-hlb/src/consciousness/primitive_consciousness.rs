@@ -35,8 +35,8 @@
 //! └─────────────────────────────────────────────────────────────────────┘
 //! ```
 
-use crate::hdc::primitive_system::{Primitive, PrimitiveSystem, PrimitiveTier};
-use crate::hdc::HV16;
+use symthaea_core::hdc::primitive_system::{Primitive, PrimitiveSystem, PrimitiveTier};
+use symthaea_core::hdc::HV16;
 use crate::consciousness::primitive_reasoning::{
     ReasoningChain, TransformationType, AdaptivePrimitiveSelector,
     PrimitiveAffinityGraph, TaskType, TierAwareConfig,

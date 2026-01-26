@@ -160,7 +160,8 @@ pub struct CetaceanScorer {
     /// Place-only basis (for modulation analysis)
     place_basis: HashMap<CetaceanPlace, HV16>,
 
-    /// HDC score weight (vs local constraints)
+    /// HDC score weight (vs local constraints) - reserved for weighted scoring
+    #[allow(dead_code)]
     hdc_weight: f32,
 
     /// Training sequence count

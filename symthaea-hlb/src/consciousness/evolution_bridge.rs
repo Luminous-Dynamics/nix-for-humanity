@@ -41,7 +41,7 @@ use crate::consciousness::primitive_evolution::{
 use crate::consciousness::primitive_reasoning::{
     AdaptivePrimitiveSelector, TaskType, ReasoningChain,
 };
-use crate::hdc::primitive_system::PrimitiveTier;
+use symthaea_core::hdc::primitive_system::PrimitiveTier;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 

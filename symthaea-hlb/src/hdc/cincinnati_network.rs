@@ -29,9 +29,9 @@
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 
-use crate::hdc::unified_hv::ContinuousHV;
-use crate::hdc::hdc_ltc_neuron::{HdcLtcNetwork, HdcLtcNetworkConfig};
-use crate::hdc::cincinnati_ltc::{
+use symthaea_core::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::hdc_ltc_neuron::{HdcLtcNetwork, HdcLtcNetworkConfig};
+use symthaea_core::hdc::cincinnati_ltc::{
     CincinnatiEstimator, LateralBinder, PredictiveBudding, PoGMetrics, BuddingEvent,
 };
 
@@ -445,7 +445,7 @@ impl CincinnatiHdcLtcNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::HDC_DIMENSION;
+    use symthaea_core::hdc::HDC_DIMENSION;
 
     #[test]
     fn test_network_creation() {

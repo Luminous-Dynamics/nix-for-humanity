@@ -474,18 +474,19 @@ impl CoherenceBridgedSchool {
         // ═══════════════════════════════════════════════════════════════════════
 
         // Check for cortisol impairment (stress reduces learning effectiveness)
-        let stress_impaired = self.hormones.cortisol > self.config.cortisol_impairment_threshold;
+        let cortisol_threshold = self.config.cortisol_impairment_threshold as f64;
+        let stress_impaired = self.hormones.cortisol > cortisol_threshold;
         let cortisol_penalty = if stress_impaired {
-            1.0 - (self.hormones.cortisol - self.config.cortisol_impairment_threshold).min(0.3)
+            1.0 - (self.hormones.cortisol - cortisol_threshold).min(0.3)
         } else {
             1.0
         };
 
         // Calculate dopamine boost to Φ gain (reward enhances integration)
-        let dopamine_boost = 1.0 + (self.hormones.dopamine * self.config.dopamine_phi_boost);
+        let dopamine_boost = 1.0 + (self.hormones.dopamine * self.config.dopamine_phi_boost as f64);
 
         // Calculate oxytocin boost to coherence changes (connection enhances)
-        let oxytocin_boost = 1.0 + (self.hormones.oxytocin * self.config.oxytocin_coherence_boost);
+        let oxytocin_boost = 1.0 + (self.hormones.oxytocin * self.config.oxytocin_coherence_boost as f64);
 
         // Combined hormone effect on Φ
         let hormone_phi_modifier = dopamine_boost * cortisol_penalty;
@@ -507,7 +508,7 @@ impl CoherenceBridgedSchool {
 
         // 5. Adjust actual Φ gain by coherence AND hormone multipliers
         // (Low coherence = reduced effectiveness, stress = impaired, dopamine = boosted)
-        learning_result.actual_phi_gain *= coherence_multiplier * hormone_phi_modifier;
+        learning_result.actual_phi_gain *= coherence_multiplier * hormone_phi_modifier as f32;
 
         // ═══════════════════════════════════════════════════════════════════════
         // LAYER 1: Φ → Coherence (reverse direction - THE NEW PART!)
@@ -517,7 +518,7 @@ impl CoherenceBridgedSchool {
         let phi_coherence_boost = if learning_result.actual_phi_gain > 0.0 {
             // Positive Φ gain → coherence boost (proportional, with oxytocin enhancement)
             let raw_boost = learning_result.actual_phi_gain * self.config.phi_to_coherence_factor;
-            let boosted = raw_boost * oxytocin_boost;
+            let boosted = raw_boost * oxytocin_boost as f32;
             boosted.min(self.config.max_phi_coherence_boost)
         } else if learning_result.actual_phi_gain < 0.0 {
             // Negative Φ → coherence penalty (disintegration scatters)
@@ -594,8 +595,8 @@ impl CoherenceBridgedSchool {
             phi_coherence_boost,
             virtuous_cycle_active,
             // Layer 2: Hormone effects
-            hormone_phi_modifier,
-            hormone_coherence_modifier,
+            hormone_phi_modifier: hormone_phi_modifier as f32,
+            hormone_coherence_modifier: hormone_coherence_modifier as f32,
             stress_impaired,
         })
     }

@@ -32,7 +32,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::unified_hv::ContinuousHV;
 
 // ============================================================================
 // CONFIGURATION

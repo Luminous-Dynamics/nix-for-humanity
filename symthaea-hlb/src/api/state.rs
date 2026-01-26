@@ -4,9 +4,9 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use uuid::Uuid;
 use crate::api::models::*;
-use crate::hdc::{
+use symthaea_core::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::ConnectivityCalculator,
     HDC_DIMENSION,
 };
 
@@ -18,8 +18,8 @@ pub struct AppState {
     pub results: RwLock<HashMap<Uuid, EvaluationResult>>,
     /// Pre-computed baseline topologies
     pub baselines: HashMap<String, BaselineTopology>,
-    /// Φ calculator
-    pub phi_calculator: RealPhiCalculator,
+    /// Spectral connectivity calculator (lambda2, not IIT Phi)
+    pub phi_calculator: ConnectivityCalculator,
 }
 
 /// A submitted evaluation job
@@ -38,6 +38,9 @@ pub struct SubmissionRequestStored {
     pub topology_type: Option<TopologyType>,
     pub n_nodes: Option<usize>,
     pub dimension: Option<usize>,
+    pub adjacency_matrix: Option<Vec<Vec<f32>>>,
+    pub edge_list: Option<Vec<[usize; 2]>>,
+    pub node_representations: Option<Vec<Vec<f32>>>,
     pub description: Option<String>,
     pub public: bool,
 }
@@ -55,7 +58,7 @@ pub struct BaselineTopology {
 impl AppState {
     /// Create new application state with pre-computed baselines
     pub fn new() -> Self {
-        let phi_calculator = RealPhiCalculator::new();
+        let phi_calculator = ConnectivityCalculator::new();
 
         // Pre-compute baseline topologies
         let baselines = Self::compute_baselines(&phi_calculator);
@@ -69,7 +72,7 @@ impl AppState {
     }
 
     /// Compute baseline topology Φ values
-    fn compute_baselines(calc: &RealPhiCalculator) -> HashMap<String, BaselineTopology> {
+    fn compute_baselines(calc: &ConnectivityCalculator) -> HashMap<String, BaselineTopology> {
         let mut baselines = HashMap::new();
         let n_nodes = 8;
         let n_samples = 10;
@@ -78,23 +81,26 @@ impl AppState {
         let topology_specs: Vec<(&str, &str, Box<dyn Fn(u64) -> ConsciousnessTopology>)> = vec![
             ("ring", "uniform", Box::new(move |s| ConsciousnessTopology::ring(n_nodes, HDC_DIMENSION, s))),
             ("star", "original", Box::new(move |s| ConsciousnessTopology::star(n_nodes, HDC_DIMENSION, s))),
-            ("random", "baseline", Box::new(move |s| ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, s, 0.3))),
-            ("hypercube_3d", "tier3", Box::new(move |s| ConsciousnessTopology::hypercube_3d(s))),
-            ("hypercube_4d", "tier3", Box::new(move |s| ConsciousnessTopology::hypercube_4d(s))),
-            ("torus", "tier1", Box::new(move |s| ConsciousnessTopology::torus_3x3(HDC_DIMENSION, s))),
+            ("random", "baseline", Box::new(move |s| ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, s))),
+            ("hypercube_3d", "tier3", Box::new(move |s| ConsciousnessTopology::hypercube(3, HDC_DIMENSION, s))),
+            ("hypercube_4d", "tier3", Box::new(move |s| ConsciousnessTopology::hypercube(4, HDC_DIMENSION, s))),
+            ("torus", "tier1", Box::new(move |s| ConsciousnessTopology::torus_square(3, HDC_DIMENSION, s))),
         ];
 
         for (name, category, generator) in topology_specs {
-            let mut phis = Vec::new();
+            let mut connectivities = Vec::new();
             for i in 0..n_samples {
                 let topo = generator(base_seed + i as u64 * 1000);
-                let phi = calc.compute(&topo.node_representations);
-                phis.push(phi);
+                let connectivity = calc.algebraic_connectivity(&topo.node_representations);
+                connectivities.push(connectivity as f32);
             }
 
-            let mean: f32 = phis.iter().sum::<f32>() / n_samples as f32;
+            let mean: f32 = connectivities.iter().sum::<f32>() / n_samples as f32;
             let std_dev = if n_samples > 1 {
-                let variance: f32 = phis.iter().map(|p| (p - mean).powi(2)).sum::<f32>() / (n_samples - 1) as f32;
+                let variance: f32 = connectivities
+                    .iter()
+                    .map(|p| (p - mean).powi(2))
+                    .sum::<f32>() / (n_samples - 1) as f32;
                 variance.sqrt()
             } else {
                 0.0
@@ -117,8 +123,11 @@ impl AppState {
 
     /// Get leaderboard entries (sorted by Φ)
     pub fn get_leaderboard(&self, limit: usize, offset: usize) -> Vec<LeaderboardEntry> {
-        let results = self.results.read().unwrap();
-        let mut entries: Vec<_> = results.values()
+        let results: Vec<EvaluationResult> = self.results.read().unwrap()
+            .values()
+            .cloned()
+            .collect();
+        let mut entries: Vec<_> = results.iter()
             .filter(|r| r.status == SubmissionStatus::Completed)
             .map(|r| LeaderboardEntry {
                 rank: 0, // Will be set after sorting

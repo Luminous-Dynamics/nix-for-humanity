@@ -1,3 +1,4 @@
+#![cfg(feature = "web_research_module")]
 //! Web Research Integration Tests
 //!
 //! Tests for the web research system integrated with ContinuousMind.

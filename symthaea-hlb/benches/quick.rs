@@ -20,7 +20,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::RealPhiCalculator,
     HV16, HDC_DIMENSION,
 };
 

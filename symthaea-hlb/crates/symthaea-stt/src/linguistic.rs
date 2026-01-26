@@ -12,7 +12,8 @@ use std::collections::HashMap;
 
 /// Phoneme class definitions for English (ARPABET)
 pub struct PhonemeClasses {
-    /// Individual phoneme HVs
+    /// Individual phoneme HVs (reserved for future phoneme lookup)
+    #[allow(dead_code)]
     phonemes: HashMap<String, HV16>,
 
     // Manner of articulation classes
@@ -181,8 +182,6 @@ impl PhonemeClasses {
     ) -> f32 {
         let features = self.get_features(candidate_phoneme);
         let mut score: f32 = 1.0;
-        #[allow(unused_variables)]
-        let mut weights: f32 = 0.0;
 
         // Check voicing consistency (most discriminative)
         let voicing_evidence = acoustic_hv.similarity(&self.voiced)
@@ -190,16 +189,12 @@ impl PhonemeClasses {
 
         if features.is_voiced && voicing_evidence > 0.05 {
             score += 0.3;
-            weights += 1.0;
         } else if !features.is_voiced && voicing_evidence < -0.05 {
             score += 0.3;
-            weights += 1.0;
         } else if features.is_voiced && voicing_evidence < -0.1 {
             score -= 0.3;  // Penalty for mismatch
-            weights += 1.0;
         } else if !features.is_voiced && voicing_evidence > 0.1 {
             score -= 0.3;
-            weights += 1.0;
         }
 
         // Check manner consistency
@@ -210,7 +205,6 @@ impl PhonemeClasses {
             } else if nasal_score < -0.1 {
                 score -= 0.2;
             }
-            weights += 0.5;
         }
 
         if features.is_fricative {
@@ -218,7 +212,6 @@ impl PhonemeClasses {
             if fric_score > 0.1 {
                 score += 0.2;
             }
-            weights += 0.5;
         }
 
         // Check place consistency for consonants

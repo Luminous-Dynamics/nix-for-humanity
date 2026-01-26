@@ -158,7 +158,8 @@ pub struct StreamProcessor {
     ltc: LtcCell,
     /// Previous LTC state (for salience)
     prev_state: Vec<f32>,
-    /// Audio frontend for feature extraction
+    /// Audio frontend for feature extraction (reserved for mel-spectrogram processing)
+    #[allow(dead_code)]
     frontend: AudioFrontend,
     /// Phoneme resonator for decoding
     resonator: PhonemeResonator,

@@ -446,6 +446,59 @@ impl RealHV {
     pub fn dim(&self) -> usize {
         self.values.len()
     }
+
+    /// Get a slice view of the internal values
+    pub fn as_slice(&self) -> &[f32] {
+        &self.values
+    }
+
+    /// Create a RealHV from a slice
+    pub fn from_slice(slice: &[f32]) -> Self {
+        Self {
+            values: slice.to_vec(),
+        }
+    }
+
+    /// Perturb the hypervector by adding random noise
+    ///
+    /// The rate controls the magnitude of perturbation (0.0 = no change, 1.0 = significant change)
+    ///
+    /// # Example
+    /// ```
+    /// # use symthaea::hdc::real_hv::RealHV;
+    /// let original = RealHV::random(512, 42);
+    /// let perturbed = original.perturb(0.1);
+    /// assert!(original.similarity(&perturbed) > 0.8);  // Still similar
+    /// ```
+    pub fn perturb(&self, rate: f32) -> Self {
+        use blake3::Hasher;
+
+        // Generate deterministic noise based on vector content + system time
+        let mut hasher = Hasher::new();
+        for v in &self.values {
+            hasher.update(&v.to_le_bytes());
+        }
+        // Add some entropy for uniqueness
+        hasher.update(&(std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64).to_le_bytes());
+
+        let mut bytes = vec![0u8; self.values.len() * 4];
+        let mut xof = hasher.finalize_xof();
+        xof.fill(&mut bytes);
+
+        let values: Vec<f32> = self.values.iter()
+            .zip(bytes.chunks_exact(4))
+            .map(|(&val, chunk)| {
+                let bits = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+                let noise = (bits as f64 / u32::MAX as f64 * 2.0 - 1.0) as f32;
+                val + noise * rate
+            })
+            .collect();
+
+        Self { values }
+    }
 }
 
 #[cfg(test)]

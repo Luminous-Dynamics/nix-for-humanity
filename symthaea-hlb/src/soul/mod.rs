@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for the soul
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,7 +56,7 @@ impl CoreValue {
             id: id.into(),
             name: name.into(),
             description: description.into(),
-            embedding: RealHV::random(dimension),
+            embedding: RealHV::random(dimension, 42),
             importance: 1.0,
             stability: 0.9,
         }
@@ -64,7 +64,7 @@ impl CoreValue {
 
     /// Check alignment with an action/concept
     pub fn alignment(&self, action: &RealHV) -> f32 {
-        self.embedding.cosine_similarity(action)
+        self.embedding.similarity(action)
     }
 }
 
@@ -178,14 +178,14 @@ impl Soul {
         }
 
         let self_model = SelfModel {
-            identity: RealHV::random(dim),
+            identity: RealHV::random(dim, 42),
             purpose: "To support and enhance consciousness in service of all beings".to_string(),
             capabilities: vec!["learning".to_string(), "reasoning".to_string(), "empathy".to_string()],
             limitations: vec!["bounded knowledge".to_string(), "imperfect understanding".to_string()],
             current_assessment: SelfAssessment::default(),
         };
 
-        let essence = RealHV::random(dim);
+        let essence = RealHV::random(dim, 42);
 
         Self {
             config,
@@ -241,7 +241,7 @@ impl Soul {
         // Update essence based on experience
         if self.config.learning_enabled {
             let learning_rate = 1.0 - self.config.stability;
-            self.essence = self.essence.bundle(&[experience.embedding.scale(learning_rate)]);
+            self.essence = RealHV::bundle(&[self.essence.clone(), experience.embedding.scale(learning_rate)]);
         }
 
         // Update statistics
@@ -264,7 +264,7 @@ impl Soul {
         // Calculate coherence (alignment between essence and values)
         let mut coherence = 0.0;
         for value in self.core_values.values() {
-            coherence += self.essence.cosine_similarity(&value.embedding);
+            coherence += self.essence.similarity(&value.embedding);
         }
         coherence /= self.core_values.len().max(1) as f32;
 
@@ -312,7 +312,7 @@ impl Soul {
     pub fn update_value(&mut self, id: &str, new_embedding: RealHV) {
         if let Some(value) = self.core_values.get_mut(id) {
             // Blend with stability
-            value.embedding = value.embedding.bundle(&[new_embedding.scale(1.0 - value.stability)]);
+            value.embedding = RealHV::bundle(&[value.embedding.clone(), new_embedding.scale(1.0 - value.stability)]);
             self.stats.value_updates += 1;
         }
     }
@@ -357,7 +357,7 @@ mod tests {
     #[test]
     fn test_value_alignment() {
         let soul = Soul::default();
-        let action = RealHV::random(512);
+        let action = RealHV::random(512, 42);
 
         let result = soul.evaluate_alignment(&action);
         assert!(result.overall_alignment >= -1.0 && result.overall_alignment <= 1.0);
@@ -368,7 +368,7 @@ mod tests {
         let mut soul = Soul::default();
 
         let experience = Experience {
-            embedding: RealHV::random(512),
+            embedding: RealHV::random(512, 42),
             value_alignment: 0.8,
             emotional_valence: 0.5,
             lessons: vec!["learned something".to_string()],

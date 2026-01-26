@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for the actor system
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -153,11 +153,17 @@ pub struct ActorStats {
 impl Actor {
     /// Create a new actor
     pub fn new(id: ActorId, role: ActorRole, dimension: usize) -> Self {
+        // Use id and role hash for deterministic but unique initialization
+        let mut seed: u64 = 0x5174_1AEA; // "SYMTHAEA"
+        for byte in id.0.bytes() {
+            seed = seed.wrapping_mul(31).wrapping_add(byte as u64);
+        }
+        seed ^= role as u64 * 0x9E37_79B9;
         Self {
             id,
             role,
-            state: RealHV::random(dimension),
-            weights: RealHV::random(dimension),
+            state: RealHV::random(dimension, seed),
+            weights: RealHV::random(dimension, seed.wrapping_add(1)),
             activation: 0.0,
             inbox: VecDeque::new(),
             connections: Vec::new(),
@@ -185,7 +191,7 @@ impl Actor {
 
             match msg.message_type {
                 MessageType::Activate => {
-                    let similarity = self.state.cosine_similarity(&msg.content);
+                    let similarity = self.state.similarity(&msg.content);
                     if similarity > self.threshold {
                         self.activation = (self.activation + similarity).min(1.0);
 
@@ -224,12 +230,9 @@ impl Actor {
                 }
                 MessageType::Learn => {
                     // Update weights based on message content
-                    self.weights = self.weights.bundle(&[msg.content.scale(learning_rate)]);
+                    self.weights = RealHV::bundle(&[self.weights.clone(), msg.content.scale(learning_rate)]);
                     // Normalize
-                    let norm = self.weights.magnitude();
-                    if norm > 0.0 {
-                        self.weights = self.weights.scale(1.0 / norm);
-                    }
+                    self.weights = self.weights.normalize();
                 }
                 _ => {}
             }
@@ -440,6 +443,90 @@ impl Default for ActorSystem {
     }
 }
 
+// ============================================================================
+// Actor Trait (for mycelix/dark_spot_actor integration)
+// ============================================================================
+
+/// Priority levels for actor message processing
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ActorPriority {
+    /// Background priority - lowest, for non-time-critical tasks
+    Background,
+    /// Low priority background tasks
+    Low,
+    /// Normal priority
+    Normal,
+    /// High priority
+    High,
+    /// Critical priority - process immediately
+    Critical,
+}
+
+impl Default for ActorPriority {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
+/// Generic organ message for cross-actor communication (struct version)
+#[derive(Debug, Clone)]
+pub struct OrganMessageData {
+    /// Message payload as bytes
+    pub payload: Vec<u8>,
+    /// Message priority
+    pub priority: ActorPriority,
+    /// Source organ/actor name
+    pub source: String,
+}
+
+/// Response type for actor message handling
+#[derive(Debug, Clone)]
+pub enum Response {
+    /// Successful response with optional data
+    Ok,
+    /// Error response
+    Error(String),
+    /// Acknowledgment without data
+    Ack,
+}
+
+/// Organ message enum for actor communication (used by dark_spot_actor)
+/// Supports query/response patterns with oneshot channels
+pub enum OrganMessage {
+    /// Query message expecting a string response
+    Query {
+        question: String,
+        reply: tokio::sync::oneshot::Sender<String>,
+        hdc_semantic: Option<Vec<f32>>,
+    },
+    /// Input data message
+    Input {
+        data: Vec<u8>,
+        reply: tokio::sync::oneshot::Sender<Response>,
+        hdc_semantic: Option<Vec<f32>>,
+    },
+    /// Shutdown signal
+    Shutdown,
+}
+
+/// Trait for implementing async actors (used by mycelix dark_spot_actor)
+#[async_trait::async_trait]
+pub trait ActorTrait: Send + Sync {
+    /// Handle an incoming message
+    async fn handle_message(&mut self, msg: OrganMessage) -> anyhow::Result<()>;
+
+    /// Get the actor's priority
+    fn priority(&self) -> ActorPriority {
+        ActorPriority::Normal
+    }
+
+    /// Get the actor's name
+    fn name(&self) -> &str;
+}
+
+// ActorTrait is imported as Actor by dark_spot_actor:
+// use super::actor_model::{ActorTrait as Actor, ...}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -467,7 +554,7 @@ mod tests {
         let receiver = system.spawn("receiver", ActorRole::Processor).unwrap();
 
         system.connect(&sender, &receiver);
-        system.send(&sender, &receiver, MessageType::Activate, RealHV::random(512));
+        system.send(&sender, &receiver, MessageType::Activate, RealHV::random(512, 0xDEAD_0001));
 
         system.tick();
 
@@ -483,7 +570,7 @@ mod tests {
         system.spawn("proc1", ActorRole::Processor);
         system.spawn("proc2", ActorRole::Processor);
 
-        system.broadcast(&coord, ActorRole::Processor, RealHV::random(512));
+        system.broadcast(&coord, ActorRole::Processor, RealHV::random(512, 0xDEAD_0002));
         system.tick();
 
         // Both processors should have received messages

@@ -26,7 +26,7 @@
 //!                            Direction decoder + Φ confidence
 //! ```
 
-use crate::hdc::{RealHV, HDC_DIMENSION};
+use symthaea_core::hdc::{RealHV, HDC_DIMENSION};
 use crate::hierarchical_cantor_ltc::{HierarchicalCantorLtcNetwork, CantorLtcConfig, CantorLtcNode};
 use super::{CausalDirection, CausalDiscoveryResult};
 
@@ -41,6 +41,7 @@ use super::{CausalDirection, CausalDiscoveryResult};
 /// 2. Regression features: residuals, R², error asymmetry
 /// 3. Independence features: HSIC, conditional entropy estimates
 /// 4. Structural features: linearity, noise level, sample size
+#[allow(dead_code)] // Fields reserved for causal encoding
 pub struct CausalFeatureEncoder {
     /// Dimension of output hypervectors
     dim: usize,
@@ -426,6 +427,7 @@ pub struct CausalCantorNetwork {
 }
 
 /// A training example for the causal network
+#[allow(dead_code)] // Fields reserved for training pipeline
 struct TrainingPair {
     features: RealHV,
     direction: CausalDirection,
@@ -497,15 +499,14 @@ impl CausalCantorNetwork {
         for (x, y, direction) in pairs {
             let features = self.encoder.encode(x, y);
 
-            match direction {
+            match *direction {
                 CausalDirection::Forward => forward_examples.push(features.clone()),
                 CausalDirection::Backward => backward_examples.push(features.clone()),
-                CausalDirection::Unknown => continue, // Skip unknown pairs
             }
 
             self.training_pairs.push(TrainingPair {
                 features,
-                direction: direction.clone(),
+                direction: *direction,
             });
         }
 
@@ -584,10 +585,18 @@ impl CausalCantorNetwork {
             }
         };
 
+        let p_forward_f64 = p_forward as f64;
         CausalDiscoveryResult {
             direction,
             confidence: confidence.abs() as f64,
-            p_forward: p_forward as f64,
+            p_forward: p_forward_f64,
+            p_backward: 1.0 - p_forward_f64,
+            features: super::CausalFeatures {
+                reci_score: 0.0,
+                igci_score: 0.0,
+                anm_score: 0.0,
+                higher_order_score: 0.0,
+            },
         }
     }
 

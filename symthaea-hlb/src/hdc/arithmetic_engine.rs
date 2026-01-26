@@ -3,7 +3,7 @@
 //! Mathematical cognition using hyperdimensional computing primitives.
 //! Implements Peano-style number construction and arithmetic operations.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

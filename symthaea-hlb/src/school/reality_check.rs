@@ -24,7 +24,7 @@
 
 use anyhow::Result;
 
-use super::lookahead::LookaheadEngine;
+use super::LookaheadEngine;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CORRECTION STRATEGY

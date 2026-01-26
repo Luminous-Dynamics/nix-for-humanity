@@ -42,6 +42,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 use serde::{Deserialize, Serialize};
 
+#[allow(unused_imports)] // Uncertainty3D used in tests
 use super::{
     IgnoranceType, IgnoranceDetection, Domain, Harmony,
     HarmonicIgnorance, Uncertainty3D,
@@ -263,6 +264,7 @@ impl SourceStats {
 
 /// Pending exploration
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for exploration tracking
 struct PendingExploration {
     query: String,
     strategy: ExplorationStrategy,

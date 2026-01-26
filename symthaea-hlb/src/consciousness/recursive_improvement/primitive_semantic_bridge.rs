@@ -56,8 +56,8 @@
 //!
 //! This means decomposition becomes TRIVIAL - just read the birth certificate!
 
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier, Primitive};
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier, Primitive};
+use symthaea_core::hdc::binary_hv::HV16;
 use crate::hdc::semantic_primitive_encoder::SemanticPrimitiveEncoder;
 use crate::embeddings::HdcBridge;
 #[cfg(feature = "embeddings")]

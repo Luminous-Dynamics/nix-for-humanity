@@ -158,6 +158,9 @@ mod tests {
             cortisol: 0.8,       // High stress!
             dopamine: 0.5,
             acetylcholine: 0.5,
+            oxytocin: 0.5,
+            norepinephrine: 0.5,
+            serotonin: 0.5,
         };
 
         let analysis = analyze_scatter(0.3, 0.5, &hormones);
@@ -189,6 +192,9 @@ mod tests {
             cortisol: 0.3,       // Not stressed
             dopamine: 0.2,       // Very low motivation!
             acetylcholine: 0.6,
+            oxytocin: 0.5,
+            norepinephrine: 0.5,
+            serotonin: 0.5,
         };
 
         let analysis = analyze_scatter(0.4, 0.5, &hormones);
@@ -221,6 +227,9 @@ mod tests {
             cortisol: 0.4,
             dopamine: 0.5,
             acetylcholine: 0.2, // Very low focus!
+            oxytocin: 0.5,
+            norepinephrine: 0.5,
+            serotonin: 0.5,
         };
 
         let analysis = analyze_scatter(0.5, 0.5, &hormones);

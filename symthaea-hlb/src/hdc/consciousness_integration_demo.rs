@@ -456,7 +456,7 @@ pub fn comprehension_counterfactual_integration(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::emotional_depth::CompoundEmotion;
+    use symthaea_core::hdc::emotional_depth::CompoundEmotion;
 
     #[test]
     fn test_integration_demo_creation() {

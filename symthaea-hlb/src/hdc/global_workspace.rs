@@ -4,7 +4,7 @@
 //! The workspace acts as a shared "blackboard" where specialized modules
 //! compete for access and broadcast information globally.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -161,7 +161,7 @@ impl GlobalWorkspace {
             // Replace weakest coalition
             if let Some(min_idx) = self.coalitions.iter()
                 .enumerate()
-                .min_by(|a, b| a.1.activation.partial_cmp(&b.1.activation).unwrap())
+                .min_by(|a, b| a.1.activation.total_cmp(&b.1.activation))
                 .map(|(idx, _)| idx)
             {
                 if self.coalitions[min_idx].activation < coalition.activation {
@@ -189,7 +189,7 @@ impl GlobalWorkspace {
         // Find winner (if any above threshold)
         let winner = self.coalitions.iter()
             .filter(|c| c.activation > self.config.broadcast_threshold)
-            .max_by(|a, b| a.activation.partial_cmp(&b.activation).unwrap())
+            .max_by(|a, b| a.activation.total_cmp(&b.activation))
             .cloned();
 
         if let Some(winning_coalition) = winner {

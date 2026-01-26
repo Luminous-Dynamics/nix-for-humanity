@@ -11,9 +11,10 @@ use crate::api::{
     models::*,
     state::{AppState, Submission, SubmissionRequestStored},
 };
-use crate::hdc::{
+use symthaea_core::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
     HDC_DIMENSION,
+    RealHV,
 };
 
 /// Health check endpoint
@@ -23,6 +24,229 @@ pub async fn health_check() -> Json<serde_json::Value> {
         "service": "symthaea-benchmark-api",
         "version": "1.0.0"
     }))
+}
+
+enum CustomInput<'a> {
+    NodeRepresentations(&'a [Vec<f32>]),
+    AdjacencyMatrix(&'a [Vec<f32>]),
+    EdgeList(&'a [[usize; 2]], usize),
+}
+
+fn custom_input(request: &SubmissionRequest) -> Result<Option<CustomInput<'_>>, ApiError> {
+    let mut custom_fields = 0;
+    if request.adjacency_matrix.is_some() {
+        custom_fields += 1;
+    }
+    if request.edge_list.is_some() {
+        custom_fields += 1;
+    }
+    if request.node_representations.is_some() {
+        custom_fields += 1;
+    }
+
+    let is_custom = request.topology_type == Some(TopologyType::Custom);
+    if custom_fields == 0 {
+        if is_custom {
+            return Err(ApiError::bad_request(
+                "custom topology requires adjacency_matrix, edge_list, or node_representations",
+            ));
+        }
+        return Ok(None);
+    }
+
+    if custom_fields > 1 {
+        return Err(ApiError::bad_request(
+            "provide only one of adjacency_matrix, edge_list, or node_representations",
+        ));
+    }
+
+    if request.topology_type.is_some() && !is_custom {
+        return Err(ApiError::bad_request(
+            "custom topology data requires topology_type=custom",
+        ));
+    }
+
+    if let Some(node_representations) = request.node_representations.as_ref() {
+        if node_representations.len() < 2 {
+            return Err(ApiError::bad_request("node_representations must have at least 2 nodes"));
+        }
+        let dim = node_representations
+            .first()
+            .map(|v| v.len())
+            .unwrap_or(0);
+        if dim != HDC_DIMENSION {
+            return Err(ApiError::bad_request(
+                "node_representations must use HDC_DIMENSION (16384)",
+            ));
+        }
+        if node_representations.iter().any(|v| v.len() != dim) {
+            return Err(ApiError::bad_request(
+                "all node_representations must have the same dimension",
+            ));
+        }
+        return Ok(Some(CustomInput::NodeRepresentations(node_representations)));
+    }
+
+    if let Some(adjacency_matrix) = request.adjacency_matrix.as_ref() {
+        if adjacency_matrix.len() < 2 {
+            return Err(ApiError::bad_request("adjacency_matrix must be at least 2x2"));
+        }
+        let n_nodes = adjacency_matrix.len();
+        if adjacency_matrix.iter().any(|row| row.len() != n_nodes) {
+            return Err(ApiError::bad_request("adjacency_matrix must be square"));
+        }
+        if let Some(expected) = request.n_nodes {
+            if expected != n_nodes {
+                return Err(ApiError::bad_request(
+                    "n_nodes must match adjacency_matrix size",
+                ));
+            }
+        }
+        return Ok(Some(CustomInput::AdjacencyMatrix(adjacency_matrix)));
+    }
+
+    if let Some(edge_list) = request.edge_list.as_ref() {
+        if edge_list.is_empty() {
+            return Err(ApiError::bad_request("edge_list must not be empty"));
+        }
+        let max_index = edge_list
+            .iter()
+            .flat_map(|edge| edge.iter().copied())
+            .max()
+            .unwrap_or(0);
+        let n_nodes = request.n_nodes.unwrap_or(max_index + 1);
+        if n_nodes < 2 {
+            return Err(ApiError::bad_request("edge_list must include at least 2 nodes"));
+        }
+        if max_index >= n_nodes {
+            return Err(ApiError::bad_request("edge_list index exceeds n_nodes"));
+        }
+        return Ok(Some(CustomInput::EdgeList(edge_list, n_nodes)));
+    }
+
+    Ok(None)
+}
+
+fn standard_node_count(request: &SubmissionRequest) -> usize {
+    match request.topology_type {
+        Some(TopologyType::Torus) => 9,
+        Some(TopologyType::Hypercube) => match request.dimension.unwrap_or(3) {
+            4 => 16,
+            _ => 8,
+        },
+        _ => request.n_nodes.unwrap_or(8),
+    }
+}
+
+fn build_custom_node_representations(
+    input: CustomInput<'_>,
+) -> Result<(Vec<RealHV>, usize), ApiError> {
+    match input {
+        CustomInput::NodeRepresentations(node_representations) => {
+            let vectors = node_representations
+                .iter()
+                .map(|values| RealHV::from_values(values.clone()))
+                .collect::<Vec<_>>();
+            Ok((vectors, node_representations.len()))
+        }
+        CustomInput::AdjacencyMatrix(adjacency_matrix) => {
+            let n_nodes = adjacency_matrix.len();
+            let node_identities: Vec<RealHV> = (0..n_nodes)
+                .map(|i| RealHV::basis(i, HDC_DIMENSION))
+                .collect();
+
+            let mut node_representations = Vec::with_capacity(n_nodes);
+            for i in 0..n_nodes {
+                let mut connections = Vec::new();
+                for (j, weight) in adjacency_matrix[i].iter().enumerate() {
+                    if i == j || *weight == 0.0 {
+                        continue;
+                    }
+                    let bound = node_identities[i].bind(&node_identities[j]);
+                    let weighted = if *weight == 1.0 { bound } else { bound.scale(*weight) };
+                    connections.push(weighted);
+                }
+
+                let repr = if connections.is_empty() {
+                    node_identities[i].clone()
+                } else {
+                    RealHV::bundle(&connections)
+                };
+                node_representations.push(repr);
+            }
+
+            Ok((node_representations, n_nodes))
+        }
+        CustomInput::EdgeList(edge_list, n_nodes) => {
+            let node_identities: Vec<RealHV> = (0..n_nodes)
+                .map(|i| RealHV::basis(i, HDC_DIMENSION))
+                .collect();
+            let mut adjacency: Vec<Vec<usize>> = vec![Vec::new(); n_nodes];
+
+            for [a, b] in edge_list {
+                if *a == *b {
+                    continue;
+                }
+                adjacency[*a].push(*b);
+                adjacency[*b].push(*a);
+            }
+
+            let mut node_representations = Vec::with_capacity(n_nodes);
+            for i in 0..n_nodes {
+                let connections: Vec<RealHV> = adjacency[i]
+                    .iter()
+                    .map(|&neighbor| node_identities[i].bind(&node_identities[neighbor]))
+                    .collect();
+
+                let repr = if connections.is_empty() {
+                    node_identities[i].clone()
+                } else {
+                    RealHV::bundle(&connections)
+                };
+                node_representations.push(repr);
+            }
+
+            Ok((node_representations, n_nodes))
+        }
+    }
+}
+
+fn build_node_representations(
+    request: &SubmissionRequest,
+) -> Result<(Vec<RealHV>, usize), ApiError> {
+    if let Some(custom) = custom_input(request)? {
+        return build_custom_node_representations(custom);
+    }
+
+    let seed = 42u64;
+    let n_nodes = standard_node_count(request);
+    let topology = match request.topology_type {
+        Some(TopologyType::Ring) => {
+            ConsciousnessTopology::ring(n_nodes, HDC_DIMENSION, seed)
+        }
+        Some(TopologyType::Star) => {
+            ConsciousnessTopology::star(n_nodes, HDC_DIMENSION, seed)
+        }
+        Some(TopologyType::Random) => {
+            ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, seed)
+        }
+        Some(TopologyType::Torus) => {
+            ConsciousnessTopology::torus_square(3, HDC_DIMENSION, seed)
+        }
+        Some(TopologyType::Hypercube) => {
+            ConsciousnessTopology::hypercube(request.dimension.unwrap_or(3), HDC_DIMENSION, seed)
+        }
+        Some(TopologyType::Dense) => {
+            ConsciousnessTopology::dense_network(n_nodes, HDC_DIMENSION, None, seed)
+        }
+        Some(TopologyType::SmallWorld) => {
+            let k = if n_nodes >= 6 { 4 } else { 2 };
+            ConsciousnessTopology::small_world(n_nodes, HDC_DIMENSION, k, 0.1, seed)
+        }
+        _ => ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, seed),
+    };
+
+    Ok((topology.node_representations, topology.n_nodes))
 }
 
 /// Submit a model for evaluation
@@ -45,6 +269,64 @@ pub async fn submit_model(
         ));
     }
 
+    let custom = match custom_input(&request) {
+        Ok(custom) => custom,
+        Err(err) => return Err((StatusCode::BAD_REQUEST, Json(err))),
+    };
+
+    if custom.is_none() {
+        if let Some(topology_type) = request.topology_type {
+            let supported = matches!(
+                topology_type,
+                TopologyType::Ring
+                    | TopologyType::Torus
+                    | TopologyType::Hypercube
+                    | TopologyType::Star
+                    | TopologyType::Random
+                    | TopologyType::SmallWorld
+                    | TopologyType::Dense
+            );
+            if !supported {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError::bad_request("topology_type is not supported yet")),
+                ));
+            }
+        }
+    }
+
+    if custom.is_none() {
+        if let Some(n_nodes) = request.n_nodes {
+            if n_nodes < 2 {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError::bad_request("n_nodes must be at least 2")),
+                ));
+            }
+            if matches!(request.topology_type, Some(TopologyType::Ring | TopologyType::SmallWorld))
+                && n_nodes < 3
+            {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError::bad_request(
+                        "n_nodes must be at least 3 for ring or small_world",
+                    )),
+                ));
+            }
+        }
+
+        if request.topology_type == Some(TopologyType::Hypercube) {
+            if let Some(dimension) = request.dimension {
+                if dimension != 3 && dimension != 4 {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(ApiError::bad_request("hypercube dimension must be 3 or 4")),
+                    ));
+                }
+            }
+        }
+    }
+
     // Generate submission ID
     let submission_id = Uuid::new_v4();
     let now = chrono::Utc::now();
@@ -57,6 +339,9 @@ pub async fn submit_model(
             topology_type: request.topology_type,
             n_nodes: request.n_nodes,
             dimension: request.dimension,
+            adjacency_matrix: request.adjacency_matrix.clone(),
+            edge_list: request.edge_list.clone(),
+            node_representations: request.node_representations.clone(),
             description: request.description.clone(),
             public: request.public.unwrap_or(true),
         },
@@ -67,12 +352,30 @@ pub async fn submit_model(
     state.submissions.write().unwrap().insert(submission_id, submission);
 
     // Estimate processing time based on node count
-    let n_nodes = request.n_nodes.unwrap_or(8);
+    let n_nodes = match &custom {
+        Some(CustomInput::NodeRepresentations(vectors)) => vectors.len(),
+        Some(CustomInput::AdjacencyMatrix(matrix)) => matrix.len(),
+        Some(CustomInput::EdgeList(_, n_nodes)) => *n_nodes,
+        None => standard_node_count(&request),
+    };
     let estimated_time = match n_nodes {
         0..=100 => 5,
         101..=1000 => 30,
         _ => 300,
     };
+
+    let process_inline = n_nodes <= 16;
+    if process_inline {
+        if let Some(submission) = state.submissions.write().unwrap().get_mut(&submission_id) {
+            submission.status = SubmissionStatus::Processing;
+        }
+
+        let state = Arc::clone(&state);
+        let request = request.clone();
+        tokio::task::spawn_blocking(move || {
+            process_submission_inline(&state, submission_id, &request);
+        });
+    }
 
     // Get queue position
     let queue_position = state.submissions.read().unwrap()
@@ -80,19 +383,20 @@ pub async fn submit_model(
         .filter(|s| s.status == SubmissionStatus::Queued)
         .count() as u32;
 
-    // In production, this would queue the job for async processing
-    // For now, we'll process inline for small topologies
-    if n_nodes <= 16 {
-        process_submission_inline(&state, submission_id, &request);
-    }
+    let response_status = if process_inline {
+        SubmissionStatus::Processing
+    } else {
+        SubmissionStatus::Queued
+    };
+    let response_queue_position = if process_inline { 0 } else { queue_position };
 
     Ok((
         StatusCode::ACCEPTED,
         Json(SubmissionResponse {
             submission_id,
-            status: SubmissionStatus::Queued,
+            status: response_status,
             estimated_time_seconds: estimated_time,
-            position_in_queue: queue_position,
+            position_in_queue: response_queue_position,
             created_at: now,
         }),
     ))
@@ -104,29 +408,20 @@ fn process_submission_inline(
     submission_id: Uuid,
     request: &SubmissionRequest,
 ) {
-    let n_nodes = request.n_nodes.unwrap_or(8);
-    let seed = 42u64;
-
-    // Generate topology
-    let topology = match request.topology_type {
-        Some(TopologyType::Ring) => ConsciousnessTopology::ring(n_nodes, HDC_DIMENSION, seed),
-        Some(TopologyType::Star) => ConsciousnessTopology::star(n_nodes, HDC_DIMENSION, seed),
-        Some(TopologyType::Random) => ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, seed, 0.3),
-        Some(TopologyType::Torus) => ConsciousnessTopology::torus_3x3(HDC_DIMENSION, seed),
-        Some(TopologyType::Hypercube) => {
-            match request.dimension.unwrap_or(3) {
-                3 => ConsciousnessTopology::hypercube_3d(seed),
-                4 => ConsciousnessTopology::hypercube_4d(seed),
-                _ => ConsciousnessTopology::hypercube_3d(seed),
+    let (node_representations, _n_nodes) = match build_node_representations(request) {
+        Ok(values) => values,
+        Err(_) => {
+            if let Some(submission) = state.submissions.write().unwrap().get_mut(&submission_id) {
+                submission.status = SubmissionStatus::Failed;
             }
+            return;
         }
-        Some(TopologyType::Dense) => ConsciousnessTopology::dense(n_nodes, HDC_DIMENSION, seed),
-        Some(TopologyType::SmallWorld) => ConsciousnessTopology::small_world(n_nodes, HDC_DIMENSION, seed, 0.1),
-        _ => ConsciousnessTopology::random(n_nodes, HDC_DIMENSION, seed, 0.3),
     };
 
-    // Compute Φ
-    let phi = state.phi_calculator.compute(&topology.node_representations);
+    // Compute spectral connectivity (lambda2); exposed as "phi" in API for compatibility
+    let connectivity = state
+        .phi_calculator
+        .algebraic_connectivity(&node_representations) as f32;
 
     // Get random baseline for comparison
     let random_phi = state.baselines.get("random").map(|b| b.mean_phi).unwrap_or(0.4358);
@@ -137,10 +432,10 @@ fn process_submission_inline(
         submission_id,
         model_name: request.model_name.clone(),
         status: SubmissionStatus::Completed,
-        phi,
+        phi: connectivity,
         phi_confidence_interval: ConfidenceInterval {
-            lower: phi - 0.005,
-            upper: phi + 0.005,
+            lower: connectivity - 0.005,
+            upper: connectivity + 0.005,
             confidence_level: 0.95,
         },
         standard_deviation: 0.002,
@@ -151,9 +446,9 @@ fn process_submission_inline(
         comparison_vs_baselines: {
             let mut comparisons = std::collections::HashMap::new();
             comparisons.insert("random".to_string(), BaselineComparison {
-                phi_difference: phi - random_phi,
-                percent_difference: (phi - random_phi) / random_phi * 100.0,
-                significantly_different: (phi - random_phi).abs() > 0.01,
+                phi_difference: connectivity - random_phi,
+                percent_difference: (connectivity - random_phi) / random_phi * 100.0,
+                significantly_different: (connectivity - random_phi).abs() > 0.01,
                 p_value: 0.01,
             });
             comparisons
@@ -187,6 +482,18 @@ pub async fn get_results(
 
     // Check if submission exists and is still processing
     if let Some(submission) = state.submissions.read().unwrap().get(&submission_id) {
+        if submission.status == SubmissionStatus::Failed {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    code: "FAILED".to_string(),
+                    message: "Evaluation failed".to_string(),
+                    details: Some(serde_json::json!({
+                        "status": submission.status,
+                    })),
+                }),
+            ));
+        }
         return Err((
             StatusCode::ACCEPTED,
             Json(ApiError {
@@ -437,4 +744,55 @@ pub async fn dimensional_sweep(
             created_at: now,
         }),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base_request() -> SubmissionRequest {
+        SubmissionRequest {
+            model_name: "test".to_string(),
+            topology_type: None,
+            n_nodes: None,
+            dimension: None,
+            adjacency_matrix: None,
+            edge_list: None,
+            node_representations: None,
+            description: None,
+            notify_email: None,
+            public: None,
+        }
+    }
+
+    #[test]
+    fn custom_input_rejects_multiple_sources() {
+        let mut request = base_request();
+        request.topology_type = Some(TopologyType::Custom);
+        request.adjacency_matrix = Some(vec![vec![0.0, 1.0], vec![1.0, 0.0]]);
+        request.edge_list = Some(vec![[0, 1]]);
+
+        let err = custom_input(&request).unwrap_err();
+        assert_eq!(err.code, "INVALID_REQUEST");
+    }
+
+    #[test]
+    fn custom_input_accepts_edge_list() {
+        let mut request = base_request();
+        request.topology_type = Some(TopologyType::Custom);
+        request.edge_list = Some(vec![[0, 1], [1, 2]]);
+
+        let custom = custom_input(&request).unwrap();
+        assert!(matches!(custom, Some(CustomInput::EdgeList(_, 3))));
+    }
+
+    #[test]
+    fn custom_input_accepts_node_representations() {
+        let mut request = base_request();
+        request.topology_type = Some(TopologyType::Custom);
+        request.node_representations = Some(vec![vec![0.0; HDC_DIMENSION], vec![1.0; HDC_DIMENSION]]);
+
+        let custom = custom_input(&request).unwrap();
+        assert!(matches!(custom, Some(CustomInput::NodeRepresentations(_))));
+    }
 }

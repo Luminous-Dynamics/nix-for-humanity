@@ -51,7 +51,7 @@ use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 use ndarray::Array1;
 
-use crate::hdc::predictive_encoder::{PredictiveHdcEncoder, PredictiveEncoderConfig};
+use symthaea_core::hdc::predictive_encoder::{PredictiveHdcEncoder, PredictiveEncoderConfig};
 use crate::cfc::CfCNetwork;
 
 /// Configuration for CfC in the cognitive loop
@@ -152,6 +152,7 @@ pub struct CycleResult {
 
 /// Experience for replay buffer
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for experience replay
 struct Experience {
     /// Compressed HDC state
     state: Vec<f32>,
@@ -247,7 +248,7 @@ impl CognitiveLoopService {
         let cfc = CfCNetwork::new_with_input(
             config.cfc_config.input_dim,
             config.cfc_config.num_neurons
-        )?;
+        );
 
         Ok(Self {
             config,
@@ -286,16 +287,16 @@ impl CognitiveLoopService {
 
         // 4. Step CfC forward with current input
         let delta_t = self.config.cfc_config.delta_t;
-        let _ = self.cfc.step(&compressed_state, delta_t);
+        let _ = self.cfc.step(&input_array, delta_t);
 
         // 5. Get multi-scale predictions using CfC's O(1) predict_forward
         // This is the key advantage: instant prediction at any future time
         let prediction = self.get_multi_scale_prediction(&input_array);
 
         // 6. Get current CfC state as output
-        let output = self.cfc.read_state().unwrap_or_else(|_| {
-            vec![0.0; self.config.cfc_config.num_neurons]
-        });
+        let output = self.cfc.read_state()
+            .map(|arr| arr.to_vec())
+            .unwrap_or_else(|_| vec![0.0; self.config.cfc_config.num_neurons]);
 
         // 7. Send prediction to encoder for next cycle
         self.encoder.set_prediction(prediction.clone());
@@ -363,7 +364,7 @@ impl CognitiveLoopService {
     ///
     /// This uses CfC's O(1) predict_forward to instantly query multiple future times,
     /// forcing the network to learn temporal "rules" rather than just noise patterns.
-    fn get_multi_scale_prediction(&self, input: &Array1<f32>) -> Vec<f32> {
+    fn get_multi_scale_prediction(&mut self, input: &Array1<f32>) -> Vec<f32> {
         let horizons = &self.config.cfc_config.prediction_horizons;
 
         if horizons.is_empty() {
@@ -426,7 +427,7 @@ impl CognitiveLoopService {
         for exp in experiences.iter().take(replay_count) {
             if let Some(ref next_state) = exp.next_state {
                 // Reset CfC state for clean replay by injecting zeros
-                let zeros = vec![0.0f32; self.config.cfc_config.input_dim];
+                let zeros = Array1::from_vec(vec![0.0f32; self.config.cfc_config.input_dim]);
                 let _ = self.cfc.inject(&zeros);
 
                 // Train using CfC's analytical gradient
@@ -449,7 +450,7 @@ impl CognitiveLoopService {
     }
 
     /// Get encoder statistics
-    pub fn encoder_stats(&self) -> &crate::hdc::predictive_encoder::EncoderStats {
+    pub fn encoder_stats(&self) -> &symthaea_core::hdc::predictive_encoder::EncoderStats {
         self.encoder.stats()
     }
 
@@ -477,7 +478,7 @@ impl CognitiveLoopService {
     pub fn reset(&mut self) {
         self.encoder.reset_attention();
         // Reset CfC state by injecting zeros
-        let zeros = vec![0.0f32; self.config.cfc_config.input_dim];
+        let zeros = Array1::from_vec(vec![0.0f32; self.config.cfc_config.input_dim]);
         let _ = self.cfc.inject(&zeros);
         self.buffer.clear();
         self.error_history.clear();

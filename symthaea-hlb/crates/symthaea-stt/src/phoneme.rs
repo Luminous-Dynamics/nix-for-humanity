@@ -395,6 +395,12 @@ pub struct PhonemeDecoder {
     prev_phoneme: Option<String>,
     /// Transition probabilities (bigram model)
     transitions: HashMap<(String, String), f32>,
+    /// Minimum confidence to accept a phoneme (below this = SILENCE)
+    min_confidence: f32,
+    /// Recent phoneme history for grammar rescoring
+    recent_history: Vec<String>,
+    /// Max history length for grammar context
+    history_len: usize,
 }
 
 impl PhonemeDecoder {
@@ -405,7 +411,21 @@ impl PhonemeDecoder {
             resonator: PhonemeResonator::new(),
             prev_phoneme: None,
             transitions: HashMap::new(),
+            min_confidence: -0.05, // Confidence gate - allow weak matches but block noise
+            recent_history: Vec::new(),
+            history_len: 10, // Longer history to detect oscillation patterns
         }
+    }
+
+    /// Create decoder with custom minimum confidence threshold
+    pub fn with_min_confidence(mut self, min_confidence: f32) -> Self {
+        self.min_confidence = min_confidence;
+        self
+    }
+
+    /// Set the minimum confidence threshold
+    pub fn set_min_confidence(&mut self, min_confidence: f32) {
+        self.min_confidence = min_confidence;
     }
 
     /// Initialize resonator from trained prototypes
@@ -417,20 +437,39 @@ impl PhonemeDecoder {
     }
 
     /// Decode an acoustic hypervector to phoneme
+    ///
+    /// Applies:
+    /// 1. Minimum confidence threshold (below = SILENCE)
+    /// 2. Coarticulation/transition penalties
+    /// 3. Repetition penalty to prevent mode collapse
     pub fn decode(&mut self, acoustic_hv: &HV16) -> Option<(String, f32)> {
         let candidates = self.resonator.query(acoustic_hv, 5);
         if candidates.is_empty() {
             return None;
         }
 
-        // Apply coarticulation penalty
+        // CONFIDENCE GATE: If best similarity is below threshold, output SILENCE
+        // This prevents weak prototype matches from dominating
+        let best_raw_sim = candidates.first().map(|(_, s)| *s).unwrap_or(0.0);
+        if best_raw_sim < self.min_confidence {
+            self.update_history("SIL".to_string());
+            return Some(("SIL".to_string(), best_raw_sim));
+        }
+
+        // Apply coarticulation penalty and repetition penalty
         let scored: Vec<(String, f32)> = candidates.iter()
             .map(|(label, sim)| {
+                // Transition score from bigram model
                 let transition_score = self.prev_phoneme.as_ref()
                     .and_then(|prev| self.transitions.get(&(prev.clone(), label.clone())))
                     .copied()
                     .unwrap_or(1.0);
-                (label.clone(), sim * transition_score)
+
+                // REPETITION PENALTY: Penalize if this phoneme appears too often in recent history
+                // This helps break mode collapse (e.g., "W AY1 W AY1 W AY1...")
+                let repetition_penalty = self.compute_repetition_penalty(label);
+
+                (label.clone(), sim * transition_score * repetition_penalty)
             })
             .collect();
 
@@ -438,8 +477,70 @@ impl PhonemeDecoder {
         let best = scored.iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
 
+        self.update_history(best.0.clone());
         self.prev_phoneme = Some(best.0.clone());
         Some(best.clone())
+    }
+
+    /// Compute repetition penalty based on recent history
+    /// Returns 1.0 for no penalty, <1.0 to penalize repetition
+    /// Detects both simple repetition (A A A) and oscillating patterns (A B A B)
+    fn compute_repetition_penalty(&self, phoneme: &str) -> f32 {
+        if self.recent_history.is_empty() {
+            return 1.0;
+        }
+
+        let len = self.recent_history.len();
+
+        // Check 1: Simple repetition - count occurrences in recent history
+        let simple_count = self.recent_history.iter()
+            .filter(|p| p.as_str() == phoneme)
+            .count();
+
+        // Check 2: Oscillating pattern detection (A B A B)
+        // If the last phoneme was different but the one before was the same, we're oscillating
+        let oscillation_penalty = if len >= 2 {
+            let prev = &self.recent_history[len - 1];
+            let prev_prev = &self.recent_history[len - 2];
+
+            // Pattern: prev_prev == phoneme AND prev != phoneme means oscillation
+            if prev_prev.as_str() == phoneme && prev.as_str() != phoneme {
+                // Check if this pattern repeats further back
+                let mut oscillation_count = 1;
+                let mut i = len.saturating_sub(4);
+                while i + 1 < len - 2 {
+                    if self.recent_history[i].as_str() == phoneme
+                        && self.recent_history[i + 1].as_str() == prev.as_str() {
+                        oscillation_count += 1;
+                    }
+                    if i >= 2 { i -= 2; } else { break; }
+                }
+                // Heavy penalty for oscillation: 0.3 for 1 cycle, 0.1 for 2+ cycles
+                if oscillation_count >= 2 { 0.1 } else { 0.3 }
+            } else {
+                1.0
+            }
+        } else {
+            1.0
+        };
+
+        // Combine penalties: take the minimum (harshest) penalty
+        let simple_penalty: f32 = match simple_count {
+            0 => 1.0,
+            1 => 0.85,
+            2 => 0.6,
+            _ => 0.3,
+        };
+
+        simple_penalty.min(oscillation_penalty)
+    }
+
+    /// Update the recent phoneme history
+    fn update_history(&mut self, phoneme: String) {
+        self.recent_history.push(phoneme);
+        if self.recent_history.len() > self.history_len {
+            self.recent_history.remove(0);
+        }
     }
 
     /// Get all similarity scores for an acoustic HV (for temporal decoding)
@@ -457,6 +558,7 @@ impl PhonemeDecoder {
     /// Reset decoder state
     pub fn reset(&mut self) {
         self.prev_phoneme = None;
+        self.recent_history.clear();
     }
 
     /// Get inventory reference

@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for the primitive reasoner
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,13 +265,13 @@ impl PrimitiveReasoner {
         // Find the best matching relation
         let mut best_match: Option<(String, f32)> = None;
 
-        for (b, strength_ab) in &concept_a.relations {
+        for (_b, strength_ab) in &concept_a.relations {
             // Look for similar relation from C
             for (d, strength_cd) in &concept_c.relations {
                 let similarity = (strength_ab - strength_cd).abs();
                 if similarity < 0.2 {
                     let confidence = 1.0 - similarity;
-                    if best_match.map_or(true, |(_, c)| confidence > c) {
+                    if best_match.as_ref().map_or(true, |(_, c)| confidence > *c) {
                         best_match = Some((d.clone(), confidence));
                     }
                 }
@@ -306,7 +306,7 @@ impl PrimitiveReasoner {
         let mut similarities: Vec<(String, f32)> = self.concepts
             .iter()
             .map(|(name, concept)| {
-                let sim = query_hv.cosine_similarity(&concept.hv);
+                let sim = query_hv.similarity(&concept.hv);
                 (name.clone(), sim)
             })
             .collect();
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_concept_creation() {
-        let hv = RealHV::random(512);
+        let hv = RealHV::random(512, 42);
         let mut concept = Concept::new("test", hv);
         concept.add_relation("other", 0.8);
         assert_eq!(concept.relations.get("other"), Some(&0.8));
@@ -356,12 +356,12 @@ mod tests {
         let mut reasoner = PrimitiveReasoner::default();
 
         // Add some concepts
-        let hv1 = RealHV::random(512);
+        let hv1 = RealHV::random(512, 42);
         let mut c1 = Concept::new("animal", hv1);
         c1.add_relation("dog", 0.9);
         reasoner.add_concept(c1);
 
-        let hv2 = RealHV::random(512);
+        let hv2 = RealHV::random(512, 42);
         let c2 = Concept::new("dog", hv2);
         reasoner.add_concept(c2);
 

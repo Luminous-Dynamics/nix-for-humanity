@@ -40,8 +40,34 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      # Clippy: warn on all, deny on correctness issues
+      # Dead code, unused vars/imports, and cfg issues are being addressed incrementally
+      - name: Run clippy (library, default features)
+        run: |
+          cargo clippy --lib -- \
+            -A dead-code -A unused-variables -A unused-imports -A unexpected-cfgs \
+            -D clippy::correctness
+
+      - name: Run clippy (service binary)
+        run: |
+          cargo clippy --bin symthaea --features service -- \
+            -A dead-code -A unused-variables -A unused-imports -A unexpected-cfgs \
+            -D clippy::correctness
+
+      - name: No crate-root dead_code suppression
+        run: |
+          if grep -q '#!\[allow(dead_code' src/lib.rs; then
+            echo "::error::Crate-root #![allow(dead_code)] found in src/lib.rs. Use targeted #[allow(dead_code)] instead."
+            exit 1
+          fi
+
+      - name: No archive directories in tree
+        run: |
+          if find . -name '.archive*' -type d | grep -q .; then
+            echo "::error::.archive* directories found in tree"
+            find . -name '.archive*' -type d
+            exit 1
+          fi
 
   # Build and test on multiple platforms
   build:

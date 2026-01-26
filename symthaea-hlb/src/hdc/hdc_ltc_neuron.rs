@@ -3,7 +3,7 @@
 //! Combines hyperdimensional computing with Liquid Time-Constant dynamics
 //! for neurons that process information in continuous time.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for HDC-LTC neuron

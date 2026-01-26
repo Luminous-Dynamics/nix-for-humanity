@@ -24,7 +24,7 @@ use std::path::Path;
 
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::ConnectivityCalculator,
     real_hv::RealHV,
     semantic_encoder::{SemanticEncoder, MoralSemanticEncoder, CharNgramEncoder},
     HDC_DIMENSION,
@@ -327,7 +327,7 @@ fn main() {
     let n_samples = 5;
 
     // Create Φ calculator
-    let phi_calc = RealPhiCalculator::new();
+    let phi_calc = ConnectivityCalculator::new();
 
     // Create concept vectors
     let (ethical_concept, unethical_concept) = create_concept_vectors(seed);
@@ -355,7 +355,7 @@ fn main() {
 
         for s in 0..n_samples {
             let topo = generator();
-            let phi = phi_calc.compute(&topo.node_representations);
+            let phi = phi_calc.algebraic_connectivity(&topo.node_representations);
             phi_samples.push(phi);
             if s == 0 {
                 topology_instance = Some(topo);

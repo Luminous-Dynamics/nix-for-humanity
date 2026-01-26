@@ -182,6 +182,60 @@ impl AudioFrontend {
         features
     }
 
+    /// Extract mel features with delta and delta-delta (velocity + acceleration)
+    /// Returns features of dimension n_mels * 3 per frame
+    pub fn extract_features_with_deltas(&mut self, audio: &[f32]) -> Vec<Vec<f32>> {
+        let base_features = self.extract_features(audio);
+        if base_features.is_empty() {
+            return Vec::new();
+        }
+
+        let n_mels = base_features[0].len();
+        let n_frames = base_features.len();
+
+        // Compute deltas (first derivative)
+        let deltas = Self::compute_deltas(&base_features, 2);
+        // Compute delta-deltas (second derivative)
+        let delta_deltas = Self::compute_deltas(&deltas, 2);
+
+        // Concatenate: [mel; delta; delta_delta]
+        let mut result = Vec::with_capacity(n_frames);
+        for i in 0..n_frames {
+            let mut combined = Vec::with_capacity(n_mels * 3);
+            combined.extend_from_slice(&base_features[i]);
+            combined.extend_from_slice(&deltas[i]);
+            combined.extend_from_slice(&delta_deltas[i]);
+            result.push(combined);
+        }
+
+        result
+    }
+
+    /// Compute delta features using regression over a window
+    fn compute_deltas(features: &[Vec<f32>], window: usize) -> Vec<Vec<f32>> {
+        let n_frames = features.len();
+        let n_dims = if features.is_empty() { 0 } else { features[0].len() };
+
+        let mut deltas = vec![vec![0.0f32; n_dims]; n_frames];
+
+        // Denominator for regression: 2 * sum(n^2) for n=1..window
+        let denom: f32 = 2.0 * (1..=window).map(|n| (n * n) as f32).sum::<f32>();
+
+        for t in 0..n_frames {
+            for d in 0..n_dims {
+                let mut delta = 0.0f32;
+                for n in 1..=window {
+                    let t_plus = (t + n).min(n_frames - 1);
+                    let t_minus = t.saturating_sub(n);
+                    delta += n as f32 * (features[t_plus][d] - features[t_minus][d]);
+                }
+                deltas[t][d] = delta / denom;
+            }
+        }
+
+        deltas
+    }
+
     /// Compute mel features for a single frame
     fn compute_mel_frame(&mut self, frame: &[f32]) -> Vec<f32> {
         // Apply window
@@ -334,8 +388,8 @@ impl AudioProjector {
 
     /// Project audio to sequence of HDC hypervectors with TEMPORAL CONTEXT
     ///
-    /// Uses a 5-frame sliding window with permutation-based position encoding:
-    /// `HV = bundle(perm(f-2), perm(f-1), f, perm(f+1), perm(f+2))`
+    /// Uses direct mel encoding for phoneme discrimination, with
+    /// a 5-frame sliding window for temporal context.
     ///
     /// This captures phoneme trajectories and eliminates frame-to-frame oscillation.
     pub fn project(&mut self, audio: &[f32]) -> Vec<HV16> {
@@ -346,15 +400,16 @@ impl AudioProjector {
             return Vec::new();
         }
 
-        // First pass: encode all individual frames
+        // First pass: encode all individual frames with DIRECT MEL encoding
+        // Bypasses LTC to preserve spectral information without random projection
         let mut frame_hvs = Vec::with_capacity(features.len());
-        let mut prev_state = vec![0.0; self.ltc.hidden_size()];
+        let mut prev_features: Option<Vec<f32>> = None;
 
         for feature in &features {
-            let state = self.ltc.forward(feature, self.frame_duration).to_vec();
-            let hv = Self::state_to_hv_static(&state, &prev_state);
+            // Use direct mel encoding (no LTC - preserves phoneme-discriminative info)
+            let hv = Self::direct_mel_hv(feature, prev_features.as_deref());
             frame_hvs.push(hv);
-            prev_state = state;
+            prev_features = Some(feature.clone());
         }
 
         // Second pass: temporal windowing with permutation-based position encoding
@@ -368,6 +423,29 @@ impl AudioProjector {
         }
 
         hvs
+    }
+
+    /// Project audio without temporal windowing - returns raw frame HVs
+    ///
+    /// Used for diagnostic purposes to check encoding quality
+    pub fn project_raw(&mut self, audio: &[f32]) -> Vec<HV16> {
+        self.reset();
+
+        let features = self.frontend.extract_features(audio);
+        if features.is_empty() {
+            return Vec::new();
+        }
+
+        let mut frame_hvs = Vec::with_capacity(features.len());
+        let mut prev_features: Option<Vec<f32>> = None;
+
+        for feature in &features {
+            let hv = Self::direct_mel_hv(feature, prev_features.as_deref());
+            frame_hvs.push(hv);
+            prev_features = Some(feature.clone());
+        }
+
+        frame_hvs
     }
 
     /// Bundle a temporal window of frames with position-specific permutations
@@ -415,20 +493,29 @@ impl AudioProjector {
             return (Vec::new(), Vec::new());
         }
 
-        // First pass: encode all individual frames and compute saliences
+        // First pass: encode all individual frames with DIRECT MEL encoding
         let mut frame_hvs = Vec::with_capacity(features.len());
         let mut saliences = Vec::with_capacity(features.len());
-        let mut prev_state = vec![0.0; self.ltc.hidden_size()];
+        let mut prev_features: Option<Vec<f32>> = None;
 
         for feature in &features {
-            let state = self.ltc.forward(feature, self.frame_duration).to_vec();
-            let salience = self.ltc.compute_salience(&prev_state);
+            // Compute salience from mel energy change
+            let salience = if let Some(ref prev) = prev_features {
+                feature.iter()
+                    .zip(prev.iter())
+                    .map(|(a, b)| (a - b).powi(2))
+                    .sum::<f32>()
+                    .sqrt()
+            } else {
+                0.0
+            };
 
-            let hv = Self::state_to_hv_static(&state, &prev_state);
+            // Use direct mel encoding (no LTC)
+            let hv = Self::direct_mel_hv(feature, prev_features.as_deref());
             frame_hvs.push(hv);
             saliences.push(salience);
 
-            prev_state = state;
+            prev_features = Some(feature.clone());
         }
 
         // Second pass: temporal windowing (same as project())
@@ -447,6 +534,8 @@ impl AudioProjector {
     ///
     /// Encodes both position (h) and velocity (dh/dt) in phase space.
     /// Sign-based encoding for robustness.
+    /// Note: Superseded by hybrid_mel_ltc_hv for better phoneme discrimination.
+    #[allow(dead_code)]
     fn state_to_hv_static(state: &[f32], prev_state: &[f32]) -> HV16 {
         let mut hv = HV16::zero();
         let n_dims = state.len();
@@ -493,33 +582,145 @@ impl AudioProjector {
         hv
     }
 
+    /// Direct mel encoding: encodes mel features directly into hypervector
+    ///
+    /// Uses THERMOMETER encoding: for each mel bin, include all basis vectors
+    /// from level 0 up to the current level. This ensures similar mel values
+    /// produce similar HVs (smooth similarity gradient).
+    fn direct_mel_hv(mel_features: &[f32], prev_features: Option<&[f32]>) -> HV16 {
+        use crate::hdc::BundleAccumulator;
+        let mut acc = BundleAccumulator::new();
+
+        // Part 1: Encode MEL features with WINDOWED level encoding
+        // For a value at level N, include levels N-1, N, N+1 (where valid)
+        // This creates local overlap for smooth similarity, but not global overlap
+        const NUM_LEVELS: usize = 8;
+
+        for (bin_idx, &val) in mel_features.iter().enumerate() {
+            // Skip silence-floor bins
+            if val < -0.6 {
+                continue;
+            }
+
+            // Quantize to 8 levels: -0.6 to 1.0 in 0.2 increments
+            let level = ((val + 0.6) / 0.2).clamp(0.0, 7.9) as usize;
+
+            // Add the target level with double weight
+            let basis_idx = bin_idx * NUM_LEVELS + level;
+            let basis = Self::get_dim_basis(basis_idx);
+            acc.add(&basis);
+            acc.add(&basis);  // Double weight for exact level
+
+            // Add adjacent levels with single weight (creates local overlap)
+            if level > 0 {
+                let basis_idx = bin_idx * NUM_LEVELS + (level - 1);
+                let basis = Self::get_dim_basis(basis_idx);
+                acc.add(&basis);
+            }
+            if level < NUM_LEVELS - 1 {
+                let basis_idx = bin_idx * NUM_LEVELS + (level + 1);
+                let basis = Self::get_dim_basis(basis_idx);
+                acc.add(&basis);
+            }
+        }
+
+        // Part 2: Encode delta (velocity) features if available
+        // Use simpler binary encoding for deltas (rising vs falling)
+        if let Some(prev) = prev_features {
+            for (bin_idx, (&curr, &prev_val)) in mel_features.iter().zip(prev.iter()).enumerate() {
+                let delta = curr - prev_val;
+
+                // Skip small deltas
+                if delta.abs() < 0.10 {
+                    continue;
+                }
+
+                // Binary delta: rising (0) or falling (1)
+                let delta_level = if delta > 0.0 { 0 } else { 1 };
+
+                // Offset by 500 to avoid collision with static features
+                let basis_idx = 500 + bin_idx * 2 + delta_level;
+                let basis = Self::get_dim_basis(basis_idx);
+
+                // Lower weight for deltas (they're secondary features)
+                acc.add(&basis);
+            }
+        }
+
+        acc.finalize()
+    }
+
     /// Hybrid encoding: combines MEL spectral features with LTC dynamics
     ///
     /// This preserves raw frequency information (for formants, voicing)
     /// while adding temporal dynamics from LTC.
+    /// Uses 8-level quantization for better spectral resolution.
+    #[allow(dead_code)]
     fn hybrid_mel_ltc_hv(mel_features: &[f32], state: &[f32], prev_state: &[f32]) -> HV16 {
         let mut hv = HV16::zero();
         let _n_mel = mel_features.len();
         let n_ltc = state.len();
 
-        // Part 1: Encode MEL features directly (preserves spectral detail)
+        // Part 1: Encode MEL features with 8-level quantization
+        // Mel features are normalized to approximately [-1, 1] range
+        // (see compute_mel_frame: (energy.ln() + 10) / 10)
         // Use different basis offset to avoid collision with LTC encoding
         const MEL_BASIS_OFFSET: usize = 256;
+
         for (bin_idx, &val) in mel_features.iter().enumerate() {
-            // Skip low energy bins
-            if val < 0.1 {
+            // Skip very low energy bins (silence floor)
+            if val < -0.5 {
                 continue;
             }
 
             let basis = Self::get_dim_basis(MEL_BASIS_OFFSET + bin_idx);
 
-            // 3-level encoding: low, medium, high energy
-            let rotation = if val > 0.6 {
-                512   // High energy
+            // 8-level quantization spanning [-0.5, 1.0] range
+            // Maps to rotations spread across the hypervector dimension
+            // Each level gets 256 bits of rotation (2048 / 8 = 256)
+            let level = if val > 0.8 {
+                7  // Very high energy (formant peaks)
+            } else if val > 0.5 {
+                6  // High energy
             } else if val > 0.3 {
-                0     // Medium energy
+                5  // Medium-high energy
+            } else if val > 0.1 {
+                4  // Medium energy
+            } else if val > -0.1 {
+                3  // Low-medium energy
+            } else if val > -0.3 {
+                2  // Low energy
+            } else if val > -0.5 {
+                1  // Very low energy
             } else {
-                -512  // Low energy
+                0  // Silence
+            };
+
+            // Spread rotations across full 2048-bit space for maximum discrimination
+            let rotation = (level as i32 - 3) * 256;  // Center around 0
+            let rotated = basis.rotate(rotation);
+            for w in 0..16 {
+                hv.words[w] ^= rotated.words[w];
+            }
+        }
+
+        // Part 2: Encode LTC STATE for temporal dynamics (4-level)
+        for (dim_idx, &val) in state.iter().enumerate() {
+            if val.abs() < 0.1 {
+                continue;
+            }
+
+            let basis = Self::get_dim_basis(dim_idx);
+
+            // 4-level encoding: strong negative, weak negative, weak positive, strong positive
+            let rotation = if val > 0.5 {
+                512   // Strong positive
+            } else if val > 0.0 {
+                256   // Weak positive
+            } else if val > -0.5 {
+                -256  // Weak negative
+            } else {
+                -512  // Strong negative
             };
 
             let rotated = basis.rotate(rotation);
@@ -528,29 +729,28 @@ impl AudioProjector {
             }
         }
 
-        // Part 2: Encode LTC STATE for temporal dynamics
-        for (dim_idx, &val) in state.iter().enumerate() {
-            if val.abs() < 0.05 {
-                continue;
-            }
-
-            let basis = Self::get_dim_basis(dim_idx);
-            let rotated = if val > 0.0 { basis } else { basis.rotate(1024) };
-            for w in 0..16 {
-                hv.words[w] ^= rotated.words[w];
-            }
-        }
-
-        // Part 3: Encode LTC VELOCITY for trajectory direction
+        // Part 3: Encode LTC VELOCITY for trajectory direction (3-level)
         for (dim_idx, &val) in state.iter().enumerate() {
             let prev_val = prev_state.get(dim_idx).copied().unwrap_or(0.0);
             let delta = val - prev_val;
-            if delta.abs() < 0.03 {
+            if delta.abs() < 0.05 {
                 continue;
             }
 
             let basis = Self::get_dim_basis(n_ltc + dim_idx);
-            let rotated = if delta > 0.0 { basis } else { basis.rotate(1024) };
+
+            // 3-level: rising, stable, falling
+            let rotation = if delta > 0.1 {
+                512   // Rising fast
+            } else if delta > 0.0 {
+                256   // Rising slow
+            } else if delta > -0.1 {
+                -256  // Falling slow
+            } else {
+                -512  // Falling fast
+            };
+
+            let rotated = basis.rotate(rotation);
             for w in 0..16 {
                 hv.words[w] ^= rotated.words[w];
             }

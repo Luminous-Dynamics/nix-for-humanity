@@ -1,3 +1,4 @@
+#![cfg(feature = "perception")]
 //! Perception Module Integration Tests
 //!
 //! Tests for the perception interface components that work without

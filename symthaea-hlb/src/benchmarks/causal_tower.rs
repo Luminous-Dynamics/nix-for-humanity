@@ -1,3 +1,5 @@
+// Experimental module: fields will be read when causal tower benchmarks are run
+#![allow(dead_code)]
 //! Causal Understanding Tower
 //!
 //! A multi-level approach to causal discovery that combines:
@@ -9,8 +11,24 @@
 //!
 //! Goal: Approach 100% accuracy on causal discovery benchmarks
 
-use super::tuebingen_adapter::{CausalDirection, CausalDiscoveryResult, discover_by_information_theoretic};
+use super::tuebingen_adapter::{CausalDirection, CausalDiscoveryResult, CausalFeatures, discover_by_information_theoretic};
 use std::collections::HashMap;
+
+/// Helper function to create a CausalDiscoveryResult with all required fields
+fn make_result(direction: CausalDirection, p_forward: f64, confidence: f64) -> CausalDiscoveryResult {
+    CausalDiscoveryResult {
+        direction,
+        p_forward,
+        p_backward: 1.0 - p_forward,
+        confidence,
+        features: CausalFeatures {
+            reci_score: 0.0,
+            igci_score: 0.0,
+            anm_score: 0.0,
+            higher_order_score: 0.0,
+        },
+    }
+}
 
 // ============================================================================
 // PHASE 1: IMPROVED PRIMITIVES
@@ -95,7 +113,7 @@ impl ImprovedHdcCompression {
 
         // For each X bin, compute entropy of Y
         let mut bin_counts = vec![0usize; codebook_size];
-        let conditional_entropies = vec![0.0; codebook_size];
+        let _conditional_entropies = vec![0.0; codebook_size];
         let mut bin_y_values: Vec<Vec<f64>> = vec![Vec::new(); codebook_size];
 
         for i in 0..n {
@@ -174,11 +192,11 @@ impl ImprovedHdcCompression {
         let p_forward = 1.0 / (1.0 + (-score).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -393,11 +411,11 @@ impl ImprovedLtcDynamics {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 3.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -472,7 +490,7 @@ impl ImprovedPhiFlow {
 
     /// Compute residuals from kernel regression
     fn compute_residuals(&self, x: &[f64], y: &[f64]) -> Vec<f64> {
-        let n = x.len();
+        let _n = x.len();
         let x_std = variance(x).sqrt();
         let bandwidth = x_std * 0.5;
 
@@ -518,11 +536,11 @@ impl ImprovedPhiFlow {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 50.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -586,11 +604,11 @@ impl IgciDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 2.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -661,11 +679,11 @@ impl LingamDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 0.5).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -729,11 +747,11 @@ impl ReciDiscovery {
         let p_forward = 1.0 / (1.0 + (-normalized_asymmetry * 5.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -858,11 +876,11 @@ impl EnhancedReci {
         let p_forward = 1.0 / (1.0 + (-combined * 2.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -932,11 +950,11 @@ impl CamDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 5.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -1039,11 +1057,11 @@ impl AnmDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 8.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -1127,11 +1145,11 @@ impl SlopeDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 2.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -1441,11 +1459,7 @@ pub struct CausalVerdict {
 impl CausalVerdict {
     /// Convert to simple result
     pub fn to_result(&self) -> CausalDiscoveryResult {
-        CausalDiscoveryResult {
-            direction: self.direction.clone(),
-            p_forward: self.p_forward,
-            confidence: self.confidence,
-        }
+        make_result(self.direction, self.p_forward, self.confidence)
     }
 }
 
@@ -1878,11 +1892,11 @@ impl SmartTower {
 
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 
     /// Stacking ensemble: use oracle selection for final decision
@@ -1966,11 +1980,7 @@ impl UltimateEnsemble {
         // Check if we should abstain
         if let Some(reason) = self.should_abstain(x, y) {
             // Return uncertain prediction
-            let result = CausalDiscoveryResult {
-                direction: CausalDirection::Forward,  // Arbitrary
-                p_forward: 0.5,
-                confidence: 0.0,  // Zero confidence = abstaining
-            };
+            let result = make_result(CausalDirection::Forward, 0.5, 0.0); // Abstaining
             return (result, Some(reason));
         }
 
@@ -2021,11 +2031,11 @@ impl UltimateEnsemble {
 
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 
     /// Compute dynamic weights based on data characteristics
@@ -2189,11 +2199,11 @@ impl SemanticDiscovery {
             let agreement = 1.0 - (stat_p - prior).abs();
             let combined_confidence = base_result.confidence * (0.7 + 0.3 * agreement);
 
-            CausalDiscoveryResult {
-                direction: if combined_p > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
-                p_forward: combined_p,
-                confidence: combined_confidence,
-            }
+            make_result(
+                if combined_p > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+                combined_p,
+                combined_confidence,
+            )
         } else {
             base_result
         }
@@ -2304,11 +2314,11 @@ impl NeuralCausalDiscovery {
         let p_forward = self.forward(&features);
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -2402,11 +2412,11 @@ impl FinalBoss {
         let p_forward = weighted_p / total_weight.max(1e-10);
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 
     /// Simple discover without descriptions

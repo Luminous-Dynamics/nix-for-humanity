@@ -106,6 +106,7 @@ pub use handshake::{HybridHandshake, HandshakeResult};
 // ============================================================================
 
 /// Main swarm node combining Iroh transport with Holochain trust
+#[allow(dead_code)] // Fields reserved for full implementation
 pub struct SwarmNode {
     config: SwarmConfig,
     #[cfg(feature = "swarm")]

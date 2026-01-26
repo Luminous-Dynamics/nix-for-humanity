@@ -3,7 +3,7 @@
 //! Implements consciousness as a relational phenomenon, where awareness
 //! emerges from the interactions and relationships between cognitive components.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

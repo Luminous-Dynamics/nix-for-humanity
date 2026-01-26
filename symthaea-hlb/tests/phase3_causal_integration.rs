@@ -1,3 +1,4 @@
+#![cfg(feature = "observability_module")]
 // Phase 3 Causal Understanding System - Integration Tests
 //
 // These tests validate the complete causal analysis pipeline:

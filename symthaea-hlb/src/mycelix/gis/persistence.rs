@@ -25,6 +25,7 @@
 
 use std::collections::HashMap;
 use std::path::Path;
+#[allow(unused_imports)] // SystemTime used in tests
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{

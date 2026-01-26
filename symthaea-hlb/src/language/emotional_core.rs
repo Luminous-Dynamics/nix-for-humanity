@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for emotional core
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,7 +70,7 @@ impl EmotionalAnalysis {
             arousal: 0.5,
             dominance: 0.5,
             emotion_scores: HashMap::new(),
-            embedding: RealHV::zeros(dimension),
+            embedding: RealHV::zero(dimension),
         }
     }
 }
@@ -121,12 +121,13 @@ impl EmotionalCore {
     pub fn new(config: EmotionalCoreConfig) -> Self {
         let dim = config.dimension;
 
-        // Initialize emotion embeddings
+        // Initialize emotion embeddings with deterministic seeds based on emotion name
         let mut emotion_embeddings = HashMap::new();
-        for emotion in &config.categories {
-            emotion_embeddings.insert(emotion.clone(), RealHV::random(dim));
+        for (idx, emotion) in config.categories.iter().enumerate() {
+            let seed = 0xE0C0_0000 + idx as u64;  // Emotional Core seed base
+            emotion_embeddings.insert(emotion.clone(), RealHV::random(dim, seed));
         }
-        emotion_embeddings.insert("neutral".to_string(), RealHV::zeros(dim));
+        emotion_embeddings.insert("neutral".to_string(), RealHV::zero(dim));
 
         Self {
             current_state: EmotionalAnalysis::neutral(dim),
@@ -189,7 +190,7 @@ impl EmotionalCore {
         let embedding = if let Some(emb) = self.emotion_embeddings.get(&primary_emotion) {
             emb.clone().scale(confidence.max(0.1))
         } else {
-            RealHV::zeros(self.config.dimension)
+            RealHV::zero(self.config.dimension)
         };
 
         let analysis = EmotionalAnalysis {
@@ -227,7 +228,7 @@ impl EmotionalCore {
         // Get emotion embedding
         let emotion_emb = self.emotion_embeddings.get(target_emotion)
             .cloned()
-            .unwrap_or_else(|| RealHV::random(self.config.dimension));
+            .unwrap_or_else(|| RealHV::random(self.config.dimension, 0xFA11_BACC));  // Fallback seed
 
         // Simple emotion modifiers
         let modifiers: HashMap<&str, Vec<&str>> = [

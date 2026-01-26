@@ -27,9 +27,12 @@ use symthaea_stt::{
     batch::find_audio_files,
 };
 
+#[allow(dead_code)]
 static DOWNLOAD: Emoji<'_, '_> = Emoji("📥 ", "");
 static ANALYZE: Emoji<'_, '_> = Emoji("🔬 ", "");
+#[allow(dead_code)]
 static WHALE: Emoji<'_, '_> = Emoji("🐋 ", "[WHALE] ");
+#[allow(dead_code)]
 static BIRD: Emoji<'_, '_> = Emoji("🐦 ", "[BIRD] ");
 static SUCCESS: Emoji<'_, '_> = Emoji("✅ ", "[OK] ");
 

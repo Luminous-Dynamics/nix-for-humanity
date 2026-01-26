@@ -50,7 +50,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::time::{SystemTime, Duration, Instant};
-use crate::hdc::universal_semantics::SemanticPrime;
+use symthaea_core::hdc::universal_semantics::SemanticPrime;
 use crate::language::multi_theory_consciousness::{
     MultiTheoryConsciousness, MultiTheoryMetrics, MultiTheoryResult,
     GlobalWorkspace, SubsystemId,

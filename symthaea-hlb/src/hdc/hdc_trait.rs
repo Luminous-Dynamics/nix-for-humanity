@@ -202,7 +202,7 @@ pub fn similar_vectors<H: HyperdimensionalVector>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::{binary_hv::HV16, simd_hv16::SimdHV16};
+    use symthaea_core::hdc::{binary_hv::HV16, simd_hv16::SimdHV16};
 
     #[test]
     fn test_generic_algorithm_with_hv16() {

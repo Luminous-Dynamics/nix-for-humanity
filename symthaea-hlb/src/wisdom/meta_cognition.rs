@@ -31,6 +31,7 @@ const MAX_PREDICTIONS: usize = 50;
 
 /// The meta-cognitive layer that models the system itself
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for meta-cognitive modeling
 pub struct MetaCognitiveLayer {
     /// History of self-predictions vs actual outcomes
     self_predictions: VecDeque<SelfPrediction>,
@@ -178,6 +179,7 @@ impl Default for MetaCognitiveLayer {
 
 /// A single self-prediction and its outcome
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for meta-prediction
 struct SelfPrediction {
     predicted_error: f32,
     actual_error: f32,
@@ -231,6 +233,7 @@ impl ErrorModel {
 
 /// Model of our harmonic tendencies
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for tendency modeling
 struct HarmonicTendencyModel {
     /// Which harmonics tend to activate most
     tendency_weights: [f32; 7],

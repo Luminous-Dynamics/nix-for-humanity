@@ -3,8 +3,8 @@
 //! A `Curriculum` is a structured set of learning objectives with
 //! prerequisite relationships, enabling coherent learning progressions.
 
-use super::objective::{LearningObjective, ObjectiveBuilder, Difficulty, Domain};
-use std::collections::{HashMap, HashSet};
+use super::objective::{LearningObjective, Difficulty, Domain};
+use std::collections::HashSet;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CURRICULUM TYPES

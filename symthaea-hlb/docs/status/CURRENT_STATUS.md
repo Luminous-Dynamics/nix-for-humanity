@@ -43,7 +43,7 @@
 |---------|--------|-------|-------|
 | RealPhiCalculator | Production | 20+ | Continuous Φ |
 | ResonatorPhiCalculator | Production | 10+ | O(n log N) fast Φ |
-| 19 topology generators | Complete | 100+ | All validated |
+| 33 topology generators | Complete | 100+ | 19 validated, 14 new (Tier 4) |
 | Dimensional sweep (1D-7D) | Complete | 70 | Asymptotic limit found |
 | Publication manuscript | Draft | N/A | 10,850 words, DOI placeholders |
 

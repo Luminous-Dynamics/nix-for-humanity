@@ -35,8 +35,8 @@
 //! └───────────────────────────────────────────────────────────────────┘
 //! ```
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier, Primitive};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier, Primitive};
 use crate::embeddings::{HdcBridge, BridgeConfig, QWEN3_DIMENSION};
 use std::collections::HashMap;
 use once_cell::sync::Lazy;

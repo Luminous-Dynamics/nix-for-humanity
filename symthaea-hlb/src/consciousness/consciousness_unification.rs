@@ -756,6 +756,7 @@ impl SystemReality {
 
 /// Pipeline for generating consciousness-aware dialogue
 #[derive(Debug)]
+#[allow(dead_code)] // Fields reserved for consciousness-aware responses
 pub struct ConsciousDialoguePipeline {
     /// Current Φ threshold for deep responses
     phi_threshold: f64,

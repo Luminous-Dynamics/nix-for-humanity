@@ -9,7 +9,7 @@
 
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::ConnectivityCalculator,
     phi_topology_validation::real_hv_to_hv16_probabilistic,
     integrated_information::IntegratedInformation,
     HDC_DIMENSION,
@@ -24,7 +24,7 @@ fn main() {
     println!("   HDC Dimension: {}", HDC_DIMENSION);
     println!("   Nodes per topology: 8");
     println!("   Samples per topology: 5");
-    println!("   Metrics: λ₂ (RealPhiCalculator) vs Φ (IntegratedInformation)");
+    println!("   Metrics: λ₂ (ConnectivityCalculator) vs Φ (IntegratedInformation)");
 
     let n_nodes = 8;
     let n_samples = 5;
@@ -267,7 +267,7 @@ fn measure_topology<F>(
 {
     print!("   Testing {:<20}", name);
 
-    let real_calc = RealPhiCalculator::new();
+    let real_calc = ConnectivityCalculator::new();
     let mut l2_values = Vec::new();
     let mut phi_values = Vec::new();
 
@@ -275,7 +275,7 @@ fn measure_topology<F>(
         let topology = generator(seed);
 
         // λ₂ (Spectral / Algebraic Connectivity)
-        let l2 = real_calc.compute(&topology.node_representations);
+        let l2 = real_calc.algebraic_connectivity(&topology.node_representations);
         l2_values.push(l2);
 
         // Φ (IIT-inspired via binary conversion)

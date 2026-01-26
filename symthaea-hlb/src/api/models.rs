@@ -77,6 +77,7 @@ pub struct EvaluationResult {
     pub submission_id: Uuid,
     pub model_name: String,
     pub status: SubmissionStatus,
+    /// Spectral connectivity (lambda2); legacy field name retained for compatibility.
     pub phi: f32,
     pub phi_confidence_interval: ConfidenceInterval,
     pub standard_deviation: f32,

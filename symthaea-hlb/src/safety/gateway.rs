@@ -61,6 +61,7 @@ impl SafetyDecision {
 /// SafetyGateway ties together fast-path regex safety and slower
 /// hypervector-based guardrails into a single interface.
 #[derive(Debug)]
+#[allow(dead_code)] // Fields reserved for safety pipeline
 pub struct SafetyGateway {
     amygdala: AmygdalaActor,
     guardrails: SafetyGuardrails,

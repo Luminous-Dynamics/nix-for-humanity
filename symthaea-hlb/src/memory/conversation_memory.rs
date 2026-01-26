@@ -32,7 +32,7 @@
 //! let turns = memory.resume_session(&session_id)?;
 //! ```
 
-use crate::hdc::real_hv::RealHV;
+use symthaea_core::hdc::real_hv::RealHV;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
@@ -546,7 +546,7 @@ pub struct ConversationMemoryStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::HDC_DIMENSION;
+    use symthaea_core::hdc::HDC_DIMENSION;
     use tempfile::NamedTempFile;
 
     #[test]

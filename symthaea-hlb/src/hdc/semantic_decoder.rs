@@ -38,8 +38,8 @@
 //!
 //! This enables HDC+LTC to "think" in primitives and then express through language.
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
 use std::collections::{HashMap, BinaryHeap};
 use std::cmp::Ordering;
 use serde::{Serialize, Deserialize};

@@ -1,3 +1,4 @@
+#![cfg(feature = "physiology_module")]
 //! Integration tests for the modularized coherence system
 //!
 //! These tests verify that the split coherence module works correctly

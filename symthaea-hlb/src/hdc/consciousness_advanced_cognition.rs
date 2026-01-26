@@ -2045,7 +2045,7 @@ mod tests {
 
     #[test]
     fn test_advanced_cognition_engine() {
-        use crate::hdc::emotional_depth::{EmotionalEncoder, EmotionalComponent, WeightedComponent};
+        use symthaea_core::hdc::emotional_depth::{EmotionalEncoder, EmotionalComponent, WeightedComponent};
 
         let mut engine = AdvancedCognitionEngine::new();
         let input = HV16::random(42);

@@ -270,7 +270,7 @@ impl ResonantSpeech {
     }
 
     /// Generate a resonant response
-    pub fn generate(&mut self, content: &str, context: &str) -> String {
+    pub fn generate(&mut self, content: &str, _context: &str) -> String {
         let profile = self.user_state.cognitive_load.response_profile();
         let mut response = String::new();
 

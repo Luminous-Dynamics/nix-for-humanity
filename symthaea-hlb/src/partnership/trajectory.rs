@@ -1,4 +1,4 @@
-use crate::hdc::relational_consciousness::RelationshipStage;
+use symthaea_core::hdc::relational_consciousness::RelationshipStage;
 use serde::{Deserialize, Serialize};
 
 /// A single observation along the relationship trajectory.

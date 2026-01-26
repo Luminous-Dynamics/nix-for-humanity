@@ -22,11 +22,11 @@
 //! 3. **Budding as Attention**: Budding events boost content activation
 //! 4. **Conscious Broadcast**: Salient patterns enter workspace and broadcast
 
-use crate::hdc::cincinnati_ltc::CincinnatiLtcEngine;
-use crate::hdc::global_workspace::{GlobalWorkspace, WorkspaceConfig, WorkspaceContent, WorkspaceAssessment};
-use crate::hdc::unified_hv::ContinuousHV;
-use crate::hdc::HV16;
-use crate::hdc::HDC_DIMENSION;
+use symthaea_core::hdc::cincinnati_ltc::CincinnatiLtcEngine;
+use symthaea_core::hdc::global_workspace::{GlobalWorkspace, WorkspaceConfig, WorkspaceContent, WorkspaceAssessment};
+use symthaea_core::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::HV16;
+use symthaea_core::hdc::HDC_DIMENSION;
 use serde::{Serialize, Deserialize};
 
 // =============================================================================

@@ -7,7 +7,7 @@
 //! - **Multi-Scale Pyramid**: Compute Φ at multiple spatial scales to find optimal consciousness granularity
 //! - **Entropy Analysis**: Measure complexity, predictability, and information richness of consciousness states
 
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use super::core::{TieredPhi, ApproximationTier};
 use std::time::Instant;
 use rayon::prelude::*;
@@ -143,6 +143,7 @@ impl PhiPyramidResult {
 /// Computes integrated information at multiple spatial scales to discover
 /// the optimal granularity of consciousness and detect scale-dependent transitions.
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for multi-scale Φ computation
 pub struct PhiPyramid {
     config: PhiPyramidConfig,
     phi_calculator: TieredPhi,

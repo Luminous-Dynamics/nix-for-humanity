@@ -87,7 +87,7 @@ struct CfCLearningLookahead {
 impl CfCLearningLookahead {
     fn new(cfc_neurons: usize, horizon: f32, min_phi_gain: f32) -> Result<Self> {
         let cfc = CfCNetwork::new(cfc_neurons)?;
-        let phi_engine = PhiEngine::new(PhiMethod::Continuous);
+        let phi_engine = PhiEngine::new(PhiMethod::SpectralConnectivity);
 
         let consciousness_state: Vec<ContinuousHV> = (0..8)
             .map(|i| {

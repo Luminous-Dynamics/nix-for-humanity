@@ -55,6 +55,9 @@ pub trait SymthaeaObserver: Send + Sync {
     /// Record a GWT integration event
     fn record_gwt_integration(&mut self, event: GWTIntegrationEvent) -> Result<()>;
 
+    /// Record a Broca pipeline event (Reason-then-Generate observability)
+    fn record_broca_pipeline(&mut self, event: BrocaPipelineEvent) -> Result<()>;
+
     /// Flush any buffered events
     fn flush(&mut self) -> Result<()>;
 
@@ -350,6 +353,106 @@ pub struct GWTIntegrationEvent {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// BROCA PIPELINE OBSERVABILITY (Reason-then-Generate)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Broca Pipeline event for observability of the Reason-then-Generate architecture.
+///
+/// Tracks each phase of the HDC+LTC → Structured Thought → LLM Translation pipeline.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrocaPipelineEvent {
+    /// Event ID
+    pub id: String,
+    /// Correlation ID for tracing related events
+    pub correlation_id: String,
+    /// Phase of the pipeline
+    pub phase: BrocaPhase,
+    /// Input hash (for correlation, not raw content)
+    pub input_hash: String,
+    /// Processing duration in microseconds
+    pub duration_us: u64,
+    /// Epistemic status determined by HDC classification
+    pub epistemic_status: String,
+    /// Semantic intent classification
+    pub semantic_intent: String,
+    /// HDC familiarity score (0.0-1.0)
+    pub familiarity: f32,
+    /// HDC novelty score (0.0-1.0)
+    pub novelty: f32,
+    /// Consciousness level (phi)
+    pub phi: f64,
+    /// Whether translation fidelity was verified
+    pub fidelity_verified: bool,
+    /// Response type classification
+    pub response_type: String,
+    /// Relationship stage
+    pub relationship_stage: String,
+    /// Trust level
+    pub trust: f32,
+    /// Additional metadata
+    pub metadata: EventMetadata,
+}
+
+/// Phases of the Broca pipeline
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BrocaPhase {
+    /// Phase 1: Perception (input encoding)
+    Perception,
+    /// Phase 2: Cognition (mind tick)
+    Cognition,
+    /// Phase 3: Extraction (structured thought)
+    Extraction,
+    /// Phase 4: Relational enrichment
+    RelationalEnrichment,
+    /// Phase 5: Translation (LLM Broca's Area)
+    Translation,
+    /// Phase 6: Fidelity verification
+    FidelityVerification,
+    /// Phase 7: Partnership update
+    PartnershipUpdate,
+    /// Complete pipeline
+    Complete,
+}
+
+impl std::fmt::Display for BrocaPhase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BrocaPhase::Perception => write!(f, "perception"),
+            BrocaPhase::Cognition => write!(f, "cognition"),
+            BrocaPhase::Extraction => write!(f, "extraction"),
+            BrocaPhase::RelationalEnrichment => write!(f, "relational_enrichment"),
+            BrocaPhase::Translation => write!(f, "translation"),
+            BrocaPhase::FidelityVerification => write!(f, "fidelity_verification"),
+            BrocaPhase::PartnershipUpdate => write!(f, "partnership_update"),
+            BrocaPhase::Complete => write!(f, "complete"),
+        }
+    }
+}
+
+/// Aggregate statistics for Broca pipeline observability
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BrocaPipelineStats {
+    /// Total queries processed
+    pub total_queries: u64,
+    /// Queries by epistemic status
+    pub epistemic_distribution: HashMap<String, u64>,
+    /// Queries by semantic intent
+    pub intent_distribution: HashMap<String, u64>,
+    /// Fidelity verification pass rate
+    pub fidelity_pass_count: u64,
+    /// Fidelity verification fail count
+    pub fidelity_fail_count: u64,
+    /// Average familiarity score
+    pub avg_familiarity: f64,
+    /// Average novelty score
+    pub avg_novelty: f64,
+    /// Average processing time (microseconds)
+    pub avg_duration_us: f64,
+    /// High novelty queries (potential hallucination triggers)
+    pub high_novelty_count: u64,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // NO-OP OBSERVER
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -419,6 +522,12 @@ impl SymthaeaObserver for NoOpObserver {
 
     fn record_gwt_integration(&mut self, _event: GWTIntegrationEvent) -> Result<()> {
         self.stats.total_events += 1;
+        Ok(())
+    }
+
+    fn record_broca_pipeline(&mut self, _event: BrocaPipelineEvent) -> Result<()> {
+        self.stats.total_events += 1;
+        *self.stats.events_by_type.entry("broca_pipeline".to_string()).or_insert(0) += 1;
         Ok(())
     }
 

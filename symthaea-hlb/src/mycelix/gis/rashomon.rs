@@ -365,6 +365,7 @@ impl SynthesizedView {
 }
 
 /// The Rashomon Engine - multi-perspective generator
+#[allow(dead_code)] // Fields reserved for perspective thresholds
 pub struct RashomonEngine {
     /// The seven harmonic frames
     frames: Vec<HarmonicFrame>,

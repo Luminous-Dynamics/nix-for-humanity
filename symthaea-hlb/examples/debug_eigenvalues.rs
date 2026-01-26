@@ -3,7 +3,7 @@
 
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::ConnectivityCalculator,
     HDC_DIMENSION,
 };
 use nalgebra::DMatrix;
@@ -12,7 +12,7 @@ fn main() {
     println!("\n🔬 DEBUG: Eigenvalue Calculation Analysis");
     println!("============================================================\n");
 
-    let calc = RealPhiCalculator::new();
+    let calc = ConnectivityCalculator::new();
 
     // Test with Star and Random topologies
     let n_nodes = 8;
@@ -36,8 +36,8 @@ fn main() {
     analyze_matrix(&random_sim, "Random");
 
     // Compute Φ values
-    let phi_star = calc.compute(&star.node_representations);
-    let phi_random = calc.compute(&random.node_representations);
+    let phi_star = calc.algebraic_connectivity(&star.node_representations);
+    let phi_random = calc.algebraic_connectivity(&random.node_representations);
 
     println!("\n============================================================");
     println!("🎯 FINAL Φ VALUES:");

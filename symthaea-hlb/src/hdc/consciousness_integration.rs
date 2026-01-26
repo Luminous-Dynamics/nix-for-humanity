@@ -3,7 +3,7 @@
 //! Central integration system that combines multiple consciousness-related
 //! modules into a coherent processing pipeline.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

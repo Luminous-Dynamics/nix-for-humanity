@@ -127,11 +127,23 @@ pub struct LtcCell {
 impl LtcCell {
     /// Create a new LTC cell
     pub fn new(input_size: usize, config: LtcConfig) -> Self {
-        let h = config.hidden_size;
+        Self::new_reservoir(input_size, config, 0.9, 1.0)
+    }
 
-        // Xavier initialization
-        let scale_in = (2.0 / (input_size + h) as f32).sqrt();
-        let scale_rec = (2.0 / (h + h) as f32).sqrt();
+    /// Create a new LTC cell with reservoir computing initialization
+    ///
+    /// # Arguments
+    /// * `input_size` - Dimension of input vectors
+    /// * `config` - LTC configuration
+    /// * `spectral_radius` - Target spectral radius for recurrent weights (0.9 is typical)
+    /// * `input_scaling` - Scaling factor for input weights
+    pub fn new_reservoir(
+        input_size: usize,
+        config: LtcConfig,
+        spectral_radius: f32,
+        input_scaling: f32,
+    ) -> Self {
+        let h = config.hidden_size;
 
         // Deterministic initialization using simple PRNG
         let mut seed = 42u64;
@@ -140,13 +152,30 @@ impl LtcCell {
             ((seed >> 33) as f32 / u32::MAX as f32) * 2.0 - 1.0
         };
 
+        // Initialize input weights with uniform [-1, 1] scaled by input_scaling
         let w_in: Vec<Vec<f32>> = (0..h)
-            .map(|_| (0..input_size).map(|_| rand() * scale_in).collect())
+            .map(|_| (0..input_size).map(|_| rand() * input_scaling).collect())
             .collect();
 
-        let w_rec: Vec<Vec<f32>> = (0..h)
-            .map(|_| (0..h).map(|_| rand() * scale_rec).collect())
+        // Initialize recurrent weights with uniform [-1, 1]
+        let mut w_rec: Vec<Vec<f32>> = (0..h)
+            .map(|_| (0..h).map(|_| rand()).collect())
             .collect();
+
+        // Normalize recurrent weights to target spectral radius
+        // Using Frobenius norm approximation: ||W||_F / sqrt(h) ≈ spectral radius
+        let frobenius: f32 = w_rec.iter()
+            .flat_map(|row| row.iter())
+            .map(|x| x * x)
+            .sum::<f32>()
+            .sqrt();
+
+        let scale = spectral_radius * (h as f32).sqrt() / frobenius.max(1e-6);
+        for row in &mut w_rec {
+            for w in row {
+                *w *= scale;
+            }
+        }
 
         let tau_smoother = TauSmoother::new(h, config.tau_init, 0.050, 0.010);
 

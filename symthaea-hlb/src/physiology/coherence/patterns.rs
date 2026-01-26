@@ -208,6 +208,9 @@ mod tests {
             dopamine: 0.7,
             cortisol: 0.2,
             acetylcholine: 0.8,
+            oxytocin: 0.5,
+            norepinephrine: 0.5,
+            serotonin: 0.5,
         };
 
         // Record a successful pattern

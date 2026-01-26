@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use super::seven_harmonies::Harmony;
 
 /// Configuration for the value feedback loop
@@ -366,14 +366,14 @@ mod tests {
     #[test]
     fn test_pattern_registration() {
         let mut loop_ = ValueFeedbackLoop::default();
-        loop_.register_pattern("action1", RealHV::random(512));
+        loop_.register_pattern("action1", RealHV::random(512, 42));
         assert!(loop_.get_estimate("action1").is_some());
     }
 
     #[test]
     fn test_feedback_processing() {
         let mut loop_ = ValueFeedbackLoop::default();
-        loop_.register_pattern("action1", RealHV::random(512));
+        loop_.register_pattern("action1", RealHV::random(512, 42));
 
         let signal = loop_.create_signal("action1", FeedbackType::Explicit, 0.8);
         let result = loop_.process_feedback(signal);
@@ -385,8 +385,8 @@ mod tests {
     #[test]
     fn test_temporal_difference() {
         let mut loop_ = ValueFeedbackLoop::default();
-        loop_.register_pattern("state1", RealHV::random(512));
-        loop_.register_pattern("state2", RealHV::random(512));
+        loop_.register_pattern("state1", RealHV::random(512, 42));
+        loop_.register_pattern("state2", RealHV::random(512, 42));
 
         let td_error = loop_.temporal_difference_update("state1", "state2", 1.0);
         // TD error should be non-zero

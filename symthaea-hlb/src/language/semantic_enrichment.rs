@@ -30,7 +30,7 @@
 //! ```
 
 use std::collections::{HashMap, HashSet};
-use crate::hdc::universal_semantics::SemanticPrime;
+use symthaea_core::hdc::universal_semantics::SemanticPrime;
 
 // ============================================================================
 // MORPHOLOGICAL ANALYSIS

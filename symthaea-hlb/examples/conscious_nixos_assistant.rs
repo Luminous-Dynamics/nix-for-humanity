@@ -41,7 +41,7 @@
 use symthaea::language::llm_organ::{LlmConfig, LlmOrgan, LlmProvider, LlmRequest, ConsciousLlmOrgan};
 use symthaea::hdc::real_hv::RealHV;
 use symthaea::hdc::HDC_DIMENSION;
-use symthaea::hdc::phi_real::RealPhiCalculator;
+use symthaea::hdc::spectral_connectivity::ConnectivityCalculator;
 use symthaea::hdc::consciousness_topology_generators::ConsciousnessTopology;
 use symthaea::memory::ConversationMemory;
 use symthaea::consciousness::phi_attention::{PhiAwareScoring, ConsciousnessThresholds, ActionType, ConfidenceLevel};
@@ -55,7 +55,7 @@ pub struct ConsciousNixOSAssistant {
     /// LLM for language understanding
     llm: ConsciousLlmOrgan,
     /// Φ calculator for consciousness measurement
-    phi_calc: RealPhiCalculator,
+    phi_calc: ConnectivityCalculator,
     /// Conversation memory (SQLite-backed)
     memory: ConversationMemory,
     /// NixOS command executor
@@ -120,7 +120,7 @@ Example: [COMMAND]: search markdown editor"#.to_string();
 
         Ok(Self {
             llm: ConsciousLlmOrgan::with_config(config),
-            phi_calc: RealPhiCalculator::new(),
+            phi_calc: ConnectivityCalculator::new(),
             memory,
             executor: NixOSExecutor::new().with_dry_run(false),
             thresholds: ConsciousnessThresholds::default(),
@@ -135,7 +135,7 @@ Example: [COMMAND]: search markdown editor"#.to_string();
         // Use a ring topology (high integration) for demonstration
         // In production, this would be based on actual cognitive state
         let topology = ConsciousnessTopology::ring(8, HDC_DIMENSION, 42);
-        let phi = self.phi_calc.compute(&topology.node_representations);
+        let phi = self.phi_calc.algebraic_connectivity(&topology.node_representations);
         self.current_phi = (phi as f32 * 2.0).min(1.0);
     }
 

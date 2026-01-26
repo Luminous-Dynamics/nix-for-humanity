@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for visual cortex
 #[derive(Debug, Clone, Serialize, Deserialize)]

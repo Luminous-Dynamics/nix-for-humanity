@@ -10,6 +10,7 @@ use std::time::{Duration, SystemTime};
 use parking_lot::RwLock;
 
 /// Manages connection tickets for peer discovery and connection
+#[allow(dead_code)] // Fields reserved for ticket expiration/validation
 pub struct TicketManager {
     /// Tickets we've created for others to connect to us
     outgoing_tickets: RwLock<HashMap<String, TicketEntry>>,
@@ -22,6 +23,7 @@ pub struct TicketManager {
 }
 
 /// An entry in the ticket cache
+#[allow(dead_code)] // Fields reserved for expiration tracking
 struct TicketEntry {
     ticket: ConnectionTicket,
     created_at: SystemTime,
@@ -39,6 +41,7 @@ impl TicketManager {
     }
 
     /// Create a new ticket manager with custom expiration
+    #[allow(dead_code)] // Reserved for future use
     pub fn with_expiration(expiration: Duration) -> Self {
         Self {
             outgoing_tickets: RwLock::new(HashMap::new()),
@@ -48,6 +51,7 @@ impl TicketManager {
     }
 
     /// Store an outgoing ticket (one we created for others)
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn store_outgoing(&self, ticket: ConnectionTicket) {
         let entry = TicketEntry {
             ticket: ticket.clone(),
@@ -58,6 +62,7 @@ impl TicketManager {
     }
 
     /// Store an incoming ticket (one we received from a peer)
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn store_incoming(&self, ticket: ConnectionTicket) {
         let entry = TicketEntry {
             ticket: ticket.clone(),
@@ -68,12 +73,14 @@ impl TicketManager {
     }
 
     /// Get an incoming ticket for a specific node
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn get_incoming(&self, node_id: &str) -> Option<ConnectionTicket> {
         let tickets = self.incoming_tickets.read();
         tickets.get(node_id).map(|entry| entry.ticket.clone())
     }
 
     /// Mark a ticket as used
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn mark_used(&self, node_id: &str) {
         if let Some(entry) = self.incoming_tickets.write().get_mut(node_id) {
             entry.use_count += 1;
@@ -81,6 +88,7 @@ impl TicketManager {
     }
 
     /// Remove expired tickets
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn cleanup_expired(&self) {
         let _now = SystemTime::now();
 
@@ -98,6 +106,7 @@ impl TicketManager {
     }
 
     /// Get all known peer node IDs
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn known_peers(&self) -> Vec<String> {
         self.incoming_tickets.read()
             .keys()
@@ -106,6 +115,7 @@ impl TicketManager {
     }
 
     /// Get the number of stored tickets
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn ticket_count(&self) -> (usize, usize) {
         (
             self.outgoing_tickets.read().len(),
@@ -114,6 +124,7 @@ impl TicketManager {
     }
 
     /// Validate a ticket
+    #[allow(dead_code)] // Reserved for full Iroh integration
     pub fn validate(&self, ticket: &ConnectionTicket) -> SwarmResult<()> {
         // Check expiration
         if ticket.is_expired() {

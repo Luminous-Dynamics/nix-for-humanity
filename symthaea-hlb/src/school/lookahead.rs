@@ -24,7 +24,7 @@ use std::time::Instant;
 
 use crate::cfc::CfCNetwork;
 use crate::phi_engine::{PhiEngine, PhiMethod};
-use crate::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::unified_hv::ContinuousHV;
 
 use super::objective::LearningObjective;
 
@@ -128,7 +128,7 @@ impl LookaheadEngine {
     /// Create a new lookahead engine
     pub fn new(cfc_neurons: usize, horizon: f32, min_phi_gain: f32) -> Result<Self> {
         let cfc = CfCNetwork::new(cfc_neurons)?;
-        let phi_engine = PhiEngine::new(PhiMethod::Continuous);
+        let phi_engine = PhiEngine::new(PhiMethod::SpectralConnectivity);
 
         Ok(Self {
             cfc,
@@ -386,7 +386,7 @@ impl LookaheadEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hdc::{RealHV, HDC_DIMENSION};
+    use symthaea_core::hdc::{RealHV, HDC_DIMENSION};
     use super::super::objective::Difficulty;
 
     fn create_test_consciousness_state() -> Vec<ContinuousHV> {

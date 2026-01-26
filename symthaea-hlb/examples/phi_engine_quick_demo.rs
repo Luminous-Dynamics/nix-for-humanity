@@ -49,7 +49,7 @@ fn main() {
     println!("  Random Φ = {:.4}", random_auto.phi);
 
     // 2. Explicit Tiered method (Mock tier for speed/determinism)
-    use symthaea::hdc::tiered_phi::ApproximationTier;
+    use symthaea::phi_engine::ApproximationTier;
     let engine_tiered = PhiEngine::new(PhiMethod::Tiered(ApproximationTier::Mock));
 
     let star_tiered = engine_tiered.compute(&star_hvs);

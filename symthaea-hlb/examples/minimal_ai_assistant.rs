@@ -12,7 +12,7 @@
 use symthaea::language::llm_organ::{LlmConfig, LlmOrgan, LlmProvider, LlmRequest, ConsciousLlmOrgan};
 use symthaea::hdc::real_hv::RealHV;
 use symthaea::hdc::HDC_DIMENSION;
-use symthaea::hdc::phi_real::RealPhiCalculator;
+use symthaea::hdc::spectral_connectivity::ConnectivityCalculator;
 use symthaea::hdc::consciousness_topology_generators::ConsciousnessTopology;
 use std::io::{self, Write};
 
@@ -22,7 +22,7 @@ pub struct MinimalAI {
     llm: ConsciousLlmOrgan,
 
     /// Φ calculator for consciousness measurement
-    phi_calc: RealPhiCalculator,
+    phi_calc: ConnectivityCalculator,
 
     /// Current system Φ (consciousness level)
     current_phi: f32,
@@ -67,7 +67,7 @@ Be concise but thorough. If you're uncertain, say so."#.to_string();
 
         Self {
             llm: ConsciousLlmOrgan::with_config(config),
-            phi_calc: RealPhiCalculator::new(),
+            phi_calc: ConnectivityCalculator::new(),
             current_phi: 0.5,  // Start with moderate consciousness
             history: Vec::new(),
             system_prompt,
@@ -81,7 +81,7 @@ Be concise but thorough. If you're uncertain, say so."#.to_string();
 
         // Use a ring topology (high integration) for demonstration
         let topology = ConsciousnessTopology::ring(8, HDC_DIMENSION, 42);
-        let phi = self.phi_calc.compute(&topology.node_representations);
+        let phi = self.phi_calc.algebraic_connectivity(&topology.node_representations);
 
         // Normalize to 0-1 range (typical values are ~0.4-0.5)
         self.current_phi = (phi as f32 * 2.0).min(1.0);

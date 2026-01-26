@@ -11,7 +11,7 @@
 //!
 //! For comprehensive documentation, see the parent [`super`] module.
 
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use rayon::prelude::*;
@@ -1727,7 +1727,7 @@ impl Default for TieredPhi {
 // ============================================================================
 
 use once_cell::sync::Lazy;
-use crate::infrastructure::lock_guard::FastMutex; // Non-poisoning, 2-3x faster
+use parking_lot::Mutex as FastMutex;
 
 /// Global thread-safe Φ calculator for convenience functions
 /// Uses Spectral tier by default (good balance of speed and accuracy)

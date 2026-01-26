@@ -6,7 +6,7 @@
 //! - Role-based binding for structured mappings
 //! - Unbinding for reverse translation
 
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use super::widget_mapper::{WidgetBinding, NixPath, WidgetId};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};

@@ -3,7 +3,7 @@
 //! Maps between GUI widget values and NixOS configuration expressions.
 //! Supports various widget types and value transformers.
 
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use std::collections::HashMap;
 
 /// Unique widget identifier

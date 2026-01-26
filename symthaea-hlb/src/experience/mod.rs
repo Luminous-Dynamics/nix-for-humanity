@@ -31,11 +31,11 @@ pub mod signals;
 pub mod kosmic_state;
 pub mod memory;
 
-#[cfg(feature = "databases")]
+#[cfg(feature = "databases_module")]
 pub mod vector_store;
-#[cfg(feature = "databases")]
+#[cfg(feature = "databases_module")]
 pub mod reasoning_engine;
-#[cfg(feature = "databases")]
+#[cfg(feature = "databases_module")]
 pub mod analytics;
 
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ pub use signals::{PrincipledSignals, SignalComputer};
 pub use kosmic_state::{KosmicSong, SevenHarmonies, HarmonicState, MoralUncertainty, GisState, GisType};
 pub use memory::{EpisodicMemory, ThoughtTrace, UserEpistemicMirror};
 
-use crate::hdc::real_hv::RealHV;
+use symthaea_core::hdc::real_hv::RealHV;
 use crate::wisdom::WisdomState;
 
 /// The central experience integration bus

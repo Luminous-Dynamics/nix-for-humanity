@@ -3,7 +3,7 @@
 //! Continuous-valued integrated information (Φ) computation using
 //! real-valued hypervectors and information geometry.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

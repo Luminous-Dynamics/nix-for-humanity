@@ -43,7 +43,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use crate::infrastructure::lock_guard::ResilientMutex; // SAFETY: Prevent cascading failures
+use parking_lot::Mutex as ResilientMutex;
 
 use super::binary_hv::HV16;
 use super::sleep_and_altered_states::{DreamScenario, SleepAndAlteredStates};

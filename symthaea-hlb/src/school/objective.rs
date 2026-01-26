@@ -4,7 +4,7 @@
 //! Each objective is encoded as a hyperdimensional vector (HDC) that
 //! captures its semantic meaning.
 
-use crate::hdc::{RealHV, HDC_DIMENSION};
+use symthaea_core::hdc::{RealHV, HDC_DIMENSION};
 use ndarray::Array1;
 use std::hash::{Hash, Hasher};
 

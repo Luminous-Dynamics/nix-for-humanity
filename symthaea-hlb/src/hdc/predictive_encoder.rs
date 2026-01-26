@@ -28,10 +28,10 @@
 //!
 //! This is biologically inspired by predictive coding in the cortex.
 
-use crate::hdc::real_hv::RealHV;
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
-use crate::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
-use crate::hdc::HDC_DIMENSION;
+use symthaea_core::hdc::real_hv::RealHV;
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
+use symthaea_core::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
+use symthaea_core::hdc::HDC_DIMENSION;
 
 use std::collections::{HashMap, VecDeque};
 use serde::{Serialize, Deserialize};

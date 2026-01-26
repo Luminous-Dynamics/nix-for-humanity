@@ -1,3 +1,5 @@
+// Experimental module: fields will be read when Mycelix SDK integration is wired
+#![allow(dead_code)]
 //! Mycelix Network Integration
 //!
 //! Provides async client for fetching K-Vectors from the Mycelix network

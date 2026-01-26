@@ -1,21 +1,16 @@
-pub mod hdc;
-pub mod phi_engine;
+//! Symthaea Core
+//!
+//! The mathematical and structural foundation for the Holographic Liquid Brain.
+//! Contains primitives for Hyperdimensional Computing (HDC) and Integrated Information (Phi).
+
 pub mod core;
+pub mod hdc;
 pub mod observability;
+pub mod phi_engine;
 
-// Convenience re-exports for external users
-pub use hdc::unified_hv::{ContinuousHV, BinaryHV, HV, HDC_DIMENSION};
-pub use phi_engine::{
-    PhiEngine,
-    PhiMethod,
-    PhiResult,
-    PhiCalculator,
-    ContinuousPhiCalculator,
-};
-// Note: UnifiedConsciousnessPipeline, ConsciousMoment, and PipelineConfig are
-// not available in symthaea-core (requires full consciousness module)
-pub use core::{
-    ConsciousnessTopology,
-    TopologyType,
-};
-
+// Re-exports are handled at the module level
+// Key types are available from their respective modules:
+// - hdc::binary_hv::HV16
+// - hdc::consciousness::ConsciousnessState
+// - hdc::integrated_information::IntegratedInformation
+// - core::ConsciousnessState (different variant)

@@ -59,10 +59,7 @@ impl Default for PredictionGateConfig {
             input_dim: 64,
             output_dim: 16,
             num_steps: 20,
-            lr_weights: 0.005,
-            lr_tau: 0.0005,
-            lr_bias: 0.005,
-            sparsity: 0.2,
+            learning_rate: 0.005,
             ..Default::default()
         };
 
@@ -112,7 +109,7 @@ pub enum TaskType {
 
 impl TaskType {
     /// Generate training example
-    fn generate(&self, dim: usize, output_dim: usize, seed: u64) -> (Vec<f32>, Vec<f32>) {
+    fn generate(&self, dim: usize, output_dim: usize, _seed: u64) -> (Vec<f32>, Vec<f32>) {
         let mut rng = rand::thread_rng();
 
         match self {

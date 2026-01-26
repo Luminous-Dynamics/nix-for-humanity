@@ -305,7 +305,7 @@ impl MockVideoSource {
     }
 
     /// Create a mock source that blinks at a specific BPM (for rhythm testing)
-    pub fn with_bpm(mut config: VideoSourceConfig, bpm: u32) -> Self {
+    pub fn with_bpm(config: VideoSourceConfig, bpm: u32) -> Self {
         let mut source = Self::new(config);
         source.pattern = MockPattern::Blink { bpm };
         source
@@ -343,7 +343,7 @@ impl MockVideoSource {
                     if beat_position < 0.5 { 255 } else { 50 }
                 }
                 MockPattern::MovingGradient => {
-                    ((seq % 256) as u8)
+                    (seq % 256) as u8
                 }
                 MockPattern::Noise => {
                     // Simple PRNG

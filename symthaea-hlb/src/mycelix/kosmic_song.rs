@@ -3,7 +3,7 @@
 //! The KosmicSong is the unified identity of a consciousness-bearing agent,
 //! synthesizing:
 //!
-//! - **Φ (Phi)**: Integrated Information (consciousness level)
+//! - **Phi (lambda2)**: Spectral connectivity proxy for consciousness level
 //! - **Seven Harmonies**: Value alignment and epistemic lenses
 //! - **GIS**: Graceful Ignorance System (epistemic humility)
 //!
@@ -70,13 +70,13 @@ use super::gis::{
 };
 
 // Import real types from the crate's consciousness infrastructure
-use crate::hdc::{
+use symthaea_core::hdc::{
     RealHV,
     ConsciousnessTopology as HdcConsciousnessTopology,
     TopologyType,
     HDC_DIMENSION,
 };
-use crate::hdc::phi_real::RealPhiCalculator;
+use symthaea_core::hdc::spectral_connectivity::ConnectivityCalculator;
 use crate::consciousness::seven_harmonies::{
     Harmony as CoreHarmony,
     SevenHarmonies,
@@ -169,20 +169,19 @@ impl ConsciousnessTopology {
         self.inner.n_nodes
     }
 
-    /// Calculate Φ using the real calculator
+    /// Calculate spectral connectivity (lambda2) using the connectivity calculator
     pub fn calculate_phi(&mut self) -> f32 {
         if let Some(phi) = self.cached_phi {
             return phi;
         }
 
-        let calculator = RealPhiCalculator::new();
-        // compute returns f64, convert to f32
-        let phi = calculator.compute(&self.inner.node_representations) as f32;
+        let calculator = ConnectivityCalculator::new();
+        let phi = calculator.algebraic_connectivity(&self.inner.node_representations) as f32;
         self.cached_phi = Some(phi);
         phi
     }
 
-    /// Get theoretical Φ maximum for this topology type
+    /// Get theoretical lambda2 maximum for this topology type
     pub fn phi_max(&self) -> f32 {
         match self.inner.topology_type {
             TopologyType::Ring => 0.4954,
@@ -702,18 +701,18 @@ impl KosmicSong {
         let result = harmonies_system.evaluate_action(action_description);
 
         // Update harmonic profile based on alignment scores
-        for alignment in &result.harmonies {
+        for alignment in result.harmonies() {
             let gis_harmony: Harmony = alignment.harmony.into();
             let current = self.harmonic_profile.activation(gis_harmony);
 
             // Slightly adjust profile based on action alignment patterns
             // Positive alignment reinforces, negative alignment weakens
-            let adjustment = alignment.alignment * 0.01;
+            let adjustment = alignment.alignment() * 0.01;
             self.harmonic_profile.set_activation(gis_harmony, current + adjustment);
         }
 
         // Update moral uncertainty if violations detected
-        if result.has_violations {
+        if result.has_violations() {
             // Increase deontic uncertainty when harmonies are violated
             let new_deontic = (self.moral_uncertainty.deontic + 0.1).min(1.0);
             self.moral_uncertainty = MoralUncertainty::new(
@@ -740,7 +739,7 @@ impl KosmicSong {
 
         result.best_alignment().map(|a| {
             let gis_harmony: Harmony = a.harmony.into();
-            (gis_harmony, a.alignment)
+            (gis_harmony, a.alignment())
         })
     }
 

@@ -35,13 +35,13 @@ fn generate_star_topology(n: usize) -> Vec<HV16> {
     let mut components = Vec::with_capacity(n);
 
     // Hub: random hypervector
-    let hub = HV16::random();
+    let hub = HV16::random(42);
     components.push(hub.clone());
 
     // Spokes: each similar to hub but dissimilar to each other
     for i in 1..n {
         // Create spoke by binding hub with a unique pattern
-        let pattern = HV16::random();
+        let pattern = HV16::random(100 + i as u64);
         // Mix hub with pattern to create similarity gradient
         // More hub = more similar to hub
         let spoke = if i % 2 == 0 {
@@ -62,12 +62,12 @@ fn generate_ring_topology(n: usize) -> Vec<HV16> {
     let mut components = Vec::with_capacity(n);
 
     // Start with random base
-    let mut prev = HV16::random();
+    let mut prev = HV16::random(200);
     components.push(prev.clone());
 
     // Each subsequent node is derived from previous (neighbor similarity)
-    for _ in 1..n {
-        let noise = HV16::random();
+    for i in 1..n {
+        let noise = HV16::random(200 + i as u64);
         // Bundle with previous to create neighbor similarity
         let current = HV16::bundle(&[prev.clone(), noise]);
         components.push(current.clone());
@@ -86,7 +86,7 @@ fn generate_ring_topology(n: usize) -> Vec<HV16> {
 
 /// Generate random topology: all nodes roughly independent
 fn generate_random_topology(n: usize) -> Vec<HV16> {
-    (0..n).map(|_| HV16::random()).collect()
+    (0..n).map(|i| HV16::random(300 + i as u64)).collect()
 }
 
 /// Generate modular topology: two clusters with weak inter-cluster links
@@ -95,16 +95,16 @@ fn generate_modular_topology(n: usize) -> Vec<HV16> {
     let mut components = Vec::with_capacity(n);
 
     // Cluster A: all similar to cluster_a_base
-    let cluster_a_base = HV16::random();
-    for _ in 0..half {
-        let noise = HV16::random();
+    let cluster_a_base = HV16::random(400);
+    for i in 0..half {
+        let noise = HV16::random(410 + i as u64);
         components.push(HV16::bundle(&[cluster_a_base.clone(), noise]));
     }
 
     // Cluster B: all similar to cluster_b_base (different from A)
-    let cluster_b_base = HV16::random();
-    for _ in half..n {
-        let noise = HV16::random();
+    let cluster_b_base = HV16::random(500);
+    for i in half..n {
+        let noise = HV16::random(510 + i as u64);
         components.push(HV16::bundle(&[cluster_b_base.clone(), noise]));
     }
 

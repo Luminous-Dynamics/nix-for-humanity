@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use super::seven_harmonies::{SevenHarmonies, Harmony, AlignmentResult};
 
 /// Configuration for harmonies integration
@@ -140,7 +140,7 @@ impl HarmoniesIntegrator {
             Harmony::SacredReciprocity,
             Harmony::EvolutionaryProgression,
         ] {
-            harmony_embeddings.insert(harmony, RealHV::random(512));
+            harmony_embeddings.insert(harmony, RealHV::random(512, 42));
         }
 
         Self {
@@ -162,7 +162,7 @@ impl HarmoniesIntegrator {
 
         // Calculate alignment with each harmony
         for (harmony, embedding) in &self.harmony_embeddings {
-            let similarity = action.embedding.cosine_similarity(embedding);
+            let similarity = action.embedding.similarity(embedding);
             let weight = self.config.harmony_weights.get(harmony).copied().unwrap_or(1.0);
 
             harmony_scores.insert(*harmony, similarity);
@@ -242,7 +242,7 @@ impl HarmoniesIntegrator {
             reasoning.push_str(&format!(
                 "Strongest alignment: {:?} ({:.1}%). ",
                 harmony,
-                score * 100.0
+                *score * 100.0
             ));
         }
 
@@ -250,7 +250,7 @@ impl HarmoniesIntegrator {
             reasoning.push_str(&format!(
                 "Weakest alignment: {:?} ({:.1}%).",
                 harmony,
-                score * 100.0
+                *score * 100.0
             ));
         }
 
@@ -293,13 +293,13 @@ impl HarmoniesIntegrator {
         for (harmony, embedding) in self.harmony_embeddings.iter_mut() {
             let weight = self.config.harmony_weights.get(harmony).copied().unwrap_or(1.0);
             let adjustment = action.embedding.clone().scale(learning_rate * weight);
-            *embedding = embedding.bundle(&[adjustment]);
+            *embedding = RealHV::bundle(&[embedding.clone(), adjustment]);
         }
     }
 
     /// Get alignment for the Seven Harmonies
-    pub fn check_alignment(&self, description: &str) -> AlignmentResult {
-        self.harmonies.check_alignment(description)
+    pub fn check_alignment(&mut self, description: &str) -> AlignmentResult {
+        self.harmonies.evaluate(description)
     }
 
     /// Get statistics
@@ -340,7 +340,7 @@ mod tests {
         let action = ValuedAction::new(
             "help_user",
             "Assist user with their request",
-            RealHV::random(512)
+            RealHV::random(512, 42)
         );
 
         let evaluation = integrator.evaluate(&action);
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_valued_action_builder() {
-        let action = ValuedAction::new("test", "description", RealHV::random(512))
+        let action = ValuedAction::new("test", "description", RealHV::random(512, 42))
             .with_outcome("positive outcome")
             .with_entity("user");
 

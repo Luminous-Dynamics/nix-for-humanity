@@ -7,6 +7,7 @@ Provides:
 - Epistemic Cube Classification (E/N/M)
 - Zero-TrustML Credits (Holochain)
 - Sophia Intelligence (9-layer consciousness)
+- WisdomEngine Pattern Intelligence (NixOS Codex)
 
 Layer 7: Collective Intelligence
 """
@@ -15,6 +16,19 @@ from .identity import get_did_manager, DIDManager, LuminousNixDID
 # from .trust import get_matl_engine, MATLEngine, MATLScore  # Coming in Week 3
 # from .epistemic import get_epistemic_classifier  # Coming in Week 5
 # from .credits import get_wallet  # Coming in Week 7
+
+# WisdomEngine Pattern Intelligence
+from .wisdom import (
+    WisdomBridge,
+    get_wisdom_engine,
+    PatternOutcome,
+    PatternRecommendation,
+    TrustLevel,
+    NixOSPatterns,
+    NIXOS_DOMAINS,
+    NIXOS_PATTERN_CATALOG,
+    get_nixos_pattern_catalog,
+)
 
 # Sophia Intelligence System
 from .sophia_cli_integration import (
@@ -37,9 +51,11 @@ from .orchestration import (
 
 __version__ = "0.1.0-alpha"
 __all__ = [
+    # Identity
     "get_did_manager",
     "DIDManager",
     "LuminousNixDID",
+    # Sophia Intelligence
     "get_sophia_cli_assistant",
     "enable_sophia_for_cli",
     "SophiaCLIAssistant",
@@ -52,4 +68,14 @@ __all__ = [
     "AgentProfile",
     "OrchestrationContext",
     "ConsensusResponse",
+    # WisdomEngine (NixOS Codex)
+    "WisdomBridge",
+    "get_wisdom_engine",
+    "PatternOutcome",
+    "PatternRecommendation",
+    "TrustLevel",
+    "NixOSPatterns",
+    "NIXOS_DOMAINS",
+    "NIXOS_PATTERN_CATALOG",
+    "get_nixos_pattern_catalog",
 ]

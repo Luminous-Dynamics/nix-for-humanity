@@ -22,7 +22,7 @@
 //! ```
 
 use super::{EmbeddingResult, Embedder};
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 

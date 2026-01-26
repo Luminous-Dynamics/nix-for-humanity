@@ -1,3 +1,4 @@
+#![cfg(feature = "full_consciousness")]
 //! Integration Tests: Primitive → Consciousness → Routing Pipeline
 //!
 //! These tests verify the complete integration between:

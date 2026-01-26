@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for the primitive evolver
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,7 +106,7 @@ impl EvolvingConcept {
 
     /// Crossover with another concept
     pub fn crossover(&self, other: &EvolvingConcept, id: u64) -> EvolvingConcept {
-        let new_hv = self.hv.bundle(&[other.hv.clone()]);
+        let new_hv = RealHV::bundle(&[self.hv.clone(), other.hv.clone()]);
         let new_name = format!("{}×{}", self.name, other.name);
 
         let mut child = EvolvingConcept::new(id, new_name, new_hv);
@@ -174,7 +174,7 @@ impl PrimitiveEvolver {
     /// Initialize population randomly
     pub fn initialize_random(&mut self, dim: usize, count: usize) {
         for i in 0..count {
-            let hv = RealHV::random(dim);
+            let hv = RealHV::random(dim, 42);
             let concept = EvolvingConcept::new(0, format!("concept_{}", i), hv);
             self.add_concept(concept);
         }
@@ -384,7 +384,7 @@ impl PrimitiveEvolver {
 
         for i in 0..concepts.len() {
             for j in (i + 1)..concepts.len() {
-                let dist = 1.0 - concepts[i].hv.cosine_similarity(&concepts[j].hv) as f64;
+                let dist = 1.0 - concepts[i].hv.similarity(&concepts[j].hv) as f64;
                 total_dist += dist;
                 count += 1;
             }
@@ -432,7 +432,7 @@ mod tests {
 
     #[test]
     fn test_concept_creation() {
-        let hv = RealHV::random(512);
+        let hv = RealHV::random(512, 42);
         let concept = EvolvingConcept::new(1, "test", hv);
         assert_eq!(concept.name, "test");
         assert_eq!(concept.fitness, 0.0);
@@ -440,7 +440,7 @@ mod tests {
 
     #[test]
     fn test_mutation() {
-        let hv = RealHV::random(512);
+        let hv = RealHV::random(512, 42);
         let mut concept = EvolvingConcept::new(1, "test", hv.clone());
         let original = concept.hv.clone();
         concept.mutate(0.1);

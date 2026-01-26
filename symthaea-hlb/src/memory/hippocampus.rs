@@ -37,7 +37,6 @@
 //! └────────────────────────────────────────────────────────────────────┘
 //! ```
 
-use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
@@ -268,6 +267,7 @@ pub struct RecallResult {
 }
 
 /// Hippocampus actor - manages episodic memory
+#[allow(dead_code)] // Fields reserved for memory consolidation
 pub struct HippocampusActor {
     /// Memory store
     memories: Arc<RwLock<Vec<MemoryTrace>>>,
@@ -342,15 +342,18 @@ impl HippocampusActor {
 
         let memory = MemoryTrace::new(id, content, embedding, valence);
 
-        {
+        let pruned_count = {
             let mut memories = self.memories.write().await;
             memories.push(memory);
 
             // Prune if over capacity
             if memories.len() > self.max_memories {
-                self.prune_weakest(&mut memories);
+                Self::prune_weakest_memories(&mut memories)
+            } else {
+                0
             }
-        }
+        };
+        self.stats.pruned += pruned_count as u64;
 
         self.stats.total_encoded += 1;
 
@@ -488,8 +491,8 @@ impl HippocampusActor {
         Ok(consolidated_count)
     }
 
-    /// Prune the weakest memories
-    fn prune_weakest(&mut self, memories: &mut Vec<MemoryTrace>) {
+    /// Prune the weakest memories (static to avoid borrow issues)
+    fn prune_weakest_memories(memories: &mut Vec<MemoryTrace>) -> usize {
         // Sort by strength ascending
         memories.sort_by(|a, b| a.strength.partial_cmp(&b.strength).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -497,7 +500,7 @@ impl HippocampusActor {
         let to_remove = memories.len() / 10;
         memories.drain(0..to_remove);
 
-        self.stats.pruned += to_remove as u64;
+        to_remove
     }
 
     /// Get memory count

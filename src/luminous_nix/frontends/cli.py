@@ -53,6 +53,16 @@ try:
 except ImportError:
     ADVANCED_FEATURES = False
 
+# Import WisdomEngine integration for pattern intelligence
+try:
+    from luminous_nix.capabilities.wisdom_integration import (
+        get_wisdom_integration,
+        WISDOM_AVAILABLE,
+    )
+except ImportError:
+    WISDOM_AVAILABLE = False
+    get_wisdom_integration = None
+
 
 class UnifiedNixAssistant:
     """Basic Nix assistant that actually works with real commands"""
@@ -312,6 +322,17 @@ class UnifiedNixAssistant:
             if self.verbose_level > 0:
                 print(f"⚠️ Could not initialize Sophia: {e}")
 
+        # Initialize WisdomEngine for pattern intelligence
+        self.wisdom_integration = None
+        if WISDOM_AVAILABLE and get_wisdom_integration:
+            try:
+                self.wisdom_integration = get_wisdom_integration(
+                    verbose=self.verbose_level > 0
+                )
+            except Exception as e:
+                if self.verbose_level > 0:
+                    print(f"⚠️ Could not initialize WisdomEngine: {e}")
+
     def set_personality(self, personality: str):
         """Set the response personality"""
         self.personality = personality
@@ -320,6 +341,24 @@ class UnifiedNixAssistant:
         """Confirmation callback for command executor"""
         response = input(f"Execute: {command.description}? (y/N): ")
         return response.lower() == "y"
+
+    def _record_wisdom_outcome(
+        self, command: str, success: bool, error: str = None
+    ):
+        """Record command outcome with WisdomEngine for pattern learning"""
+        if not self.wisdom_integration:
+            return
+
+        try:
+            exit_code = 0 if success else 1
+            self.wisdom_integration.record_outcome(
+                command=command,
+                exit_code=exit_code,
+                error_message=error
+            )
+        except Exception as e:
+            if self.verbose_level > 1:
+                print(f"⚠️ Wisdom recording error: {e}")
 
     def _process_with_sophia(
         self, command: str, success: bool, error: str = None, duration_ms: float = 0
@@ -608,6 +647,13 @@ class UnifiedNixAssistant:
                 except Exception as e:
                     print(f"❌ Plugin command failed: {e}")
                     return
+
+        # Inject wisdom context for pattern intelligence
+        wisdom_context = ""
+        if self.wisdom_integration:
+            wisdom_context = self.wisdom_integration.get_context_injection(query)
+            if wisdom_context and self.verbose_level > 1:
+                print("🧠 WisdomEngine context injected")
 
         # Use intent pipeline if available
         if self.intent_pipeline:
@@ -1363,6 +1409,12 @@ class UnifiedNixAssistant:
                     duration_ms=duration_ms,
                 )
 
+                # Record with WisdomEngine
+                self._record_wisdom_outcome(
+                    command=f"install {package}",
+                    success=True,
+                )
+
                 # Update conversation state
                 if self.conversation_state:
                     self.conversation_state.add_turn(
@@ -1384,6 +1436,13 @@ class UnifiedNixAssistant:
                     success=False,
                     error=result.stderr or "Installation failed",
                     duration_ms=duration_ms,
+                )
+
+                # Record with WisdomEngine
+                self._record_wisdom_outcome(
+                    command=f"install {package}",
+                    success=False,
+                    error=result.stderr or "Installation failed",
                 )
 
                 # Use error recovery only for actual errors, not dry-run previews
@@ -1549,6 +1608,12 @@ class UnifiedNixAssistant:
                     duration_ms=duration_ms,
                 )
 
+                # Record wisdom outcome for pattern learning
+                self._record_wisdom_outcome(
+                    command=f"remove {package}",
+                    success=True,
+                )
+
                 # Update conversation state
                 if self.conversation_state:
                     self.conversation_state.add_turn(
@@ -1565,6 +1630,13 @@ class UnifiedNixAssistant:
                     success=False,
                     error=result.stderr or "Removal failed",
                     duration_ms=duration_ms,
+                )
+
+                # Record wisdom outcome for pattern learning
+                self._record_wisdom_outcome(
+                    command=f"remove {package}",
+                    success=False,
+                    error=result.stderr or "Removal failed",
                 )
 
                 # Use error recovery only for actual errors, not dry-run previews

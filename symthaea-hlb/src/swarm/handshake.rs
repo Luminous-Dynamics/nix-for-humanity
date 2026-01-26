@@ -53,6 +53,7 @@ pub struct HybridHandshake {
 }
 
 /// A pending trust challenge
+#[allow(dead_code)] // Fields reserved for challenge validation
 struct PendingChallenge {
     /// The nonce we sent
     nonce: Vec<u8>,

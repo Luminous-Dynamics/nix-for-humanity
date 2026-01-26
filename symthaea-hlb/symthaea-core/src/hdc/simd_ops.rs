@@ -112,16 +112,30 @@ unsafe fn bind_sse41(a: &[u8; 2048], b: &[u8; 2048], result: &mut [u8; 2048]) {
 /// Scalar fallback with manual unrolling for auto-vectorization
 #[inline]
 fn bind_scalar_unrolled(a: &[u8; 2048], b: &[u8; 2048], result: &mut [u8; 2048]) {
-    // Process 8 bytes at a time using u64 for better auto-vectorization
-    let a64 = unsafe { std::slice::from_raw_parts(a.as_ptr() as *const u64, 256) };
-    let b64 = unsafe { std::slice::from_raw_parts(b.as_ptr() as *const u64, 256) };
-    let r64 = unsafe { std::slice::from_raw_parts_mut(result.as_mut_ptr() as *mut u64, 256) };
+    // Process 8 bytes at a time using u64 for better auto-vectorization.
+    // Use unaligned loads/stores because the byte arrays are not guaranteed to be 8-byte aligned.
+    use std::ptr::{read_unaligned, write_unaligned};
 
-    for i in (0..256).step_by(4) {
-        r64[i] = a64[i] ^ b64[i];
-        r64[i + 1] = a64[i + 1] ^ b64[i + 1];
-        r64[i + 2] = a64[i + 2] ^ b64[i + 2];
-        r64[i + 3] = a64[i + 3] ^ b64[i + 3];
+    let a_ptr = a.as_ptr() as *const u64;
+    let b_ptr = b.as_ptr() as *const u64;
+    let r_ptr = result.as_mut_ptr() as *mut u64;
+
+    unsafe {
+        for i in (0..256).step_by(4) {
+            let a0 = read_unaligned(a_ptr.add(i));
+            let b0 = read_unaligned(b_ptr.add(i));
+            let a1 = read_unaligned(a_ptr.add(i + 1));
+            let b1 = read_unaligned(b_ptr.add(i + 1));
+            let a2 = read_unaligned(a_ptr.add(i + 2));
+            let b2 = read_unaligned(b_ptr.add(i + 2));
+            let a3 = read_unaligned(a_ptr.add(i + 3));
+            let b3 = read_unaligned(b_ptr.add(i + 3));
+
+            write_unaligned(r_ptr.add(i), a0 ^ b0);
+            write_unaligned(r_ptr.add(i + 1), a1 ^ b1);
+            write_unaligned(r_ptr.add(i + 2), a2 ^ b2);
+            write_unaligned(r_ptr.add(i + 3), a3 ^ b3);
+        }
     }
 }
 
@@ -180,13 +194,25 @@ unsafe fn matching_bits_avx2_popcnt(a: &[u8; 2048], b: &[u8; 2048]) -> u32 {
 /// POPCNT-only implementation (fallback when AVX2 not available)
 #[cfg(target_arch = "x86_64")]
 fn matching_bits_popcnt(a: &[u8; 2048], b: &[u8; 2048]) -> u32 {
-    let a64 = unsafe { std::slice::from_raw_parts(a.as_ptr() as *const u64, 256) };
-    let b64 = unsafe { std::slice::from_raw_parts(b.as_ptr() as *const u64, 256) };
+    use std::ptr::read_unaligned;
 
-    let differing: u64 = a64.iter()
-        .zip(b64.iter())
-        .map(|(x, y)| (x ^ y).count_ones() as u64)
-        .sum();
+    let a_ptr = a.as_ptr() as *const u64;
+    let b_ptr = b.as_ptr() as *const u64;
+    let mut differing: u64 = 0;
+
+    unsafe {
+        for i in (0..256).step_by(4) {
+            let xor0 = read_unaligned(a_ptr.add(i)) ^ read_unaligned(b_ptr.add(i));
+            let xor1 = read_unaligned(a_ptr.add(i + 1)) ^ read_unaligned(b_ptr.add(i + 1));
+            let xor2 = read_unaligned(a_ptr.add(i + 2)) ^ read_unaligned(b_ptr.add(i + 2));
+            let xor3 = read_unaligned(a_ptr.add(i + 3)) ^ read_unaligned(b_ptr.add(i + 3));
+
+            differing += xor0.count_ones() as u64;
+            differing += xor1.count_ones() as u64;
+            differing += xor2.count_ones() as u64;
+            differing += xor3.count_ones() as u64;
+        }
+    }
 
     (16_384 - differing) as u32
 }
@@ -275,14 +301,23 @@ unsafe fn invert_sse41(a: &[u8; 2048], result: &mut [u8; 2048]) {
 /// Scalar fallback for NOT
 #[inline]
 fn invert_scalar(a: &[u8; 2048], result: &mut [u8; 2048]) {
-    let a64 = unsafe { std::slice::from_raw_parts(a.as_ptr() as *const u64, 256) };
-    let r64 = unsafe { std::slice::from_raw_parts_mut(result.as_mut_ptr() as *mut u64, 256) };
+    use std::ptr::{read_unaligned, write_unaligned};
 
-    for i in (0..256).step_by(4) {
-        r64[i] = !a64[i];
-        r64[i + 1] = !a64[i + 1];
-        r64[i + 2] = !a64[i + 2];
-        r64[i + 3] = !a64[i + 3];
+    let a_ptr = a.as_ptr() as *const u64;
+    let r_ptr = result.as_mut_ptr() as *mut u64;
+
+    unsafe {
+        for i in (0..256).step_by(4) {
+            let a0 = read_unaligned(a_ptr.add(i));
+            let a1 = read_unaligned(a_ptr.add(i + 1));
+            let a2 = read_unaligned(a_ptr.add(i + 2));
+            let a3 = read_unaligned(a_ptr.add(i + 3));
+
+            write_unaligned(r_ptr.add(i), !a0);
+            write_unaligned(r_ptr.add(i + 1), !a1);
+            write_unaligned(r_ptr.add(i + 2), !a2);
+            write_unaligned(r_ptr.add(i + 3), !a3);
+        }
     }
 }
 

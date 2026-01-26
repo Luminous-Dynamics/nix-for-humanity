@@ -10,7 +10,23 @@
 //! Unlike heuristic ensembles that vote on features, this architecture builds
 //! generative models and asks counterfactual questions.
 
-use super::{CausalDirection, CausalDiscoveryResult};
+use super::{CausalDirection, CausalDiscoveryResult, CausalFeatures};
+
+/// Helper function to create a CausalDiscoveryResult with all required fields
+fn make_result(direction: CausalDirection, p_forward: f64, confidence: f64) -> CausalDiscoveryResult {
+    CausalDiscoveryResult {
+        direction,
+        p_forward,
+        p_backward: 1.0 - p_forward,
+        confidence,
+        features: CausalFeatures {
+            reci_score: 0.0,
+            igci_score: 0.0,
+            anm_score: 0.0,
+            higher_order_score: 0.0,
+        },
+    }
+}
 
 // ============================================================================
 // PART 1: HDC COMPRESSION CODEBOOKS
@@ -323,15 +339,11 @@ impl CompressionCausalDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 2.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 {
-                CausalDirection::Forward
-            } else {
-                CausalDirection::Backward
-            },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -585,15 +597,11 @@ impl InterventionalCausalDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 3.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 {
-                CausalDirection::Forward
-            } else {
-                CausalDirection::Backward
-            },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -783,15 +791,11 @@ impl DirectionalPhiDiscovery {
         let p_forward = 1.0 / (1.0 + (-asymmetry * 5.0).exp());
         let confidence = (p_forward - 0.5).abs() * 2.0;
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 {
-                CausalDirection::Forward
-            } else {
-                CausalDirection::Backward
-            },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
             confidence,
-        }
+        )
     }
 }
 
@@ -882,15 +886,11 @@ impl UnifiedCausalReasoning {
 
         let p_forward = 1.0 / (1.0 + (-asymmetry * 3.0).exp());
 
-        CausalDiscoveryResult {
-            direction: if p_forward > 0.5 {
-                CausalDirection::Forward
-            } else {
-                CausalDirection::Backward
-            },
+        make_result(
+            if p_forward > 0.5 { CausalDirection::Forward } else { CausalDirection::Backward },
             p_forward,
-            confidence: evidence.confidence,
-        }
+            evidence.confidence,
+        )
     }
 
     /// Explain the reasoning behind the verdict
@@ -901,7 +901,6 @@ impl UnifiedCausalReasoning {
         let direction_str = match result.direction {
             CausalDirection::Forward => "X → Y",
             CausalDirection::Backward => "Y → X",
-            _ => "Undetermined",
         };
 
         format!(

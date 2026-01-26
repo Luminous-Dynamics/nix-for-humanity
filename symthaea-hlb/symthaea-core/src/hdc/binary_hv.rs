@@ -104,6 +104,32 @@ impl HV16 {
         Self::random(1000000 + index as u64)
     }
 
+    /// Create HV16 from raw 64-bit words
+    ///
+    /// Converts from 256 u64 words (256 * 64 = 16384 bits = 2048 bytes)
+    /// to the internal u8 representation.
+    ///
+    /// # Example
+    /// ```
+    /// # use symthaea_core::hdc::binary_hv::HV16;
+    /// let bits = vec![0u64; 256];
+    /// let hv = HV16::from_bits(&bits);
+    /// assert_eq!(hv.density(), 0.0);  // All zeros
+    /// ```
+    pub fn from_bits(bits: &[u64]) -> Self {
+        let mut result = Self::zero();
+        // Process up to 256 words (16384 bits)
+        for (i, &word) in bits.iter().take(256).enumerate() {
+            // Each u64 becomes 8 bytes
+            let bytes = word.to_le_bytes();
+            let start = i * 8;
+            if start + 8 <= result.0.len() {
+                result.0[start..start + 8].copy_from_slice(&bytes);
+            }
+        }
+        result
+    }
+
     /// Bind two vectors (XOR operation)
     ///
     /// Binding combines concepts: "cat" ⊗ "orange" = "orange cat"

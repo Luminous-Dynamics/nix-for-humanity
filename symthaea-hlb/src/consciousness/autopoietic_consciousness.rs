@@ -10,7 +10,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for autopoietic consciousness
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -202,8 +202,8 @@ impl AutopoieticConsciousness {
             next_component_id: 1,
             generation: 0,
             history: VecDeque::new(),
-            self_model: RealHV::random(dim),
-            boundary: RealHV::random(dim),
+            self_model: RealHV::random(dim, 42),
+            boundary: RealHV::random(dim, 42),
             stats: AutopoieticStats::default(),
         }
     }
@@ -225,7 +225,7 @@ impl AutopoieticConsciousness {
         let state = match component_type {
             ComponentType::Boundary => self.boundary.perturb(0.1),
             ComponentType::SelfModel => self.self_model.perturb(0.1),
-            _ => RealHV::random(self.config.dimension),
+            _ => RealHV::random(self.config.dimension, 42),
         };
 
         let component = Component {
@@ -247,14 +247,14 @@ impl AutopoieticConsciousness {
         self.stats.perturbations_processed += 1;
 
         // Check if perturbation crosses boundary
-        let boundary_similarity = self.boundary.cosine_similarity(&perturbation.content);
+        let boundary_similarity = self.boundary.similarity(&perturbation.content);
 
         if boundary_similarity < self.config.boundary_threshold {
             // Perturbation blocked at boundary
             self.stats.boundary_violations += 1;
 
             // Strengthen boundary
-            self.boundary = self.boundary.bundle(&[perturbation.content.clone()]);
+            self.boundary = RealHV::bundle(&[self.boundary.clone(), perturbation.content.clone()]);
             self.state.boundary_strength = (self.state.boundary_strength + 0.1).min(1.0);
 
             return false;
@@ -270,7 +270,7 @@ impl AutopoieticConsciousness {
         for component in self.components.values_mut() {
             if component.component_type == ComponentType::Processing {
                 let perturbation_effect = perturbation.content.clone().scale(adaptation_strength);
-                component.state = component.state.bundle(&[perturbation_effect]);
+                component.state = RealHV::bundle(&[component.state.clone(), perturbation_effect]);
             }
         }
 
@@ -307,7 +307,7 @@ impl AutopoieticConsciousness {
             .collect();
 
         if !component_states.is_empty() {
-            self.self_model = component_states[0].bundle(&component_states[1..]);
+            self.self_model = RealHV::bundle(&component_states);
         }
 
         // Calculate self-reference
@@ -316,7 +316,7 @@ impl AutopoieticConsciousness {
             .collect();
 
         if let Some(model_comp) = model_components.first() {
-            self.state.self_reference = self.self_model.cosine_similarity(&model_comp.state);
+            self.state.self_reference = self.self_model.similarity(&model_comp.state);
         }
 
         // Record in history
@@ -386,10 +386,10 @@ impl AutopoieticConsciousness {
             .collect();
 
         if states.len() >= 2 {
-            let integrated = states[0].bundle(&states[1..]);
+            let integrated = RealHV::bundle(&states);
 
             // Update self-model with integrated state
-            self.self_model = self.self_model.bundle(&[integrated]);
+            self.self_model = RealHV::bundle(&[self.self_model.clone(), integrated]);
         }
 
         // Update closure based on integration
@@ -412,7 +412,7 @@ impl AutopoieticConsciousness {
 
         for i in 0..component_states.len() {
             for j in (i + 1)..component_states.len() {
-                let sim = component_states[i].cosine_similarity(component_states[j]);
+                let sim = component_states[i].similarity(component_states[j]);
                 total_similarity += sim;
                 count += 1;
             }
@@ -490,7 +490,7 @@ mod tests {
             1,
             "environment",
             0.5,
-            RealHV::random(512)
+            RealHV::random(512, 42)
         );
         system.process_perturbation(&perturbation);
         assert!(system.stats.perturbations_processed > 0);

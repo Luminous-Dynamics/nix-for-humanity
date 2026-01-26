@@ -3,7 +3,7 @@
 //! Implements higher-order consciousness - awareness of awareness itself.
 //! Includes strange loops, recursive self-modeling, and Φ of Φ computation.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 

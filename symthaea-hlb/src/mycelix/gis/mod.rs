@@ -387,6 +387,7 @@ pub struct IgnoranceDetection {
 
 /// Knowledge check result
 #[derive(Debug)]
+#[allow(dead_code)] // Variants reserved for knowledge checking
 enum KnowledgeCheck {
     Known,
     TemporallyUnknown,

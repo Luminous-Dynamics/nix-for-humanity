@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Types of sensory modalities
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -197,12 +197,12 @@ impl CrossModalBinder {
         }
 
         // Compute weighted bundle
-        let total_weight: f32 = weighted_hvs.iter().map(|(_, w)| w).sum();
+        let _total_weight: f32 = weighted_hvs.iter().map(|(_, w)| w).sum();
         let bound_hv = if weighted_hvs.len() == 1 {
             weighted_hvs[0].0.clone()
         } else {
             let hvs: Vec<RealHV> = weighted_hvs.iter().map(|(hv, _)| hv.clone()).collect();
-            hvs[0].bundle(&hvs[1..])
+            RealHV::bundle(&hvs)
         };
 
         // Calculate binding strength (average pairwise similarity)
@@ -243,7 +243,7 @@ impl CrossModalBinder {
 
         for i in 0..weighted_hvs.len() {
             for j in (i + 1)..weighted_hvs.len() {
-                let sim = weighted_hvs[i].0.cosine_similarity(&weighted_hvs[j].0);
+                let sim = weighted_hvs[i].0.similarity(&weighted_hvs[j].0);
                 total_sim += sim;
                 count += 1;
             }
@@ -277,7 +277,7 @@ impl CrossModalBinder {
     /// Query current binding against a probe
     pub fn query(&self, probe: &RealHV) -> Option<f32> {
         self.current_binding.as_ref().map(|binding| {
-            binding.cosine_similarity(probe)
+            binding.similarity(probe)
         })
     }
 
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_modal_representation() {
-        let hv = RealHV::random(512);
+        let hv = RealHV::random(512, 42);
         let repr = ModalRepresentation::new(Modality::Visual, hv, 0.9, "camera");
         assert_eq!(repr.modality, Modality::Visual);
         assert_eq!(repr.confidence, 0.9);
@@ -356,13 +356,13 @@ mod tests {
 
         let visual = ModalRepresentation::new(
             Modality::Visual,
-            RealHV::random(512),
+            RealHV::random(512, 42),
             0.9,
             "camera"
         );
         let audio = ModalRepresentation::new(
             Modality::Auditory,
-            RealHV::random(512),
+            RealHV::random(512, 42),
             0.8,
             "microphone"
         );

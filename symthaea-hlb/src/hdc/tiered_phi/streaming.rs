@@ -45,7 +45,7 @@ use std::sync::mpsc::{Sender, Receiver, channel};
 use rayon::prelude::*;
 
 use super::core::{TieredPhi, ApproximationTier};
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 
 // =============================================================================
 // CONFIGURATION

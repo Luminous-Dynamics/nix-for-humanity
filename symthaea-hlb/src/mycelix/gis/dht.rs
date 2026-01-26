@@ -1,3 +1,5 @@
+// Experimental module: fields will be read when GIS DHT integration is wired
+#![allow(dead_code)]
 //! # Dark Spot DHT - Privacy-Preserving Ignorance Sharing
 //!
 //! Implements the Zero-Knowledge Dark Spot DHT from GIS v2.0/v3.0:
@@ -49,7 +51,7 @@ use super::GISError;
 use super::zk_proofs::{ZKTopicCommitment, ZKEIGRangeProof};
 
 // HDC imports for semantic encoding
-use crate::hdc::{RealHV, HDC_DIMENSION};
+use symthaea_core::hdc::{RealHV, HDC_DIMENSION};
 
 // ============================================================================
 // HDC Semantic Encoder - Real semantic similarity using hyperdimensional computing

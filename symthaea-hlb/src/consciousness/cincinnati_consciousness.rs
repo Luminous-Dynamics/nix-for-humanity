@@ -36,9 +36,9 @@
 //! └─────────────────────────────────────────────────────────────────────┘
 //! ```
 
-use crate::hdc::unified_hv::ContinuousHV;
-use crate::hdc::cincinnati_ltc::{CincinnatiLtcEngine, PoGMetrics, BuddingEvent};
-use crate::hdc::HDC_DIMENSION;
+use symthaea_core::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::cincinnati_ltc::{CincinnatiLtcEngine, PoGMetrics, BuddingEvent};
+use symthaea_core::hdc::HDC_DIMENSION;
 use crate::consciousness::ConsciousNode;
 
 use serde::{Serialize, Deserialize};

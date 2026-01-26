@@ -12,7 +12,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::{Instant, SystemTime};
 
-use crate::language::nix_parser::{NixParser, NixConfig, NixOption, NixValue};
+use crate::language::nix_parser::{NixParser, NixOption, NixValue};
 
 /// Context extracted from flake.nix for shell completions
 #[derive(Debug, Clone, Default)]
@@ -167,12 +167,12 @@ impl FlakeContext {
     fn process_option(&mut self, opt: &NixOption) {
         // Check for environment.systemPackages
         if opt.path == "environment.systemPackages" {
-            self.extract_packages_from_value(&opt.value, &mut self.installed_packages);
+            Self::extract_packages_from_value(&opt.value, &mut self.installed_packages);
         }
 
         // Check for user packages
         if opt.path.starts_with("users.users.") && opt.path.ends_with(".packages") {
-            self.extract_packages_from_value(&opt.value, &mut self.user_packages);
+            Self::extract_packages_from_value(&opt.value, &mut self.user_packages);
         }
 
         // Check for services
@@ -203,12 +203,12 @@ impl FlakeContext {
         }
     }
 
-    /// Extract package names from a value
-    fn extract_packages_from_value(&self, value: &NixValue, packages: &mut HashSet<String>) {
+    /// Extract package names from a value (static method to avoid borrow issues)
+    fn extract_packages_from_value(value: &NixValue, packages: &mut HashSet<String>) {
         match value {
             NixValue::List(items) => {
                 for item in items {
-                    self.extract_packages_from_value(item, packages);
+                    Self::extract_packages_from_value(item, packages);
                 }
             }
             NixValue::Apply(name) => {
@@ -218,7 +218,7 @@ impl FlakeContext {
                 }
             }
             NixValue::With { body, .. } => {
-                self.extract_packages_from_value(body, packages);
+                Self::extract_packages_from_value(body, packages);
             }
             NixValue::Expression(expr) => {
                 // Try to extract simple identifiers

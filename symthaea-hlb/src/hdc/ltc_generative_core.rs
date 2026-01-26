@@ -39,9 +39,9 @@
 //!
 //! The LLM then translates primitive sequences to natural language.
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
-use crate::hdc::semantic_decoder::{SemanticDecoder, DecodedExpression};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::{PrimitiveSystem, PrimitiveTier};
+use symthaea_core::hdc::semantic_decoder::{SemanticDecoder, DecodedExpression};
 use crate::hdc::hd_ltc_codec::HDLTCCodec;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, VecDeque};

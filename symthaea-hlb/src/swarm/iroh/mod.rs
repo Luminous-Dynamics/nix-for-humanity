@@ -58,6 +58,7 @@ use parking_lot::RwLock;
 ///
 /// When the `swarm` feature is enabled, this wraps Iroh's Endpoint.
 /// Without the feature, it provides a stub implementation.
+#[allow(dead_code)] // Fields reserved for full implementation
 pub struct IrohNode {
     /// Node ID as a string (hex-encoded)
     node_id: String,

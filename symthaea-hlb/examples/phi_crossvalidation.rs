@@ -10,7 +10,7 @@
 //! ## Method
 //! 1. Generate 19 topologies across multiple seeds
 //! 2. Compute Φ using three methods:
-//!    - RealPhiCalculator (eigenvalue-based, algebraic)
+//!    - ConnectivityCalculator (eigenvalue-based, algebraic)
 //!    - ResonantPhiCalculator (oscillator-based, HDC)
 //!    - TieredPhiCalculator (binary, tiered complexity)
 //! 3. Measure:
@@ -32,7 +32,7 @@
 use std::collections::HashMap;
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::ConnectivityCalculator,
     phi_resonant::ResonantPhiCalculator,
     HDC_DIMENSION,
 };
@@ -186,7 +186,7 @@ fn main() {
     ];
 
     // Initialize calculators
-    let real_calc = RealPhiCalculator::new();
+    let real_calc = ConnectivityCalculator::new();
     let resonant_calc = ResonantPhiCalculator::new();
 
     println!("📊 Computing Φ for {} topologies × {} samples = {} measurements\n",
@@ -204,7 +204,7 @@ fn main() {
             let topo = (spec.generator)(seed);
 
             // Compute with both methods
-            let real_phi = real_calc.compute(&topo.node_representations);
+            let real_phi = real_calc.algebraic_connectivity(&topo.node_representations);
             let resonant_result = resonant_calc.compute(&topo.node_representations);
 
             real_phis.push(real_phi);

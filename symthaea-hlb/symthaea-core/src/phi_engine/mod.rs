@@ -84,8 +84,13 @@ pub struct PhiEngine {
 /// Available Φ calculation methods
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhiMethod {
-    /// Continuous (RealHV-based, cosine similarity)
-    Continuous,
+    /// Spectral connectivity (RealHV-based, algebraic connectivity / λ₂).
+    ///
+    /// This computes the second-smallest eigenvalue of the Laplacian of the
+    /// cosine-similarity graph — a measure of how connected the network is.
+    /// Previously named "Continuous"; renamed for scientific accuracy since
+    /// this is NOT IIT Φ but rather the Fiedler value (λ₂).
+    SpectralConnectivity,
 
     /// Binary with tiered approximation
     Tiered(ApproximationTier),
@@ -95,6 +100,12 @@ pub enum PhiMethod {
 
     /// Auto-select based on topology size
     Auto,
+}
+
+impl PhiMethod {
+    /// Backward-compatible alias for `SpectralConnectivity`.
+    #[deprecated(since = "0.2.0", note = "Renamed to SpectralConnectivity for scientific accuracy")]
+    pub const CONTINUOUS: PhiMethod = PhiMethod::SpectralConnectivity;
 }
 
 impl Default for PhiMethod {
@@ -146,11 +157,11 @@ impl PhiEngine {
         match n_nodes {
             // For n≤10, Exact is tractable (2^10 = 1024 partitions, ~10ms)
             // but Continuous is faster anyway, use Continuous
-            0..=64 => PhiMethod::Continuous,
+            0..=64 => PhiMethod::SpectralConnectivity,
 
             // For 65-256, Continuous still works (~2.8s for 64, scales O(n³))
             // At 128 nodes: ~22s, at 256 nodes: ~3min (borderline)
-            65..=256 => PhiMethod::Continuous,
+            65..=256 => PhiMethod::SpectralConnectivity,
 
             // For n>256, only Resonator scales well (O(n log n))
             // Continuous would timeout (256³ = 16M ops, 512³ = 134M ops)
@@ -192,11 +203,11 @@ impl PhiEngine {
 
         // Calculate Φ based on the effective method
         let (phi_value, method_name): (f64, &'static str) = match effective_method {
-            // Continuous RealHV-based Φ (algebraic connectivity)
-            PhiMethod::Continuous => {
+            // Spectral connectivity: algebraic connectivity (λ₂) of cosine-similarity graph
+            PhiMethod::SpectralConnectivity => {
                 let calc = ContinuousPhiCalculator::new();
                 let phi = calc.algebraic_connectivity(&real_hvs);
-                (phi, "Continuous")
+                (phi, "SpectralConnectivity")
             }
             // Tiered binary Φ using RealHV → HV16 conversion
             PhiMethod::Tiered(tier) => {
@@ -231,7 +242,7 @@ impl PhiEngine {
         };
 
         match effective_method {
-            PhiMethod::Continuous => {
+            PhiMethod::SpectralConnectivity => {
                 // O(n³) scaling: 8 nodes = 2ms base
                 // Time ≈ 2ms × (n/8)³
                 let factor = (n_nodes as f64 / 8.0).powi(3);
@@ -247,7 +258,7 @@ impl PhiEngine {
                 Duration::from_secs(2u64.pow(n_nodes as u32 - 8))
             }
             PhiMethod::Tiered(ApproximationTier::Spectral) => {
-                // Similar to Continuous
+                // Similar to SpectralConnectivity
                 let factor = (n_nodes as f64 / 8.0).powi(3);
                 Duration::from_micros((3000.0 * factor) as u64)
             }
@@ -284,11 +295,11 @@ mod tests {
     #[test]
     fn test_method_suggestion() {
         // Based on 2026-01-04 benchmarks: Continuous is fastest for n≤256
-        assert!(matches!(PhiEngine::suggest_method(8), PhiMethod::Continuous));
-        assert!(matches!(PhiEngine::suggest_method(30), PhiMethod::Continuous));
-        assert!(matches!(PhiEngine::suggest_method(64), PhiMethod::Continuous));
-        assert!(matches!(PhiEngine::suggest_method(100), PhiMethod::Continuous));
-        assert!(matches!(PhiEngine::suggest_method(256), PhiMethod::Continuous));
+        assert!(matches!(PhiEngine::suggest_method(8), PhiMethod::SpectralConnectivity));
+        assert!(matches!(PhiEngine::suggest_method(30), PhiMethod::SpectralConnectivity));
+        assert!(matches!(PhiEngine::suggest_method(64), PhiMethod::SpectralConnectivity));
+        assert!(matches!(PhiEngine::suggest_method(100), PhiMethod::SpectralConnectivity));
+        assert!(matches!(PhiEngine::suggest_method(256), PhiMethod::SpectralConnectivity));
         // Only for very large topologies, use Resonator (O(n log n))
         assert!(matches!(PhiEngine::suggest_method(500), PhiMethod::Resonator));
         assert!(matches!(PhiEngine::suggest_method(1000), PhiMethod::Resonator));
@@ -309,19 +320,19 @@ mod tests {
         assert!(time_64.as_secs() >= 1 && time_64.as_secs() < 5);
     }
 
-    /// Ensure Continuous method uses RealPhiCalculator under the hood
+    /// Ensure SpectralConnectivity method uses algebraic connectivity under the hood
     #[test]
-    fn test_compute_continuous_matches_realphi() {
+    fn test_compute_spectral_connectivity_matches_realphi() {
         // Small dimension for fast tests
         let dim = 128;
         let hvs: Vec<ContinuousHV> = (0..3)
             .map(|i| ContinuousHV::random(dim, 42 + i as u64))
             .collect();
 
-        let engine = PhiEngine::new(PhiMethod::Continuous);
+        let engine = PhiEngine::new(PhiMethod::SpectralConnectivity);
         let result = engine.compute(&hvs);
 
-        assert_eq!(result.method, "Continuous");
+        assert_eq!(result.method, "SpectralConnectivity");
         assert_eq!(result.n_nodes, hvs.len());
         assert!(result.phi >= 0.0 && result.phi <= 1.0);
 

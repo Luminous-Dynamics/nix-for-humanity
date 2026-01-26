@@ -5,7 +5,7 @@
 //! Uses rusqlite with bundled SQLite for zero external dependencies.
 
 use super::{ConsciousnessDatabase, DbResult, DatabaseError, MemoryRecord, MemoryType, SearchResult};
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use async_trait::async_trait;
 use rusqlite::{Connection, params};
 use std::sync::Mutex;

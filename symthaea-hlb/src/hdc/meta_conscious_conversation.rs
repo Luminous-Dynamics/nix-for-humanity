@@ -10,10 +10,10 @@
 
 use anyhow::Result;
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::meta_consciousness::{MetaConsciousness, MetaConfig, MetaConsciousnessState};
-use crate::hdc::primitive_system::PrimitiveSystem;
-use crate::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::meta_consciousness::{MetaConsciousness, MetaConfig, MetaConsciousnessState};
+use symthaea_core::hdc::primitive_system::PrimitiveSystem;
+use symthaea_core::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
 
 /// Core meta-conscious conversation helper.
 ///

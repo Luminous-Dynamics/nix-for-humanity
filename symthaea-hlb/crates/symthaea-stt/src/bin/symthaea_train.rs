@@ -26,9 +26,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write, BufReader};
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 // ============================================================================
 // CLI STRUCTURE
@@ -342,8 +340,10 @@ impl TrainedPrototypes {
 
 /// Training callback with progress bars
 struct ProgressCallback {
+    #[allow(dead_code)]
     multi: MultiProgress,
     main_bar: ProgressBar,
+    #[allow(dead_code)]
     phoneme_bars: HashMap<String, ProgressBar>,
     stats: BootstrapStats,
     start_time: Instant,

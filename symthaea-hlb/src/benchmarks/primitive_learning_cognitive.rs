@@ -18,7 +18,7 @@
 //! - Cognitive Loop: Bidirectional HDC↔LTC (cognitive_loop.cycle)
 
 use crate::cognitive_loop::{CognitiveLoopBuilder, CognitiveLoopService};
-use crate::hdc::primitive_system::PrimitiveSystem;
+use symthaea_core::hdc::primitive_system::PrimitiveSystem;
 use crate::learnable_ltc::{LearnableLTC, LearnableLTCConfig};
 use serde::{Serialize, Deserialize};
 use std::time::Instant;
@@ -245,8 +245,7 @@ impl CognitivePrimitiveLearning {
             input_dim: 128,
             output_dim: 64,
             num_neurons: 128,
-            lr_weights: self.config.learning_rate,
-            lr_tau: self.config.learning_rate * 0.1,
+            learning_rate: self.config.learning_rate,
             ..Default::default()
         };
         let mut ltc = LearnableLTC::new(ltc_config)?;

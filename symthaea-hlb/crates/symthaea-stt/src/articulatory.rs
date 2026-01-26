@@ -681,7 +681,8 @@ pub struct ArticulatoryResonator {
     /// Resonance iterations
     max_iterations: usize,
 
-    /// Convergence threshold
+    /// Convergence threshold (reserved for iterative resonance settling)
+    #[allow(dead_code)]
     convergence_threshold: f32,
 }
 

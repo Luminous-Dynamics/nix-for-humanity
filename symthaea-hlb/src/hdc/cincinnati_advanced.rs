@@ -611,7 +611,7 @@ impl AmplitudeWeightedLearner {
 // ADVANCED CINCINNATI ENGINE (Wraps Enhanced + Adds Chaos/Memory/Adaptive)
 // =============================================================================
 
-use crate::hdc::cincinnati_enhanced::EnhancedCincinnatiEngine;
+use symthaea_core::hdc::cincinnati_enhanced::EnhancedCincinnatiEngine;
 
 /// Advanced Cincinnati-LTC engine that WRAPS the Enhanced engine
 /// and adds chaos detection, memory horizon, and adaptive improvements

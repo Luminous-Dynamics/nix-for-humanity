@@ -163,6 +163,11 @@ impl HarmonyAlignment {
         self.score < 0.0
     }
 
+    /// Get alignment score (alias for score, for API compatibility)
+    pub fn alignment(&self) -> f32 {
+        self.score as f32
+    }
+
     /// Add explanation
     pub fn with_explanation(mut self, explanation: impl Into<String>) -> Self {
         self.explanation = Some(explanation.into());
@@ -261,10 +266,34 @@ impl AlignmentResult {
         self.alignments.iter()
             .min_by(|a, b| a.1.score.partial_cmp(&b.1.score).unwrap_or(std::cmp::Ordering::Equal))
     }
+
+    /// Get iterator over harmony alignments (for API compatibility with kosmic_song)
+    pub fn harmonies(&self) -> impl Iterator<Item = &HarmonyAlignment> {
+        self.alignments.values()
+    }
+
+    /// Check if there are any violations (negative scores)
+    pub fn has_violations(&self) -> bool {
+        self.alignments.values().any(|a| a.score < 0.0)
+    }
+
+    /// Check if action should be vetoed (strong negative alignment)
+    pub fn should_veto(&self) -> bool {
+        // Veto if overall score is strongly negative or any harmony is severely violated
+        self.overall_score < -0.5 ||
+            self.alignments.values().any(|a| a.score < -0.7)
+    }
+
+    /// Get the best (most aligned) harmony
+    pub fn best_alignment(&self) -> Option<&HarmonyAlignment> {
+        self.alignments.values()
+            .max_by(|a, b| a.score.partial_cmp(&b.score).unwrap_or(std::cmp::Ordering::Equal))
+    }
 }
 
 /// The Seven Harmonies evaluator
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for harmony evaluation
 pub struct SevenHarmonies {
     /// Weights for each harmony (all equal by default)
     weights: HashMap<Harmony, f64>,
@@ -429,6 +458,31 @@ impl SevenHarmonies {
     pub fn kosmic_song() -> &'static str {
         "Infinite Love as Rigorous, Playful, Co-Creative Becoming"
     }
+
+    // ========================================================================
+    // Compatibility methods for mycelix/kosmic_song integration
+    // ========================================================================
+
+    /// Evaluate an action description (alias for evaluate)
+    pub fn evaluate_action(&mut self, action_description: &str) -> AlignmentResult {
+        self.evaluate(action_description)
+    }
+
+    /// Get alignment for a specific harmony from the last evaluation
+    /// Note: For proper usage, call evaluate() first and use get() on the result
+    pub fn get(&self, _harmony: Harmony) -> Option<HarmonyEncoding> {
+        // Return None - proper usage is to call evaluate() and use get() on AlignmentResult
+        None
+    }
+}
+
+/// Encoding of a harmony for HDC operations (for mycelix integration)
+#[derive(Debug, Clone)]
+pub struct HarmonyEncoding {
+    /// The harmony being encoded
+    pub harmony: Harmony,
+    /// HDC encoding (HV16 binary hypervector)
+    pub encoding: symthaea_core::hdc::binary_hv::HV16,
 }
 
 impl Default for SevenHarmonies {

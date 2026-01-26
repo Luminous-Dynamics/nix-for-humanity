@@ -8,7 +8,7 @@
 //! This example validates the relationship using different topology-generated signals.
 
 use symthaea::hdc::consciousness_topology_generators::ConsciousnessTopology;
-use symthaea::hdc::phi_real::RealPhiCalculator;
+use symthaea::hdc::spectral_connectivity::ConnectivityCalculator;
 use symthaea::hdc::reservoir::HybridEnsemblePredictor;
 use symthaea::hdc::HDC_DIMENSION;
 
@@ -22,7 +22,7 @@ fn main() {
 
     let dim = HDC_DIMENSION;
     let n_nodes = 8;
-    let phi_calc = RealPhiCalculator::new();
+    let phi_calc = ConnectivityCalculator::new();
 
     // Test multiple topologies
     let topologies: Vec<(&str, Box<dyn Fn(usize, usize, u64) -> ConsciousnessTopology>)> = vec![
@@ -42,7 +42,7 @@ fn main() {
         let topology = generator(n_nodes, dim, 42);
 
         // Calculate Φ
-        let phi = phi_calc.compute(&topology.node_representations);
+        let phi = phi_calc.algebraic_connectivity(&topology.node_representations);
 
         // Generate time series from topology dynamics
         let signal = generate_topology_signal(&topology, 2000);

@@ -32,7 +32,7 @@ use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
-use crate::hdc::{HDC_DIMENSION, PackedBipolar};
+use symthaea_core::hdc::{HDC_DIMENSION, PackedBipolar};
 
 /// Johnson-Lindenstrauss random projector
 ///

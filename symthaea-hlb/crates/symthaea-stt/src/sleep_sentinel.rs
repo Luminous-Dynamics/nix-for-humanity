@@ -423,6 +423,8 @@ impl ConsciousnessSentinel {
     }
 
     /// Compute EOG activity (variance indicates eye movement)
+    /// Reserved for multi-channel polysomnography analysis
+    #[allow(dead_code)]
     fn compute_eog_activity(&self, eog: &[f32]) -> f32 {
         if eog.is_empty() {
             return 0.0;
@@ -433,6 +435,7 @@ impl ConsciousnessSentinel {
     }
 
     /// Detect REM burst activity (rapid eye movements)
+    #[allow(dead_code)]
     fn detect_rem_bursts(&self, eog: &[f32]) -> f32 {
         if eog.len() < 2 {
             return 0.0;
@@ -450,6 +453,7 @@ impl ConsciousnessSentinel {
     }
 
     /// Compute EMG activity (muscle tone)
+    #[allow(dead_code)]
     fn compute_emg_activity(&self, emg: &[f32]) -> f32 {
         if emg.is_empty() {
             return 0.0;
@@ -460,6 +464,7 @@ impl ConsciousnessSentinel {
     }
 
     /// Detect EMG atonia (muscle relaxation during REM)
+    #[allow(dead_code)]
     fn detect_emg_atonia(&self, emg: &[f32]) -> f32 {
         let activity = self.compute_emg_activity(emg);
         // Atonia = inverse of activity (normalized)
@@ -467,6 +472,7 @@ impl ConsciousnessSentinel {
     }
 
     /// Project LTC states to HDC hypervector
+    #[allow(dead_code)]
     fn state_to_hv(&mut self, eeg: &[f32], eog: &[f32], emg: &[f32]) -> HV16 {
         // Combine all states
         let mut combined = Vec::with_capacity(eeg.len() + eog.len() + emg.len());
@@ -496,6 +502,7 @@ impl ConsciousnessSentinel {
     }
 
     /// Get deterministic random basis for a dimension
+    #[allow(dead_code)]
     fn get_dim_basis(&self, dim: usize) -> HV16 {
         let mut hasher = blake3::Hasher::new();
         hasher.update(b"physio_basis_");

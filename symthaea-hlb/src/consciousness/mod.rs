@@ -9,30 +9,192 @@
 //! - Affective consciousness and emotion processing
 //! - Primitive reasoning and evolution
 
+// ============================================================================
+// Core consciousness modules (self-contained, verified working)
+// ============================================================================
 pub mod affective_consciousness;
 pub mod autopoietic_consciousness;
-pub mod cincinnati_consciousness;
 pub mod consciousness_unification;
-pub mod contextual_weights;
 pub mod cross_modal_binding;
-pub mod dream;
-pub mod empathic_unification;
-pub mod evolution_bridge;
-pub mod gis_integration;
 pub mod harmonies_integration;
-pub mod multi_modal_integration;
-pub mod neuro_bridge;
 pub mod pac;
 pub mod phi_attention;
-pub mod primitive_consciousness;
 pub mod primitive_discovery;
 pub mod primitive_evolution;
 pub mod primitive_reasoning;
-pub mod recursive_improvement;
 pub mod semantic_value_embedder;
 pub mod seven_harmonies;
-pub mod unified_value_evaluator;
 pub mod value_feedback_loop;
+
+// Modules with internal API mismatches (need type updates)
+#[cfg(feature = "full_consciousness")]
+pub mod cincinnati_consciousness;
+#[cfg(feature = "full_consciousness")]
+pub mod dream;
+#[cfg(feature = "full_consciousness")]
+pub mod neuro_bridge;
+
+// ============================================================================
+// Modules with internal type dependencies (need more work)
+// ============================================================================
+
+// Needs unified_value_evaluator::ActionType
+#[cfg(feature = "full_consciousness")]
+pub mod contextual_weights;
+
+// Imports non-existent types from primitive_evolution/reasoning
+#[cfg(feature = "full_consciousness")]
+pub mod evolution_bridge;
+
+// Imports non-existent types from cross_modal_binding
+#[cfg(feature = "full_consciousness")]
+pub mod multi_modal_integration;
+
+// Imports many non-existent types
+#[cfg(feature = "full_consciousness")]
+pub mod primitive_consciousness;
+
+// ============================================================================
+// Modules with external dependencies (cfg-gated)
+// ============================================================================
+
+// Empathic unification - needs API alignment (cfg-gated for now)
+#[cfg(feature = "full_consciousness")]
+pub mod empathic_unification;
+
+// Stub types for integration_module compatibility when full module is disabled
+#[cfg(not(feature = "full_consciousness"))]
+pub mod empathic_unification {
+    //! Stub empathic unification types for integration_module compatibility
+
+    /// Guidance for response tone
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum ToneGuidance {
+        /// Warm, supportive, gentle
+        Supportive,
+        /// Calm, patient, measured
+        Patient,
+        /// Efficient, clear, direct
+        Efficient,
+        /// Playful, curious, exploratory
+        Playful,
+        /// Celebratory, joyful
+        Celebratory,
+        /// Encouraging, motivating
+        Encouraging,
+        /// Neutral, balanced
+        #[default]
+        Neutral,
+        /// Reassuring, calming
+        Reassuring,
+    }
+
+    /// What we infer the user needs
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum UserNeed {
+        /// No particular need detected
+        #[default]
+        None,
+        /// Needs emotional support/validation
+        EmotionalSupport,
+        /// Needs patient guidance
+        PatientGuidance,
+        /// Needs quick, efficient help
+        QuickHelp,
+        /// Needs space to explore
+        ExplorationSpace,
+        /// Needs encouragement
+        Encouragement,
+        /// Needs reassurance
+        Reassurance,
+        /// Needs celebration of success
+        Celebration,
+    }
+
+    /// Empathic response from Symthaea
+    #[derive(Debug, Clone, Default)]
+    pub struct EmpathicResponse {
+        /// Tone guidance for response
+        pub tone_guidance: ToneGuidance,
+        /// Compassion level (0.0 - 1.0)
+        pub compassion: f64,
+        /// How much to adjust response warmth
+        pub warmth_adjustment: f64,
+        /// Whether to acknowledge emotion explicitly
+        pub acknowledge_emotion: bool,
+        /// Proactive support to offer
+        pub proactive_support: Option<String>,
+    }
+
+    /// Stub empathic unification engine
+    #[derive(Debug, Default)]
+    #[allow(dead_code)] // Fields reserved for empathic processing
+    pub struct EmpathicUnification {
+        /// Current user need
+        current_need: UserNeed,
+        /// Current tone
+        tone: ToneGuidance,
+    }
+
+    impl EmpathicUnification {
+        /// Create a new empathic unification engine
+        pub fn new() -> Self {
+            Self::default()
+        }
+
+        /// Process input and generate empathic response
+        pub fn process(&mut self, _input: &str, _context: crate::user_state_inference::ContextKind) -> EmpathicResponse {
+            EmpathicResponse {
+                tone_guidance: self.tone,
+                compassion: 0.5,
+                warmth_adjustment: 0.0,
+                acknowledge_emotion: false,
+                proactive_support: None,
+            }
+        }
+
+        /// Get tone guidance string
+        pub fn tone_guidance_string(&self) -> &'static str {
+            match self.tone {
+                ToneGuidance::Supportive => "Be warm, gentle, and reassuring.",
+                ToneGuidance::Patient => "Be patient and measured.",
+                ToneGuidance::Efficient => "Be clear and direct.",
+                ToneGuidance::Playful => "Be curious and exploratory.",
+                ToneGuidance::Celebratory => "Share their joy!",
+                ToneGuidance::Encouraging => "Be motivating and supportive.",
+                ToneGuidance::Reassuring => "Be calming.",
+                ToneGuidance::Neutral => "Be balanced and professional.",
+            }
+        }
+
+        /// Get empathic acknowledgment
+        pub fn get_acknowledgment(&self) -> Option<String> {
+            None
+        }
+
+        /// Record feedback
+        pub fn record_feedback(&mut self, _felt_successful: bool) {}
+
+        /// Record user error
+        pub fn record_user_error(&mut self) {}
+
+        /// Record user undo
+        pub fn record_user_undo(&mut self) {}
+    }
+}
+
+// Needs: mycelix
+#[cfg(feature = "mycelix_module")]
+pub mod gis_integration;
+
+// Recursive improvement (needs internal API alignment - cfg-gated)
+// MAGI Loop can be enabled standalone via the magi_loop feature
+#[cfg(any(feature = "full_consciousness", feature = "magi_loop"))]
+pub mod recursive_improvement;
+
+// Needs: perception::SemanticEncoder
+#[cfg(feature = "full_perception")]
+pub mod unified_value_evaluator;
 
 // Re-export key types
 pub use seven_harmonies::{SevenHarmonies, Harmony, HarmonyAlignment, AlignmentResult};

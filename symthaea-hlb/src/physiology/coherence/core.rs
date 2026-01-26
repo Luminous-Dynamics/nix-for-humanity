@@ -303,16 +303,16 @@ impl CoherenceField {
 
         // Cortisol increases scatter rate (stress fragments consciousness)
         // Range: 1.0 (no stress) to 3.0 (maximum stress = 3x scatter)
-        self.hormone_scatter_multiplier = 1.0 + (hormones.cortisol * 2.0);
+        self.hormone_scatter_multiplier = (1.0 + (hormones.cortisol * 2.0)) as f32;
 
         // Acetylcholine enhances centering (attention improves integration)
         // Range: 1.0 (no attention) to 2.0 (maximum attention = 2x centering)
-        self.hormone_centering_multiplier = 1.0 + hormones.acetylcholine;
+        self.hormone_centering_multiplier = (1.0 + hormones.acetylcholine) as f32;
 
         // Dopamine directly boosts relational resonance (reward strengthens connection)
         // Only boost if dopamine is elevated (>0.5), with diminishing returns
         if hormones.dopamine > 0.5 {
-            let resonance_boost = (hormones.dopamine - 0.5) * 0.02;  // Max +0.01 boost
+            let resonance_boost = ((hormones.dopamine - 0.5) * 0.02) as f32;  // Max +0.01 boost
             self.relational_resonance = (self.relational_resonance + resonance_boost).min(1.0);
         }
 
@@ -451,7 +451,7 @@ impl CoherenceField {
         let complexity = task.complexity_value();
 
         // Calculate scatter modulation from hormones (Week 8 integration)
-        let hormone_scatter_mult = 1.0 + (hormones.cortisol * 0.5); // Stress increases scatter
+        let hormone_scatter_mult = (1.0 + (hormones.cortisol * 0.5)) as f32; // Stress increases scatter
 
         // Predict coherence change using the SAME formula as perform_task()
         let predicted_coherence = if with_user {

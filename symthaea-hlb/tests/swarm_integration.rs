@@ -1,3 +1,4 @@
+#![cfg(feature = "swarm_module")]
 //! Swarm Learning Integration Tests
 //!
 //! Tests for the P2P swarm intelligence system.

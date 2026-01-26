@@ -13,7 +13,6 @@
 //! - Chen et al. (2018): "Neural Ordinary Differential Equations"
 
 use anyhow::Result;
-use ndarray::{Array1, Array2, Axis};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -69,7 +68,7 @@ impl Default for LearnableLTCConfig {
 }
 
 /// LTC Neural State
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LTCState {
     /// Hidden state of neurons
     pub hidden: Vec<f32>,
@@ -345,6 +344,48 @@ impl LearnableLTC {
     /// Zero gradients before backward pass
     pub fn zero_grad(&mut self) {
         // Placeholder for zeroing gradients
+    }
+
+    /// Reset network state (alias for reset for API compatibility)
+    pub fn reset_state(&mut self) {
+        self.reset();
+    }
+
+    /// Train step: forward pass, compute loss, backward pass, optimizer step
+    pub fn train_step(&mut self, input: &[f32], target: &[f32]) -> Result<f32> {
+        // Forward pass
+        let (output, _state) = self.forward(input)?;
+
+        // Compute MSE loss
+        let loss: f32 = output.iter()
+            .zip(target.iter())
+            .map(|(o, t)| (o - t).powi(2))
+            .sum::<f32>() / output.len() as f32;
+
+        // Backward pass and optimizer step (placeholder implementation)
+        self.zero_grad();
+        self.backward(loss)?;
+        self.optimizer_step();
+
+        Ok(loss)
+    }
+
+    /// Get tau distribution statistics: (mean, std, min, max)
+    pub fn get_tau_distribution(&self) -> (f32, f32, f32, f32) {
+        let n = self.tau.len() as f32;
+        if n == 0.0 {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        let mean = self.tau.iter().sum::<f32>() / n;
+        let variance = self.tau.iter()
+            .map(|&t| (t - mean).powi(2))
+            .sum::<f32>() / n;
+        let std = variance.sqrt();
+        let min = self.tau.iter().cloned().fold(f32::INFINITY, f32::min);
+        let max = self.tau.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+        (mean, std, min, max)
     }
 }
 

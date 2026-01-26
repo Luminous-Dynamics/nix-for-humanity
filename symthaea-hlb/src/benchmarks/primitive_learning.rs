@@ -17,8 +17,8 @@
 //! 3. **Compositional Pattern**: Learn "A ∘ B → C" structures
 //! 4. **Analogy Completion**: If X:Y then A:?
 
-use crate::hdc::binary_hv::HV16;
-use crate::hdc::primitive_system::PrimitiveSystem;
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::primitive_system::PrimitiveSystem;
 use crate::learnable_ltc::{LearnableLTC, LearnableLTCConfig};
 use serde::{Serialize, Deserialize};
 use std::time::Instant;
@@ -49,10 +49,8 @@ impl Default for PrimitiveLearningConfig {
                 input_dim: 128,  // Compressed primitive encoding
                 output_dim: 64,  // Prediction target
                 num_neurons: 128,
-                lr_weights: 0.01,
-                lr_tau: 0.001,
-                tau_min: 0.5,
-                tau_max: 5.0,
+                learning_rate: 0.01,
+                tau_bounds: (0.5, 5.0),
                 ..Default::default()
             },
             sequence_length: 3,

@@ -37,11 +37,11 @@
 //! println!("Unified Φ: {:.3}", result.integrated_phi);
 //! ```
 
-use crate::hdc::binary_hv::HV16;
+use symthaea_core::hdc::binary_hv::HV16;
 use crate::consciousness::cross_modal_binding::{
     Modality, ModalityChannel, ConvergenceZone, EpisodicBuffer, ConvergenceLevel,
 };
-use crate::hdc::primitive_system::PrimitiveSystem;
+use symthaea_core::hdc::primitive_system::PrimitiveSystem;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};

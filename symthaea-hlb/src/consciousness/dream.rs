@@ -15,7 +15,7 @@ Algorithm:
 
 use std::sync::{Arc, Mutex};
 use crate::dynamics::world_model::HierarchicalCfCWorldModel;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use anyhow::Result;
 
 pub struct DreamEngine {

@@ -51,7 +51,7 @@ use image::DynamicImage;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use crate::hdc::causal_mind::{CausalMind, GroundedCausalLearning};
+use symthaea_core::hdc::causal_mind::{CausalMind, GroundedCausalLearning};
 use crate::perception::{
     SemanticVision, ImageEmbedding, ImageCaption,
     OcrSystem,

@@ -20,7 +20,7 @@
 //! ```
 
 use crate::dynamics::cfc::{CfCNetwork, CfCNetworkConfig, CfCConfig};
-use crate::dynamics::{CrystalizedConcept, DynamicsError, DynamicsResult};
+use crate::dynamics::CrystalizedConcept;
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -62,6 +62,7 @@ impl Default for WorldModelConfig {
 
 /// A single layer in the world model hierarchy
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields reserved for predictive coding
 pub struct WorldModelLayer {
     /// Layer index (0 = lowest/sensory)
     level: usize,
@@ -230,12 +231,10 @@ impl HierarchicalCfCWorldModel {
         let mut layers = Vec::with_capacity(config.num_levels);
 
         // Create layers
+        // After up-projection, layer i receives level_dims[i] as input
         for i in 0..config.num_levels {
-            let input_dim = if i == 0 {
-                config.level_dims[0]
-            } else {
-                config.level_dims[i - 1]
-            };
+            // Layer i receives input at dimension level_dims[i] (after projection)
+            let input_dim = config.level_dims[i];
             let hidden_dim = config.level_dims[i];
             let time_scale = config.time_scales[i];
 

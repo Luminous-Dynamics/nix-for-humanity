@@ -424,7 +424,7 @@ fn train_on_data(
         .progress_chars("█▓▒░ "));
 
     let progress_clone = progress.clone();
-    let callback = Box::new(move |current: usize, total: usize, path: &str| {
+    let callback = Box::new(move |current: usize, _total: usize, path: &str| {
         progress_clone.set_position(current as u64);
         progress_clone.set_message(format!("Processing {}", path.split('/').last().unwrap_or(path)));
     });

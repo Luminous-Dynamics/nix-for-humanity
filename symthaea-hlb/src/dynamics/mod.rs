@@ -12,7 +12,6 @@
 //! - `CrystalizedConcept` - Stable memory representation
 //! - `HierarchicalCfCWorldModel` - Multi-level world modeling
 
-use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

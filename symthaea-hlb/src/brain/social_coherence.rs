@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for social coherence
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -211,12 +211,12 @@ impl SocialCoherence {
     pub fn new(config: SocialCoherenceConfig) -> Self {
         let dim = config.dimension;
 
-        // Initialize self-model
+        // Initialize self-model with deterministic seeds
         let self_model = MentalModel {
             agent_id: "self".to_string(),
-            beliefs: RealHV::random(dim),
-            desires: RealHV::random(dim),
-            intentions: RealHV::random(dim),
+            beliefs: RealHV::random(dim, 0x5E1F_BE1F), // "SELF_BEL"
+            desires: RealHV::random(dim, 0x5E1F_DE51), // "SELF_DES"
+            intentions: RealHV::random(dim, 0x5E1F_1714), // "SELF_INT"
             emotional_state: EmotionalState::default(),
             confidence: 1.0,
             last_updated: 0,
@@ -242,28 +242,37 @@ impl SocialCoherence {
     ) {
         self.timestamp += 1;
 
+        // Hash agent_id for deterministic seeds
+        let mut seed: u64 = 0x0B5E_BEE7; // "OBSERVE"
+        for byte in agent_id.bytes() {
+            seed = seed.wrapping_mul(31).wrapping_add(byte as u64);
+        }
+        let dim = self.config.dimension;
+        let ts = self.timestamp;
         let model = self.mental_models.entry(agent_id.to_string()).or_insert_with(|| {
-            self.stats.agents_modeled += 1;
             MentalModel {
                 agent_id: agent_id.to_string(),
-                beliefs: RealHV::random(self.config.dimension),
-                desires: RealHV::random(self.config.dimension),
-                intentions: RealHV::random(self.config.dimension),
+                beliefs: RealHV::random(dim, seed),
+                desires: RealHV::random(dim, seed.wrapping_add(1)),
+                intentions: RealHV::random(dim, seed.wrapping_add(2)),
                 emotional_state: EmotionalState::default(),
                 confidence: 0.1,
-                last_updated: self.timestamp,
+                last_updated: ts,
                 observation_count: 0,
             }
         });
 
         // Update model based on observation
-        model.intentions = model.intentions.bundle(&[observed_behavior.clone().scale(0.3)]);
-        model.beliefs = model.beliefs.bundle(&[context.clone().scale(0.1)]);
+        model.intentions = RealHV::bundle(&[model.intentions.clone(), observed_behavior.clone().scale(0.3)]);
+        model.beliefs = RealHV::bundle(&[model.beliefs.clone(), context.clone().scale(0.1)]);
         model.observation_count += 1;
         model.last_updated = self.timestamp;
 
         // Increase confidence with more observations
         model.confidence = (model.confidence + 0.05).min(0.95);
+
+        // Update stats after model borrow is done
+        self.stats.agents_modeled = self.mental_models.len() as u64;
     }
 
     /// Record an interaction with an agent
@@ -324,12 +333,15 @@ impl SocialCoherence {
             relationship.reciprocity = (relationship.reciprocity + 0.1).min(1.0);
         }
 
-        // Classify relationship type
+        // Save trust value before releasing borrow (NLL ends borrow here automatically)
+        let current_trust = relationship.trust;
+
+        // Classify relationship type (needs &mut self)
         self.classify_relationship(agent_id);
 
         // Update agent's emotional model
         if let Some(model) = self.mental_models.get_mut(agent_id) {
-            model.emotional_state.trust_toward_us = relationship.trust;
+            model.emotional_state.trust_toward_us = current_trust;
             if outcome > 0.0 {
                 model.emotional_state.valence = (model.emotional_state.valence + 0.1).min(1.0);
             } else {
@@ -375,7 +387,7 @@ impl SocialCoherence {
         let trust = relationship.map(|r| r.trust).unwrap_or(0.5);
 
         // Estimate alignment between action and agent's intentions
-        let alignment = proposed_action.cosine_similarity(&model.intentions);
+        let alignment = proposed_action.similarity(&model.intentions);
 
         // Calculate predicted response characteristics
         let predicted_valence = if alignment > 0.5 {
@@ -493,8 +505,8 @@ mod tests {
     fn test_agent_observation() {
         let mut sc = SocialCoherence::default();
 
-        let behavior = RealHV::random(512);
-        let context = RealHV::random(512);
+        let behavior = RealHV::random(512, 0xBEEF_0001);
+        let context = RealHV::random(512, 0xBEEF_0002);
 
         sc.observe_agent("agent1", &behavior, &context);
 
@@ -509,7 +521,7 @@ mod tests {
             "agent1",
             InteractionType::Cooperation,
             0.8,
-            RealHV::random(512),
+            RealHV::random(512, 0xBEEF_0003),
             "helped",
             "thanked",
         );
@@ -524,12 +536,12 @@ mod tests {
         let mut sc = SocialCoherence::default();
 
         // Build trust through positive interactions
-        for _ in 0..5 {
+        for i in 0..5 {
             sc.record_interaction(
                 "trusted_agent",
                 InteractionType::Cooperation,
                 0.9,
-                RealHV::random(512),
+                RealHV::random(512, 0xBEEF_0004 + i as u64),
                 "cooperated",
                 "cooperated back",
             );
@@ -538,12 +550,12 @@ mod tests {
         assert!(sc.should_cooperate("trusted_agent"));
 
         // Build distrust through negative interactions
-        for _ in 0..10 {
+        for i in 0..10 {
             sc.record_interaction(
                 "untrusted_agent",
                 InteractionType::Conflict,
                 -0.8,
-                RealHV::random(512),
+                RealHV::random(512, 0xBEEF_0010 + i as u64),
                 "offered",
                 "betrayed",
             );
@@ -557,12 +569,12 @@ mod tests {
         let mut sc = SocialCoherence::default();
 
         // Many positive interactions should create ally/friend
-        for _ in 0..10 {
+        for i in 0..10 {
             sc.record_interaction(
                 "friend",
                 InteractionType::Help,
                 0.9,
-                RealHV::random(512),
+                RealHV::random(512, 0xBEEF_0020 + i as u64),
                 "helped",
                 "helped back",
             );

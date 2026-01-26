@@ -18,15 +18,13 @@
 use clap::{Parser, Subcommand};
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use symthaea_stt::{
     AudioFrontend, AudioProjector,
     PhonemeDecoder, PhonemeResonator, PhonemeInventory,
-    CmuDictionary, TextToPhonemes,
+    CmuDictionary,
     TrainedPrototypes, BootstrapConfig,
     HV16,
 };
@@ -152,7 +150,7 @@ impl TranscriptionEngine {
 
         // Project audio to HDC space
         self.projector.reset();
-        let (hvs, saliences) = self.projector.project_with_salience(audio);
+        let (hvs, _saliences) = self.projector.project_with_salience(audio);
 
         let projection_time = start.elapsed();
 
@@ -211,6 +209,7 @@ impl TranscriptionEngine {
 struct TranscriptionResult {
     text: String,
     phonemes: Vec<String>,
+    #[allow(dead_code)]
     confidences: Vec<f32>,
     num_frames: usize,
     projection_time_ms: f32,
@@ -333,7 +332,7 @@ fn cmd_download(output: &Path, force: bool) -> std::io::Result<()> {
     println!();
 
     // Create a minimal dictionary with common words
-    let mini_dict = include_str!("../../data/mini_cmudict.txt");
+    let _mini_dict = include_str!("../../data/mini_cmudict.txt");
 
     // If the embedded dict doesn't exist, create it
     let mini_dict_content = r#";;; Mini CMU Dictionary (subset for testing)

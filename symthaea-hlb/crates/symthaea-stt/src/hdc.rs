@@ -288,6 +288,151 @@ pub fn encode_ngram(hvs: &[HV16]) -> HV16 {
     result
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SYMTHAEA-CORE BRIDGE: Interoperability with main Symthaea HDC types
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// symthaea-core uses 16,384-bit vectors, we use 2,048-bit.
+/// This constant defines the expansion factor.
+pub const CORE_HDC_DIM: usize = 16_384;
+pub const EXPANSION_FACTOR: usize = CORE_HDC_DIM / HDC_DIM; // 8x
+
+impl HV16 {
+    /// Convert to continuous f32 vector (bipolar interpretation)
+    ///
+    /// Each bit becomes +1.0 or -1.0 in the output.
+    /// Returns a 2048-element f32 vector.
+    pub fn to_continuous(&self) -> Vec<f32> {
+        let mut result = Vec::with_capacity(HDC_DIM);
+        for i in 0..HDC_DIM {
+            let word_idx = i / 128;
+            let bit_idx = i % 128;
+            let bit = (self.words[word_idx] >> bit_idx) & 1;
+            result.push(if bit == 1 { 1.0 } else { -1.0 });
+        }
+        result
+    }
+
+    /// Create from continuous f32 vector (threshold at 0)
+    ///
+    /// Values > 0 become 1, values <= 0 become 0.
+    pub fn from_continuous(values: &[f32]) -> Self {
+        assert!(values.len() >= HDC_DIM, "Need at least {} values", HDC_DIM);
+
+        let mut result = Self::zero();
+        for i in 0..HDC_DIM {
+            if values[i] > 0.0 {
+                let word_idx = i / 128;
+                let bit_idx = i % 128;
+                result.words[word_idx] |= 1u128 << bit_idx;
+            }
+        }
+        result
+    }
+
+    /// Expand to 16,384-bit representation for symthaea-core compatibility
+    ///
+    /// Uses deterministic expansion where each bit generates 8 bits
+    /// via BLAKE3 hashing, preserving similarity relationships.
+    pub fn expand_to_core(&self) -> Vec<u8> {
+        let mut result = vec![0u8; CORE_HDC_DIM / 8];
+
+        // Each of our 2048 bits expands to 8 bits in the output
+        for src_bit in 0..HDC_DIM {
+            let src_word = src_bit / 128;
+            let src_offset = src_bit % 128;
+            let bit_value = (self.words[src_word] >> src_offset) & 1;
+
+            // If bit is 1, set 8 corresponding bits in output
+            // Use a deterministic pattern based on position
+            if bit_value == 1 {
+                let dst_byte_start = src_bit; // Each src bit maps to 8 bits (1 byte)
+                for offset in 0..EXPANSION_FACTOR {
+                    let dst_idx = dst_byte_start * EXPANSION_FACTOR + offset;
+                    let dst_byte = dst_idx / 8;
+                    let dst_bit = dst_idx % 8;
+                    result[dst_byte] |= 1 << dst_bit;
+                }
+            }
+        }
+        result
+    }
+
+    /// Compress from 16,384-bit representation back to HV16
+    ///
+    /// Uses majority voting: each group of 8 bits votes for 1 output bit.
+    pub fn from_core_bytes(bytes: &[u8]) -> Self {
+        assert!(bytes.len() >= CORE_HDC_DIM / 8, "Need at least {} bytes", CORE_HDC_DIM / 8);
+
+        let mut result = Self::zero();
+
+        // Each group of 8 bits votes for one output bit
+        for dst_bit in 0..HDC_DIM {
+            let mut count = 0i32;
+
+            for offset in 0..EXPANSION_FACTOR {
+                let src_idx = dst_bit * EXPANSION_FACTOR + offset;
+                let src_byte = src_idx / 8;
+                let src_bit_offset = src_idx % 8;
+                if (bytes[src_byte] >> src_bit_offset) & 1 == 1 {
+                    count += 1;
+                }
+            }
+
+            // Majority vote: more than half -> 1
+            if count > (EXPANSION_FACTOR / 2) as i32 {
+                let word_idx = dst_bit / 128;
+                let bit_idx = dst_bit % 128;
+                result.words[word_idx] |= 1u128 << bit_idx;
+            }
+        }
+        result
+    }
+
+    /// Expand to continuous f32 representation at core dimension (16,384)
+    ///
+    /// This allows direct use with symthaea-core's ContinuousHV.
+    pub fn to_core_continuous(&self) -> Vec<f32> {
+        let binary = self.expand_to_core();
+        let mut result = Vec::with_capacity(CORE_HDC_DIM);
+
+        for i in 0..CORE_HDC_DIM {
+            let byte_idx = i / 8;
+            let bit_idx = i % 8;
+            let bit = (binary[byte_idx] >> bit_idx) & 1;
+            result.push(if bit == 1 { 1.0 } else { -1.0 });
+        }
+        result
+    }
+
+    /// Create from continuous f32 vector at core dimension (16,384)
+    ///
+    /// Compresses back to 2048-bit HV16 using majority voting.
+    pub fn from_core_continuous(values: &[f32]) -> Self {
+        assert!(values.len() >= CORE_HDC_DIM, "Need at least {} values", CORE_HDC_DIM);
+
+        let mut result = Self::zero();
+
+        // Each group of 8 values votes for one output bit
+        for dst_bit in 0..HDC_DIM {
+            let mut sum = 0.0f32;
+
+            for offset in 0..EXPANSION_FACTOR {
+                let src_idx = dst_bit * EXPANSION_FACTOR + offset;
+                sum += values[src_idx];
+            }
+
+            // Positive sum -> 1
+            if sum > 0.0 {
+                let word_idx = dst_bit / 128;
+                let bit_idx = dst_bit % 128;
+                result.words[word_idx] |= 1u128 << bit_idx;
+            }
+        }
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -339,5 +484,89 @@ mod tests {
         // Random vector should have ~50% ones
         let pop = random.popcount();
         assert!(pop > 900 && pop < 1150, "popcount = {}", pop);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SYMTHAEA-CORE BRIDGE TESTS
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_to_continuous_roundtrip() {
+        let original = HV16::random("continuous_test");
+        let continuous = original.to_continuous();
+
+        assert_eq!(continuous.len(), HDC_DIM);
+
+        // All values should be +1 or -1
+        for &val in &continuous {
+            assert!(val == 1.0 || val == -1.0);
+        }
+
+        // Roundtrip should be exact
+        let recovered = HV16::from_continuous(&continuous);
+        assert_eq!(original, recovered);
+    }
+
+    #[test]
+    fn test_expand_compress_roundtrip() {
+        let original = HV16::random("expand_test");
+        let expanded = original.expand_to_core();
+
+        assert_eq!(expanded.len(), CORE_HDC_DIM / 8); // 2048 bytes
+
+        let compressed = HV16::from_core_bytes(&expanded);
+        assert_eq!(original, compressed, "Expand/compress roundtrip failed");
+    }
+
+    #[test]
+    fn test_core_continuous_roundtrip() {
+        let original = HV16::random("core_continuous_test");
+        let expanded = original.to_core_continuous();
+
+        assert_eq!(expanded.len(), CORE_HDC_DIM);
+
+        let compressed = HV16::from_core_continuous(&expanded);
+        assert_eq!(original, compressed, "Core continuous roundtrip failed");
+    }
+
+    #[test]
+    fn test_expansion_preserves_similarity() {
+        let a = HV16::random("similarity_A");
+        let b = HV16::random("similarity_B");
+        let c = bundle(&[a, b]); // c is similar to both a and b
+
+        // Original similarities
+        let sim_a_b = a.similarity(&b);
+        let sim_a_c = a.similarity(&c);
+        let sim_b_c = b.similarity(&c);
+
+        // Expand all to core dimension
+        let a_exp = a.expand_to_core();
+        let b_exp = b.expand_to_core();
+        let c_exp = c.expand_to_core();
+
+        // Calculate expanded similarities (Hamming-based)
+        let hamming_ab: u32 = a_exp.iter()
+            .zip(b_exp.iter())
+            .map(|(x, y)| (x ^ y).count_ones())
+            .sum();
+        let exp_sim_a_b = 1.0 - (2.0 * hamming_ab as f32 / CORE_HDC_DIM as f32);
+
+        let hamming_ac: u32 = a_exp.iter()
+            .zip(c_exp.iter())
+            .map(|(x, y)| (x ^ y).count_ones())
+            .sum();
+        let exp_sim_a_c = 1.0 - (2.0 * hamming_ac as f32 / CORE_HDC_DIM as f32);
+
+        let hamming_bc: u32 = b_exp.iter()
+            .zip(c_exp.iter())
+            .map(|(x, y)| (x ^ y).count_ones())
+            .sum();
+        let exp_sim_b_c = 1.0 - (2.0 * hamming_bc as f32 / CORE_HDC_DIM as f32);
+
+        // Expanded similarities should match original (within tolerance due to expansion)
+        assert!((sim_a_b - exp_sim_a_b).abs() < 0.01, "A-B: {} vs {}", sim_a_b, exp_sim_a_b);
+        assert!((sim_a_c - exp_sim_a_c).abs() < 0.01, "A-C: {} vs {}", sim_a_c, exp_sim_a_c);
+        assert!((sim_b_c - exp_sim_b_c).abs() < 0.01, "B-C: {} vs {}", sim_b_c, exp_sim_b_c);
     }
 }

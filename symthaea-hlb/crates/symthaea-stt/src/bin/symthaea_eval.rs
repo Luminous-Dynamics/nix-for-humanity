@@ -20,7 +20,6 @@ use symthaea_stt::{
     PhonemeDecoder, TemporalDecoder, TemporalConfig,
     CmuDictionary, TextToPhonemes,
     TrainedPrototypes,
-    HV16,
     EvalResult,
     NgramLM, PhonemeToWordDecoder,
 };
@@ -75,6 +74,7 @@ struct Utterance {
     audio_path: PathBuf,
     transcript: String,
     speaker_id: String,
+    #[allow(dead_code)]
     chapter_id: String,
     utterance_id: String,
 }
@@ -161,11 +161,11 @@ fn main() {
     println!("  Decoder ready with {} phonemes", phoneme_pairs.len());
 
     // Build phoneme-to-word decoder
-    let mut p2w_decoder = PhonemeToWordDecoder::new();
+    let _p2w_decoder = PhonemeToWordDecoder::new();
     if let Some(ref dict) = dictionary {
         // Build reverse dictionary manually
         for word in dict.words() {
-            if let Some(phonemes) = dict.get(&word) {
+            if let Some(_phonemes) = dict.get(&word) {
                 // This is a workaround - we'd need to add the phonemes
             }
         }
@@ -207,7 +207,7 @@ fn main() {
         min_duration_frames,
         stability_frames,
     };
-    let mut temporal_decoder = TemporalDecoder::with_config(temporal_config);
+    let _temporal_decoder = TemporalDecoder::with_config(temporal_config);
     println!("  Temporal decoder configured:");
     println!("    - Window size: {} frames ({}ms)", window_size, window_size * 10);
     println!("    - Confidence threshold: {}", confidence_threshold);
@@ -215,7 +215,7 @@ fn main() {
     println!("    - Stability frames: {}", stability_frames);
 
     // Train simple LM from training transcripts if available
-    let lm = if let Some(ref lm_path) = cli.lm_train {
+    let _lm = if let Some(ref lm_path) = cli.lm_train {
         println!("Training language model from {:?}...", lm_path);
         match train_lm_from_transcripts(lm_path) {
             Ok(lm) => {
@@ -272,12 +272,17 @@ fn main() {
 
         // Project audio
         projector.reset();
-        let (hvs, _saliences) = projector.project_with_salience(&audio);
+        // Use raw projection (no temporal windowing) to match training
+        let hvs = projector.project_raw(&audio);
+        let _saliences = vec![1.0f32; hvs.len()]; // Placeholder saliences
 
-        // Decode from individual frames with window voting for smoothing
+        // Decode from individual frames using the decode() method with:
+        // - Minimum confidence threshold (low similarity = SILENCE)
+        // - Repetition penalty (prevents mode collapse like "W AY1 W AY1...")
+        decoder.reset(); // Reset history for each utterance
         let frame_phonemes: Vec<String> = hvs.iter()
             .filter_map(|hv| {
-                decoder.decode_all_scores(hv).first().map(|(p, _)| p.clone())
+                decoder.decode(hv).map(|(p, _)| p)
             })
             .collect();
 

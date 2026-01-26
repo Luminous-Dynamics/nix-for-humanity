@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 
 /// Configuration for prefrontal simulation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -215,7 +215,7 @@ impl PrefrontalCortex {
             // Remove lowest activation item
             if let Some(min_idx) = self.working_memory.iter()
                 .enumerate()
-                .min_by(|(_, a), (_, b)| a.activation.partial_cmp(&b.activation).unwrap())
+                .min_by(|(_, a), (_, b)| a.activation.total_cmp(&b.activation))
                 .map(|(i, _)| i)
             {
                 self.working_memory.remove(min_idx);
@@ -296,7 +296,7 @@ impl PrefrontalCortex {
         // Select highest priority ready action
         let selected = self.action_stack.iter_mut()
             .filter(|a| a.status == ActionStatus::Ready)
-            .max_by(|a, b| a.priority.partial_cmp(&b.priority).unwrap())
+            .max_by(|a, b| a.priority.total_cmp(&b.priority))
             .map(|a| {
                 a.status = ActionStatus::InProgress;
                 a.id.clone()
@@ -360,9 +360,9 @@ impl PrefrontalCortex {
             let best_idx = remaining_actions.iter()
                 .enumerate()
                 .max_by(|(_, a), (_, b)| {
-                    let sim_a = a.expected_outcome.cosine_similarity(&current_state);
-                    let sim_b = b.expected_outcome.cosine_similarity(&current_state);
-                    sim_a.partial_cmp(&sim_b).unwrap()
+                    let sim_a = a.expected_outcome.similarity(&current_state);
+                    let sim_b = b.expected_outcome.similarity(&current_state);
+                    sim_a.total_cmp(&sim_b)
                 })
                 .map(|(i, _)| i);
 
@@ -398,7 +398,7 @@ mod tests {
     fn test_working_memory() {
         let mut pfc = PrefrontalCortex::default();
 
-        let item = WorkingMemoryItem::new("test1", RealHV::random(512));
+        let item = WorkingMemoryItem::new("test1", RealHV::random(512, 0xCAFE_0001));
         assert!(pfc.add_to_memory(item));
         assert_eq!(pfc.working_memory.len(), 1);
     }
@@ -410,7 +410,7 @@ mod tests {
         let mut pfc = PrefrontalCortex::new(config);
 
         for i in 0..5 {
-            let item = WorkingMemoryItem::new(format!("item{}", i), RealHV::random(512));
+            let item = WorkingMemoryItem::new(format!("item{}", i), RealHV::random(512, 0xCAFE_0002 + i as u64));
             pfc.add_to_memory(item);
         }
 
@@ -421,7 +421,7 @@ mod tests {
     fn test_focus_setting() {
         let mut pfc = PrefrontalCortex::default();
 
-        let item = WorkingMemoryItem::new("focus_test", RealHV::random(512));
+        let item = WorkingMemoryItem::new("focus_test", RealHV::random(512, 0xCAFE_0010));
         pfc.add_to_memory(item);
 
         assert!(pfc.set_focus("focus_test"));
@@ -435,8 +435,8 @@ mod tests {
         let action = PlannedAction {
             id: "action1".to_string(),
             goal_id: "goal1".to_string(),
-            embedding: RealHV::random(512),
-            expected_outcome: RealHV::random(512),
+            embedding: RealHV::random(512, 0xCAFE_0020),
+            expected_outcome: RealHV::random(512, 0xCAFE_0021),
             priority: 0.8,
             effort: 0.5,
             dependencies: Vec::new(),

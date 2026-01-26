@@ -3,7 +3,7 @@
 //! Generates and manipulates network topologies for consciousness computation.
 //! Different topologies affect information integration (Phi) and processing.
 
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

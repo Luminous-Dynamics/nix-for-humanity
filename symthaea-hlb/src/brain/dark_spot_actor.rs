@@ -32,7 +32,7 @@ use std::sync::Arc;
 use tokio::sync::{oneshot, RwLock};
 use tracing::{debug, info, warn};
 
-use super::actor_model::{Actor, ActorPriority, OrganMessage, Response};
+use super::actor_model::{ActorTrait as Actor, ActorPriority, OrganMessage, Response};
 use crate::mycelix::gis::dht::{DarkSpotDHT, BlindSpot, KnowledgeMatch, ZKIgnoranceSignature};
 
 // ============================================================================

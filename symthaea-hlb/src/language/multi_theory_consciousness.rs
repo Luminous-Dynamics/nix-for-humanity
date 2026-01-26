@@ -50,7 +50,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{SystemTime, Duration};
-use crate::hdc::universal_semantics::SemanticPrime;
+use symthaea_core::hdc::universal_semantics::SemanticPrime;
 
 // ============================================================================
 // GLOBAL WORKSPACE THEORY (GWT) - Baars

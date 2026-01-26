@@ -25,7 +25,7 @@ use console::{style, Emoji};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, Read, Write};
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Instant;
@@ -112,6 +112,7 @@ enum Species {
 // EMOJI
 // ============================================================================
 
+#[allow(dead_code)]
 static ROCKET: Emoji<'_, '_> = Emoji("🚀 ", "");
 static WAVE: Emoji<'_, '_> = Emoji("🌊 ", "");
 static BRAIN: Emoji<'_, '_> = Emoji("🧠 ", "");
@@ -148,6 +149,7 @@ impl HV16 {
         HV16(result)
     }
 
+    #[allow(dead_code)]
     fn bind(&self, other: &Self) -> Self {
         let mut result = [0u8; 256];
         for i in 0..256 {

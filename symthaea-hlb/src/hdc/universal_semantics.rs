@@ -6,7 +6,10 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
+
+// Re-export SemanticPrime from symthaea_core for compatibility
+pub use symthaea_core::hdc::universal_semantics::SemanticPrime;
 
 /// Configuration for universal semantics
 #[derive(Debug, Clone, Serialize, Deserialize)]

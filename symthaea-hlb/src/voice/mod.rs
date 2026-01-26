@@ -41,7 +41,6 @@
 
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use std::sync::Arc;
 
 /// LTC-driven speech pacing parameters
 ///
@@ -359,7 +358,7 @@ impl VoiceOutput {
 
             // Modulate frequency based on position (simple prosody)
             let phase = i as f32 / num_samples as f32;
-            let freq_mod = 1.0 + 0.1 * (phase * 6.28).sin();
+            let freq_mod = 1.0 + 0.1 * (phase * std::f32::consts::TAU).sin();
 
             let sample = (t * base_freq * freq_mod * 2.0 * std::f32::consts::PI).sin();
 

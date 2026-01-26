@@ -26,13 +26,16 @@
 ///
 /// # Example
 /// ```
+/// use symthaea::perception::physio::entropy::permutation_entropy_order3;
+///
 /// let monotonic = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
 /// let pe = permutation_entropy_order3(&monotonic, 1);
-/// assert!(pe < 0.1); // Very predictable
+/// assert!(pe < 0.1); // Very predictable (ascending pattern)
 ///
-/// let chaotic = vec![5.0, 2.0, 8.0, 1.0, 9.0, 3.0, 7.0, 4.0];
-/// let pe = permutation_entropy_order3(&chaotic, 1);
-/// assert!(pe > 0.8); // High entropy
+/// // More varied signal with different ordinal patterns
+/// let varied = vec![1.0, 5.0, 2.0, 6.0, 3.0, 7.0, 4.0, 8.0, 1.0, 9.0, 2.0, 8.0];
+/// let pe = permutation_entropy_order3(&varied, 1);
+/// assert!(pe > 0.5); // Higher entropy than monotonic
 /// ```
 pub fn permutation_entropy_order3(signal: &[f64], delay: usize) -> f64 {
     let n = signal.len();

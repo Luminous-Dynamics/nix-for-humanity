@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::hdc::RealHV;
+use symthaea_core::hdc::RealHV;
 use super::seven_harmonies::Harmony;
 
 /// Configuration for the semantic value embedder
@@ -57,12 +57,12 @@ impl ValueEmbeddedConcept {
 
     /// Get semantic similarity to another concept
     pub fn semantic_similarity(&self, other: &ValueEmbeddedConcept) -> f32 {
-        self.semantic_embedding.cosine_similarity(&other.semantic_embedding)
+        self.semantic_embedding.similarity(&other.semantic_embedding)
     }
 
     /// Get value similarity to another concept
     pub fn value_similarity(&self, other: &ValueEmbeddedConcept) -> f32 {
-        self.value_embedding.cosine_similarity(&other.value_embedding)
+        self.value_embedding.similarity(&other.value_embedding)
     }
 
     /// Get overall similarity (weighted)
@@ -113,7 +113,7 @@ impl SemanticValueEmbedder {
             Harmony::SacredReciprocity,
             Harmony::EvolutionaryProgression,
         ] {
-            harmony_bases.insert(harmony, RealHV::random(dim));
+            harmony_bases.insert(harmony, RealHV::random(dim, 42));
         }
 
         Self {
@@ -140,21 +140,22 @@ impl SemanticValueEmbedder {
         let mut value_components = Vec::new();
 
         for (harmony, basis) in &self.harmony_bases {
-            let score = semantic.cosine_similarity(basis);
+            let score = semantic.similarity(basis);
             value_scores.insert(*harmony, score);
             value_components.push(basis.clone().scale(score));
         }
 
         // Create value embedding by combining harmony components
         let value_embedding = if value_components.is_empty() {
-            RealHV::random(self.config.dimension)
+            RealHV::random(self.config.dimension, 42)
         } else {
-            value_components[0].bundle(&value_components[1..])
+            RealHV::bundle(&value_components)
         };
 
         // Create combined embedding
-        let combined_embedding = semantic.clone().scale(self.config.semantic_weight)
-            .bundle(&[value_embedding.clone().scale(self.config.value_weight)]);
+        let semantic_scaled = semantic.clone().scale(self.config.semantic_weight);
+        let value_scaled = value_embedding.clone().scale(self.config.value_weight);
+        let combined_embedding = RealHV::bundle(&[semantic_scaled, value_scaled]);
 
         let concept = ValueEmbeddedConcept {
             id: id.clone(),
@@ -225,7 +226,7 @@ impl SemanticValueEmbedder {
     pub fn update_harmony_basis(&mut self, harmony: Harmony, adjustment: &RealHV, rate: f32) {
         if let Some(basis) = self.harmony_bases.get_mut(&harmony) {
             let scaled = adjustment.clone().scale(rate);
-            *basis = basis.bundle(&[scaled]);
+            *basis = RealHV::bundle(&[basis.clone(), scaled]);
         }
     }
 
@@ -269,7 +270,7 @@ mod tests {
     #[test]
     fn test_embedding() {
         let mut embedder = SemanticValueEmbedder::default();
-        let semantic = RealHV::random(512);
+        let semantic = RealHV::random(512, 42);
         let concept = embedder.embed("test", semantic);
 
         assert_eq!(concept.id, "test");
@@ -288,8 +289,8 @@ mod tests {
     fn test_similarity() {
         let mut embedder = SemanticValueEmbedder::default();
 
-        let c1 = embedder.embed("c1", RealHV::random(512));
-        let c2 = embedder.embed("c2", RealHV::random(512));
+        let c1 = embedder.embed("c1", RealHV::random(512, 42));
+        let c2 = embedder.embed("c2", RealHV::random(512, 42));
 
         let sim = c1.similarity(&c2, 0.3);
         assert!(sim >= -1.0 && sim <= 1.0);
@@ -300,11 +301,11 @@ mod tests {
         let mut embedder = SemanticValueEmbedder::default();
 
         // First embed creates new
-        let _ = embedder.embed("test", RealHV::random(512));
+        let _ = embedder.embed("test", RealHV::random(512, 42));
         assert_eq!(embedder.stats.cache_misses, 1);
 
         // Second embed uses cache
-        let _ = embedder.embed("test", RealHV::random(512));
+        let _ = embedder.embed("test", RealHV::random(512, 42));
         assert_eq!(embedder.stats.cache_hits, 1);
     }
 }

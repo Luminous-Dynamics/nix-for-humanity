@@ -26,8 +26,8 @@
 //! ```
 
 use std::collections::VecDeque;
-use crate::hdc::unified_hv::ContinuousHV;
-use crate::hdc::HDC_DIMENSION;
+use symthaea_core::hdc::unified_hv::ContinuousHV;
+use symthaea_core::hdc::HDC_DIMENSION;
 
 /// Cycle detection and phase encoding for periodic patterns
 #[derive(Debug, Clone)]
