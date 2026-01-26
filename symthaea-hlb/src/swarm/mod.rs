@@ -68,6 +68,7 @@ mod config;
 mod error;
 mod types;
 mod hyperfeel;
+mod holochain;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
@@ -86,6 +87,12 @@ pub use hyperfeel::{
     Hyperfeel, HyperfeelConfig, HyperfeelStats,
     AffectiveState, EmotionLabel, SwarmCoherence,
     SwarmHealth, SwarmStatus, PeerAffect,
+};
+
+// Holochain Cortex - trust and identity
+pub use holochain::{
+    HolochainCortex, HolochainConfig, CortexStats, CortexError,
+    AgentPubKey, AgentInfo, SignedChallenge, TrustVerificationResult,
 };
 
 // Iroh types (stub when feature disabled, real when enabled)
