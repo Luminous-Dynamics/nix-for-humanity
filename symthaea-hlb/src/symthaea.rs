@@ -13,7 +13,7 @@ use crate::language::{
     LLMOrgan, LLMOrganConfig,
     llm_backend,
 };
-use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType};
+use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType, EpistemicStatus};
 use crate::partnership::{
     DyadInput, DyadWeights, HumanPartnerModel, InteractionEvent,
     PhiDyadCalculator, RelationshipTrajectory,
@@ -434,6 +434,25 @@ impl Symthaea {
                     );
                     verified = false;
                 }
+            }
+        }
+
+        // Check 4: Unknown status should NOT contain factual assertions
+        // This prevents the LLM from hallucinating answers when we explicitly don't know
+        if matches!(thought.epistemic_status, EpistemicStatus::Unknown) {
+            // Patterns that suggest the LLM is making up an answer
+            let has_factual_assertion = text_lower.contains(" is ")
+                && (text_lower.contains("capital")
+                    || text_lower.contains("answer")
+                    || text_lower.contains("likely")
+                    || text_lower.contains("probably"));
+
+            if has_factual_assertion {
+                tracing::warn!(
+                    "Translation verification: LLM made factual assertion despite Unknown status: {}",
+                    &text[..text.len().min(100)]
+                );
+                verified = false;
             }
         }
 
