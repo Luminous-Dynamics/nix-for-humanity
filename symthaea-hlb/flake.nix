@@ -165,7 +165,12 @@
           pname = "symthaea";
           version = "0.1.0";
           src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+            # Allow the build to proceed without path dependencies
+            # that aren't available in the Nix sandbox
+            allowBuiltinFetchGit = true;
+          };
 
           inherit buildInputs nativeBuildInputs;
 

@@ -55,8 +55,10 @@ iroh = { version = "0.95", optional = true }
 
 # Phase 11+: Mycelix Protocol Integration (Deferred to Week 9+)
 uuid = { version = "1.6", features = ["serde", "v4"] }  # Week 3: Enabled for Goal IDs
-mycelix-sdk = { path = "../../../mycelix-workspace/sdk", optional = true, default-features = false, features = ["standalone"] }
-sha3 = { version = "0.10", optional = true }  # For gradient hashing when SDK enabled
+# mycelix-sdk: Path dependency removed for Nix sandbox compatibility
+# Re-enable when mycelix-workspace/sdk is available as a crates.io package or git dependency
+# mycelix-sdk = { path = "../../../mycelix-workspace/sdk", optional = true, default-features = false, features = ["standalone"] }
+sha3 = { version = "0.10", optional = true }  # For gradient hashing
 
 # Web Research & Epistemic Verification (Track 6)
 reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
@@ -196,7 +198,9 @@ notifications = ["zbus"]  # E1: D-Bus desktop notifications
 systemd = ["libsystemd"]  # D1: Systemd socket activation
 desktop = ["notifications", "systemd"]
 # Mycelix integration
-mycelix = ["mycelix-sdk", "sha3"]  # Full Mycelix SDK integration for governance
+# mycelix = ["mycelix-sdk", "sha3"]  # Full Mycelix SDK integration for governance
+# Disabled until mycelix-sdk is available as a proper crate
+mycelix = ["sha3"]  # Mycelix-ready (hashing only, SDK integration pending)
 
 # Module compilation gates (only flags actually referenced in cfg attributes)
 integration_module = []        # Integration module in lib.rs
