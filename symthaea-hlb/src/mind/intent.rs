@@ -75,6 +75,14 @@ pub struct IntentClassifier {
     /// Negative prototypes that trigger uncertainty when resonated with.
     /// These create "gravity wells" around known hallucination triggers.
     negative_prototypes: Vec<NegativePrototype>,
+
+    // ========================================================================
+    // POSITIVE PROTOTYPES (Epistemic Confidence Boosters)
+    // ========================================================================
+
+    /// Positive prototypes that boost confidence for clearly answerable domains.
+    /// These counterbalance negative prototypes for math, logic, basic facts.
+    positive_prototypes: Vec<PositivePrototype>,
 }
 
 /// A negative prototype that drags confidence DOWN when matched
@@ -86,6 +94,18 @@ pub struct NegativePrototype {
     pub encoding: RealHV,
     /// Penalty weight (how much to penalize familiarity)
     pub penalty_weight: f32,
+}
+
+/// A positive prototype that boosts confidence UP when matched
+/// This is the counterbalance to negative prototypes - for clearly answerable domains.
+#[derive(Debug, Clone)]
+pub struct PositivePrototype {
+    /// Prototype name/label
+    pub name: String,
+    /// Prototype encoding
+    pub encoding: RealHV,
+    /// Boost weight (how much to boost familiarity)
+    pub boost_weight: f32,
 }
 
 /// A named concept with its prototype encoding
@@ -190,7 +210,76 @@ impl IntentClassifier {
 
             // Negative prototypes for active disbelief
             negative_prototypes: Self::build_negative_prototypes(dim),
+
+            // Positive prototypes for confidence boosting
+            positive_prototypes: Self::build_positive_prototypes(dim),
         }
+    }
+
+    /// Build positive prototypes for clearly answerable domains.
+    ///
+    /// These create "uplift zones" for queries that should be answerable:
+    /// - Basic arithmetic and math operations
+    /// - Logical operations (true/false, and/or)
+    /// - Well-known factual domains
+    ///
+    /// This counterbalances negative prototypes to prevent over-caution.
+    fn build_positive_prototypes(dim: usize) -> Vec<PositivePrototype> {
+        vec![
+            // =================================================================
+            // ARITHMETIC & BASIC MATH
+            // =================================================================
+            PositivePrototype {
+                name: "arithmetic".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "plus", "minus", "times", "divided", "equals", "sum",
+                    "add", "subtract", "multiply", "divide", "calculate",
+                    "2+2", "1+1", "addition", "subtraction", "multiplication",
+                ]),
+                boost_weight: 0.8, // Strong boost for basic math
+            },
+            PositivePrototype {
+                name: "numbers".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "one", "two", "three", "four", "five", "six", "seven",
+                    "eight", "nine", "ten", "hundred", "thousand", "number",
+                    "1", "2", "3", "4", "5", "integer", "count",
+                ]),
+                boost_weight: 0.6,
+            },
+
+            // =================================================================
+            // LOGIC & BOOLEAN
+            // =================================================================
+            PositivePrototype {
+                name: "logic".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "true", "false", "and", "or", "not", "if", "then",
+                    "boolean", "logic", "xor", "implies", "therefore",
+                ]),
+                boost_weight: 0.7,
+            },
+
+            // =================================================================
+            // BASIC FACTUAL QUERIES (well-established knowledge)
+            // =================================================================
+            PositivePrototype {
+                name: "definitions".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "what is", "define", "definition", "means", "meaning",
+                    "explain", "describe", "is called", "refers to",
+                ]),
+                boost_weight: 0.4, // Moderate boost - depends on topic
+            },
+            PositivePrototype {
+                name: "system_knowledge".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "nix", "nixos", "linux", "system", "configuration",
+                    "flake", "derivation", "package", "service", "module",
+                ]),
+                boost_weight: 0.7, // Strong boost for domain expertise
+            },
+        ]
     }
 
     /// Build negative prototypes for active disbelief.
@@ -561,6 +650,13 @@ impl IntentClassifier {
         // Find the maximum weighted resonance with negative prototypes
         let (negative_resonance, negative_penalty) = self.compute_negative_resonance(input_hv);
 
+        // =====================================================================
+        // EPISTEMIC CONFIDENCE: Check positive prototypes
+        // =====================================================================
+        // Find the maximum weighted resonance with positive prototypes
+        // This counterbalances negative prototypes for clearly answerable domains
+        let (positive_resonance, positive_boost) = self.compute_positive_resonance(input_hv);
+
         // Check resonance with working memory (do we have relevant context?)
         let memory_resonance = if working_memory.is_empty() {
             0.0
@@ -575,21 +671,26 @@ impl IntentClassifier {
         // Calculate base familiarity (combines known prototype + memory resonance)
         let base_familiarity = (known_sim * 0.4 + memory_resonance * 0.6).clamp(0.0, 1.0);
 
+        // APPLY POSITIVE BOOST: Increase familiarity for clearly answerable domains
+        // This happens BEFORE negative penalty, so answerable domains get a head start
+        let boosted_familiarity = (base_familiarity + positive_boost * 0.4).clamp(0.0, 1.0);
+
         // APPLY NEGATIVE PENALTY: Reduce familiarity based on negative resonance
-        // Formula: familiarity = base_familiarity * (1.0 - negative_penalty)
+        // Formula: familiarity = boosted_familiarity * (1.0 - negative_penalty)
         // This creates a "gravitational pull" toward uncertainty
-        let familiarity = (base_familiarity * (1.0 - negative_penalty)).clamp(0.0, 1.0);
+        let familiarity = (boosted_familiarity * (1.0 - negative_penalty)).clamp(0.0, 1.0);
 
         // Calculate novelty (inverse of familiarity, boosted by unknown prototype AND negative resonance)
         let base_novelty = (1.0 - base_familiarity) * 0.4 + unknown_sim.max(0.0) * 0.3;
-        // BOOST novelty based on negative resonance
-        let novelty = (base_novelty + negative_resonance * 0.3).clamp(0.0, 1.0);
+        // BOOST novelty based on negative resonance, REDUCE based on positive resonance
+        let novelty = (base_novelty + negative_resonance * 0.3 - positive_resonance * 0.2).clamp(0.0, 1.0);
 
         // Ambiguity from prototype
         let ambiguity = ambiguous_sim.max(0.0).clamp(0.0, 1.0);
 
         // Determine epistemic status based on scores
-        // Key insight: negative_resonance can override familiarity
+        // Key insight: negative_resonance can override familiarity,
+        //              positive_resonance can upgrade status for answerable domains
         //
         // THRESHOLD CALIBRATION: In high-dimensional HDC (16384-dim), similarity
         // values are compressed toward 0.5 (orthogonal). We use lower thresholds
@@ -605,17 +706,21 @@ impl IntentClassifier {
             // Match to known hallucination triggers → Unknown
             // Lowered from 0.5 to catch negative prototypes in high-dim space
             EpistemicStatus::Unknown
-        } else if negative_resonance > 0.12 && familiarity < 0.6 {
-            // Weak match + not familiar → Uncertain
-            // Lowered from 0.3 for high-dim calibration
+        } else if negative_resonance > 0.12 && familiarity < 0.6 && positive_resonance < 0.15 {
+            // Weak negative match + not familiar + not in answerable domain → Uncertain
+            // Added positive_resonance check to allow answerable domains through
             EpistemicStatus::Uncertain
         } else if familiarity > 0.7 && novelty < 0.3 && negative_resonance < 0.08 {
             // Very familiar + low novelty + no negative signal → Certain
             EpistemicStatus::Certain
-        } else if familiarity > 0.5 && novelty < 0.5 && negative_resonance < 0.12 {
-            // Familiar + no strong negative signal → Probable
-            // Tightened from 0.3 to prevent hallucination on fictional topics
+        } else if (familiarity > 0.5 || positive_resonance > 0.12) && novelty < 0.5 && negative_resonance < 0.12 {
+            // Familiar OR in answerable domain + no strong negative signal → Probable
+            // Lowered positive_resonance from 0.20 to 0.12 for 16384-dim calibration
             EpistemicStatus::Probable
+        } else if positive_resonance > 0.08 && negative_resonance < 0.08 {
+            // Match to answerable domain with no negative signal → at least Uncertain
+            // Lowered from 0.15 to 0.08 for 16384-dim calibration
+            EpistemicStatus::Uncertain
         } else if familiarity > 0.3 || ambiguity > 0.5 {
             EpistemicStatus::Uncertain
         } else {
@@ -651,6 +756,29 @@ impl IntentClassifier {
         (max_resonance, max_penalty.clamp(0.0, 1.0))
     }
 
+    /// Compute positive resonance and boost from positive prototypes.
+    ///
+    /// Returns (max_resonance, weighted_boost) where:
+    /// - max_resonance: highest similarity to any positive prototype
+    /// - weighted_boost: boost weighted by prototype's boost_weight
+    ///
+    /// This is the counterpart to compute_negative_resonance, providing
+    /// confidence boosting for clearly answerable domains.
+    fn compute_positive_resonance(&self, input_hv: &RealHV) -> (f32, f32) {
+        let mut max_resonance = 0.0f32;
+        let mut max_boost = 0.0f32;
+
+        for proto in &self.positive_prototypes {
+            let sim = input_hv.similarity(&proto.encoding).max(0.0);
+            if sim > max_resonance {
+                max_resonance = sim;
+                max_boost = sim * proto.boost_weight;
+            }
+        }
+
+        (max_resonance, max_boost.clamp(0.0, 1.0))
+    }
+
     /// Assess epistemic status from raw text.
     pub fn assess_epistemic_text(&self, text: &str, working_memory: &[RealHV]) -> EpistemicAssessment {
         // DEFENSE-IN-DEPTH: Hard keyword check for known hallucination triggers
@@ -676,6 +804,32 @@ impl IntentClassifier {
                     ambiguity: 0.0,
                 };
             }
+        }
+
+        // CONFIDENCE BOOST: Basic arithmetic patterns → Probable
+        // These are clearly answerable questions that HDC may not capture well
+        let arithmetic_patterns = [
+            // Basic operations with numbers
+            "2+2", "1+1", "3+3", "2*2", "4/2", "10-5",
+            "plus two", "plus three", "times two", "divided by",
+            "what is one plus", "what is two plus", "what is three plus",
+            "calculate", "compute", "add ", "subtract ", "multiply ", "divide ",
+        ];
+
+        let has_arithmetic = arithmetic_patterns.iter().any(|p| text_lower.contains(p));
+        let has_number = text_lower.chars().any(|c| c.is_ascii_digit())
+            || ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+                .iter()
+                .any(|n| text_lower.contains(n));
+
+        if has_arithmetic && has_number {
+            // Basic arithmetic question → confidently answerable
+            return EpistemicAssessment {
+                status: EpistemicStatus::Probable,
+                familiarity: 0.8,
+                novelty: 0.1,
+                ambiguity: 0.0,
+            };
         }
 
         let input_hv = Self::text_to_hv_internal(self.dim, text);
