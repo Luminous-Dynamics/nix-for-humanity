@@ -221,6 +221,117 @@ impl DomainKnowledge {
     pub fn categories() -> Vec<&'static str> {
         vec!["logic", "math", "system", "nixos", "self", "social", "epistemic", "knowledge"]
     }
+
+    // =========================================================================
+    // NEGATIVE PROTOTYPES (Active Disbelief)
+    // =========================================================================
+
+    /// Get negative seeding entries - concepts that should trigger UNCERTAINTY.
+    ///
+    /// These create "gravity wells" around known hallucination triggers.
+    /// If a query resonates with these, it drags confidence DOWN regardless
+    /// of how familiar the words sound.
+    ///
+    /// This fixes the "Dunning-Kruger Trap" where general knowledge seeding
+    /// makes the system overconfident about fictional/unknown topics.
+    pub fn get_negative_seeding() -> Vec<KnowledgeEntry> {
+        vec![
+            // =================================================================
+            // MYTH & LEGEND (Known fictional places/entities)
+            // =================================================================
+            KnowledgeEntry {
+                label: "myth_places",
+                category: "negative",
+                content: "atlantis el dorado shangri-la avalon camelot olympus valhalla asgard underworld",
+                confidence: 1.0,
+            },
+            KnowledgeEntry {
+                label: "myth_creatures",
+                category: "negative",
+                content: "unicorn dragon phoenix griffin mermaid centaur minotaur kraken leviathan",
+                confidence: 1.0,
+            },
+            KnowledgeEntry {
+                label: "myth_magic",
+                category: "negative",
+                content: "magic spell wizard witch sorcerer enchantment curse potion alchemy transmutation",
+                confidence: 1.0,
+            },
+
+            // =================================================================
+            // FICTION (Literary/Media worlds)
+            // =================================================================
+            KnowledgeEntry {
+                label: "fiction_worlds",
+                category: "negative",
+                content: "hogwarts mordor narnia westeros middle-earth gotham metropolis wakanda pandora",
+                confidence: 1.0,
+            },
+            KnowledgeEntry {
+                label: "fiction_markers",
+                category: "negative",
+                content: "fictional story novel movie film book made up invented imaginary pretend fantasy",
+                confidence: 1.0,
+            },
+
+            // =================================================================
+            // PSEUDOSCIENCE (Known false claims)
+            // =================================================================
+            KnowledgeEntry {
+                label: "pseudoscience",
+                category: "negative",
+                content: "perpetual motion flat earth astrology telepathy telekinesis crystal healing homeopathy",
+                confidence: 1.0,
+            },
+
+            // =================================================================
+            // UNCERTAINTY MARKERS (Epistemic humility triggers)
+            // =================================================================
+            KnowledgeEntry {
+                label: "uncertainty_explicit",
+                category: "negative",
+                content: "maybe perhaps possibly probably might could uncertain unsure unknown unknowable",
+                confidence: 1.0,
+            },
+            KnowledgeEntry {
+                label: "ignorance_markers",
+                category: "negative",
+                content: "no idea don't know haven't a clue beats me who knows impossible to say cannot determine",
+                confidence: 1.0,
+            },
+
+            // =================================================================
+            // FUTURE/COUNTERFACTUAL (Inherently unknowable)
+            // =================================================================
+            KnowledgeEntry {
+                label: "future_unknowable",
+                category: "negative",
+                content: "will happen future prediction prophecy tomorrow next year 2050 someday eventually",
+                confidence: 0.8, // Slightly lower - some predictions are reasonable
+            },
+            KnowledgeEntry {
+                label: "counterfactual",
+                category: "negative",
+                content: "what if hypothetical alternate reality parallel universe if only would have been",
+                confidence: 0.8,
+            },
+
+            // =================================================================
+            // SUBJECTIVE/OPINION (No objective answer)
+            // =================================================================
+            KnowledgeEntry {
+                label: "subjective_markers",
+                category: "negative",
+                content: "best worst favorite opinion believe feel think prefer taste beauty meaning purpose",
+                confidence: 0.7, // Lower - these can be discussed, just not as facts
+            },
+        ]
+    }
+
+    /// Get all negative category names
+    pub fn negative_categories() -> Vec<&'static str> {
+        vec!["negative"]
+    }
 }
 
 /// Result of seeding operation

@@ -67,6 +67,25 @@ pub struct IntentClassifier {
 
     /// Named concept prototypes for semantic labeling
     concept_vocabulary: Vec<ConceptPrototype>,
+
+    // ========================================================================
+    // NEGATIVE PROTOTYPES (Active Disbelief)
+    // ========================================================================
+
+    /// Negative prototypes that trigger uncertainty when resonated with.
+    /// These create "gravity wells" around known hallucination triggers.
+    negative_prototypes: Vec<NegativePrototype>,
+}
+
+/// A negative prototype that drags confidence DOWN when matched
+#[derive(Debug, Clone)]
+pub struct NegativePrototype {
+    /// Prototype name/label
+    pub name: String,
+    /// Prototype encoding
+    pub encoding: RealHV,
+    /// Penalty weight (how much to penalize familiarity)
+    pub penalty_weight: f32,
 }
 
 /// A named concept with its prototype encoding
@@ -168,7 +187,99 @@ impl IntentClassifier {
 
             // Concept vocabulary for semantic labeling
             concept_vocabulary: Self::build_concept_vocabulary(dim),
+
+            // Negative prototypes for active disbelief
+            negative_prototypes: Self::build_negative_prototypes(dim),
         }
+    }
+
+    /// Build negative prototypes for active disbelief.
+    ///
+    /// These create "gravity wells" around known hallucination triggers.
+    /// Queries that resonate with these prototypes have their familiarity
+    /// penalized, preventing the "Dunning-Kruger Trap".
+    fn build_negative_prototypes(dim: usize) -> Vec<NegativePrototype> {
+        vec![
+            // =================================================================
+            // MYTH & LEGEND
+            // =================================================================
+            NegativePrototype {
+                name: "myth_places".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "atlantis", "el dorado", "shangri-la", "avalon", "camelot",
+                    "olympus", "valhalla", "asgard", "underworld", "lemuria",
+                ]),
+                penalty_weight: 1.0, // Full penalty
+            },
+            NegativePrototype {
+                name: "myth_creatures".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "unicorn", "dragon", "phoenix", "griffin", "mermaid",
+                    "centaur", "minotaur", "kraken", "leviathan", "fairy",
+                ]),
+                penalty_weight: 1.0,
+            },
+            NegativePrototype {
+                name: "magic".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "magic", "spell", "wizard", "witch", "sorcerer",
+                    "enchantment", "curse", "potion", "alchemy",
+                ]),
+                penalty_weight: 0.8,
+            },
+
+            // =================================================================
+            // FICTION
+            // =================================================================
+            NegativePrototype {
+                name: "fiction_worlds".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "hogwarts", "mordor", "narnia", "westeros", "middle-earth",
+                    "gotham", "metropolis", "wakanda", "tatooine", "pandora",
+                ]),
+                penalty_weight: 1.0,
+            },
+            NegativePrototype {
+                name: "fiction_markers".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "fictional", "story", "novel", "movie", "made up",
+                    "invented", "imaginary", "pretend", "fantasy", "fairy tale",
+                ]),
+                penalty_weight: 0.9,
+            },
+
+            // =================================================================
+            // PSEUDOSCIENCE
+            // =================================================================
+            NegativePrototype {
+                name: "pseudoscience".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "perpetual motion", "flat earth", "astrology", "telepathy",
+                    "telekinesis", "crystal healing", "homeopathy", "chemtrails",
+                ]),
+                penalty_weight: 1.0,
+            },
+
+            // =================================================================
+            // INHERENTLY UNKNOWABLE
+            // =================================================================
+            NegativePrototype {
+                name: "future".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "will happen", "future", "prediction", "prophecy",
+                    "tomorrow", "next year", "2050", "someday",
+                ]),
+                penalty_weight: 0.6, // Partial - some predictions are reasonable
+            },
+            NegativePrototype {
+                name: "counterfactual".to_string(),
+                encoding: Self::encode_prototype(dim, &[
+                    "what if", "hypothetical", "alternate", "parallel universe",
+                    "if only", "would have been", "could have",
+                ]),
+                penalty_weight: 0.5,
+            },
+        ]
     }
 
     /// Build the concept vocabulary for semantic labeling.
@@ -428,13 +539,27 @@ impl IntentClassifier {
     /// Assess epistemic status based on familiarity with the query.
     ///
     /// This is the KEY function for hallucination prevention:
-    /// - High familiarity → Certain/Probable
+    /// - High familiarity + low negative resonance → Certain/Probable
+    /// - High negative resonance → Unknown (active disbelief)
     /// - Low familiarity → Uncertain/Unknown
+    ///
+    /// ## Active Disbelief
+    ///
+    /// Negative prototypes create "gravity wells" around known hallucination
+    /// triggers (mythology, fiction, pseudoscience). If a query resonates with
+    /// these, familiarity is penalized and novelty is boosted, forcing the
+    /// system toward caution.
     pub fn assess_epistemic(&self, input_hv: &RealHV, working_memory: &[RealHV]) -> EpistemicAssessment {
         // Check similarity to epistemic prototypes
         let known_sim = input_hv.similarity(&self.known_proto);
         let unknown_sim = input_hv.similarity(&self.unknown_proto);
         let ambiguous_sim = input_hv.similarity(&self.ambiguous_proto);
+
+        // =====================================================================
+        // ACTIVE DISBELIEF: Check negative prototypes
+        // =====================================================================
+        // Find the maximum weighted resonance with negative prototypes
+        let (negative_resonance, negative_penalty) = self.compute_negative_resonance(input_hv);
 
         // Check resonance with working memory (do we have relevant context?)
         let memory_resonance = if working_memory.is_empty() {
@@ -447,19 +572,33 @@ impl IntentClassifier {
             max_sim
         };
 
-        // Calculate familiarity (combines known prototype + memory resonance)
-        let familiarity = (known_sim * 0.4 + memory_resonance * 0.6).clamp(0.0, 1.0);
+        // Calculate base familiarity (combines known prototype + memory resonance)
+        let base_familiarity = (known_sim * 0.4 + memory_resonance * 0.6).clamp(0.0, 1.0);
 
-        // Calculate novelty (inverse of familiarity, boosted by unknown prototype)
-        let novelty = ((1.0 - familiarity) * 0.6 + unknown_sim.max(0.0) * 0.4).clamp(0.0, 1.0);
+        // APPLY NEGATIVE PENALTY: Reduce familiarity based on negative resonance
+        // Formula: familiarity = base_familiarity * (1.0 - negative_penalty)
+        // This creates a "gravitational pull" toward uncertainty
+        let familiarity = (base_familiarity * (1.0 - negative_penalty)).clamp(0.0, 1.0);
+
+        // Calculate novelty (inverse of familiarity, boosted by unknown prototype AND negative resonance)
+        let base_novelty = (1.0 - base_familiarity) * 0.4 + unknown_sim.max(0.0) * 0.3;
+        // BOOST novelty based on negative resonance
+        let novelty = (base_novelty + negative_resonance * 0.3).clamp(0.0, 1.0);
 
         // Ambiguity from prototype
         let ambiguity = ambiguous_sim.max(0.0).clamp(0.0, 1.0);
 
         // Determine epistemic status based on scores
-        let status = if familiarity > 0.7 && novelty < 0.3 {
+        // Key insight: negative_resonance can override familiarity
+        let status = if negative_resonance > 0.5 {
+            // Strong match to known hallucination triggers → Unknown
+            EpistemicStatus::Unknown
+        } else if negative_resonance > 0.3 && familiarity < 0.6 {
+            // Moderate match + not very familiar → Uncertain
+            EpistemicStatus::Uncertain
+        } else if familiarity > 0.7 && novelty < 0.3 && negative_resonance < 0.2 {
             EpistemicStatus::Certain
-        } else if familiarity > 0.5 && novelty < 0.5 {
+        } else if familiarity > 0.5 && novelty < 0.5 && negative_resonance < 0.3 {
             EpistemicStatus::Probable
         } else if familiarity > 0.3 || ambiguity > 0.5 {
             EpistemicStatus::Uncertain
@@ -474,6 +613,26 @@ impl IntentClassifier {
             novelty,
             ambiguity,
         }
+    }
+
+    /// Compute negative resonance and penalty from negative prototypes.
+    ///
+    /// Returns (max_resonance, weighted_penalty) where:
+    /// - max_resonance: highest similarity to any negative prototype
+    /// - weighted_penalty: penalty weighted by prototype's penalty_weight
+    fn compute_negative_resonance(&self, input_hv: &RealHV) -> (f32, f32) {
+        let mut max_resonance = 0.0f32;
+        let mut max_penalty = 0.0f32;
+
+        for proto in &self.negative_prototypes {
+            let sim = input_hv.similarity(&proto.encoding).max(0.0);
+            if sim > max_resonance {
+                max_resonance = sim;
+                max_penalty = sim * proto.penalty_weight;
+            }
+        }
+
+        (max_resonance, max_penalty.clamp(0.0, 1.0))
     }
 
     /// Assess epistemic status from raw text.
