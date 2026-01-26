@@ -102,6 +102,21 @@ pub enum TensorType {
 // MESSAGES
 // ============================================================================
 
+/// Compact affective state for streaming (mirror of hyperfeel::AffectiveState)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct AffectiveSync {
+    /// Valence: pleasure-displeasure (-1.0 to 1.0)
+    pub valence: f32,
+    /// Arousal: activation level (0.0 to 1.0)
+    pub arousal: f32,
+    /// Dominance: sense of control (-1.0 to 1.0)
+    pub dominance: f32,
+    /// Timestamp (ms since epoch)
+    pub timestamp_ms: u64,
+    /// Sequence number
+    pub sequence: u64,
+}
+
 /// Messages sent over the swarm network
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SwarmMessage {
@@ -110,6 +125,9 @@ pub enum SwarmMessage {
 
     /// Tensor data for neural synchronization
     TensorStream(TensorPayload),
+
+    /// Affective state sync (Hyperfeel mirror neurons)
+    AffectiveSync(AffectiveSync),
 
     /// Request to join swarm
     JoinRequest {
@@ -159,6 +177,7 @@ impl SwarmMessage {
         match self {
             Self::ConsciousnessSync(_) => "ConsciousnessSync",
             Self::TensorStream(_) => "TensorStream",
+            Self::AffectiveSync(_) => "AffectiveSync",
             Self::JoinRequest { .. } => "JoinRequest",
             Self::JoinAck { .. } => "JoinAck",
             Self::Heartbeat { .. } => "Heartbeat",

@@ -67,6 +67,7 @@
 mod config;
 mod error;
 mod types;
+mod hyperfeel;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
@@ -77,7 +78,14 @@ pub use config::{SwarmConfig, PeerConfig};
 pub use error::{SwarmError, SwarmResult};
 pub use types::{
     SwarmMessage, ConsciousnessVector, TensorPayload, TensorType,
-    PeerInfo, ConnectionTicket, TrustLevel, ConnectionState,
+    PeerInfo, ConnectionTicket, TrustLevel, ConnectionState, AffectiveSync,
+};
+
+// Hyperfeel - synthetic mirror neurons
+pub use hyperfeel::{
+    Hyperfeel, HyperfeelConfig, HyperfeelStats,
+    AffectiveState, EmotionLabel, SwarmCoherence,
+    SwarmHealth, SwarmStatus, PeerAffect,
 };
 
 // Iroh types (stub when feature disabled, real when enabled)
