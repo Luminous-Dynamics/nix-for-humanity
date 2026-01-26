@@ -31,8 +31,8 @@ ndarray = { version = "0.15", features = ["rayon"] }
 nalgebra = "0.33"
 
 # Burn ML Framework (pure Rust) - for semantic encoding
-burn = { version = "0.14", features = ["ndarray"], optional = true }
-burn-ndarray = { version = "0.14", optional = true }
+burn = { version = "0.18", features = ["ndarray"], optional = true }
+burn-ndarray = { version = "0.18", optional = true }
 # ndarray-linalg = "0.16"  # Removed to avoid external BLAS dependency during tests
 
 # Graph structures (for autopoietic consciousness)
@@ -99,7 +99,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1.0"
 thiserror = "1.0"
 parking_lot = "0.12"  # High-performance synchronization primitives
-rusqlite = { version = "0.31", features = ["bundled"] }  # SQLite database (bundled to avoid system dependency)
+rusqlite = { version = "0.37", features = ["bundled"] }  # SQLite database (bundled to avoid system dependency)
 once_cell = "1.19"
 dashmap = "5.5"
 rand = "0.8"
@@ -133,7 +133,7 @@ hound = { version = "3.5", optional = true }        # WAV file I/O
 hf-hub = { version = "0.3", optional = true }       # HuggingFace Hub for model download
 
 # Enhancement #8 Week 4: PyPhi Integration (IIT 3.0 exact Φ calculation)
-pyo3 = { version = "0.22", features = ["auto-initialize"], optional = true }  # Rust-Python bridge for PyPhi
+pyo3 = { version = "0.24", features = ["auto-initialize"], optional = true }  # Rust-Python bridge for PyPhi
 
 # NixOS integration
 nix = "0.27"
@@ -144,7 +144,7 @@ ctrlc = { version = "3.4", optional = true }  # Ctrl+C signal handling
 
 # Shell Sidecar TUI dependencies (optional)
 crossterm = { version = "0.27", optional = true }
-ratatui = { version = "0.26", optional = true }
+ratatui = { version = "0.29", optional = true }
 
 # GUI dependencies (optional) - for symthaea-gui
 eframe = { version = "0.27", optional = true }
