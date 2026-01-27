@@ -14,12 +14,21 @@ use crate::language::{
     llm_backend,
 };
 use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType, EpistemicStatus};
+#[cfg(feature = "magi_loop")]
+use crate::mind::SemanticIntent;
 use crate::partnership::{
     DyadInput, DyadWeights, HumanPartnerModel, InteractionEvent,
     PhiDyadCalculator, RelationshipTrajectory,
 };
 use crate::hdc::relational_consciousness::{
     RelationalAssessment, RelationMode, RelationshipStage,
+};
+
+#[cfg(feature = "magi_loop")]
+use crate::consciousness::recursive_improvement::{
+    BrierScoreTracker, CalibrationSummary,
+    PredictionDomain, OutcomeCategory, WorldPrediction,
+    WorldActionContext, ResolutionContract, RiskTier,
 };
 
 /// Response from processing a query through the consciousness pipeline.
@@ -107,6 +116,9 @@ pub struct Symthaea {
     dyad_calculator: PhiDyadCalculator,
     /// Recent AI states for dyad computation (ring buffer).
     recent_ai_states: Vec<symthaea_core::hdc::unified_hv::ContinuousHV>,
+    /// Brier Score calibration tracker for epistemic calibration.
+    #[cfg(feature = "magi_loop")]
+    calibration: BrierScoreTracker,
 }
 
 impl Symthaea {
@@ -153,6 +165,8 @@ impl Symthaea {
             trajectory: RelationshipTrajectory::default(),
             dyad_calculator: PhiDyadCalculator::new(),
             recent_ai_states: Vec::new(),
+            #[cfg(feature = "magi_loop")]
+            calibration: BrierScoreTracker::with_defaults(),
         })
     }
 
@@ -202,6 +216,8 @@ impl Symthaea {
             trajectory: state.trajectory,
             dyad_calculator: PhiDyadCalculator::new(),
             recent_ai_states: state.recent_ai_states,
+            #[cfg(feature = "magi_loop")]
+            calibration: BrierScoreTracker::with_defaults(),
         })
     }
 
@@ -269,6 +285,34 @@ impl Symthaea {
         thought.trust = self.partner.trust;
 
         // ====================================================================
+        // PHASE 4.5: CALIBRATION ADJUSTMENT (Brier Score confidence tuning)
+        // ====================================================================
+        // Adjust the epistemic confidence using learned calibration data.
+        // If the system has been overconfident in a domain, reduce confidence.
+        // If underconfident, increase it. This closes the MAGI calibration loop.
+        #[cfg(feature = "magi_loop")]
+        {
+            let domain = Self::map_intent_to_domain(&thought.semantic_intent);
+            let raw_confidence = Self::epistemic_to_confidence(&thought.epistemic_status);
+            let adjusted = self.calibration.adjust_confidence(domain, raw_confidence);
+
+            // If calibration significantly changed confidence, update epistemic status
+            let adjusted_status = Self::confidence_to_epistemic(adjusted);
+            if adjusted_status != thought.epistemic_status {
+                tracing::debug!(
+                    target: "symthaea::broca::calibration",
+                    original_status = ?thought.epistemic_status,
+                    adjusted_status = ?adjusted_status,
+                    raw_confidence = raw_confidence,
+                    adjusted_confidence = adjusted,
+                    domain = ?domain,
+                    "Calibration adjusted epistemic status"
+                );
+                thought.epistemic_status = adjusted_status;
+            }
+        }
+
+        // ====================================================================
         // PHASE 5: TRANSLATION (Broca's Area - NOT reasoning!)
         // ====================================================================
         // The LLM's ONLY job is to convert the structured thought into
@@ -304,6 +348,47 @@ impl Symthaea {
         self.recent_ai_states.push(ai_hv);
         if self.recent_ai_states.len() > 8 {
             self.recent_ai_states.remove(0);
+        }
+
+        // ====================================================================
+        // PHASE 7.5: CALIBRATION RECORDING (Brier Score tracking)
+        // ====================================================================
+        // Record the prediction outcome for ongoing calibration.
+        // We treat translation_verified as the outcome: if the translation
+        // was faithful to the structured thought, the prediction "succeeded".
+        #[cfg(feature = "magi_loop")]
+        {
+            let domain = Self::map_intent_to_domain(&thought.semantic_intent);
+            let confidence = Self::epistemic_to_confidence(&thought.epistemic_status);
+
+            let action_context = WorldActionContext::new(
+                "broca_translation",
+                "Faithful translation of structured thought",
+            ).with_risk_tier(RiskTier::Observation);
+            let contract = ResolutionContract::shell_command();
+
+            let mut prediction = WorldPrediction::new(
+                format!(
+                    "Translation of {:?} intent with {:?} epistemic status will be faithful",
+                    thought.semantic_intent, thought.epistemic_status
+                ),
+                OutcomeCategory::Success,
+                confidence,
+                action_context,
+                contract,
+            );
+
+            // Override inferred domain with semantically meaningful domain
+            prediction.domain = domain;
+
+            // Resolve immediately based on fidelity verification
+            if translation_verified {
+                prediction.resolve_true(OutcomeCategory::Success, 1.0);
+            } else {
+                prediction.resolve_false(OutcomeCategory::SafeFailure, 1.0);
+            }
+
+            self.calibration.record_prediction(&prediction);
         }
 
         // ====================================================================
@@ -363,6 +448,23 @@ impl Symthaea {
                 correlation_id = %correlation_id,
                 coherence = thought.coherence,
                 "Potential hallucination risk: Certain status with low coherence"
+            );
+        }
+
+        // Log calibration summary periodically (every 10 interactions)
+        #[cfg(feature = "magi_loop")]
+        if self.interactions % 10 == 0 && self.calibration.total_predictions() > 0 {
+            let cal_summary = self.calibration.calibration_summary();
+            tracing::info!(
+                target: "symthaea::broca::calibration",
+                correlation_id = %correlation_id,
+                global_brier = cal_summary.global_brier,
+                global_ece = cal_summary.global_ece,
+                global_accuracy = cal_summary.global_accuracy,
+                total_predictions = cal_summary.total_predictions,
+                is_well_calibrated = cal_summary.is_well_calibrated,
+                domain_count = cal_summary.domain_stats.len(),
+                "Calibration summary (periodic)"
             );
         }
 
@@ -537,6 +639,75 @@ impl Symthaea {
     /// working memory, seeding status, and internal state.
     pub fn mind(&self) -> &ContinuousMind {
         &self.mind
+    }
+
+    // ========================================================================
+    // Calibration (Brier Score Integration)
+    // ========================================================================
+
+    /// Get the current calibration summary.
+    ///
+    /// Returns global and per-domain Brier scores, ECE, accuracy, and
+    /// whether the system is currently well-calibrated.
+    #[cfg(feature = "magi_loop")]
+    pub fn calibration_summary(&self) -> CalibrationSummary {
+        self.calibration.calibration_summary()
+    }
+
+    /// Map EpistemicStatus to a confidence float for calibration tracking.
+    ///
+    /// These values represent the system's belief about being correct:
+    /// - Certain: 0.95 (very high confidence)
+    /// - Probable: 0.75 (moderate-high confidence)
+    /// - Uncertain: 0.45 (moderate-low confidence)
+    /// - Unknown: 0.15 (very low confidence)
+    /// - OutOfDomain: 0.10 (minimal confidence)
+    #[cfg(feature = "magi_loop")]
+    fn epistemic_to_confidence(status: &EpistemicStatus) -> f64 {
+        match status {
+            EpistemicStatus::Certain => 0.95,
+            EpistemicStatus::Probable => 0.75,
+            EpistemicStatus::Uncertain => 0.45,
+            EpistemicStatus::Unknown => 0.15,
+            EpistemicStatus::OutOfDomain => 0.10,
+        }
+    }
+
+    /// Map a confidence float back to EpistemicStatus.
+    ///
+    /// Inverse of `epistemic_to_confidence`, using midpoint thresholds.
+    #[cfg(feature = "magi_loop")]
+    fn confidence_to_epistemic(confidence: f64) -> EpistemicStatus {
+        if confidence >= 0.85 {
+            EpistemicStatus::Certain
+        } else if confidence >= 0.60 {
+            EpistemicStatus::Probable
+        } else if confidence >= 0.30 {
+            EpistemicStatus::Uncertain
+        } else if confidence >= 0.12 {
+            EpistemicStatus::Unknown
+        } else {
+            EpistemicStatus::OutOfDomain
+        }
+    }
+
+    /// Map SemanticIntent to a PredictionDomain for calibration tracking.
+    ///
+    /// Groups different intents into calibration domains:
+    /// - Answer, Clarify → Factual (knowledge-based predictions)
+    /// - ProposeAction → ToolUse (action outcome predictions)
+    /// - Acknowledge, Continue → UserBehavior (social interaction predictions)
+    /// - Reflect → SystemState (introspective predictions)
+    /// - ExpressUncertainty, Unknown → Factual (default calibration domain)
+    #[cfg(feature = "magi_loop")]
+    fn map_intent_to_domain(intent: &SemanticIntent) -> PredictionDomain {
+        match intent {
+            SemanticIntent::Answer | SemanticIntent::Clarify => PredictionDomain::Factual,
+            SemanticIntent::ProposeAction => PredictionDomain::ToolUse,
+            SemanticIntent::Acknowledge | SemanticIntent::Continue => PredictionDomain::UserBehavior,
+            SemanticIntent::Reflect => PredictionDomain::SystemState,
+            SemanticIntent::ExpressUncertainty | SemanticIntent::Unknown => PredictionDomain::Factual,
+        }
     }
 
     // ========================================================================
