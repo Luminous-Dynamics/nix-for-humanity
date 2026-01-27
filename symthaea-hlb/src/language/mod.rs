@@ -16,6 +16,11 @@ pub mod llm_organ;
 pub mod nix_parser;
 pub mod phi_monitor;
 
+// Domain plugins
+pub mod math_plugin;
+pub mod nixos_plugin;
+pub mod programming_plugin;
+
 // Modules needing HDC submodules that don't exist yet (cfg-gated)
 #[cfg(feature = "full_language")]
 pub mod generative_thought_engine;
@@ -35,6 +40,9 @@ pub mod semantic_enrichment;
 // Re-exports
 pub use domain_plugin::{DomainPlugin, Entity, RiskLevel, ErrorLocation, IntentPrototypes, DomainPrompts, ValidationResult, PluginRegistry, GenericPlugin};
 pub use domain_plugin::ErrorDiagnosis as DomainErrorDiagnosis;
+pub use math_plugin::MathPlugin;
+pub use nixos_plugin::NixOsPlugin;
+pub use programming_plugin::ProgrammingPlugin;
 pub use emotional_core::{EmotionalCore, EmotionalCoreConfig, EmotionalAnalysis, EmotionalResponse};
 pub use llm_organ::{LLMOrgan, LLMOrganConfig, ConversationMessage, MessageRole, LLMGenerationResult, LLMQuery, QueryType, TRANSLATION_SYSTEM_PROMPT};
 pub use nix_parser::{NixParser, NixConfig, NixOption, NixValue};

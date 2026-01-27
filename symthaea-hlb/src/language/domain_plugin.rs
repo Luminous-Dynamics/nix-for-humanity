@@ -455,6 +455,17 @@ impl PluginRegistry {
 
         best_match
     }
+
+    /// Create a registry pre-loaded with all built-in domain plugins
+    ///
+    /// Registers: generic (default), nixos, mathematics, programming
+    pub fn with_builtins() -> Self {
+        let mut registry = Self::new(); // starts with GenericPlugin
+        registry.register(Box::new(super::nixos_plugin::NixOsPlugin));
+        registry.register(Box::new(super::math_plugin::MathPlugin));
+        registry.register(Box::new(super::programming_plugin::ProgrammingPlugin));
+        registry
+    }
 }
 
 impl Default for PluginRegistry {
