@@ -14,7 +14,7 @@ use crate::language::{
     llm_backend,
     PluginRegistry,
 };
-use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType, EpistemicStatus};
+use crate::mind::{ContinuousMind, MindConfig, StructuredThought, DomainContext, ConstraintType, EpistemicStatus};
 #[cfg(feature = "magi_loop")]
 use crate::mind::SemanticIntent;
 use crate::partnership::{
@@ -307,6 +307,30 @@ impl Symthaea {
 
         // Store original input for context
         thought.original_input = Some(content.to_string());
+
+        // ====================================================================
+        // PHASE 3.5: DOMAIN CONTEXT INJECTION
+        // ====================================================================
+        // Wire Phase 1 domain detection results into the structured thought
+        // so the LLM translation has access to domain, entities, and computed answers.
+        if detected_domain != "generic" || !domain_entities.is_empty() {
+            let entities: Vec<(String, String, f64)> = domain_entities.iter()
+                .map(|e| (e.entity_type.clone(), e.value.clone(), e.confidence))
+                .collect();
+            let computed_answer = self.plugin_registry.get(&detected_domain)
+                .and_then(|p| p.compute(content, &domain_entities));
+            thought.domain_context = Some(DomainContext {
+                domain: detected_domain.clone(),
+                entities,
+                computed_answer,
+            });
+        }
+
+        // If a computed answer exists, upgrade epistemic status to Certain
+        if thought.domain_context.as_ref().map_or(false, |c| c.computed_answer.is_some()) {
+            thought.epistemic_status = EpistemicStatus::Certain;
+            thought.semantic_intent = crate::mind::SemanticIntent::Answer;
+        }
 
         // ====================================================================
         // PHASE 4: RELATIONAL ENRICHMENT (Add partnership context)

@@ -94,6 +94,7 @@ async fn test_real_llm_respects_unknown_epistemic_status() {
         trust: 0.2,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![
             // Explicitly forbid hallucinating about mythology
             ResponseConstraint {
@@ -257,6 +258,7 @@ async fn test_real_llm_allows_certainty_when_appropriate() {
         trust: 0.5,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("Hello!".to_string()),
     };
@@ -325,6 +327,7 @@ async fn test_real_llm_respects_must_exclude_constraint() {
         trust: 0.3,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![
             ResponseConstraint {
                 constraint_type: ConstraintType::MustExclude,

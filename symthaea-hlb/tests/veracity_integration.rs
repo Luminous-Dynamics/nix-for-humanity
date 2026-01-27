@@ -66,6 +66,7 @@ async fn test_uncertain_thought_produces_hedged_translation() {
         trust: 0.3,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("What is the capital of Atlantis?".to_string()),
     };
@@ -112,6 +113,7 @@ async fn test_unknown_epistemic_status_forces_admission() {
         trust: 0.1,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("Explain quantum gravity to me".to_string()),
     };
@@ -158,6 +160,7 @@ async fn test_out_of_domain_marked_correctly() {
         trust: 0.4,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("What's the best recipe for chocolate cake?".to_string()),
     };
@@ -216,6 +219,7 @@ async fn test_certain_thought_can_be_confident() {
             },
         ],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("Hello!".to_string()),
     };
@@ -250,6 +254,7 @@ async fn test_must_include_constraint_verified() {
         trust: 0.3,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![
             ResponseConstraint {
                 constraint_type: ConstraintType::MustInclude,
@@ -285,6 +290,7 @@ async fn test_must_exclude_constraint_verified() {
         trust: 0.3,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![
             ResponseConstraint {
                 constraint_type: ConstraintType::MustExclude,
@@ -325,6 +331,7 @@ async fn test_hedging_detection_comprehensive() {
         trust: 0.3,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: None,
     };
@@ -440,6 +447,7 @@ fn test_translation_prompt_includes_epistemic_markers() {
         trust: 0.1,
         activated_concepts: vec![],
         structured_data: None,
+        domain_context: None,
         constraints: vec![],
         original_input: Some("What happens after death?".to_string()),
     };

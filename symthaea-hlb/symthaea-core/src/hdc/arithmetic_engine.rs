@@ -4372,6 +4372,21 @@ impl Polynomial {
         self.coefficients.iter().all(|&c| c == 0)
     }
 
+    /// Compute the formal derivative d/dx of this polynomial.
+    ///
+    /// Coefficients `[a₀, a₁, a₂, a₃, ...]` become `[a₁, 2a₂, 3a₃, ...]`.
+    pub fn derivative(&self, primitives: &PrimitiveSystem) -> Self {
+        if self.coefficients.len() <= 1 {
+            return Self::new(vec![0], &self.variable, primitives);
+        }
+        let deriv_coeffs: Vec<i64> = self.coefficients.iter()
+            .enumerate()
+            .skip(1)
+            .map(|(i, &c)| c * i as i64)
+            .collect();
+        Self::new(deriv_coeffs, &self.variable, primitives)
+    }
+
     /// Convert to symbolic expression
     pub fn to_expr(&self, primitives: &PrimitiveSystem) -> SymbolicExpr {
         if self.coefficients.is_empty() {

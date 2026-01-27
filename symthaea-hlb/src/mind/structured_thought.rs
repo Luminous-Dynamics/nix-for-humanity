@@ -144,6 +144,21 @@ pub enum ConstraintType {
     Format,
 }
 
+/// Domain-specific context extracted by domain plugins.
+///
+/// Carries domain detection results, extracted entities, and optionally
+/// a deterministic computed answer from Rust (e.g., arithmetic via HDC engine).
+/// This bridges the gap between Phase 1 (domain detection) and Phase 5 (translation).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DomainContext {
+    /// Detected domain name (e.g., "mathematics", "nixos")
+    pub domain: String,
+    /// Extracted entities: (type, value, confidence)
+    pub entities: Vec<(String, String, f64)>,
+    /// Deterministic Rust-computed answer, if available
+    pub computed_answer: Option<String>,
+}
+
 /// Structured data that may need to be incorporated.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StructuredData {
@@ -195,6 +210,9 @@ pub struct StructuredThought {
 
     /// Optional structured data to incorporate
     pub structured_data: Option<StructuredData>,
+
+    /// Domain context from plugin detection (Phase 1 results)
+    pub domain_context: Option<DomainContext>,
 
     // ========================================================================
     // CONFIDENCE SIGNALS (How Sure)
@@ -327,6 +345,24 @@ impl StructuredThought {
             }
         }
 
+        // Domain context (from plugin detection)
+        if let Some(ref ctx) = self.domain_context {
+            if ctx.domain != "generic" {
+                prompt.push_str(&format!("DOMAIN: {}\n", ctx.domain));
+            }
+            if !ctx.entities.is_empty() {
+                prompt.push_str("ENTITIES:\n");
+                for (etype, value, confidence) in &ctx.entities {
+                    prompt.push_str(&format!(
+                        "  {} = {} ({:.2})\n", etype, value, confidence
+                    ));
+                }
+            }
+            if let Some(ref answer) = ctx.computed_answer {
+                prompt.push_str(&format!("COMPUTED_ANSWER: {}\n", answer));
+            }
+        }
+
         // Original input
         if let Some(ref input) = self.original_input {
             prompt.push_str(&format!("\nORIGINAL_INPUT: {}\n", input));
@@ -363,6 +399,7 @@ impl Default for StructuredThought {
             activated_concepts: Vec::new(),
             emotional_tone: EmotionalTone::default(),
             structured_data: None,
+            domain_context: None,
             phi: 0.0,
             meta_awareness: 0.0,
             coherence: 0.0,
@@ -433,5 +470,54 @@ mod tests {
         assert!(prompt.contains("EPISTEMIC_STATUS: Probable"));
         assert!(prompt.contains("phi=0.75"));
         assert!(prompt.contains("greeting(0.90)"));
+    }
+
+    #[test]
+    fn test_domain_context_in_prompt() {
+        let mut thought = StructuredThought::default();
+        thought.domain_context = Some(DomainContext {
+            domain: "mathematics".to_string(),
+            entities: vec![
+                ("number".to_string(), "2".to_string(), 0.95),
+                ("operator".to_string(), "+".to_string(), 0.9),
+            ],
+            computed_answer: None,
+        });
+
+        let prompt = thought.to_translation_prompt();
+        assert!(prompt.contains("DOMAIN: mathematics"));
+        assert!(prompt.contains("ENTITIES:"));
+        assert!(prompt.contains("number = 2 (0.95)"));
+        assert!(prompt.contains("operator = + (0.90)"));
+        assert!(!prompt.contains("COMPUTED_ANSWER"));
+    }
+
+    #[test]
+    fn test_computed_answer_in_prompt() {
+        let mut thought = StructuredThought::default();
+        thought.domain_context = Some(DomainContext {
+            domain: "mathematics".to_string(),
+            entities: vec![],
+            computed_answer: Some("2 + 2 = 4".to_string()),
+        });
+
+        let prompt = thought.to_translation_prompt();
+        assert!(prompt.contains("DOMAIN: mathematics"));
+        assert!(prompt.contains("COMPUTED_ANSWER: 2 + 2 = 4"));
+    }
+
+    #[test]
+    fn test_generic_domain_omitted_from_prompt() {
+        let mut thought = StructuredThought::default();
+        thought.domain_context = Some(DomainContext {
+            domain: "generic".to_string(),
+            entities: vec![],
+            computed_answer: None,
+        });
+
+        let prompt = thought.to_translation_prompt();
+        assert!(!prompt.contains("DOMAIN:"));
+        assert!(!prompt.contains("ENTITIES:"));
+        assert!(!prompt.contains("COMPUTED_ANSWER"));
     }
 }

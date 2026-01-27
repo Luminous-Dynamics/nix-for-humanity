@@ -369,6 +369,18 @@ pub trait DomainPlugin: Send + Sync {
     fn suggest_actions(&self, _context: &str) -> Vec<String> {
         vec![]
     }
+
+    /// Compute a deterministic answer for the given input and entities.
+    ///
+    /// Domain plugins can override this to provide Rust-computed answers
+    /// that bypass LLM generation entirely (e.g., arithmetic results).
+    ///
+    /// # Returns
+    /// `Some(answer_string)` if a deterministic answer was computed,
+    /// `None` if the query requires LLM translation.
+    fn compute(&self, _input: &str, _entities: &[Entity]) -> Option<String> {
+        None
+    }
 }
 
 // ============================================================================
@@ -440,14 +452,21 @@ impl PluginRegistry {
         self.plugins.keys().map(|s| s.as_str()).collect()
     }
 
+    /// Minimum score a plugin must achieve to be selected as the domain.
+    /// Prevents low-confidence false positives (e.g., "Atlantis" matching random plugins).
+    const MIN_DOMAIN_THRESHOLD: f64 = 0.3;
+
     /// Auto-detect domain from input
     pub fn detect_domain(&self, input: &str) -> &str {
         let mut best_match = &self.default_plugin;
         let mut best_score = 0.0;
 
         for (name, plugin) in &self.plugins {
+            if name == &self.default_plugin {
+                continue; // Don't score the generic/default plugin
+            }
             let score = plugin.is_in_domain(input);
-            if score > best_score {
+            if score > best_score && score >= Self::MIN_DOMAIN_THRESHOLD {
                 best_score = score;
                 best_match = name;
             }
@@ -462,7 +481,7 @@ impl PluginRegistry {
     pub fn with_builtins() -> Self {
         let mut registry = Self::new(); // starts with GenericPlugin
         registry.register(Box::new(super::nixos_plugin::NixOsPlugin));
-        registry.register(Box::new(super::math_plugin::MathPlugin));
+        registry.register(Box::new(super::math_plugin::MathPlugin::new()));
         registry.register(Box::new(super::programming_plugin::ProgrammingPlugin));
         registry
     }
@@ -548,5 +567,25 @@ mod tests {
 
         assert_eq!(entities.len(), 1);
         assert_eq!(entities[0].entity_type, "order_reference");
+    }
+
+    #[test]
+    fn test_domain_detection_threshold_prevents_low_scores() {
+        let mut registry = PluginRegistry::new();
+        registry.register(Box::new(TestPlugin));
+
+        // "Hello world" scores 0.1 for TestPlugin, below threshold 0.3
+        let detected = registry.detect_domain("Hello world");
+        assert_eq!(detected, "generic", "Low-score plugin should not be selected");
+    }
+
+    #[test]
+    fn test_domain_detection_threshold_allows_high_scores() {
+        let mut registry = PluginRegistry::new();
+        registry.register(Box::new(TestPlugin));
+
+        // "I want to track my order" scores 0.9 for TestPlugin, above threshold
+        let detected = registry.detect_domain("I want to track my order");
+        assert_eq!(detected, "test", "High-score plugin should be selected");
     }
 }

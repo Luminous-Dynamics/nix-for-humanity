@@ -331,6 +331,7 @@ impl ContinuousMind {
                 warmth,
             },
             structured_data: None,
+            domain_context: None,
             phi: state.consciousness_level,
             meta_awareness: state.meta_awareness,
             coherence,

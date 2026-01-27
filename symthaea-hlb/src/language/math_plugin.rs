@@ -8,11 +8,13 @@
 //! confidence boosting in Symthaea's HDC-based intent classification.
 
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 use super::domain_plugin::{
     DomainPlugin, DomainPrompts, Entity, ErrorDiagnosis as DomainErrorDiagnosis,
     IntentPrototypes, RiskLevel, ValidationResult,
 };
+use crate::hdc::arithmetic_engine::MathReasoningBridge;
 
 // ============================================================================
 // MATH KEYWORDS & PATTERNS
@@ -53,7 +55,19 @@ const MATH_OPERATORS: &[&str] = &[
 ///
 /// Extracts numbers, operators, and mathematical expressions from user input.
 /// Provides intent prototypes for calculation, proof, and definition queries.
-pub struct MathPlugin;
+/// Uses `MathReasoningBridge` to compute arithmetic results via the HDC engine.
+pub struct MathPlugin {
+    bridge: Mutex<MathReasoningBridge>,
+}
+
+impl MathPlugin {
+    /// Create a new MathPlugin with an initialized MathReasoningBridge.
+    pub fn new() -> Self {
+        Self {
+            bridge: Mutex::new(MathReasoningBridge::new()),
+        }
+    }
+}
 
 impl DomainPlugin for MathPlugin {
     fn domain_name(&self) -> &str {
@@ -421,6 +435,84 @@ impl DomainPlugin for MathPlugin {
 
         actions
     }
+
+    fn compute(&self, input: &str, entities: &[Entity]) -> Option<String> {
+        // Try arithmetic: look for (number, operator, number) pattern
+        let numbers: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "number")
+            .collect();
+        let operators: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "operator")
+            .collect();
+
+        if numbers.len() == 2 && operators.len() == 1 {
+            let a: u64 = match numbers[0].value.parse() {
+                Ok(v) => v,
+                Err(_) => return None,
+            };
+            let b: u64 = match numbers[1].value.parse() {
+                Ok(v) => v,
+                Err(_) => return None,
+            };
+            let op = operators[0].value.as_str();
+
+            if let Ok(mut bridge) = self.bridge.lock() {
+                let assertion = bridge.assert_equality(a, b, op);
+                // Only return if the operation was valid (confidence > 0)
+                if assertion.confidence > 0.0 && !assertion.object.starts_with("undefined") && assertion.object != "unknown operation" {
+                    let op_display = match op {
+                        "+" | "add" => "+",
+                        "-" | "subtract" => "-",
+                        "*" | "×" | "multiply" => "*",
+                        "/" | "÷" | "divide" => "/",
+                        "%" | "mod" => "%",
+                        "^" | "power" => "^",
+                        other => other,
+                    };
+                    return Some(format!("{} {} {} = {}", a, op_display, b, assertion.object));
+                }
+            }
+        }
+
+        // Try symbolic derivative: "derivative of x^N" pattern
+        let lower = input.to_lowercase();
+        if lower.contains("derivative") {
+            if let Some((poly_str, deriv_str)) = Self::compute_derivative_from_text(&lower) {
+                return Some(format!("d/dx [{}] = {}", poly_str, deriv_str));
+            }
+        }
+
+        None
+    }
+}
+
+impl MathPlugin {
+    /// Compute the derivative of a simple polynomial from natural language.
+    ///
+    /// Handles patterns like "x^2" → "2x", "x^3" → "3x^2", etc.
+    /// Returns `(original_string, derivative_string)`.
+    fn compute_derivative_from_text(text: &str) -> Option<(String, String)> {
+        // Match "x^N" pattern
+        if let Some(cap_pos) = text.find("x^") {
+            let after = &text[cap_pos + 2..];
+            let exp_str: String = after.chars().take_while(|c| c.is_ascii_digit()).collect();
+            if let Ok(exp) = exp_str.parse::<u32>() {
+                if exp > 0 && exp <= 20 {
+                    let original = format!("x^{}", exp);
+                    let derivative = if exp == 1 {
+                        "1".to_string()
+                    } else if exp == 2 {
+                        "2x".to_string()
+                    } else {
+                        format!("{}x^{}", exp, exp - 1)
+                    };
+                    return Some((original, derivative));
+                }
+            }
+        }
+
+        None
+    }
 }
 
 /// Categorize a math term into a sub-field
@@ -449,13 +541,13 @@ mod tests {
 
     #[test]
     fn test_domain_name() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
         assert_eq!(plugin.domain_name(), "mathematics");
     }
 
     #[test]
     fn test_number_extraction() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
 
         let entities = plugin.extract_entities("What is 42 + 3.14?");
         let numbers: Vec<&Entity> = entities.iter()
@@ -468,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_math_term_extraction() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
 
         let entities = plugin.extract_entities("Find the derivative of this polynomial");
         let terms: Vec<&Entity> = entities.iter()
@@ -480,7 +572,7 @@ mod tests {
 
     #[test]
     fn test_domain_detection() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
 
         assert!(plugin.is_in_domain("Calculate the integral of x^2") > 0.6);
         assert!(plugin.is_in_domain("Solve this quadratic equation") > 0.6);
@@ -489,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_validation() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
 
         let result = plugin.validate_input("(3 + 4) * 2");
         assert!(result.valid);
@@ -500,7 +592,7 @@ mod tests {
 
     #[test]
     fn test_error_diagnosis() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
 
         let diag = plugin.diagnose_error("Error: division by zero");
         assert!(diag.is_some());
@@ -509,8 +601,58 @@ mod tests {
 
     #[test]
     fn test_preprocess() {
-        let plugin = MathPlugin;
+        let plugin = MathPlugin::new();
         let result = plugin.preprocess("3 squared plus 4 squared");
         assert!(result.contains("^2"));
+    }
+
+    #[test]
+    fn test_compute_arithmetic_via_bridge() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "2", 0, 1).with_confidence(0.95),
+            Entity::new("operator", "+", 2, 3).with_confidence(0.9),
+            Entity::new("number", "2", 4, 5).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 2+2?", &entities);
+        assert!(result.is_some(), "Should compute 2+2");
+        let answer = result.unwrap();
+        assert!(answer.contains("4"), "Answer should contain 4, got: {}", answer);
+    }
+
+    #[test]
+    fn test_compute_natural_language() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "10", 0, 2).with_confidence(0.95),
+            Entity::new("operator", "*", 3, 4).with_confidence(0.9),
+            Entity::new("number", "5", 5, 6).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 10 * 5?", &entities);
+        assert!(result.is_some());
+        let answer = result.unwrap();
+        assert!(answer.contains("50"), "Answer should contain 50, got: {}", answer);
+    }
+
+    #[test]
+    fn test_compute_symbolic_derivative() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("math_term", "derivative", 0, 10).with_confidence(0.8),
+        ];
+        let result = plugin.compute("What is the derivative of x^2?", &entities);
+        assert!(result.is_some(), "Should compute derivative of x^2");
+        let answer = result.unwrap();
+        assert!(answer.contains("2x") || answer.contains("2*x"), "Derivative of x^2 should be 2x, got: {}", answer);
+    }
+
+    #[test]
+    fn test_compute_non_computable_returns_none() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("math_term", "theorem", 0, 7).with_confidence(0.8),
+        ];
+        let result = plugin.compute("Prove the fundamental theorem of algebra", &entities);
+        assert!(result.is_none(), "Non-computable queries should return None");
     }
 }

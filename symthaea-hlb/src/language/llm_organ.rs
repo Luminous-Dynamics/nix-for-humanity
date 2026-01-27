@@ -43,6 +43,13 @@ This is a STRICT requirement to prevent hallucination.
 
 If EPISTEMIC_STATUS is Uncertain, include hedging language.
 Never claim certainty when the structured thought indicates uncertainty.
+
+7. DOMAIN CONTEXT: If DOMAIN, ENTITIES, or COMPUTED_ANSWER fields are present:
+   - Use the DOMAIN to frame your response appropriately
+   - Reference ENTITIES when relevant to show domain awareness
+   - If COMPUTED_ANSWER is present, use it as the PRIMARY factual content
+     of your response. This value was computed deterministically by Rust
+     and is guaranteed correct. Present it naturally but faithfully.
 "#;
 
 /// Configuration for LLM organ
@@ -592,7 +599,29 @@ impl LLMOrgan {
     fn simulate_translation(&self, thought: &StructuredThought) -> String {
         use crate::mind::{EpistemicStatus, SemanticIntent};
 
+        // If a computed answer is available, return it directly
+        if let Some(ref ctx) = thought.domain_context {
+            if let Some(ref answer) = ctx.computed_answer {
+                return answer.clone();
+            }
+        }
+
         let mut response = String::new();
+
+        // If domain entities are available, mention the domain
+        if let Some(ref ctx) = thought.domain_context {
+            if ctx.domain != "generic" && !ctx.entities.is_empty() {
+                let entity_names: Vec<&str> = ctx.entities.iter()
+                    .take(3)
+                    .map(|(_, v, _)| v.as_str())
+                    .collect();
+                response.push_str(&format!(
+                    "Regarding {} concepts ({}): ",
+                    ctx.domain,
+                    entity_names.join(", ")
+                ));
+            }
+        }
 
         // Build response based on structured thought
         match thought.semantic_intent {

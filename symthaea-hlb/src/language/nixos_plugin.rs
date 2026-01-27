@@ -119,6 +119,52 @@ impl DomainPlugin for NixOsPlugin {
             }
         }
 
+        // Keyword-based concept extraction for common NixOS topics.
+        // This ensures natural language queries like "How do I enable nginx?"
+        // produce entities even when no structured syntax (pkgs., services.) appears.
+        let nixos_concepts: &[(&str, &str)] = &[
+            ("nginx", "web_server"),
+            ("postgresql", "database"),
+            ("mysql", "database"),
+            ("docker", "container"),
+            ("podman", "container"),
+            ("openssh", "service"),
+            ("sshd", "service"),
+            ("firewall", "networking"),
+            ("wireguard", "vpn"),
+            ("systemd", "init_system"),
+            ("grub", "bootloader"),
+            ("zfs", "filesystem"),
+            ("btrfs", "filesystem"),
+            ("flatpak", "package_manager"),
+            ("virtualbox", "virtualization"),
+            ("xserver", "display"),
+            ("wayland", "display"),
+            ("pipewire", "audio"),
+        ];
+
+        // Collect already-found entity values for deduplication
+        let existing_values: Vec<String> = entities.iter()
+            .map(|e| e.value.to_lowercase())
+            .collect();
+
+        for &(keyword, category) in nixos_concepts {
+            if let Some(idx) = lower.find(keyword) {
+                // Word boundary check
+                let before_ok = idx == 0
+                    || !lower.as_bytes()[idx - 1].is_ascii_alphanumeric();
+                let after_ok = idx + keyword.len() >= lower.len()
+                    || !lower.as_bytes()[idx + keyword.len()].is_ascii_alphanumeric();
+                if before_ok && after_ok && !existing_values.contains(&keyword.to_string()) {
+                    entities.push(
+                        Entity::new("nix_concept", keyword, idx, idx + keyword.len())
+                            .with_confidence(0.85)
+                            .with_metadata("category", category),
+                    );
+                }
+            }
+        }
+
         entities
     }
 
@@ -404,5 +450,29 @@ mod tests {
 
         let result = plugin.validate_input("{ foo = 1; bar = 2");
         assert!(!result.valid);
+    }
+
+    #[test]
+    fn test_natural_language_entity_extraction() {
+        let plugin = NixOsPlugin;
+
+        // Natural language query that previously returned 0 entities
+        let entities = plugin.extract_entities("How do I enable nginx in NixOS?");
+        assert!(
+            entities.iter().any(|e| e.value == "nginx"),
+            "Should extract 'nginx' as entity. Got: {:?}", entities,
+        );
+
+        let entities = plugin.extract_entities("How to configure postgresql?");
+        assert!(
+            entities.iter().any(|e| e.value == "postgresql"),
+            "Should extract 'postgresql' as entity. Got: {:?}", entities,
+        );
+
+        let entities = plugin.extract_entities("Enable the firewall in my NixOS config");
+        assert!(
+            entities.iter().any(|e| e.value == "firewall"),
+            "Should extract 'firewall' as entity. Got: {:?}", entities,
+        );
     }
 }

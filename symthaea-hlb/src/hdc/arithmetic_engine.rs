@@ -255,6 +255,63 @@ impl Polynomial {
             self.coefficients.len() - 1
         }
     }
+
+    /// Compute the formal derivative d/dx of this polynomial.
+    ///
+    /// Coefficients `[a₀, a₁, a₂, a₃, ...]` become `[a₁, 2a₂, 3a₃, ...]`.
+    pub fn derivative(&self) -> Self {
+        if self.coefficients.len() <= 1 {
+            return Self::new(vec![0.0]);
+        }
+        let coeffs: Vec<f64> = self.coefficients.iter()
+            .enumerate()
+            .skip(1)
+            .map(|(i, &c)| c * i as f64)
+            .collect();
+        Self::new(coeffs)
+    }
+
+    /// Format as human-readable polynomial string (e.g., "2x + 3x^2").
+    pub fn to_string_pretty(&self) -> String {
+        if self.coefficients.is_empty() || self.coefficients.iter().all(|&c| c == 0.0) {
+            return "0".to_string();
+        }
+
+        let mut terms = Vec::new();
+        for (i, &coeff) in self.coefficients.iter().enumerate() {
+            if coeff == 0.0 {
+                continue;
+            }
+            let term = match i {
+                0 => format!("{}", coeff),
+                1 => {
+                    if coeff == 1.0 {
+                        "x".to_string()
+                    } else if coeff == -1.0 {
+                        "-x".to_string()
+                    } else {
+                        format!("{}x", coeff)
+                    }
+                }
+                _ => {
+                    if coeff == 1.0 {
+                        format!("x^{}", i)
+                    } else if coeff == -1.0 {
+                        format!("-x^{}", i)
+                    } else {
+                        format!("{}x^{}", coeff, i)
+                    }
+                }
+            };
+            terms.push(term);
+        }
+
+        if terms.is_empty() {
+            "0".to_string()
+        } else {
+            terms.join(" + ").replace(" + -", " - ")
+        }
+    }
 }
 
 #[cfg(test)]
@@ -281,5 +338,40 @@ mod tests {
         // 2 + 3x + x^2
         let poly = Polynomial::new(vec![2.0, 3.0, 1.0]);
         assert!((poly.evaluate(2.0) - 12.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_polynomial_derivative() {
+        // x^2 → 2x
+        let poly = Polynomial::new(vec![0.0, 0.0, 1.0]);
+        let deriv = poly.derivative();
+        assert_eq!(deriv.coefficients.len(), 1);
+        assert!((deriv.coefficients[0] - 2.0).abs() < 1e-10);
+        assert!(deriv.to_string_pretty().contains("2x"));
+
+        // 3 + 2x + 5x^2 → 2 + 10x
+        let poly2 = Polynomial::new(vec![3.0, 2.0, 5.0]);
+        let deriv2 = poly2.derivative();
+        assert_eq!(deriv2.coefficients.len(), 2);
+        assert!((deriv2.coefficients[0] - 2.0).abs() < 1e-10);
+        assert!((deriv2.coefficients[1] - 10.0).abs() < 1e-10);
+
+        // Constant → 0
+        let constant = Polynomial::new(vec![42.0]);
+        let deriv_c = constant.derivative();
+        assert_eq!(deriv_c.coefficients.len(), 1);
+        assert!((deriv_c.coefficients[0]).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_polynomial_pretty_print() {
+        let poly = Polynomial::new(vec![0.0, 0.0, 1.0]); // x^2
+        assert_eq!(poly.to_string_pretty(), "x^2");
+
+        let poly2 = Polynomial::new(vec![3.0, 2.0, 5.0]); // 3 + 2x + 5x^2
+        let s = poly2.to_string_pretty();
+        assert!(s.contains("3"));
+        assert!(s.contains("2x"));
+        assert!(s.contains("5x^2"));
     }
 }
