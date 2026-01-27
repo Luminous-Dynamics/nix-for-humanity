@@ -12,6 +12,7 @@ use crate::language::{
     ConsciousnessLanguageCore, ConsciousnessLanguageConfig,
     LLMOrgan, LLMOrganConfig,
     llm_backend,
+    PluginRegistry,
 };
 use crate::mind::{ContinuousMind, MindConfig, StructuredThought, ConstraintType, EpistemicStatus};
 #[cfg(feature = "magi_loop")]
@@ -116,6 +117,8 @@ pub struct Symthaea {
     dyad_calculator: PhiDyadCalculator,
     /// Recent AI states for dyad computation (ring buffer).
     recent_ai_states: Vec<symthaea_core::hdc::unified_hv::ContinuousHV>,
+    /// Domain plugin registry for multi-domain awareness.
+    plugin_registry: PluginRegistry,
     /// Brier Score calibration tracker for epistemic calibration.
     #[cfg(feature = "magi_loop")]
     calibration: BrierScoreTracker,
@@ -154,6 +157,14 @@ impl Symthaea {
         let backend = llm_backend::default_backend();
         let llm = LLMOrgan::with_backend(llm_config, backend);
 
+        // Initialize plugin registry with all built-in domain plugins
+        let plugin_registry = PluginRegistry::with_builtins();
+        tracing::info!(
+            target: "symthaea::init",
+            plugins = ?plugin_registry.list(),
+            "Domain plugin registry initialized with built-in plugins"
+        );
+
         Ok(Self {
             mind,
             language,
@@ -165,6 +176,7 @@ impl Symthaea {
             trajectory: RelationshipTrajectory::default(),
             dyad_calculator: PhiDyadCalculator::new(),
             recent_ai_states: Vec::new(),
+            plugin_registry,
             #[cfg(feature = "magi_loop")]
             calibration: BrierScoreTracker::with_defaults(),
         })
@@ -205,6 +217,8 @@ impl Symthaea {
             ..LLMOrganConfig::default()
         }, backend);
 
+        let plugin_registry = PluginRegistry::with_builtins();
+
         Ok(Self {
             mind,
             language,
@@ -216,6 +230,7 @@ impl Symthaea {
             trajectory: state.trajectory,
             dyad_calculator: PhiDyadCalculator::new(),
             recent_ai_states: state.recent_ai_states,
+            plugin_registry,
             #[cfg(feature = "magi_loop")]
             calibration: BrierScoreTracker::with_defaults(),
         })
@@ -256,6 +271,22 @@ impl Symthaea {
         let input_embedding = self.text_to_hv(content);
         // Use perceive_text to enable HDC-based intent classification
         self.mind.perceive_text(content, input_embedding.clone());
+
+        // Domain detection via plugin registry
+        let detected_domain = self.plugin_registry.detect_domain(content).to_string();
+        let domain_entities = if let Some(plugin) = self.plugin_registry.get(&detected_domain) {
+            plugin.extract_entities(content)
+        } else {
+            Vec::new()
+        };
+        if !domain_entities.is_empty() {
+            tracing::debug!(
+                target: "symthaea::broca",
+                domain = %detected_domain,
+                entities = domain_entities.len(),
+                "Domain plugin detected"
+            );
+        }
         let phase1_duration = phase1_start.elapsed();
 
         // ====================================================================
@@ -420,6 +451,8 @@ impl Symthaea {
             relation_mode = ?thought.relation_mode,
             trust = thought.trust,
             fidelity_verified = translation_verified,
+            detected_domain = %detected_domain,
+            domain_entities = domain_entities.len(),
             phase1_perception_us = phase1_duration.as_micros(),
             phase2_cognition_us = phase2_duration.as_micros(),
             phase3_extraction_us = phase3_duration.as_micros(),
