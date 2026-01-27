@@ -15,6 +15,7 @@ use crate::language::{
     PluginRegistry,
 };
 use crate::mind::{ContinuousMind, MindConfig, StructuredThought, DomainContext, ConstraintType, EpistemicStatus};
+use crate::mind::structured_thought::{EpistemicCube, ETier, NTier};
 #[cfg(feature = "magi_loop")]
 use crate::mind::SemanticIntent;
 use crate::partnership::{
@@ -317,19 +318,30 @@ impl Symthaea {
             let entities: Vec<(String, String, f64)> = domain_entities.iter()
                 .map(|e| (e.entity_type.clone(), e.value.clone(), e.confidence))
                 .collect();
-            let computed_answer = self.plugin_registry.get(&detected_domain)
+            let computed_result = self.plugin_registry.get(&detected_domain)
                 .and_then(|p| p.compute(content, &domain_entities));
+
+            let (computed_answer, cube, domain_phi) = match computed_result {
+                Some(cr) => (Some(cr.answer), Some(cr.cube), Some(cr.phi)),
+                None => (None, None, None),
+            };
+
             thought.domain_context = Some(DomainContext {
                 domain: detected_domain.clone(),
                 entities,
                 computed_answer,
+                cube,
+                phi: domain_phi,
             });
         }
 
-        // If a computed answer exists, upgrade epistemic status to Certain
-        if thought.domain_context.as_ref().map_or(false, |c| c.computed_answer.is_some()) {
-            thought.epistemic_status = EpistemicStatus::Certain;
-            thought.semantic_intent = crate::mind::SemanticIntent::Answer;
+        // Derive epistemic status from cube (principled 3D mapping)
+        // instead of crude "computed_answer exists → Certain" override
+        if let Some(ref ctx) = thought.domain_context {
+            if let Some(ref cube) = ctx.cube {
+                thought.epistemic_status = Self::cube_to_epistemic_status(cube);
+                thought.semantic_intent = crate::mind::SemanticIntent::Answer;
+            }
         }
 
         // ====================================================================
@@ -345,25 +357,36 @@ impl Symthaea {
         // Adjust the epistemic confidence using learned calibration data.
         // If the system has been overconfident in a domain, reduce confidence.
         // If underconfident, increase it. This closes the MAGI calibration loop.
+        //
+        // BYPASS: Axiomatic claims (N3) are not subject to calibration.
+        // Mathematical truths like 2+2=4 are certain by definition — no amount
+        // of historical miscalibration should downgrade them.
         #[cfg(feature = "magi_loop")]
         {
-            let domain = Self::map_intent_to_domain(&thought.semantic_intent);
-            let raw_confidence = Self::epistemic_to_confidence(&thought.epistemic_status);
-            let adjusted = self.calibration.adjust_confidence(domain, raw_confidence);
+            let skip_calibration = thought.domain_context
+                .as_ref()
+                .and_then(|c| c.cube.as_ref())
+                .map_or(false, |cube| cube.n == NTier::N3);
 
-            // If calibration significantly changed confidence, update epistemic status
-            let adjusted_status = Self::confidence_to_epistemic(adjusted);
-            if adjusted_status != thought.epistemic_status {
-                tracing::debug!(
-                    target: "symthaea::broca::calibration",
-                    original_status = ?thought.epistemic_status,
-                    adjusted_status = ?adjusted_status,
-                    raw_confidence = raw_confidence,
-                    adjusted_confidence = adjusted,
-                    domain = ?domain,
-                    "Calibration adjusted epistemic status"
-                );
-                thought.epistemic_status = adjusted_status;
+            if !skip_calibration {
+                let domain = Self::map_intent_to_domain(&thought.semantic_intent);
+                let raw_confidence = Self::epistemic_to_confidence(&thought.epistemic_status);
+                let adjusted = self.calibration.adjust_confidence(domain, raw_confidence);
+
+                // If calibration significantly changed confidence, update epistemic status
+                let adjusted_status = Self::confidence_to_epistemic(adjusted);
+                if adjusted_status != thought.epistemic_status {
+                    tracing::debug!(
+                        target: "symthaea::broca::calibration",
+                        original_status = ?thought.epistemic_status,
+                        adjusted_status = ?adjusted_status,
+                        raw_confidence = raw_confidence,
+                        adjusted_confidence = adjusted,
+                        domain = ?domain,
+                        "Calibration adjusted epistemic status"
+                    );
+                    thought.epistemic_status = adjusted_status;
+                }
             }
         }
 
@@ -770,6 +793,31 @@ impl Symthaea {
     // ========================================================================
     // Private helpers
     // ========================================================================
+
+    /// Map an EpistemicCube to an EpistemicStatus using principled 3D reasoning.
+    ///
+    /// This replaces the crude `computed_answer → Certain` override with a
+    /// mapping grounded in the Mycelix Epistemic Charter v2.0:
+    ///
+    /// - E4/E3 (reproducible/peer-verified): Certain
+    /// - E2 (verifiable against docs): Probable
+    /// - E1 (testimonial): Probable if normatively backed (N >= N1), else Uncertain
+    /// - E0 (opinion): Uncertain — don't override existing assessment
+    fn cube_to_epistemic_status(cube: &EpistemicCube) -> EpistemicStatus {
+        match cube.e {
+            ETier::E4 | ETier::E3 => EpistemicStatus::Certain,
+            ETier::E2 => EpistemicStatus::Probable,
+            ETier::E1 => {
+                // Testimonial evidence: Probable if normatively backed
+                if cube.n >= NTier::N1 {
+                    EpistemicStatus::Probable
+                } else {
+                    EpistemicStatus::Uncertain
+                }
+            }
+            ETier::E0 => EpistemicStatus::Uncertain,
+        }
+    }
 
     /// Convert text to a RealHV embedding using simple hash-based encoding.
     fn text_to_hv(&self, text: &str) -> RealHV {

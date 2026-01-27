@@ -50,6 +50,12 @@ Never claim certainty when the structured thought indicates uncertainty.
    - If COMPUTED_ANSWER is present, use it as the PRIMARY factual content
      of your response. This value was computed deterministically by Rust
      and is guaranteed correct. Present it naturally but faithfully.
+
+8. EPISTEMIC_CUBE: If present, this classifies the claim's epistemic nature:
+   - E-Axis: How verifiable (E0=opinion, E4=reproducible proof)
+   - N-Axis: How binding (N0=personal, N3=axiomatic truth like math)
+   - M-Axis: How permanent (M0=ephemeral, M3=foundational)
+   Claims at (E4, N3, M3) are mathematical certainties — present them as fact.
 "#;
 
 /// Configuration for LLM organ

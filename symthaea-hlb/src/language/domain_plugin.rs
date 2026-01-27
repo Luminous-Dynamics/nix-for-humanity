@@ -49,6 +49,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use crate::mind::structured_thought::EpistemicCube;
+
 // ============================================================================
 // CORE TYPES
 // ============================================================================
@@ -263,6 +265,26 @@ impl ValidationResult {
 }
 
 // ============================================================================
+// COMPUTED RESULT
+// ============================================================================
+
+/// Rich metadata returned by a domain plugin's `compute()` method.
+///
+/// Carries the deterministic answer along with epistemic classification
+/// and proof metadata for principled epistemic status derivation.
+#[derive(Debug, Clone)]
+pub struct ComputedResult {
+    /// The deterministic answer string (e.g., "2 + 2 = 4")
+    pub answer: String,
+    /// 3D epistemic classification from the Mycelix Epistemic Charter
+    pub cube: EpistemicCube,
+    /// Φ (integrated information) from the HDC proof
+    pub phi: f64,
+    /// Whether a formal proof is available for this result
+    pub proof_available: bool,
+}
+
+// ============================================================================
 // DOMAIN PLUGIN TRAIT
 // ============================================================================
 
@@ -374,11 +396,13 @@ pub trait DomainPlugin: Send + Sync {
     ///
     /// Domain plugins can override this to provide Rust-computed answers
     /// that bypass LLM generation entirely (e.g., arithmetic results).
+    /// Returns a `ComputedResult` carrying the answer, epistemic cube
+    /// classification, Φ value, and proof availability.
     ///
     /// # Returns
-    /// `Some(answer_string)` if a deterministic answer was computed,
+    /// `Some(ComputedResult)` if a deterministic answer was computed,
     /// `None` if the query requires LLM translation.
-    fn compute(&self, _input: &str, _entities: &[Entity]) -> Option<String> {
+    fn compute(&self, _input: &str, _entities: &[Entity]) -> Option<ComputedResult> {
         None
     }
 }

@@ -13,8 +13,101 @@
 //! - Verifiable outputs (can check if LLM followed structured thought)
 //! - Energy efficient (CPU reasoning, LLM only for fluency)
 
+use std::fmt;
 use serde::{Deserialize, Serialize};
 use symthaea_core::hdc::relational_consciousness::{RelationMode, RelationshipStage};
+
+// ============================================================================
+// EPISTEMIC CUBE: 3-axis classification from Mycelix Epistemic Charter v2.0
+// ============================================================================
+
+/// Empirical axis: how verifiable is the claim?
+///
+/// E0 (opinion) → E4 (publicly reproducible proof)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum ETier { E0, E1, E2, E3, E4 }
+
+/// Normative axis: how binding is the claim?
+///
+/// N0 (personal) → N3 (axiomatic truth like math)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum NTier { N0, N1, N2, N3 }
+
+/// Materiality axis: how permanent is the claim?
+///
+/// M0 (ephemeral) → M3 (foundational)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum MTier { M0, M1, M2, M3 }
+
+impl fmt::Display for ETier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::E0 => write!(f, "E0"),
+            Self::E1 => write!(f, "E1"),
+            Self::E2 => write!(f, "E2"),
+            Self::E3 => write!(f, "E3"),
+            Self::E4 => write!(f, "E4"),
+        }
+    }
+}
+
+impl fmt::Display for NTier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::N0 => write!(f, "N0"),
+            Self::N1 => write!(f, "N1"),
+            Self::N2 => write!(f, "N2"),
+            Self::N3 => write!(f, "N3"),
+        }
+    }
+}
+
+impl fmt::Display for MTier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::M0 => write!(f, "M0"),
+            Self::M1 => write!(f, "M1"),
+            Self::M2 => write!(f, "M2"),
+            Self::M3 => write!(f, "M3"),
+        }
+    }
+}
+
+/// 3D epistemic classification from the Mycelix Epistemic Charter v2.0.
+///
+/// Every claim is located in a cube with three axes:
+/// - **E-Axis (Empirical)**: E0 (opinion) → E4 (publicly reproducible)
+/// - **N-Axis (Normative)**: N0 (personal) → N3 (axiomatic)
+/// - **M-Axis (Materiality)**: M0 (ephemeral) → M3 (foundational)
+///
+/// Example: "2 + 2 = 4" is **(E4, N3, M3)** — the highest form of truth.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EpistemicCube {
+    pub e: ETier,
+    pub n: NTier,
+    pub m: MTier,
+}
+
+impl EpistemicCube {
+    /// Human-readable rationale string for the cube classification.
+    pub fn display_rationale(&self) -> &'static str {
+        match (self.e, self.n, self.m) {
+            (ETier::E4, NTier::N3, MTier::M3) => "publicly reproducible, axiomatic, foundational",
+            (ETier::E4, NTier::N3, _) => "publicly reproducible, axiomatic",
+            (ETier::E4, _, _) => "publicly reproducible",
+            (ETier::E3, _, _) => "peer-verified",
+            (ETier::E2, _, _) => "verifiable against documentation",
+            (ETier::E1, _, _) => "testimonial evidence",
+            (ETier::E0, _, _) => "opinion or unverified",
+        }
+    }
+}
+
+impl fmt::Display for EpistemicCube {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {}, {})", self.e, self.n, self.m)
+    }
+}
 
 /// What the mind concluded about how to respond.
 ///
@@ -157,6 +250,10 @@ pub struct DomainContext {
     pub entities: Vec<(String, String, f64)>,
     /// Deterministic Rust-computed answer, if available
     pub computed_answer: Option<String>,
+    /// 3D epistemic classification from the Mycelix Epistemic Charter
+    pub cube: Option<EpistemicCube>,
+    /// Φ (integrated information) from HDC proof, if available
+    pub phi: Option<f64>,
 }
 
 /// Structured data that may need to be incorporated.
@@ -361,6 +458,12 @@ impl StructuredThought {
             if let Some(ref answer) = ctx.computed_answer {
                 prompt.push_str(&format!("COMPUTED_ANSWER: {}\n", answer));
             }
+            if let Some(ref cube) = ctx.cube {
+                prompt.push_str(&format!(
+                    "EPISTEMIC_CUBE: {} — {}\n",
+                    cube, cube.display_rationale()
+                ));
+            }
         }
 
         // Original input
@@ -482,6 +585,8 @@ mod tests {
                 ("operator".to_string(), "+".to_string(), 0.9),
             ],
             computed_answer: None,
+            cube: None,
+            phi: None,
         });
 
         let prompt = thought.to_translation_prompt();
@@ -499,6 +604,8 @@ mod tests {
             domain: "mathematics".to_string(),
             entities: vec![],
             computed_answer: Some("2 + 2 = 4".to_string()),
+            cube: None,
+            phi: None,
         });
 
         let prompt = thought.to_translation_prompt();
@@ -513,11 +620,51 @@ mod tests {
             domain: "generic".to_string(),
             entities: vec![],
             computed_answer: None,
+            cube: None,
+            phi: None,
         });
 
         let prompt = thought.to_translation_prompt();
         assert!(!prompt.contains("DOMAIN:"));
         assert!(!prompt.contains("ENTITIES:"));
         assert!(!prompt.contains("COMPUTED_ANSWER"));
+    }
+
+    #[test]
+    fn test_epistemic_cube_in_prompt() {
+        let mut thought = StructuredThought::default();
+        thought.domain_context = Some(DomainContext {
+            domain: "mathematics".to_string(),
+            entities: vec![],
+            computed_answer: Some("2 + 2 = 4".to_string()),
+            cube: Some(EpistemicCube {
+                e: ETier::E4,
+                n: NTier::N3,
+                m: MTier::M3,
+            }),
+            phi: Some(0.95),
+        });
+
+        let prompt = thought.to_translation_prompt();
+        assert!(prompt.contains("EPISTEMIC_CUBE: (E4, N3, M3)"));
+        assert!(prompt.contains("publicly reproducible, axiomatic, foundational"));
+    }
+
+    #[test]
+    fn test_epistemic_cube_display() {
+        let cube = EpistemicCube {
+            e: ETier::E4,
+            n: NTier::N3,
+            m: MTier::M3,
+        };
+        assert_eq!(format!("{}", cube), "(E4, N3, M3)");
+        assert_eq!(cube.display_rationale(), "publicly reproducible, axiomatic, foundational");
+    }
+
+    #[test]
+    fn test_epistemic_cube_ordering() {
+        assert!(ETier::E4 > ETier::E0);
+        assert!(NTier::N3 > NTier::N1);
+        assert!(MTier::M3 > MTier::M0);
     }
 }

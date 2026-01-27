@@ -11,10 +11,11 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use super::domain_plugin::{
-    DomainPlugin, DomainPrompts, Entity, ErrorDiagnosis as DomainErrorDiagnosis,
+    ComputedResult, DomainPlugin, DomainPrompts, Entity, ErrorDiagnosis as DomainErrorDiagnosis,
     IntentPrototypes, RiskLevel, ValidationResult,
 };
 use crate::hdc::arithmetic_engine::MathReasoningBridge;
+use crate::mind::structured_thought::{EpistemicCube, ETier, NTier, MTier};
 
 // ============================================================================
 // MATH KEYWORDS & PATTERNS
@@ -436,7 +437,14 @@ impl DomainPlugin for MathPlugin {
         actions
     }
 
-    fn compute(&self, input: &str, entities: &[Entity]) -> Option<String> {
+    fn compute(&self, input: &str, entities: &[Entity]) -> Option<ComputedResult> {
+        // All math computations are axiomatic, reproducible, and foundational
+        let math_cube = EpistemicCube {
+            e: ETier::E4,
+            n: NTier::N3,
+            m: MTier::M3,
+        };
+
         // Try arithmetic: look for (number, operator, number) pattern
         let numbers: Vec<&Entity> = entities.iter()
             .filter(|e| e.entity_type == "number")
@@ -469,7 +477,12 @@ impl DomainPlugin for MathPlugin {
                         "^" | "power" => "^",
                         other => other,
                     };
-                    return Some(format!("{} {} {} = {}", a, op_display, b, assertion.object));
+                    return Some(ComputedResult {
+                        answer: format!("{} {} {} = {}", a, op_display, b, assertion.object),
+                        cube: math_cube,
+                        phi: assertion.phi,
+                        proof_available: assertion.proof_source.is_some(),
+                    });
                 }
             }
         }
@@ -478,7 +491,12 @@ impl DomainPlugin for MathPlugin {
         let lower = input.to_lowercase();
         if lower.contains("derivative") {
             if let Some((poly_str, deriv_str)) = Self::compute_derivative_from_text(&lower) {
-                return Some(format!("d/dx [{}] = {}", poly_str, deriv_str));
+                return Some(ComputedResult {
+                    answer: format!("d/dx [{}] = {}", poly_str, deriv_str),
+                    cube: math_cube,
+                    phi: 0.0,
+                    proof_available: false,
+                });
             }
         }
 
@@ -616,8 +634,11 @@ mod tests {
         ];
         let result = plugin.compute("What is 2+2?", &entities);
         assert!(result.is_some(), "Should compute 2+2");
-        let answer = result.unwrap();
-        assert!(answer.contains("4"), "Answer should contain 4, got: {}", answer);
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("4"), "Answer should contain 4, got: {}", cr.answer);
+        assert_eq!(cr.cube.e, ETier::E4);
+        assert_eq!(cr.cube.n, NTier::N3);
+        assert_eq!(cr.cube.m, MTier::M3);
     }
 
     #[test]
@@ -630,8 +651,9 @@ mod tests {
         ];
         let result = plugin.compute("What is 10 * 5?", &entities);
         assert!(result.is_some());
-        let answer = result.unwrap();
-        assert!(answer.contains("50"), "Answer should contain 50, got: {}", answer);
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("50"), "Answer should contain 50, got: {}", cr.answer);
+        assert_eq!(cr.cube.e, ETier::E4);
     }
 
     #[test]
@@ -642,8 +664,9 @@ mod tests {
         ];
         let result = plugin.compute("What is the derivative of x^2?", &entities);
         assert!(result.is_some(), "Should compute derivative of x^2");
-        let answer = result.unwrap();
-        assert!(answer.contains("2x") || answer.contains("2*x"), "Derivative of x^2 should be 2x, got: {}", answer);
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("2x") || cr.answer.contains("2*x"), "Derivative of x^2 should be 2x, got: {}", cr.answer);
+        assert_eq!(cr.cube, EpistemicCube { e: ETier::E4, n: NTier::N3, m: MTier::M3 });
     }
 
     #[test]
