@@ -155,6 +155,13 @@ pub mod gui_bridge;
 #[cfg(feature = "api_module")]
 pub mod api;
 
+// Web Research: Epistemic verification and autonomous research (scaffolded)
+// Types-only scaffold so other modules can reference web research types.
+// Full implementation (~2,700 LOC) pending: researcher, verifier, extractor,
+// integrator, and meta_learning submodules.
+#[cfg(feature = "web_research_module")]
+pub mod web_research;
+
 // ============================================================================
 // Re-exports for Convenience
 // ============================================================================

@@ -217,6 +217,7 @@ magi_loop = []                 # MAGI Loop world-grounded prediction (recursive_
 nvml = []                      # NVIDIA Management Library for GPU monitoring
 network = []                   # Mycelix network client (real HTTP fetching)
 partnership_module = []        # Partnership module for Φ_dyad computation
+web_research_module = []       # Web research epistemic verification (scaffolded)
 
 [dev-dependencies]
 criterion = "0.5"
