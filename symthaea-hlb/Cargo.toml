@@ -42,6 +42,12 @@ petgraph = { version = "0.6", features = ["serde-1"] }
 tokenizers = { version = "0.21", optional = true }  # Tokenization for Qwen3/BGE
 safetensors = { version = "0.4", optional = true }  # Safe tensor loading
 
+# Neural Bridge v2: BGE-M3 via Candle (pure Rust ML)
+candle-core = { version = "0.8", optional = true }
+candle-nn = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
+half = { version = "2.4", optional = true }  # f16 support for GPU inference
+
 # Phase 11: Database Trinity (Deferred to Week 11+)
 # lancedb = { version = "0.4", features = ["remote"] }  # Vector database
 # duckdb = { version = "0.10", features = ["bundled"] }  # Analytical queries
@@ -186,6 +192,9 @@ embeddings = ["tokenizers", "ort", "hf-hub"]  # Qwen3/BGE text embeddings via ON
 vision = ["ort", "hf-hub"]  # SigLIP image embeddings via ONNX
 perception = ["embeddings", "vision"]  # Full multimodal perception stack
 webcam = []  # Live webcam capture for video perception
+# Neural Bridge v2: BGE-M3 via Candle (LLM as Semantic Sensor)
+neural-bridge = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub", "safetensors", "half"]
+neural-bridge-cuda = ["neural-bridge", "candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda"]
 # Database backends (deferred - compile guards only)
 qdrant = []   # Vector database for large-scale memory
 datalog = []  # Datalog reasoning engine
@@ -460,6 +469,11 @@ harness = false
 [[bench]]
 name = "ethics"
 harness = false
+
+[[bench]]
+name = "neural_bridge"
+harness = false
+required-features = ["neural-bridge"]
 
 [profile.release]
 opt-level = 3

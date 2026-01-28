@@ -3,10 +3,19 @@
 //! The primary entry point for the Symthaea consciousness system.
 //! Wraps [`ContinuousMind`] and [`ConsciousnessLanguageCore`] into a
 //! unified interface suitable for the service daemon and other consumers.
+//!
+//! ## Neural Bridge v2 Integration
+//!
+//! When compiled with `--features neural-bridge`, Symthaea uses BGE-M3 for
+//! high-quality semantic encoding (~380ms CPU, ~60-100ms GPU expected).
+//! Otherwise falls back to fast hash-based encoding (<1ms but lower quality).
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use symthaea_core::hdc::RealHV;
+
+#[cfg(feature = "neural-bridge")]
+use crate::perception::NeuralBridgeV2;
 
 use crate::language::{
     ConsciousnessLanguageCore, ConsciousnessLanguageConfig,
@@ -123,6 +132,10 @@ pub struct Symthaea {
     /// Brier Score calibration tracker for epistemic calibration.
     #[cfg(feature = "magi_loop")]
     calibration: BrierScoreTracker,
+    /// Neural Bridge v2: BGE-M3 + linear probe for high-quality semantic encoding.
+    /// When available, replaces hash-based encoding with true semantic understanding.
+    #[cfg(feature = "neural-bridge")]
+    neural_bridge: Option<NeuralBridgeV2>,
 }
 
 impl Symthaea {
@@ -166,6 +179,29 @@ impl Symthaea {
             "Domain plugin registry initialized with built-in plugins"
         );
 
+        // Try to initialize Neural Bridge v2 for high-quality semantic encoding
+        #[cfg(feature = "neural-bridge")]
+        let neural_bridge = match NeuralBridgeV2::load_default() {
+            Ok(bridge) => {
+                tracing::info!(
+                    target: "symthaea::init",
+                    encoder_dim = bridge.encoder_dim(),
+                    probe_dim = bridge.probe_output_dim(),
+                    cuda = bridge.is_cuda(),
+                    "Neural Bridge v2 initialized (BGE-M3 semantic encoding)"
+                );
+                Some(bridge)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "symthaea::init",
+                    error = %e,
+                    "Neural Bridge v2 unavailable, using hash-based encoding"
+                );
+                None
+            }
+        };
+
         Ok(Self {
             mind,
             language,
@@ -180,6 +216,8 @@ impl Symthaea {
             plugin_registry,
             #[cfg(feature = "magi_loop")]
             calibration: BrierScoreTracker::with_defaults(),
+            #[cfg(feature = "neural-bridge")]
+            neural_bridge,
         })
     }
 
@@ -220,6 +258,27 @@ impl Symthaea {
 
         let plugin_registry = PluginRegistry::with_builtins();
 
+        // Try to initialize Neural Bridge v2 on resume
+        #[cfg(feature = "neural-bridge")]
+        let neural_bridge = match NeuralBridgeV2::load_default() {
+            Ok(bridge) => {
+                tracing::info!(
+                    target: "symthaea::init",
+                    cuda = bridge.is_cuda(),
+                    "Neural Bridge v2 initialized on resume"
+                );
+                Some(bridge)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "symthaea::init",
+                    error = %e,
+                    "Neural Bridge v2 unavailable on resume"
+                );
+                None
+            }
+        };
+
         Ok(Self {
             mind,
             language,
@@ -234,6 +293,8 @@ impl Symthaea {
             plugin_registry,
             #[cfg(feature = "magi_loop")]
             calibration: BrierScoreTracker::with_defaults(),
+            #[cfg(feature = "neural-bridge")]
+            neural_bridge,
         })
     }
 
@@ -819,8 +880,37 @@ impl Symthaea {
         }
     }
 
-    /// Convert text to a RealHV embedding using simple hash-based encoding.
-    fn text_to_hv(&self, text: &str) -> RealHV {
+    /// Convert text to a RealHV embedding.
+    ///
+    /// When Neural Bridge v2 is available (feature `neural-bridge`), uses BGE-M3
+    /// for high-quality semantic encoding (~380ms CPU, cached <1ms).
+    /// Otherwise falls back to fast hash-based encoding (<1ms but lower quality).
+    fn text_to_hv(&mut self, text: &str) -> RealHV {
+        // Try Neural Bridge v2 first (if available)
+        #[cfg(feature = "neural-bridge")]
+        if let Some(ref mut bridge) = self.neural_bridge {
+            match bridge.encode_to_hdc(text) {
+                Ok(packed) => {
+                    // Convert PackedBipolar to RealHV
+                    // PackedBipolar is 16384-dim bipolar {-1, +1}, RealHV uses self.hdc_dim
+                    let bipolar = packed.to_bipolar();
+                    let mut values = vec![0.0f32; self.hdc_dim];
+                    for (i, &val) in bipolar.iter().take(self.hdc_dim).enumerate() {
+                        values[i] = val as f32;
+                    }
+                    return RealHV::from_values(values);
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "symthaea::perception",
+                        error = %e,
+                        "Neural bridge encoding failed, falling back to hash"
+                    );
+                }
+            }
+        }
+
+        // Fallback: hash-based encoding (fast but lower quality)
         let mut values = vec![0.0f32; self.hdc_dim];
         for (i, byte) in text.bytes().enumerate() {
             let idx = (byte as usize * 31 + i * 7) % self.hdc_dim;
@@ -834,6 +924,30 @@ impl Symthaea {
             }
         }
         RealHV::from_values(values)
+    }
+
+    /// Check if Neural Bridge v2 is active (high-quality semantic encoding).
+    #[cfg(feature = "neural-bridge")]
+    pub fn has_neural_bridge(&self) -> bool {
+        self.neural_bridge.is_some()
+    }
+
+    /// Check if Neural Bridge v2 is active (always false without feature).
+    #[cfg(not(feature = "neural-bridge"))]
+    pub fn has_neural_bridge(&self) -> bool {
+        false
+    }
+
+    /// Get Neural Bridge v2 statistics (cache hits, latencies, etc.).
+    #[cfg(feature = "neural-bridge")]
+    pub fn neural_bridge_stats(&self) -> Option<crate::perception::neural_bridge_v2::BridgeStats> {
+        self.neural_bridge.as_ref().map(|b| b.stats().clone())
+    }
+
+    /// Get Neural Bridge v2 statistics (always None without feature).
+    #[cfg(not(feature = "neural-bridge"))]
+    pub fn neural_bridge_stats(&self) -> Option<()> {
+        None
     }
 
     /// Compute self-loops in the cognitive graph (working memory self-similarity).
