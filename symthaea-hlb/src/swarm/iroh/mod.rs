@@ -290,6 +290,7 @@ pub struct IrohChannel {
 impl IrohChannel {
     /// Create a new channel (stub)
     #[cfg(not(feature = "swarm"))]
+    #[allow(dead_code)]
     fn new(peer_id: String) -> Self {
         Self {
             peer_id,

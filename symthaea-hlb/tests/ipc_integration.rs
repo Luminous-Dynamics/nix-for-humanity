@@ -6,8 +6,6 @@
 //! - Request batching
 //! - Heartbeat mechanism
 //! - Metrics streaming
-//!
-//! This test is only compiled with the `shell` feature enabled.
 
 #![cfg(feature = "shell")]
 
@@ -23,10 +21,13 @@ use symthaea::shell::ipc_client::{
     ShellContextData,
 };
 
-/// Test socket path
+/// Generate unique test socket path using PID, thread ID and timestamp
 fn test_socket_path() -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let pid = std::process::id();
-    PathBuf::from(format!("/tmp/symthaea-test-{}.sock", pid))
+    let counter = COUNTER.fetch_add(1, Ordering::SeqCst);
+    PathBuf::from(format!("/tmp/symthaea-test-{}-{}.sock", pid, counter))
 }
 
 /// Clean up test socket

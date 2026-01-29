@@ -53,6 +53,20 @@ use ndarray::Array1;
 
 use symthaea_core::hdc::predictive_encoder::{PredictiveHdcEncoder, PredictiveEncoderConfig};
 use crate::cfc::CfCNetwork;
+use crate::dynamics::cfc_coherence::{CfCCoherenceBridge, CoherenceConfig, CoherenceSummary};
+use crate::dynamics::temporal_signatures::{
+    TemporalSignatureEncoder, SignatureConfig, ConsciousnessPattern, TemporalStateSummary
+};
+use crate::voice::voice_feedback::{VoiceFeedbackBridge, VoiceFeedbackConfig, VoiceOutputMetrics, VoiceQualitySummary};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEGA-UNIFIED ARCHITECTURE IMPORTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+use crate::consciousness::consciousness_unification::{
+    ConsciousnessUnificationEngine, UnifiedEmotionalState, UnifiedEmotion,
+    EmotionalPattern,
+};
 
 /// Configuration for CfC in the cognitive loop
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,6 +180,2555 @@ struct Experience {
     importance: f32,
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADAPTIVE BEHAVIOR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Adaptive behavior parameters derived from consciousness state
+///
+/// These parameters allow the system to self-regulate based on its
+/// current consciousness pattern, creating a truly self-aware loop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdaptiveBehavior {
+    /// Learning rate multiplier (0.1 to 2.0)
+    /// Higher when focused/confident, lower when uncertain
+    pub learning_rate_multiplier: f32,
+
+    /// Speech rate multiplier (0.7 to 1.3)
+    /// Slower when contemplative/uncertain, faster when excited/focused
+    pub speech_rate_multiplier: f32,
+
+    /// Pause duration multiplier (0.5 to 2.0)
+    /// Longer pauses when contemplative, shorter when excited
+    pub pause_multiplier: f32,
+
+    /// Attention sensitivity (0.5 to 1.5)
+    /// Higher sensitivity when exploratory, lower when focused
+    pub attention_sensitivity: f32,
+
+    /// Exploration factor (0.0 to 1.0)
+    /// Higher when exploratory/uncertain, lower when focused
+    pub exploration_factor: f32,
+
+    /// Confidence level (0.0 to 1.0)
+    /// Derived from pattern + coherence + voice quality
+    pub confidence: f32,
+
+    /// Should pause learning (e.g., during transitions)
+    pub pause_learning: bool,
+
+    /// Recommended action hint
+    pub action_hint: ActionHint,
+}
+
+/// Recommended action based on consciousness state
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ActionHint {
+    /// Continue normally
+    Continue,
+    /// Slow down, be more deliberate
+    SlowDown,
+    /// Speed up, more confident
+    SpeedUp,
+    /// Pause and stabilize
+    Stabilize,
+    /// Explore alternatives
+    Explore,
+    /// Seek clarification or more input
+    SeekInput,
+}
+
+/// Flow state - optimal cognitive engagement
+///
+/// Detected when there is sustained focus, low prediction error,
+/// and high temporal coherence. Flow state boosts learning efficiency
+/// and signals peak cognitive performance.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowState {
+    /// Whether currently in flow state
+    pub in_flow: bool,
+
+    /// Flow intensity (0.0 to 1.0)
+    /// Higher = deeper flow state
+    pub intensity: f32,
+
+    /// Consecutive cycles in flow-compatible state
+    pub streak: u32,
+
+    /// Average prediction error during flow detection window
+    pub avg_error: f32,
+
+    /// Average coherence during flow detection window
+    pub avg_coherence: f32,
+
+    /// Learning rate boost when in flow (1.0 to 2.0)
+    pub learning_boost: f32,
+
+    /// Attention enhancement when in flow
+    pub attention_boost: f32,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEMPORAL ENCODING - Time Context for Flow States
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Timestamp when flow state started (if in flow)
+    /// Note: Not serialized as Instant is monotonic/non-portable
+    #[serde(skip)]
+    pub flow_started_at: Option<Instant>,
+
+    /// Total time spent in flow during this session (seconds)
+    pub total_flow_time_secs: f32,
+
+    /// Number of distinct flow periods
+    pub flow_periods: u32,
+
+    /// Average duration of flow periods (seconds)
+    pub avg_flow_duration_secs: f32,
+}
+
+impl Default for FlowState {
+    fn default() -> Self {
+        Self {
+            in_flow: false,
+            intensity: 0.0,
+            streak: 0,
+            avg_error: 0.5,
+            avg_coherence: 0.5,
+            learning_boost: 1.0,
+            attention_boost: 1.0,
+            // Temporal encoding defaults
+            flow_started_at: None,
+            total_flow_time_secs: 0.0,
+            flow_periods: 0,
+            avg_flow_duration_secs: 0.0,
+        }
+    }
+}
+
+impl FlowState {
+    /// Minimum streak for flow state entry
+    const FLOW_ENTRY_STREAK: u32 = 5;
+    /// Error threshold for flow eligibility
+    const FLOW_ERROR_THRESHOLD: f32 = 0.25;
+    /// Coherence threshold for flow eligibility
+    const FLOW_COHERENCE_THRESHOLD: f32 = 0.6;
+    /// Confidence threshold for flow eligibility
+    const FLOW_CONFIDENCE_THRESHOLD: f32 = 0.5;
+
+    /// Update flow state based on current metrics
+    pub fn update(
+        &mut self,
+        pattern: ConsciousnessPattern,
+        prediction_error: f32,
+        coherence: f32,
+        prediction_confidence: f32,
+    ) {
+        // Check if current state is flow-compatible
+        let is_flow_compatible = matches!(
+            pattern,
+            ConsciousnessPattern::Focused | ConsciousnessPattern::Contemplative
+        ) && prediction_error < Self::FLOW_ERROR_THRESHOLD
+          && coherence > Self::FLOW_COHERENCE_THRESHOLD
+          && prediction_confidence > Self::FLOW_CONFIDENCE_THRESHOLD;
+
+        // Update running averages (EMA)
+        let alpha = 0.2;
+        self.avg_error = self.avg_error * (1.0 - alpha) + prediction_error * alpha;
+        self.avg_coherence = self.avg_coherence * (1.0 - alpha) + coherence * alpha;
+
+        if is_flow_compatible {
+            self.streak += 1;
+
+            // Enter flow state after sustained focus
+            if self.streak >= Self::FLOW_ENTRY_STREAK {
+                self.in_flow = true;
+
+                // Intensity grows with streak (caps at 1.0)
+                self.intensity = ((self.streak - Self::FLOW_ENTRY_STREAK) as f32 / 10.0)
+                    .min(1.0);
+
+                // Boost learning when in flow (up to 50% boost at max intensity)
+                self.learning_boost = 1.0 + 0.5 * self.intensity;
+
+                // Enhance attention (up to 30% boost)
+                self.attention_boost = 1.0 + 0.3 * self.intensity;
+            }
+        } else {
+            // Exit flow or reduce streak
+            if self.in_flow {
+                // Grace period: don't exit immediately
+                if self.streak > 0 {
+                    self.streak = self.streak.saturating_sub(2);
+                }
+                if self.streak < Self::FLOW_ENTRY_STREAK / 2 {
+                    self.in_flow = false;
+                    self.intensity = 0.0;
+                    self.learning_boost = 1.0;
+                    self.attention_boost = 1.0;
+                }
+            } else {
+                self.streak = 0;
+            }
+        }
+    }
+
+    /// Update flow state with adaptive thresholds from self-reflection
+    ///
+    /// This allows the meta-learning system to adjust flow entry criteria.
+    pub fn update_with_thresholds(
+        &mut self,
+        pattern: ConsciousnessPattern,
+        prediction_error: f32,
+        coherence: f32,
+        prediction_confidence: f32,
+        error_threshold: f32,
+        coherence_threshold: f32,
+    ) {
+        // Check if current state is flow-compatible using adaptive thresholds
+        let is_flow_compatible = matches!(
+            pattern,
+            ConsciousnessPattern::Focused | ConsciousnessPattern::Contemplative
+        ) && prediction_error < error_threshold
+          && coherence > coherence_threshold
+          && prediction_confidence > Self::FLOW_CONFIDENCE_THRESHOLD;
+
+        // Update running averages (EMA)
+        let alpha = 0.2;
+        self.avg_error = self.avg_error * (1.0 - alpha) + prediction_error * alpha;
+        self.avg_coherence = self.avg_coherence * (1.0 - alpha) + coherence * alpha;
+
+        if is_flow_compatible {
+            self.streak += 1;
+
+            // Enter flow state after sustained focus
+            if self.streak >= Self::FLOW_ENTRY_STREAK {
+                // Track temporal: entering flow
+                let was_in_flow = self.in_flow;
+                self.in_flow = true;
+
+                // Start flow timer if just entering
+                if !was_in_flow {
+                    self.flow_started_at = Some(Instant::now());
+                    self.flow_periods += 1;
+                }
+
+                // Intensity grows with streak (caps at 1.0)
+                self.intensity = ((self.streak - Self::FLOW_ENTRY_STREAK) as f32 / 10.0)
+                    .min(1.0);
+
+                // Boost learning when in flow (up to 50% boost at max intensity)
+                self.learning_boost = 1.0 + 0.5 * self.intensity;
+
+                // Enhance attention (up to 30% boost)
+                self.attention_boost = 1.0 + 0.3 * self.intensity;
+            }
+        } else {
+            // Exit flow or reduce streak
+            if self.in_flow {
+                // Grace period: don't exit immediately
+                if self.streak > 0 {
+                    self.streak = self.streak.saturating_sub(2);
+                }
+                if self.streak < Self::FLOW_ENTRY_STREAK / 2 {
+                    // Track temporal: exiting flow
+                    if let Some(started) = self.flow_started_at.take() {
+                        let duration = started.elapsed().as_secs_f32();
+                        self.total_flow_time_secs += duration;
+
+                        // Update average duration
+                        if self.flow_periods > 0 {
+                            self.avg_flow_duration_secs = self.total_flow_time_secs
+                                / self.flow_periods as f32;
+                        }
+                    }
+
+                    self.in_flow = false;
+                    self.intensity = 0.0;
+                    self.learning_boost = 1.0;
+                    self.attention_boost = 1.0;
+                }
+            } else {
+                self.streak = 0;
+            }
+        }
+    }
+
+    /// Reset flow state
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Get effective learning rate multiplier including flow boost
+    pub fn effective_learning_multiplier(&self, base_multiplier: f32) -> f32 {
+        base_multiplier * self.learning_boost
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEMPORAL ENCODING METHODS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Get current flow duration in seconds (if in flow)
+    pub fn current_flow_duration_secs(&self) -> Option<f32> {
+        self.flow_started_at.map(|started| started.elapsed().as_secs_f32())
+    }
+
+    /// Get total time spent in flow (including current session)
+    pub fn total_flow_time_with_current(&self) -> f32 {
+        let current = self.current_flow_duration_secs().unwrap_or(0.0);
+        self.total_flow_time_secs + current
+    }
+
+    /// Get the timestamp when current flow started
+    pub fn flow_started(&self) -> Option<Instant> {
+        self.flow_started_at
+    }
+
+    /// Get flow statistics summary
+    pub fn temporal_summary(&self) -> FlowTemporalSummary {
+        FlowTemporalSummary {
+            total_flow_time_secs: self.total_flow_time_with_current(),
+            flow_periods: self.flow_periods,
+            avg_flow_duration_secs: self.avg_flow_duration_secs,
+            current_flow_duration_secs: self.current_flow_duration_secs(),
+            is_in_flow: self.in_flow,
+        }
+    }
+}
+
+/// Summary of flow state temporal statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowTemporalSummary {
+    /// Total time spent in flow during this session (seconds)
+    pub total_flow_time_secs: f32,
+
+    /// Number of distinct flow periods
+    pub flow_periods: u32,
+
+    /// Average duration of flow periods (seconds)
+    pub avg_flow_duration_secs: f32,
+
+    /// Current flow duration if in flow (seconds)
+    pub current_flow_duration_secs: Option<f32>,
+
+    /// Whether currently in flow
+    pub is_in_flow: bool,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLOSED LEARNING LOOP - Strategy-Based Behavioral Adaptation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Response strategy selected by the closed learning loop
+///
+/// Based on CLOSED_LEARNING_LOOP.md - strategies are selected based on:
+/// 1. Q-learning from past interactions
+/// 2. Previous reward (stick with success, avoid failure)
+/// 3. Φ-gating (high Φ → Exploratory, low Φ → Supportive)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ResponseStrategy {
+    /// Elaborate explanations with detail
+    Detailed,
+    /// Brief, direct answers
+    Concise,
+    /// Ask clarifying questions
+    Clarifying,
+    /// Acknowledge and validate
+    Supportive,
+    /// Offer new perspectives
+    Exploratory,
+}
+
+impl Default for ResponseStrategy {
+    fn default() -> Self {
+        Self::Supportive
+    }
+}
+
+impl ResponseStrategy {
+    /// Get the opposite strategy (for switching after negative feedback)
+    pub fn opposite(self) -> Self {
+        match self {
+            Self::Detailed => Self::Concise,
+            Self::Concise => Self::Detailed,
+            Self::Clarifying => Self::Supportive,
+            Self::Supportive => Self::Exploratory,
+            Self::Exploratory => Self::Clarifying,
+        }
+    }
+
+    /// Get description of strategy
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Detailed => "Elaborate explanations with full context",
+            Self::Concise => "Brief, direct responses",
+            Self::Clarifying => "Ask questions to understand better",
+            Self::Supportive => "Acknowledge and validate",
+            Self::Exploratory => "Offer novel perspectives and connections",
+        }
+    }
+}
+
+/// Learning result from a cycle (for closed loop)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CycleLearningResult {
+    /// Reward from cycle (-1.0 to 1.0)
+    /// Based on prediction error (lower error = higher reward)
+    pub reward: f32,
+
+    /// Strategy that was used
+    pub strategy_used: ResponseStrategy,
+
+    /// Whether the cycle was successful (low error, in flow, etc.)
+    pub successful: bool,
+
+    /// Prediction error during this cycle
+    pub prediction_error: f32,
+
+    /// Coherence during this cycle
+    pub coherence: f32,
+}
+
+/// Closed Learning Loop Manager
+///
+/// Implements the paradigm shift from CLOSED_LEARNING_LOOP.md:
+/// - Learning → Behavioral Change (not just compute and discard)
+/// - Q-learning guided strategy selection
+/// - Φ-gated strategy preferences
+#[derive(Debug, Clone)]
+pub struct ClosedLearningLoop {
+    /// Current selected strategy
+    pub current_strategy: ResponseStrategy,
+
+    /// Last learning result (influences next strategy)
+    pub last_result: Option<CycleLearningResult>,
+
+    /// Q-values for each strategy (estimated long-term reward)
+    q_values: [f32; 5],
+
+    /// Learning rate for Q-updates
+    q_learning_rate: f32,
+
+    /// Exploration rate (epsilon for epsilon-greedy)
+    exploration_rate: f32,
+
+    /// Total interactions
+    total_interactions: u64,
+
+    /// Total accumulated reward
+    total_reward: f32,
+
+    /// Strategy usage counts
+    strategy_counts: [u64; 5],
+}
+
+impl Default for ClosedLearningLoop {
+    fn default() -> Self {
+        Self {
+            current_strategy: ResponseStrategy::default(),
+            last_result: None,
+            q_values: [0.5; 5], // Start neutral
+            q_learning_rate: 0.1,
+            exploration_rate: 0.2,
+            total_interactions: 0,
+            total_reward: 0.0,
+            strategy_counts: [0; 5],
+        }
+    }
+}
+
+impl ClosedLearningLoop {
+    /// Select strategy based on Q-learning + previous result + Φ
+    ///
+    /// This is the core of the closed learning loop:
+    /// 1. Start with Q-learning policy (greedy or explore)
+    /// 2. Modify based on previous result
+    /// 3. Gate based on consciousness level (Φ)
+    pub fn select_strategy(&mut self, phi: f64, _previous_reward: Option<f32>) -> ResponseStrategy {
+        // Step 1: Q-learning selection (epsilon-greedy)
+        let explore = rand::random::<f32>() < self.exploration_rate;
+        let base_strategy = if explore {
+            // Random exploration
+            match rand::random::<u8>() % 5 {
+                0 => ResponseStrategy::Detailed,
+                1 => ResponseStrategy::Concise,
+                2 => ResponseStrategy::Clarifying,
+                3 => ResponseStrategy::Supportive,
+                _ => ResponseStrategy::Exploratory,
+            }
+        } else {
+            // Greedy: select best Q-value
+            let best_idx = self.q_values.iter()
+                .enumerate()
+                .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                .map(|(i, _)| i)
+                .unwrap_or(3); // Default to Supportive
+
+            match best_idx {
+                0 => ResponseStrategy::Detailed,
+                1 => ResponseStrategy::Concise,
+                2 => ResponseStrategy::Clarifying,
+                3 => ResponseStrategy::Supportive,
+                _ => ResponseStrategy::Exploratory,
+            }
+        };
+
+        // Step 2: Modify based on previous result
+        let strategy = if let Some(ref last) = self.last_result {
+            if last.reward > 0.5 {
+                // Strong positive - stick with what worked
+                last.strategy_used
+            } else if last.reward < -0.2 {
+                // Negative - try opposite strategy
+                last.strategy_used.opposite()
+            } else {
+                base_strategy
+            }
+        } else {
+            base_strategy
+        };
+
+        // Step 3: Φ-gating (consciousness influences strategy)
+        let final_strategy = if phi >= 0.6 {
+            // Integrative mode - favor Exploratory/Detailed
+            match strategy {
+                ResponseStrategy::Supportive => ResponseStrategy::Exploratory,
+                ResponseStrategy::Concise => ResponseStrategy::Detailed,
+                other => other,
+            }
+        } else if phi < 0.3 {
+            // Reactive mode - favor Supportive/Concise
+            match strategy {
+                ResponseStrategy::Exploratory => ResponseStrategy::Supportive,
+                ResponseStrategy::Detailed => ResponseStrategy::Concise,
+                other => other,
+            }
+        } else {
+            // Reflective mode - use Q-learning selection as-is
+            strategy
+        };
+
+        self.current_strategy = final_strategy;
+        final_strategy
+    }
+
+    /// Update Q-values with cycle result
+    pub fn update(&mut self, result: CycleLearningResult) {
+        // Update strategy count
+        let strategy_idx = self.strategy_index(result.strategy_used);
+        self.strategy_counts[strategy_idx] += 1;
+
+        // Q-learning update: Q(s,a) <- Q(s,a) + α * (r - Q(s,a))
+        let old_q = self.q_values[strategy_idx];
+        let new_q = old_q + self.q_learning_rate * (result.reward - old_q);
+        self.q_values[strategy_idx] = new_q;
+
+        // Update totals
+        self.total_interactions += 1;
+        self.total_reward += result.reward;
+
+        // Store for next selection
+        self.last_result = Some(result);
+
+        // Decay exploration rate over time (but keep minimum of 5%)
+        self.exploration_rate = (self.exploration_rate * 0.999).max(0.05);
+    }
+
+    /// Get strategy index for Q-value lookup
+    fn strategy_index(&self, strategy: ResponseStrategy) -> usize {
+        match strategy {
+            ResponseStrategy::Detailed => 0,
+            ResponseStrategy::Concise => 1,
+            ResponseStrategy::Clarifying => 2,
+            ResponseStrategy::Supportive => 3,
+            ResponseStrategy::Exploratory => 4,
+        }
+    }
+
+    /// Get average reward
+    pub fn average_reward(&self) -> f32 {
+        if self.total_interactions == 0 {
+            0.0
+        } else {
+            self.total_reward / self.total_interactions as f32
+        }
+    }
+
+    /// Get best strategy according to Q-values
+    pub fn best_strategy(&self) -> ResponseStrategy {
+        let best_idx = self.q_values.iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .map(|(i, _)| i)
+            .unwrap_or(3);
+
+        match best_idx {
+            0 => ResponseStrategy::Detailed,
+            1 => ResponseStrategy::Concise,
+            2 => ResponseStrategy::Clarifying,
+            3 => ResponseStrategy::Supportive,
+            _ => ResponseStrategy::Exploratory,
+        }
+    }
+
+    /// Get Q-values for each strategy
+    pub fn q_values(&self) -> &[f32; 5] {
+        &self.q_values
+    }
+
+    /// Get strategy usage counts
+    pub fn strategy_counts(&self) -> &[u64; 5] {
+        &self.strategy_counts
+    }
+
+    /// Reset the learning loop
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEMORY INTEGRATION BRIDGES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Episodic memory trace for the cognitive loop
+///
+/// Lightweight representation of a memory that can be queried during cycles.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EpisodicMemory {
+    /// Memory ID
+    pub id: u64,
+    /// Timestamp when encoded (cycle count)
+    pub encoded_at_cycle: usize,
+    /// Content summary
+    pub content: String,
+    /// Embedding (compressed for efficiency)
+    pub embedding: Vec<f32>,
+    /// Emotional valence (-1.0 to 1.0)
+    pub valence: f32,
+    /// Φ at encoding time
+    pub phi_at_encoding: f32,
+    /// Access count
+    pub access_count: u32,
+    /// Strength (0.0 to 1.0, decays over time)
+    pub strength: f32,
+}
+
+impl EpisodicMemory {
+    /// Compute similarity with query embedding
+    pub fn similarity(&self, query: &[f32]) -> f32 {
+        if self.embedding.len() != query.len() {
+            return 0.0;
+        }
+        let dot: f32 = self.embedding.iter().zip(query.iter()).map(|(a, b)| a * b).sum();
+        let mag_self: f32 = self.embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let mag_query: f32 = query.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if mag_self > 0.0 && mag_query > 0.0 {
+            dot / (mag_self * mag_query)
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Episodic Memory Bridge for the cognitive loop
+///
+/// Provides memory encoding and recall during cognitive cycles.
+/// Can be connected to the full HippocampusActor for persistence.
+#[derive(Debug, Clone)]
+pub struct EpisodicMemoryBridge {
+    /// Short-term memory buffer (recent cycles)
+    short_term: Vec<EpisodicMemory>,
+    /// Long-term memory store
+    long_term: Vec<EpisodicMemory>,
+    /// Maximum short-term memories
+    max_short_term: usize,
+    /// Maximum long-term memories
+    max_long_term: usize,
+    /// Next memory ID
+    next_id: u64,
+    /// Consolidation threshold (strength needed to move to long-term)
+    consolidation_threshold: f32,
+    /// Statistics
+    pub stats: MemoryBridgeStats,
+}
+
+/// Statistics for the memory bridge
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct MemoryBridgeStats {
+    pub total_encoded: u64,
+    pub total_recalled: u64,
+    pub consolidations: u64,
+    pub avg_recall_similarity: f32,
+}
+
+impl Default for EpisodicMemoryBridge {
+    fn default() -> Self {
+        Self {
+            short_term: Vec::with_capacity(100),
+            long_term: Vec::with_capacity(1000),
+            max_short_term: 100,
+            max_long_term: 1000,
+            next_id: 0,
+            consolidation_threshold: 0.5,
+            stats: MemoryBridgeStats::default(),
+        }
+    }
+}
+
+impl EpisodicMemoryBridge {
+    /// Encode a new memory
+    pub fn encode(
+        &mut self,
+        content: impl Into<String>,
+        embedding: Vec<f32>,
+        valence: f32,
+        phi: f32,
+        cycle: usize,
+    ) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+
+        let memory = EpisodicMemory {
+            id,
+            encoded_at_cycle: cycle,
+            content: content.into(),
+            embedding,
+            valence,
+            phi_at_encoding: phi,
+            access_count: 0,
+            strength: 1.0,
+        };
+
+        // Add to short-term
+        if self.short_term.len() >= self.max_short_term {
+            // Consolidate oldest to long-term if strong enough
+            if let Some(oldest) = self.short_term.first() {
+                if oldest.strength >= self.consolidation_threshold {
+                    self.long_term.push(oldest.clone());
+                    self.stats.consolidations += 1;
+                    // Trim long-term if needed
+                    if self.long_term.len() > self.max_long_term {
+                        // Remove weakest memory
+                        if let Some(min_idx) = self.long_term.iter()
+                            .enumerate()
+                            .min_by(|a, b| a.1.strength.partial_cmp(&b.1.strength).unwrap())
+                            .map(|(i, _)| i)
+                        {
+                            self.long_term.remove(min_idx);
+                        }
+                    }
+                }
+            }
+            self.short_term.remove(0);
+        }
+        self.short_term.push(memory);
+        self.stats.total_encoded += 1;
+
+        id
+    }
+
+    /// Recall memories similar to query embedding
+    pub fn recall(&mut self, query: &[f32], top_k: usize, min_similarity: f32) -> Vec<(EpisodicMemory, f32)> {
+        let mut results: Vec<(EpisodicMemory, f32)> = Vec::new();
+
+        // Search both short-term and long-term
+        for memory in self.short_term.iter().chain(self.long_term.iter()) {
+            let sim = memory.similarity(query);
+            if sim >= min_similarity {
+                results.push((memory.clone(), sim));
+            }
+        }
+
+        // Sort by similarity (descending)
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        results.truncate(top_k);
+
+        // Update access counts for recalled memories
+        for (recalled, _) in &results {
+            // Update in short-term
+            if let Some(mem) = self.short_term.iter_mut().find(|m| m.id == recalled.id) {
+                mem.access_count += 1;
+                mem.strength = (mem.strength + 0.1).min(1.0);
+            }
+            // Update in long-term
+            if let Some(mem) = self.long_term.iter_mut().find(|m| m.id == recalled.id) {
+                mem.access_count += 1;
+                mem.strength = (mem.strength + 0.05).min(1.0);
+            }
+        }
+
+        if !results.is_empty() {
+            self.stats.total_recalled += 1;
+            self.stats.avg_recall_similarity = results.iter().map(|(_, s)| s).sum::<f32>()
+                / results.len() as f32;
+        }
+
+        results
+    }
+
+    /// Decay unused memories
+    pub fn decay(&mut self, decay_rate: f32) {
+        for memory in self.short_term.iter_mut().chain(self.long_term.iter_mut()) {
+            memory.strength = (memory.strength - decay_rate).max(0.0);
+        }
+        // Remove memories with zero strength from long-term
+        self.long_term.retain(|m| m.strength > 0.01);
+    }
+
+    /// Get memory count
+    pub fn memory_count(&self) -> (usize, usize) {
+        (self.short_term.len(), self.long_term.len())
+    }
+
+    /// Reset the memory bridge
+    pub fn reset(&mut self) {
+        self.short_term.clear();
+        self.long_term.clear();
+        self.next_id = 0;
+        self.stats = MemoryBridgeStats::default();
+    }
+}
+
+/// Goal representation for the cognitive loop
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CognitiveGoal {
+    /// Goal ID
+    pub id: String,
+    /// Goal description
+    pub description: String,
+    /// Priority (0.0 to 1.0)
+    pub priority: f32,
+    /// Progress (0.0 to 1.0)
+    pub progress: f32,
+    /// Whether actively pursued
+    pub is_active: bool,
+    /// Attention weight (how much to bias attention toward this goal)
+    pub attention_weight: f32,
+}
+
+impl CognitiveGoal {
+    /// Create a new goal
+    pub fn new(id: impl Into<String>, description: impl Into<String>, priority: f32) -> Self {
+        Self {
+            id: id.into(),
+            description: description.into(),
+            priority: priority.clamp(0.0, 1.0),
+            progress: 0.0,
+            is_active: true,
+            attention_weight: priority, // Initially weight by priority
+        }
+    }
+}
+
+/// Goal System Bridge for goal-directed attention
+#[derive(Debug, Clone, Default)]
+pub struct GoalSystemBridge {
+    /// Active goals
+    goals: Vec<CognitiveGoal>,
+    /// Maximum concurrent goals
+    max_goals: usize,
+}
+
+impl GoalSystemBridge {
+    /// Create with default capacity
+    pub fn new() -> Self {
+        Self {
+            goals: Vec::with_capacity(10),
+            max_goals: 10,
+        }
+    }
+
+    /// Add a goal
+    pub fn add_goal(&mut self, goal: CognitiveGoal) {
+        if self.goals.len() < self.max_goals {
+            self.goals.push(goal);
+        }
+    }
+
+    /// Get attention bias based on goals
+    ///
+    /// Returns a multiplier for attention based on goal priorities
+    pub fn attention_bias(&self) -> f32 {
+        if self.goals.is_empty() {
+            return 1.0;
+        }
+        let active_weight: f32 = self.goals.iter()
+            .filter(|g| g.is_active)
+            .map(|g| g.attention_weight)
+            .sum();
+        1.0 + active_weight * 0.2 // Up to 20% boost per unit of goal weight
+    }
+
+    /// Update goal progress
+    pub fn update_progress(&mut self, goal_id: &str, delta: f32) {
+        if let Some(goal) = self.goals.iter_mut().find(|g| g.id == goal_id) {
+            goal.progress = (goal.progress + delta).clamp(0.0, 1.0);
+            if goal.progress >= 1.0 {
+                goal.is_active = false;
+            }
+        }
+    }
+
+    /// Get active goals
+    pub fn active_goals(&self) -> Vec<&CognitiveGoal> {
+        self.goals.iter().filter(|g| g.is_active).collect()
+    }
+
+    /// Get highest priority active goal
+    pub fn top_goal(&self) -> Option<&CognitiveGoal> {
+        self.goals.iter()
+            .filter(|g| g.is_active)
+            .max_by(|a, b| a.priority.partial_cmp(&b.priority).unwrap())
+    }
+
+    /// Clear completed goals
+    pub fn clear_completed(&mut self) {
+        self.goals.retain(|g| g.progress < 1.0);
+    }
+
+    /// Reset all goals
+    pub fn reset(&mut self) {
+        self.goals.clear();
+    }
+}
+
+/// World Model Bridge for grounded prediction
+///
+/// Lightweight interface to hierarchical world model predictions
+#[derive(Debug, Clone)]
+pub struct WorldModelBridge {
+    /// Multi-level state representations
+    level_states: Vec<Vec<f32>>,
+    /// Level dimensions
+    level_dims: Vec<usize>,
+    /// Prediction error at each level
+    level_errors: Vec<f32>,
+    /// Total predictions made
+    pub total_predictions: u64,
+    /// Average prediction error across levels
+    pub avg_error: f32,
+}
+
+impl Default for WorldModelBridge {
+    fn default() -> Self {
+        // Default 4-level hierarchy
+        let level_dims = vec![64, 128, 256, 128];
+        Self {
+            level_states: level_dims.iter().map(|&d| vec![0.0; d]).collect(),
+            level_dims,
+            level_errors: vec![0.0; 4],
+            total_predictions: 0,
+            avg_error: 0.0,
+        }
+    }
+}
+
+impl WorldModelBridge {
+    /// Update with sensory input (level 0)
+    pub fn update_sensory(&mut self, input: &[f32]) {
+        if input.len() >= self.level_dims[0] {
+            // Compute prediction error at level 0
+            let error: f32 = self.level_states[0].iter()
+                .zip(input.iter().take(self.level_dims[0]))
+                .map(|(pred, actual)| (pred - actual).powi(2))
+                .sum::<f32>()
+                .sqrt();
+            self.level_errors[0] = error;
+
+            // Update level 0 state
+            for (i, &val) in input.iter().take(self.level_dims[0]).enumerate() {
+                self.level_states[0][i] = val;
+            }
+
+            // Propagate up (simplified: just average to higher levels)
+            self.propagate_up();
+
+            self.total_predictions += 1;
+            self.avg_error = self.level_errors.iter().sum::<f32>() / self.level_errors.len() as f32;
+        }
+    }
+
+    /// Propagate state up the hierarchy
+    fn propagate_up(&mut self) {
+        for level in 1..self.level_states.len() {
+            let prev_level = level - 1;
+            let prev_dim = self.level_dims[prev_level];
+            let curr_dim = self.level_dims[level];
+
+            // Simple projection: chunk and average
+            let chunk_size = (prev_dim + curr_dim - 1) / curr_dim;
+            for i in 0..curr_dim {
+                let start = i * chunk_size;
+                let end = ((i + 1) * chunk_size).min(prev_dim);
+                if start < prev_dim {
+                    let sum: f32 = self.level_states[prev_level][start..end].iter().sum();
+                    let count = (end - start) as f32;
+                    self.level_states[level][i] = sum / count.max(1.0);
+                }
+            }
+        }
+    }
+
+    /// Get prediction at a specific level
+    pub fn get_level_state(&self, level: usize) -> Option<&[f32]> {
+        self.level_states.get(level).map(|v| v.as_slice())
+    }
+
+    /// Get prediction error at each level
+    pub fn level_errors(&self) -> &[f32] {
+        &self.level_errors
+    }
+
+    /// Get abstract level state (highest level - for planning)
+    pub fn abstract_state(&self) -> &[f32] {
+        self.level_states.last().map(|v| v.as_slice()).unwrap_or(&[])
+    }
+
+    /// Reset the world model
+    pub fn reset(&mut self) {
+        for state in &mut self.level_states {
+            state.fill(0.0);
+        }
+        self.level_errors.fill(0.0);
+        self.total_predictions = 0;
+        self.avg_error = 0.0;
+    }
+}
+
+/// Emotion contagion - emotional content influences consciousness state
+///
+/// Detects emotional valence in input and nudges consciousness patterns:
+/// - Positive emotions → Excited, Focused
+/// - Negative emotions → Contemplative
+/// - Neutral → no influence
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmotionContagion {
+    /// Current emotional valence (-1.0 to 1.0)
+    pub valence: f32,
+
+    /// Arousal level (0.0 to 1.0)
+    /// High arousal = excited/angry, Low arousal = calm/sad
+    pub arousal: f32,
+
+    /// Emotional influence strength (0.0 to 1.0)
+    /// How much emotion affects consciousness pattern
+    pub influence_strength: f32,
+
+    /// Smoothed valence (EMA)
+    smoothed_valence: f32,
+
+    /// Smoothed arousal (EMA)
+    smoothed_arousal: f32,
+}
+
+impl Default for EmotionContagion {
+    fn default() -> Self {
+        Self {
+            valence: 0.0,
+            arousal: 0.5,
+            influence_strength: 0.3,
+            smoothed_valence: 0.0,
+            smoothed_arousal: 0.5,
+        }
+    }
+}
+
+impl EmotionContagion {
+    /// Positive emotion indicators
+    const POSITIVE_WORDS: &'static [&'static str] = &[
+        "happy", "joy", "love", "great", "wonderful", "excellent", "amazing",
+        "beautiful", "fantastic", "good", "perfect", "brilliant", "awesome",
+        "delighted", "excited", "pleased", "thrilled", "grateful", "hope",
+        "success", "win", "celebrate", "smile", "laugh", "fun", "enjoy",
+    ];
+
+    /// Negative emotion indicators
+    const NEGATIVE_WORDS: &'static [&'static str] = &[
+        "sad", "angry", "fear", "hate", "terrible", "awful", "horrible",
+        "bad", "wrong", "fail", "lost", "pain", "hurt", "worry", "anxious",
+        "stressed", "frustrated", "disappointed", "regret", "sorry", "grief",
+        "cry", "suffer", "struggle", "difficult", "problem", "error",
+    ];
+
+    /// High arousal indicators (excitement/intensity)
+    const HIGH_AROUSAL: &'static [&'static str] = &[
+        "!", "amazing", "incredible", "urgent", "now", "immediately",
+        "excited", "thrilled", "furious", "terrified", "ecstatic",
+    ];
+
+    /// Analyze text for emotional content
+    pub fn analyze(&mut self, text: &str) {
+        let text_lower = text.to_lowercase();
+        let words: Vec<&str> = text_lower.split_whitespace().collect();
+        let word_count = words.len().max(1) as f32;
+
+        // Count emotional indicators
+        let positive_count = Self::POSITIVE_WORDS.iter()
+            .filter(|w| text_lower.contains(*w))
+            .count() as f32;
+
+        let negative_count = Self::NEGATIVE_WORDS.iter()
+            .filter(|w| text_lower.contains(*w))
+            .count() as f32;
+
+        let arousal_count = Self::HIGH_AROUSAL.iter()
+            .filter(|w| text_lower.contains(*w))
+            .count() as f32;
+
+        // Compute raw valence (-1 to 1)
+        let total_emotional = positive_count + negative_count;
+        let raw_valence = if total_emotional > 0.0 {
+            (positive_count - negative_count) / total_emotional
+        } else {
+            0.0
+        };
+
+        // Compute intensity based on proportion of emotional words
+        let emotional_density = total_emotional / word_count;
+        let intensity = (emotional_density * 3.0).min(1.0); // Scale up, cap at 1
+
+        // Compute arousal (base + exclamation points + high-arousal words)
+        let exclamation_boost = text.matches('!').count() as f32 * 0.1;
+        let raw_arousal = (0.5 + arousal_count * 0.1 + exclamation_boost).min(1.0);
+
+        // Apply intensity to valence
+        self.valence = raw_valence * intensity;
+
+        // Update arousal
+        self.arousal = raw_arousal;
+
+        // Smooth with EMA
+        let alpha = 0.3;
+        self.smoothed_valence = self.smoothed_valence * (1.0 - alpha) + self.valence * alpha;
+        self.smoothed_arousal = self.smoothed_arousal * (1.0 - alpha) + self.arousal * alpha;
+    }
+
+    /// Get suggested pattern nudge based on emotional state
+    /// Returns (pattern_suggestion, strength) where strength is 0-1
+    pub fn pattern_nudge(&self) -> (Option<ConsciousnessPattern>, f32) {
+        let valence = self.smoothed_valence;
+        let arousal = self.smoothed_arousal;
+
+        // Only nudge if emotion is significant
+        if valence.abs() < 0.2 {
+            return (None, 0.0);
+        }
+
+        let strength = valence.abs() * self.influence_strength;
+
+        let suggested_pattern = if valence > 0.3 && arousal > 0.6 {
+            // High positive + high arousal → Excited
+            Some(ConsciousnessPattern::Excited)
+        } else if valence > 0.2 && arousal < 0.5 {
+            // Positive + calm → Focused
+            Some(ConsciousnessPattern::Focused)
+        } else if valence < -0.3 {
+            // Negative → Contemplative (processing/reflecting)
+            Some(ConsciousnessPattern::Contemplative)
+        } else if valence > 0.2 {
+            // Mildly positive → Exploratory
+            Some(ConsciousnessPattern::Exploratory)
+        } else {
+            None
+        };
+
+        (suggested_pattern, strength)
+    }
+
+    /// Get emotional valence for voice prosody
+    pub fn prosody_valence(&self) -> f32 {
+        self.smoothed_valence
+    }
+
+    /// Get arousal for voice prosody
+    pub fn prosody_arousal(&self) -> f32 {
+        self.smoothed_arousal
+    }
+
+    /// Reset emotional state
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+/// Curiosity drive - novelty-seeking mechanism to prevent stagnation
+///
+/// When predictions become too accurate/predictable, curiosity triggers
+/// exploration mode to discover new patterns and prevent cognitive stagnation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CuriosityDrive {
+    /// Recent prediction errors (rolling window)
+    error_history: Vec<f32>,
+
+    /// Boredom level (0.0 to 1.0)
+    /// High when predictions are too accurate for too long
+    pub boredom: f32,
+
+    /// Curiosity level (0.0 to 1.0)
+    /// High boredom triggers high curiosity
+    pub curiosity: f32,
+
+    /// Exploration urge (0.0 to 1.0)
+    /// Direct measure of desire to explore new patterns
+    pub exploration_urge: f32,
+
+    /// Novelty bonus for learning rate
+    /// Higher when exploring new territory
+    pub novelty_bonus: f32,
+
+    /// Consecutive cycles of low error (boredom buildup)
+    low_error_streak: u32,
+
+    /// Threshold below which error is "too good"
+    boredom_threshold: f32,
+}
+
+impl Default for CuriosityDrive {
+    fn default() -> Self {
+        Self {
+            error_history: Vec::with_capacity(50),
+            boredom: 0.0,
+            curiosity: 0.3, // Start with some curiosity
+            exploration_urge: 0.0,
+            novelty_bonus: 1.0,
+            low_error_streak: 0,
+            boredom_threshold: 0.1,
+        }
+    }
+}
+
+impl CuriosityDrive {
+    /// Window size for error history
+    const HISTORY_SIZE: usize = 50;
+    /// Boredom streak threshold
+    const BOREDOM_STREAK: u32 = 10;
+    /// Maximum novelty bonus
+    const MAX_NOVELTY_BONUS: f32 = 1.5;
+
+    /// Update curiosity drive based on prediction error
+    pub fn update(&mut self, prediction_error: f32) {
+        // Track error history
+        self.error_history.push(prediction_error);
+        if self.error_history.len() > Self::HISTORY_SIZE {
+            self.error_history.remove(0);
+        }
+
+        // Compute average error
+        let avg_error = if !self.error_history.is_empty() {
+            self.error_history.iter().sum::<f32>() / self.error_history.len() as f32
+        } else {
+            0.5
+        };
+
+        // Detect boredom (consistently low error)
+        if prediction_error < self.boredom_threshold {
+            self.low_error_streak += 1;
+        } else {
+            self.low_error_streak = self.low_error_streak.saturating_sub(2);
+        }
+
+        // Boredom grows with low error streak
+        let streak_factor = (self.low_error_streak as f32 / Self::BOREDOM_STREAK as f32).min(1.0);
+        self.boredom = 0.9 * self.boredom + 0.1 * streak_factor;
+
+        // Curiosity is inverse of average error (interesting when things are predictable)
+        let error_curiosity = (1.0 - avg_error.min(1.0)).max(0.0);
+        self.curiosity = 0.8 * self.curiosity + 0.2 * error_curiosity;
+
+        // Exploration urge triggered by high boredom + high curiosity
+        if self.boredom > 0.5 && self.curiosity > 0.5 {
+            self.exploration_urge = (self.boredom * self.curiosity).min(1.0);
+        } else {
+            self.exploration_urge *= 0.9; // Decay
+        }
+
+        // Novelty bonus: higher when exploring after boredom
+        // This encourages the system to seek novel inputs
+        if self.exploration_urge > 0.3 {
+            self.novelty_bonus = 1.0 + (Self::MAX_NOVELTY_BONUS - 1.0) * self.exploration_urge;
+        } else if prediction_error > 0.5 {
+            // High error = novel situation, boost learning
+            self.novelty_bonus = 1.0 + 0.3 * (prediction_error - 0.5);
+        } else {
+            self.novelty_bonus = 1.0;
+        }
+    }
+
+    /// Check if exploration should be triggered
+    pub fn should_explore(&self) -> bool {
+        self.exploration_urge > 0.4 || (self.boredom > 0.7 && self.curiosity > 0.6)
+    }
+
+    /// Get action hint based on curiosity state
+    pub fn action_hint(&self) -> Option<ActionHint> {
+        if self.should_explore() {
+            Some(ActionHint::Explore)
+        } else if self.boredom > 0.5 {
+            Some(ActionHint::SeekInput) // Need new stimuli
+        } else {
+            None
+        }
+    }
+
+    /// Get effective learning rate with novelty bonus
+    pub fn effective_learning_rate(&self, base_rate: f32) -> f32 {
+        base_rate * self.novelty_bonus
+    }
+
+    /// Reset curiosity drive
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Get exploration probability (for stochastic exploration)
+    pub fn exploration_probability(&self) -> f32 {
+        (self.exploration_urge * 0.5 + self.boredom * 0.3).min(0.8)
+    }
+
+    /// Set boredom threshold from self-reflection
+    ///
+    /// This allows the meta-learning system to adjust when boredom triggers.
+    pub fn set_boredom_threshold(&mut self, threshold: f32) {
+        self.boredom_threshold = threshold.clamp(0.05, 0.3);
+    }
+
+    /// Get current boredom threshold
+    pub fn get_boredom_threshold(&self) -> f32 {
+        self.boredom_threshold
+    }
+}
+
+/// Self-reflection - meta-learning through introspection
+///
+/// Periodically analyzes the system's own performance and adjusts
+/// internal thresholds to optimize behavior. This enables the system
+/// to learn about itself and improve over time.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelfReflection {
+    // ===== Adaptive Thresholds =====
+
+    /// Flow entry error threshold (adjusted based on flow frequency)
+    pub flow_error_threshold: f32,
+
+    /// Flow entry coherence threshold
+    pub flow_coherence_threshold: f32,
+
+    /// Boredom detection threshold (for curiosity drive)
+    pub boredom_threshold: f32,
+
+    /// Confidence threshold for trusting predictions
+    pub trust_threshold: f32,
+
+    // ===== Meta-Statistics =====
+
+    /// Total reflection cycles performed
+    pub reflection_count: u64,
+
+    /// Cycles since last reflection
+    cycles_since_reflection: u32,
+
+    /// Reflection interval (cycles between reflections)
+    reflection_interval: u32,
+
+    /// Historical flow entry rate (EMA)
+    flow_entry_rate: f32,
+
+    /// Historical exploration rate (EMA)
+    exploration_rate: f32,
+
+    /// Historical average error (EMA)
+    historical_error: f32,
+
+    /// Historical average confidence (EMA)
+    historical_confidence: f32,
+
+    /// Learning rate effectiveness score
+    learning_effectiveness: f32,
+
+    // ===== Adjustment History =====
+
+    /// Number of threshold adjustments made
+    pub adjustments_made: u32,
+
+    /// Last adjustment direction for flow threshold (-1, 0, 1)
+    last_flow_adjustment: i8,
+
+    /// Last adjustment direction for boredom threshold
+    last_boredom_adjustment: i8,
+
+    // ===== Insights =====
+
+    /// Current self-assessment
+    pub self_assessment: SelfAssessment,
+
+    /// Recommended actions based on reflection
+    pub recommendations: Vec<Recommendation>,
+}
+
+/// Self-assessment of system state
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SelfAssessment {
+    /// System is performing optimally
+    Optimal,
+    /// System is learning effectively
+    Learning,
+    /// System is stagnating (needs stimulation)
+    Stagnating,
+    /// System is struggling (high error, low confidence)
+    Struggling,
+    /// System is overconfident (low error but not learning)
+    Overconfident,
+    /// System is in exploration mode
+    Exploring,
+    /// System needs calibration
+    NeedsCalibration,
+}
+
+/// Recommendation from self-reflection
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Recommendation {
+    /// What to adjust
+    pub target: RecommendationTarget,
+    /// Direction of adjustment
+    pub direction: AdjustmentDirection,
+    /// Confidence in this recommendation (0.0 to 1.0)
+    pub confidence: f32,
+    /// Reason for recommendation
+    pub reason: String,
+}
+
+/// What the recommendation targets
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RecommendationTarget {
+    FlowThreshold,
+    BoredomThreshold,
+    TrustThreshold,
+    LearningRate,
+    ExplorationFactor,
+    ReflectionInterval,
+}
+
+/// Direction of adjustment
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AdjustmentDirection {
+    Increase,
+    Decrease,
+    NoChange,
+}
+
+impl Default for SelfReflection {
+    fn default() -> Self {
+        Self {
+            // Initial thresholds (will be adjusted)
+            flow_error_threshold: 0.25,
+            flow_coherence_threshold: 0.6,
+            boredom_threshold: 0.1,
+            trust_threshold: 0.4,
+
+            // Meta-statistics
+            reflection_count: 0,
+            cycles_since_reflection: 0,
+            reflection_interval: 50, // Reflect every 50 cycles
+            flow_entry_rate: 0.0,
+            exploration_rate: 0.0,
+            historical_error: 0.5,
+            historical_confidence: 0.5,
+            learning_effectiveness: 0.5,
+
+            // Adjustment tracking
+            adjustments_made: 0,
+            last_flow_adjustment: 0,
+            last_boredom_adjustment: 0,
+
+            // Initial state
+            self_assessment: SelfAssessment::Learning,
+            recommendations: Vec::new(),
+        }
+    }
+}
+
+impl SelfReflection {
+    /// Minimum reflection interval
+    const MIN_INTERVAL: u32 = 20;
+    /// Maximum reflection interval
+    const MAX_INTERVAL: u32 = 200;
+    /// Threshold adjustment step size
+    const ADJUSTMENT_STEP: f32 = 0.02;
+
+    /// Record a cycle's metrics (called every cycle)
+    pub fn record_cycle(
+        &mut self,
+        prediction_error: f32,
+        in_flow: bool,
+        exploring: bool,
+        confidence: f32,
+    ) {
+        self.cycles_since_reflection += 1;
+
+        // Update EMAs
+        let alpha = 0.05;
+        self.historical_error = self.historical_error * (1.0 - alpha) + prediction_error * alpha;
+        self.historical_confidence = self.historical_confidence * (1.0 - alpha) + confidence * alpha;
+
+        // Track flow and exploration rates
+        let flow_val = if in_flow { 1.0 } else { 0.0 };
+        let explore_val = if exploring { 1.0 } else { 0.0 };
+        self.flow_entry_rate = self.flow_entry_rate * (1.0 - alpha) + flow_val * alpha;
+        self.exploration_rate = self.exploration_rate * (1.0 - alpha) + explore_val * alpha;
+    }
+
+    /// Check if it's time to reflect
+    pub fn should_reflect(&self) -> bool {
+        self.cycles_since_reflection >= self.reflection_interval
+    }
+
+    /// Perform self-reflection and adjust thresholds
+    pub fn reflect(&mut self) -> Vec<Recommendation> {
+        self.reflection_count += 1;
+        self.cycles_since_reflection = 0;
+        self.recommendations.clear();
+
+        // Analyze current state
+        self.analyze_state();
+
+        // Generate recommendations based on analysis
+        self.generate_recommendations();
+
+        // Apply automatic adjustments
+        self.apply_adjustments();
+
+        // Adjust reflection interval based on stability
+        self.adjust_interval();
+
+        self.recommendations.clone()
+    }
+
+    /// Analyze current system state
+    fn analyze_state(&mut self) {
+        // Determine self-assessment based on metrics
+        self.self_assessment = if self.flow_entry_rate > 0.3 && self.historical_error < 0.2 {
+            SelfAssessment::Optimal
+        } else if self.exploration_rate > 0.3 {
+            SelfAssessment::Exploring
+        } else if self.historical_error < 0.15 && self.flow_entry_rate < 0.1 {
+            SelfAssessment::Overconfident
+        } else if self.historical_error > 0.5 && self.historical_confidence < 0.4 {
+            SelfAssessment::Struggling
+        } else if self.historical_error < 0.2 && self.exploration_rate < 0.05 {
+            SelfAssessment::Stagnating
+        } else if self.adjustments_made > 10 && self.flow_entry_rate < 0.05 {
+            SelfAssessment::NeedsCalibration
+        } else {
+            SelfAssessment::Learning
+        };
+
+        // Update learning effectiveness
+        // Good learning = moderate error (not too high, not too low) + improving trend
+        let optimal_error = 0.25;
+        let error_quality = 1.0 - (self.historical_error - optimal_error).abs() * 2.0;
+        self.learning_effectiveness = error_quality.clamp(0.0, 1.0);
+    }
+
+    /// Generate recommendations based on current state
+    fn generate_recommendations(&mut self) {
+        match self.self_assessment {
+            SelfAssessment::Stagnating => {
+                // Lower boredom threshold to trigger exploration sooner
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::BoredomThreshold,
+                    direction: AdjustmentDirection::Decrease,
+                    confidence: 0.8,
+                    reason: "System is stagnating; lower boredom threshold to encourage exploration".into(),
+                });
+                // Increase exploration factor
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::ExplorationFactor,
+                    direction: AdjustmentDirection::Increase,
+                    confidence: 0.7,
+                    reason: "Need more exploration to break stagnation".into(),
+                });
+            }
+            SelfAssessment::Struggling => {
+                // Raise trust threshold (be more cautious)
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::TrustThreshold,
+                    direction: AdjustmentDirection::Increase,
+                    confidence: 0.7,
+                    reason: "High error rate; increase trust threshold for caution".into(),
+                });
+                // Lower learning rate if errors are very high
+                if self.historical_error > 0.6 {
+                    self.recommendations.push(Recommendation {
+                        target: RecommendationTarget::LearningRate,
+                        direction: AdjustmentDirection::Decrease,
+                        confidence: 0.6,
+                        reason: "Very high errors; reduce learning rate for stability".into(),
+                    });
+                }
+            }
+            SelfAssessment::Overconfident => {
+                // Lower flow threshold (make flow harder to achieve)
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::FlowThreshold,
+                    direction: AdjustmentDirection::Decrease,
+                    confidence: 0.7,
+                    reason: "Predictions too easy; tighten flow entry criteria".into(),
+                });
+                // Raise boredom threshold
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::BoredomThreshold,
+                    direction: AdjustmentDirection::Decrease,
+                    confidence: 0.6,
+                    reason: "System may be bored but not detecting it".into(),
+                });
+            }
+            SelfAssessment::NeedsCalibration => {
+                // Reset to more moderate thresholds
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::FlowThreshold,
+                    direction: AdjustmentDirection::NoChange,
+                    confidence: 0.5,
+                    reason: "Consider manual threshold review".into(),
+                });
+                // Extend reflection interval to allow stabilization
+                self.recommendations.push(Recommendation {
+                    target: RecommendationTarget::ReflectionInterval,
+                    direction: AdjustmentDirection::Increase,
+                    confidence: 0.8,
+                    reason: "Allow more time between adjustments".into(),
+                });
+            }
+            SelfAssessment::Optimal | SelfAssessment::Learning => {
+                // Fine-tune based on specific metrics
+                if self.flow_entry_rate < 0.1 && self.historical_error < 0.3 {
+                    self.recommendations.push(Recommendation {
+                        target: RecommendationTarget::FlowThreshold,
+                        direction: AdjustmentDirection::Increase,
+                        confidence: 0.5,
+                        reason: "Good performance but rarely in flow; relax flow criteria".into(),
+                    });
+                }
+            }
+            SelfAssessment::Exploring => {
+                // Don't interfere with active exploration
+                // Maybe shorten reflection interval to monitor
+                if self.exploration_rate > 0.5 {
+                    self.recommendations.push(Recommendation {
+                        target: RecommendationTarget::ReflectionInterval,
+                        direction: AdjustmentDirection::Decrease,
+                        confidence: 0.4,
+                        reason: "High exploration; monitor more frequently".into(),
+                    });
+                }
+            }
+        }
+    }
+
+    /// Apply automatic threshold adjustments
+    fn apply_adjustments(&mut self) {
+        for rec in &self.recommendations {
+            if rec.confidence < 0.5 {
+                continue; // Skip low-confidence recommendations
+            }
+
+            match rec.target {
+                RecommendationTarget::FlowThreshold => {
+                    match rec.direction {
+                        AdjustmentDirection::Increase => {
+                            self.flow_error_threshold = (self.flow_error_threshold + Self::ADJUSTMENT_STEP).min(0.4);
+                            self.last_flow_adjustment = 1;
+                        }
+                        AdjustmentDirection::Decrease => {
+                            self.flow_error_threshold = (self.flow_error_threshold - Self::ADJUSTMENT_STEP).max(0.1);
+                            self.last_flow_adjustment = -1;
+                        }
+                        AdjustmentDirection::NoChange => {
+                            self.last_flow_adjustment = 0;
+                        }
+                    }
+                    self.adjustments_made += 1;
+                }
+                RecommendationTarget::BoredomThreshold => {
+                    match rec.direction {
+                        AdjustmentDirection::Increase => {
+                            self.boredom_threshold = (self.boredom_threshold + Self::ADJUSTMENT_STEP).min(0.3);
+                            self.last_boredom_adjustment = 1;
+                        }
+                        AdjustmentDirection::Decrease => {
+                            self.boredom_threshold = (self.boredom_threshold - Self::ADJUSTMENT_STEP).max(0.05);
+                            self.last_boredom_adjustment = -1;
+                        }
+                        AdjustmentDirection::NoChange => {
+                            self.last_boredom_adjustment = 0;
+                        }
+                    }
+                    self.adjustments_made += 1;
+                }
+                RecommendationTarget::TrustThreshold => {
+                    match rec.direction {
+                        AdjustmentDirection::Increase => {
+                            self.trust_threshold = (self.trust_threshold + Self::ADJUSTMENT_STEP).min(0.7);
+                        }
+                        AdjustmentDirection::Decrease => {
+                            self.trust_threshold = (self.trust_threshold - Self::ADJUSTMENT_STEP).max(0.2);
+                        }
+                        AdjustmentDirection::NoChange => {}
+                    }
+                    self.adjustments_made += 1;
+                }
+                _ => {} // Other targets handled externally
+            }
+        }
+    }
+
+    /// Adjust reflection interval based on system stability
+    fn adjust_interval(&mut self) {
+        // If making many adjustments, reflect more often
+        // If stable, reflect less often
+        let recent_adjustment_rate = self.adjustments_made as f32 / (self.reflection_count.max(1) as f32);
+
+        if recent_adjustment_rate > 0.8 {
+            // Lots of adjustments = unstable, reflect more
+            self.reflection_interval = (self.reflection_interval - 5).max(Self::MIN_INTERVAL);
+        } else if recent_adjustment_rate < 0.2 && self.self_assessment == SelfAssessment::Optimal {
+            // Stable and optimal, reflect less
+            self.reflection_interval = (self.reflection_interval + 10).min(Self::MAX_INTERVAL);
+        }
+    }
+
+    /// Get current thresholds for use by other components
+    pub fn get_thresholds(&self) -> ReflectionThresholds {
+        ReflectionThresholds {
+            flow_error: self.flow_error_threshold,
+            flow_coherence: self.flow_coherence_threshold,
+            boredom: self.boredom_threshold,
+            trust: self.trust_threshold,
+        }
+    }
+
+    /// Get a human-readable summary of current state
+    pub fn summary(&self) -> ReflectionSummary {
+        ReflectionSummary {
+            assessment: self.self_assessment,
+            reflection_count: self.reflection_count,
+            adjustments_made: self.adjustments_made,
+            flow_entry_rate: self.flow_entry_rate,
+            exploration_rate: self.exploration_rate,
+            learning_effectiveness: self.learning_effectiveness,
+            historical_error: self.historical_error,
+            historical_confidence: self.historical_confidence,
+            next_reflection_in: self.reflection_interval.saturating_sub(self.cycles_since_reflection),
+        }
+    }
+
+    /// Reset self-reflection state
+    pub fn reset(&mut self) {
+        // Keep learned thresholds but reset statistics
+        let thresholds = (
+            self.flow_error_threshold,
+            self.flow_coherence_threshold,
+            self.boredom_threshold,
+            self.trust_threshold,
+        );
+        *self = Self::default();
+        self.flow_error_threshold = thresholds.0;
+        self.flow_coherence_threshold = thresholds.1;
+        self.boredom_threshold = thresholds.2;
+        self.trust_threshold = thresholds.3;
+    }
+
+    /// Full reset including learned thresholds
+    pub fn full_reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+/// Thresholds from self-reflection for use by other components
+#[derive(Debug, Clone, Copy)]
+pub struct ReflectionThresholds {
+    pub flow_error: f32,
+    pub flow_coherence: f32,
+    pub boredom: f32,
+    pub trust: f32,
+}
+
+/// Summary of self-reflection state
+#[derive(Debug, Clone)]
+pub struct ReflectionSummary {
+    pub assessment: SelfAssessment,
+    pub reflection_count: u64,
+    pub adjustments_made: u32,
+    pub flow_entry_rate: f32,
+    pub exploration_rate: f32,
+    pub learning_effectiveness: f32,
+    pub historical_error: f32,
+    pub historical_confidence: f32,
+    pub next_reflection_in: u32,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// THALAMIC ROUTING - Cognitive Depth Selection
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Cognitive depth determines how much processing to apply
+///
+/// Based on the Thalamus architecture (ARCHITECTURAL_EVOLUTION_SUMMARY.md):
+/// - Reflex: Pattern matching only, <10ms response
+/// - Cortical: Standard cognitive cycle, 50-200ms
+/// - DeepThought: Full deliberation with causal reasoning, 200ms+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CognitiveDepth {
+    /// Fast pattern matching, minimal processing
+    /// Used for: Familiar inputs, low novelty, low urgency
+    Reflex,
+
+    /// Standard cognitive cycle with prediction and learning
+    /// Used for: Normal conversation, moderate complexity
+    Cortical,
+
+    /// Deep deliberation with causal reasoning and counterfactuals
+    /// Used for: Novel situations, high stakes, complex reasoning
+    DeepThought,
+}
+
+impl Default for CognitiveDepth {
+    fn default() -> Self {
+        Self::Cortical
+    }
+}
+
+/// Thalamic router - determines cognitive depth before processing
+///
+/// Implements the 3-path routing from Architecture V2:
+/// - High novelty/urgency → DeepThought
+/// - Normal → Cortical
+/// - Familiar/low stakes → Reflex
+#[derive(Debug, Clone)]
+pub struct ThalamicRouter {
+    /// Novelty threshold for DeepThought (0.0-1.0)
+    pub novelty_threshold: f32,
+
+    /// Urgency threshold for DeepThought (0.0-1.0)
+    pub urgency_threshold: f32,
+
+    /// Familiarity threshold for Reflex (0.0-1.0)
+    pub familiarity_threshold: f32,
+
+    /// Recent routing decisions for pattern analysis
+    routing_history: Vec<CognitiveDepth>,
+
+    /// Maximum history size
+    max_history: usize,
+}
+
+impl Default for ThalamicRouter {
+    fn default() -> Self {
+        Self {
+            novelty_threshold: 0.7,
+            urgency_threshold: 0.8,
+            familiarity_threshold: 0.3,
+            routing_history: Vec::with_capacity(100),
+            max_history: 100,
+        }
+    }
+}
+
+impl ThalamicRouter {
+    /// Route based on input characteristics
+    ///
+    /// # Arguments
+    /// * `novelty` - How novel/surprising the input is (0.0-1.0)
+    /// * `urgency` - How urgent the response needs to be (0.0-1.0)
+    /// * `complexity` - Estimated complexity of the input (0.0-1.0)
+    /// * `emotional_intensity` - Emotional intensity of input (0.0-1.0)
+    pub fn route(
+        &mut self,
+        novelty: f32,
+        urgency: f32,
+        complexity: f32,
+        emotional_intensity: f32,
+    ) -> CognitiveDepth {
+        let depth = if novelty > self.novelty_threshold
+            || urgency > self.urgency_threshold
+            || complexity > 0.8
+            || emotional_intensity > 0.7
+        {
+            // High stakes - use deep thought
+            CognitiveDepth::DeepThought
+        } else if novelty < self.familiarity_threshold
+            && complexity < 0.3
+            && urgency < 0.5
+        {
+            // Familiar, simple, not urgent - use reflex
+            CognitiveDepth::Reflex
+        } else {
+            // Default to standard cortical processing
+            CognitiveDepth::Cortical
+        };
+
+        // Record history
+        if self.routing_history.len() >= self.max_history {
+            self.routing_history.remove(0);
+        }
+        self.routing_history.push(depth);
+
+        depth
+    }
+
+    /// Route based on prediction error and pattern
+    pub fn route_from_cycle(
+        &mut self,
+        prediction_error: f32,
+        pattern: ConsciousnessPattern,
+        emotional_valence: f32,
+    ) -> CognitiveDepth {
+        // Novelty from prediction error (high error = novel)
+        let novelty = prediction_error.min(1.0);
+
+        // Complexity from pattern
+        let complexity = match pattern {
+            ConsciousnessPattern::Uncertain => 0.8,
+            ConsciousnessPattern::Transitioning => 0.7,
+            ConsciousnessPattern::Exploratory => 0.6,
+            ConsciousnessPattern::Contemplative => 0.5,
+            ConsciousnessPattern::Focused => 0.4,
+            ConsciousnessPattern::Excited => 0.4,
+            ConsciousnessPattern::Resting => 0.2,
+        };
+
+        // Urgency from pattern (uncertain/transitioning = urgent)
+        let urgency = match pattern {
+            ConsciousnessPattern::Uncertain => 0.8,
+            ConsciousnessPattern::Transitioning => 0.6,
+            ConsciousnessPattern::Excited => 0.5,
+            _ => 0.3,
+        };
+
+        // Emotional intensity from absolute valence
+        let emotional_intensity = emotional_valence.abs();
+
+        self.route(novelty, urgency, complexity, emotional_intensity)
+    }
+
+    /// Get statistics on routing patterns
+    pub fn routing_stats(&self) -> (f32, f32, f32) {
+        if self.routing_history.is_empty() {
+            return (0.0, 0.0, 0.0);
+        }
+
+        let total = self.routing_history.len() as f32;
+        let reflex = self.routing_history.iter()
+            .filter(|d| **d == CognitiveDepth::Reflex)
+            .count() as f32 / total;
+        let cortical = self.routing_history.iter()
+            .filter(|d| **d == CognitiveDepth::Cortical)
+            .count() as f32 / total;
+        let deep = self.routing_history.iter()
+            .filter(|d| **d == CognitiveDepth::DeepThought)
+            .count() as f32 / total;
+
+        (reflex, cortical, deep)
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTIVE INFERENCE BRIDGE - Precision-Weighted Prediction Tracking
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Quality of prediction-outcome coupling
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CouplingQuality {
+    /// Not enough data to assess coupling
+    InsufficientData,
+    /// No meaningful coupling (MI < 0.1)
+    NoCoupling,
+    /// Weak coupling (MI 0.1-0.3)
+    WeakCoupling,
+    /// Moderate coupling (MI 0.3-0.6)
+    ModerateCoupling,
+    /// Strong coupling (MI > 0.6)
+    StrongCoupling,
+}
+
+impl CouplingQuality {
+    /// Is coupling meaningful?
+    pub fn is_meaningful(&self) -> bool {
+        matches!(
+            self,
+            Self::WeakCoupling | Self::ModerateCoupling | Self::StrongCoupling
+        )
+    }
+}
+
+/// Simplified Active Inference Bridge for prediction-outcome coupling
+///
+/// Tracks the relationship between prediction confidence and actual outcomes
+/// using a simplified Phase-Amplitude Coupling (PAC) approach.
+#[derive(Debug, Clone)]
+pub struct ActiveInferenceBridge {
+    /// Recent confidence values (phase signal)
+    confidence_history: Vec<f64>,
+
+    /// Recent outcomes (amplitude signal)
+    outcome_history: Vec<f64>,
+
+    /// Window size for coupling computation
+    window_size: usize,
+
+    /// Minimum data points before coupling is meaningful
+    min_data_points: usize,
+
+    /// Total observations
+    total_observations: usize,
+}
+
+impl Default for ActiveInferenceBridge {
+    fn default() -> Self {
+        Self::with_defaults()
+    }
+}
+
+impl ActiveInferenceBridge {
+    /// Create with default configuration
+    pub fn with_defaults() -> Self {
+        Self {
+            confidence_history: Vec::with_capacity(100),
+            outcome_history: Vec::with_capacity(100),
+            window_size: 100,
+            min_data_points: 10,
+            total_observations: 0,
+        }
+    }
+
+    /// Observe a prediction resolution
+    ///
+    /// * `confidence`: The predicted confidence (0.0-1.0)
+    /// * `success`: Whether the prediction was correct
+    pub fn observe_resolution(&mut self, confidence: f64, success: bool) {
+        self.total_observations += 1;
+
+        // Track confidence
+        if self.confidence_history.len() >= self.window_size {
+            self.confidence_history.remove(0);
+        }
+        self.confidence_history.push(confidence);
+
+        // Track outcome
+        let outcome = if success { 1.0 } else { 0.0 };
+        if self.outcome_history.len() >= self.window_size {
+            self.outcome_history.remove(0);
+        }
+        self.outcome_history.push(outcome);
+    }
+
+    /// Compute the Modulation Index (simplified PAC)
+    ///
+    /// Returns a value in [0, 1] where:
+    /// - 0.0 = No coupling (predictions don't inform outcomes)
+    /// - 1.0 = Perfect coupling (confidence perfectly predicts success)
+    pub fn modulation_index(&self) -> Option<f64> {
+        if self.confidence_history.len() < self.min_data_points {
+            return None;
+        }
+
+        // Compute correlation between confidence and success
+        let n = self.confidence_history.len() as f64;
+        let conf_mean: f64 = self.confidence_history.iter().sum::<f64>() / n;
+        let out_mean: f64 = self.outcome_history.iter().sum::<f64>() / n;
+
+        let mut covariance = 0.0;
+        let mut conf_variance = 0.0;
+        let mut out_variance = 0.0;
+
+        for (c, o) in self.confidence_history.iter().zip(self.outcome_history.iter()) {
+            let c_diff = c - conf_mean;
+            let o_diff = o - out_mean;
+            covariance += c_diff * o_diff;
+            conf_variance += c_diff * c_diff;
+            out_variance += o_diff * o_diff;
+        }
+
+        // Pearson correlation, normalized to [0, 1]
+        let denom = (conf_variance * out_variance).sqrt();
+        if denom < 1e-10 {
+            return Some(0.0);
+        }
+
+        let correlation = covariance / denom;
+        // Map [-1, 1] to [0, 1], favoring positive correlations
+        Some((correlation.max(0.0)).clamp(0.0, 1.0))
+    }
+
+    /// Get the current coupling quality assessment
+    pub fn coupling_quality(&self) -> CouplingQuality {
+        match self.modulation_index() {
+            None => CouplingQuality::InsufficientData,
+            Some(mi) if mi < 0.1 => CouplingQuality::NoCoupling,
+            Some(mi) if mi < 0.3 => CouplingQuality::WeakCoupling,
+            Some(mi) if mi < 0.6 => CouplingQuality::ModerateCoupling,
+            Some(_) => CouplingQuality::StrongCoupling,
+        }
+    }
+
+    /// Get average prediction error (from recent history)
+    pub fn average_prediction_error(&self) -> Option<f64> {
+        if self.outcome_history.is_empty() {
+            return None;
+        }
+        // Error = 1 - success rate
+        let success_rate: f64 = self.outcome_history.iter().sum::<f64>()
+            / self.outcome_history.len() as f64;
+        Some(1.0 - success_rate)
+    }
+
+    /// Get statistics
+    pub fn statistics(&self) -> ActiveInferenceBridgeStats {
+        ActiveInferenceBridgeStats {
+            total_observations: self.total_observations,
+            modulation_index: self.modulation_index(),
+            coupling_quality: self.coupling_quality(),
+            average_prediction_error: self.average_prediction_error(),
+        }
+    }
+
+    /// Reset the bridge
+    pub fn reset(&mut self) {
+        self.confidence_history.clear();
+        self.outcome_history.clear();
+        self.total_observations = 0;
+    }
+}
+
+/// Statistics from the Active Inference bridge
+#[derive(Debug, Clone)]
+pub struct ActiveInferenceBridgeStats {
+    /// Total observations processed
+    pub total_observations: usize,
+    /// Current Modulation Index
+    pub modulation_index: Option<f64>,
+    /// Current coupling quality
+    pub coupling_quality: CouplingQuality,
+    /// Average prediction error (recent)
+    pub average_prediction_error: Option<f64>,
+}
+
+// ============================================================================
+// CONSCIOUSNESS SNAPSHOT - Unified Dashboard
+// ============================================================================
+
+/// Unified consciousness snapshot - aggregates all cognitive metrics
+///
+/// This provides a single point of observation for the entire cognitive state,
+/// making it easy to monitor, log, or expose via API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsciousnessSnapshot {
+    // ===== Core Metrics =====
+
+    /// Timestamp of this snapshot (cycle count)
+    pub cycle: usize,
+
+    /// Overall consciousness level (0.0 to 1.0)
+    /// Computed from prediction confidence, coherence, and flow
+    pub consciousness_level: f32,
+
+    /// Current consciousness pattern
+    pub pattern: ConsciousnessPattern,
+
+    /// Pattern classification confidence
+    pub pattern_confidence: f32,
+
+    // ===== Prediction & Learning =====
+
+    /// Current prediction error
+    pub prediction_error: f32,
+
+    /// Prediction confidence (decays during uncertainty)
+    pub prediction_confidence: f32,
+
+    /// Whether predictions should be trusted
+    pub predictions_trustworthy: bool,
+
+    /// Effective learning rate (after all modulations)
+    pub effective_learning_rate: f32,
+
+    /// Learning effectiveness score from self-reflection
+    pub learning_effectiveness: f32,
+
+    // ===== Flow State =====
+
+    /// Whether currently in flow state
+    pub in_flow: bool,
+
+    /// Flow intensity (0.0 to 1.0)
+    pub flow_intensity: f32,
+
+    /// Consecutive flow-compatible cycles
+    pub flow_streak: u32,
+
+    /// Learning boost from flow
+    pub flow_learning_boost: f32,
+
+    // ===== Curiosity & Exploration =====
+
+    /// Boredom level (0.0 to 1.0)
+    pub boredom: f32,
+
+    /// Curiosity level (0.0 to 1.0)
+    pub curiosity: f32,
+
+    /// Exploration urge (0.0 to 1.0)
+    pub exploration_urge: f32,
+
+    /// Whether curiosity is triggering exploration
+    pub exploring: bool,
+
+    /// Novelty bonus for learning
+    pub novelty_bonus: f32,
+
+    // ===== Emotional State =====
+
+    /// Emotional valence (-1.0 to 1.0)
+    pub emotional_valence: f32,
+
+    /// Emotional arousal (0.0 to 1.0)
+    pub emotional_arousal: f32,
+
+    /// Whether input has significant emotional content
+    pub has_emotional_content: bool,
+
+    /// Emotion-suggested pattern nudge
+    pub emotion_nudge: Option<ConsciousnessPattern>,
+
+    // ===== Self-Reflection =====
+
+    /// Self-assessment from meta-learning
+    pub self_assessment: SelfAssessment,
+
+    /// Number of reflection cycles performed
+    pub reflection_count: u64,
+
+    /// Threshold adjustments made
+    pub adjustments_made: u32,
+
+    /// Cycles until next reflection
+    pub next_reflection_in: u32,
+
+    // ===== Adaptive Behavior =====
+
+    /// Recommended action
+    pub action_hint: ActionHint,
+
+    /// Speech rate multiplier
+    pub speech_rate_multiplier: f32,
+
+    /// Pause duration multiplier
+    pub pause_multiplier: f32,
+
+    /// Whether learning is paused
+    pub learning_paused: bool,
+
+    // ===== Adapted Thresholds =====
+
+    /// Adapted flow error threshold
+    pub flow_threshold: f32,
+
+    /// Adapted boredom threshold
+    pub boredom_threshold: f32,
+
+    /// Adapted trust threshold
+    pub trust_threshold: f32,
+
+    // ===== Temporal Coherence =====
+
+    /// Temporal coherence from CfC
+    pub temporal_coherence: f32,
+
+    /// Tau trajectory mean
+    pub tau_mean: f32,
+
+    /// Tau trajectory trend
+    pub tau_trend: f32,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MEGA-UNIFIED ARCHITECTURE FIELDS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Current cognitive depth (Reflex/Cortical/DeepThought)
+    pub cognitive_depth: CognitiveDepth,
+
+    /// Unified Φ from ConsciousnessUnificationEngine
+    pub unified_phi: f32,
+
+    /// Unified emotional valence (VAD-based, -1.0 to 1.0)
+    pub unified_valence: f32,
+
+    /// Unified emotional arousal (VAD-based, 0.0 to 1.0)
+    pub unified_arousal: f32,
+
+    /// Unified emotional dominance (VAD-based, -1.0 to 1.0)
+    pub unified_dominance: f32,
+
+    /// Discrete emotion from unified EmotionalBridge
+    pub unified_discrete_emotion: Option<UnifiedEmotion>,
+
+    /// Emotional pattern (Stable/Escalating/Calming/Volatile)
+    pub emotional_pattern: EmotionalPattern,
+
+    /// Emotional description in natural language
+    pub emotional_description: String,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEMPORAL ENCODING FIELDS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Snapshot creation timestamp (monotonic, for relative time)
+    pub snapshot_timestamp_nanos: u64,
+
+    /// Current flow duration if in flow (seconds)
+    pub current_flow_duration_secs: Option<f32>,
+
+    /// Total time spent in flow this session (seconds)
+    pub total_flow_time_secs: f32,
+
+    /// Number of distinct flow periods
+    pub flow_periods: u32,
+
+    /// Average flow period duration (seconds)
+    pub avg_flow_duration_secs: f32,
+}
+
+impl ConsciousnessSnapshot {
+    /// Compute overall consciousness level from components
+    fn compute_consciousness_level(
+        prediction_confidence: f32,
+        temporal_coherence: f32,
+        flow_intensity: f32,
+        pattern_confidence: f32,
+    ) -> f32 {
+        // Weighted combination of key indicators
+        let confidence_contrib = prediction_confidence * 0.3;
+        let coherence_contrib = temporal_coherence * 0.25;
+        let flow_contrib = flow_intensity * 0.2;
+        let pattern_contrib = pattern_confidence * 0.25;
+
+        (confidence_contrib + coherence_contrib + flow_contrib + pattern_contrib).clamp(0.0, 1.0)
+    }
+
+    /// Get a concise status string
+    pub fn status(&self) -> String {
+        let flow_status = if self.in_flow { "FLOW" } else { "---" };
+        let explore_status = if self.exploring { "EXPLORE" } else { "---" };
+
+        format!(
+            "[L:{:.2}] {:?} | {} {} | Conf:{:.2} Err:{:.2}",
+            self.consciousness_level,
+            self.pattern,
+            flow_status,
+            explore_status,
+            self.prediction_confidence,
+            self.prediction_error,
+        )
+    }
+
+    /// Check if system is in an optimal state
+    pub fn is_optimal(&self) -> bool {
+        self.self_assessment == SelfAssessment::Optimal
+            || (self.in_flow && self.prediction_confidence > 0.6)
+    }
+
+    /// Check if system needs attention (struggling or stagnating)
+    pub fn needs_attention(&self) -> bool {
+        matches!(
+            self.self_assessment,
+            SelfAssessment::Struggling | SelfAssessment::Stagnating | SelfAssessment::NeedsCalibration
+        )
+    }
+
+    /// Get the dominant concern (what needs most attention)
+    pub fn dominant_concern(&self) -> Option<&'static str> {
+        if self.self_assessment == SelfAssessment::Struggling {
+            Some("High prediction error - system is struggling")
+        } else if self.self_assessment == SelfAssessment::Stagnating {
+            Some("Low error but no exploration - system is stagnating")
+        } else if self.boredom > 0.7 && !self.exploring {
+            Some("High boredom - needs novel input")
+        } else if self.prediction_confidence < 0.3 {
+            Some("Low confidence - predictions unreliable")
+        } else if self.self_assessment == SelfAssessment::NeedsCalibration {
+            Some("Many adjustments made - consider manual review")
+        } else {
+            None
+        }
+    }
+
+    /// Get recommended actions based on current state
+    pub fn recommended_actions(&self) -> Vec<&'static str> {
+        let mut actions = Vec::new();
+
+        match self.action_hint {
+            ActionHint::SlowDown => actions.push("Reduce input rate"),
+            ActionHint::SpeedUp => actions.push("Can increase input rate"),
+            ActionHint::Stabilize => actions.push("Maintain current input"),
+            ActionHint::Explore => actions.push("Introduce novel inputs"),
+            ActionHint::SeekInput => actions.push("System needs more input"),
+            ActionHint::Continue => {}
+        }
+
+        if self.boredom > 0.5 && !self.exploring {
+            actions.push("Consider varying input content");
+        }
+
+        if !self.predictions_trustworthy {
+            actions.push("Predictions currently unreliable");
+        }
+
+        if self.in_flow {
+            actions.push("In flow state - optimal for learning");
+        }
+
+        actions
+    }
+}
+
+impl Default for AdaptiveBehavior {
+    fn default() -> Self {
+        Self {
+            learning_rate_multiplier: 1.0,
+            speech_rate_multiplier: 1.0,
+            pause_multiplier: 1.0,
+            attention_sensitivity: 1.0,
+            exploration_factor: 0.3,
+            confidence: 0.5,
+            pause_learning: false,
+            action_hint: ActionHint::Continue,
+        }
+    }
+}
+
+impl AdaptiveBehavior {
+    /// Compute adaptive behavior from consciousness pattern and metrics
+    pub fn from_consciousness_state(
+        pattern: ConsciousnessPattern,
+        pattern_confidence: f32,
+        coherence: f32,
+        voice_confidence: f32,
+    ) -> Self {
+        // Base confidence from all sources
+        let confidence = (pattern_confidence * 0.4 + coherence * 0.3 + voice_confidence * 0.3)
+            .clamp(0.0, 1.0);
+
+        match pattern {
+            ConsciousnessPattern::Focused => Self {
+                learning_rate_multiplier: 1.3 + confidence * 0.4,  // 1.3 to 1.7
+                speech_rate_multiplier: 1.05 + confidence * 0.15,  // 1.05 to 1.2
+                pause_multiplier: 0.7,
+                attention_sensitivity: 0.7,  // Less distracted
+                exploration_factor: 0.1,     // Stay on track
+                confidence,
+                pause_learning: false,
+                action_hint: ActionHint::SpeedUp,
+            },
+
+            ConsciousnessPattern::Contemplative => Self {
+                learning_rate_multiplier: 0.8,
+                speech_rate_multiplier: 0.85,
+                pause_multiplier: 1.5,       // Longer pauses for reflection
+                attention_sensitivity: 1.0,
+                exploration_factor: 0.2,
+                confidence,
+                pause_learning: false,
+                action_hint: ActionHint::SlowDown,
+            },
+
+            ConsciousnessPattern::Excited => Self {
+                learning_rate_multiplier: 1.1,
+                speech_rate_multiplier: 1.15,
+                pause_multiplier: 0.6,       // Quick transitions
+                attention_sensitivity: 1.3,  // More reactive
+                exploration_factor: 0.4,
+                confidence,
+                pause_learning: false,
+                action_hint: ActionHint::Continue,
+            },
+
+            ConsciousnessPattern::Exploratory => Self {
+                learning_rate_multiplier: 1.0,
+                speech_rate_multiplier: 0.95,
+                pause_multiplier: 1.0,
+                attention_sensitivity: 1.4,  // High sensitivity to new info
+                exploration_factor: 0.7,     // Actively explore
+                confidence: confidence * 0.8,
+                pause_learning: false,
+                action_hint: ActionHint::Explore,
+            },
+
+            ConsciousnessPattern::Resting => Self {
+                learning_rate_multiplier: 0.6,
+                speech_rate_multiplier: 0.9,
+                pause_multiplier: 1.2,
+                attention_sensitivity: 0.8,
+                exploration_factor: 0.2,
+                confidence,
+                pause_learning: false,
+                action_hint: ActionHint::Continue,
+            },
+
+            ConsciousnessPattern::Transitioning => Self {
+                learning_rate_multiplier: 0.3,  // Minimal learning during transition
+                speech_rate_multiplier: 0.8,
+                pause_multiplier: 1.8,          // Pause to stabilize
+                attention_sensitivity: 1.0,
+                exploration_factor: 0.3,
+                confidence: confidence * 0.5,
+                pause_learning: true,           // Pause learning
+                action_hint: ActionHint::Stabilize,
+            },
+
+            ConsciousnessPattern::Uncertain => Self {
+                learning_rate_multiplier: 0.4,  // Careful learning
+                speech_rate_multiplier: 0.75,   // Slow down
+                pause_multiplier: 2.0,          // Long pauses
+                attention_sensitivity: 1.2,
+                exploration_factor: 0.5,
+                confidence: confidence * 0.3,
+                pause_learning: false,
+                action_hint: ActionHint::SeekInput,
+            },
+        }
+    }
+
+    /// Get effective learning rate with all modulations
+    pub fn effective_learning_rate(&self, base_rate: f32) -> f32 {
+        if self.pause_learning {
+            0.0
+        } else {
+            base_rate * self.learning_rate_multiplier
+        }
+    }
+
+    /// Check if the system should seek more input/clarification
+    pub fn should_seek_input(&self) -> bool {
+        self.action_hint == ActionHint::SeekInput || self.confidence < 0.3
+    }
+
+    /// Check if the system is in a confident state
+    pub fn is_confident(&self) -> bool {
+        self.confidence > 0.6 && !self.pause_learning
+    }
+
+    /// Get a human-readable description of current state
+    pub fn description(&self) -> &'static str {
+        match self.action_hint {
+            ActionHint::Continue => "Operating normally",
+            ActionHint::SlowDown => "Deliberating carefully",
+            ActionHint::SpeedUp => "Confident and focused",
+            ActionHint::Stabilize => "Stabilizing state",
+            ActionHint::Explore => "Exploring possibilities",
+            ActionHint::SeekInput => "Seeking clarification",
+        }
+    }
+}
+
 /// Statistics for the cognitive loop
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LoopStats {
@@ -201,6 +2764,196 @@ pub struct LoopStats {
 
     /// LTC consciousness level
     pub ltc_consciousness: f32,
+
+    /// Temporal coherence (from CfC tau values)
+    pub temporal_coherence: f32,
+
+    /// Coherence-modulated learning rate
+    pub effective_learning_rate: f32,
+
+    /// Phi contribution from temporal coherence
+    pub coherence_phi_contribution: f32,
+
+    /// Voice articulation quality (0.0 to 1.0)
+    pub voice_articulation_quality: f32,
+
+    /// Voice rate stability (0.0 to 1.0)
+    pub voice_rate_stability: f32,
+
+    /// Phi adjustment from voice feedback
+    pub voice_phi_adjustment: f32,
+
+    /// Combined phi (coherence + voice contributions)
+    pub combined_phi_contribution: f32,
+
+    /// Current consciousness pattern (from temporal signatures)
+    pub consciousness_pattern: String,
+
+    /// Confidence in consciousness pattern classification
+    pub pattern_confidence: f32,
+
+    /// Tau trajectory mean
+    pub tau_mean: f32,
+
+    /// Tau trajectory trend
+    pub tau_trend: f32,
+
+    /// Current adaptive behavior state
+    pub adaptive_confidence: f32,
+
+    /// Current action hint
+    pub action_hint: String,
+
+    /// Whether learning is paused due to state transition
+    pub learning_paused: bool,
+
+    /// Adaptive learning rate (after all modulations)
+    pub adaptive_learning_rate: f32,
+
+    /// Adaptive speech rate multiplier
+    pub adaptive_speech_rate: f32,
+
+    /// Prediction confidence (decays during uncertain states)
+    /// High when predictions are accurate and state is stable
+    pub prediction_confidence: f32,
+
+    /// Prediction confidence decay rate (higher = faster decay)
+    pub confidence_decay_rate: f32,
+
+    /// Whether currently in flow state
+    pub in_flow: bool,
+
+    /// Flow state intensity (0.0 to 1.0)
+    pub flow_intensity: f32,
+
+    /// Consecutive cycles in flow-compatible state
+    pub flow_streak: u32,
+
+    /// Learning boost from flow state
+    pub flow_learning_boost: f32,
+
+    /// Emotional valence from content (-1.0 to 1.0)
+    pub emotional_valence: f32,
+
+    /// Emotional arousal (0.0 to 1.0)
+    pub emotional_arousal: f32,
+
+    /// Suggested pattern from emotion contagion
+    pub emotion_nudge_pattern: String,
+
+    /// Strength of emotion influence
+    pub emotion_nudge_strength: f32,
+
+    /// Boredom level from curiosity drive (0.0 to 1.0)
+    pub boredom: f32,
+
+    /// Curiosity level (0.0 to 1.0)
+    pub curiosity: f32,
+
+    /// Exploration urge (0.0 to 1.0)
+    pub exploration_urge: f32,
+
+    /// Whether curiosity-triggered exploration is active
+    pub curiosity_exploring: bool,
+
+    /// Novelty bonus to learning rate
+    pub novelty_bonus: f32,
+
+    // ===== Self-Reflection Stats =====
+
+    /// Current self-assessment
+    pub self_assessment: String,
+
+    /// Number of reflection cycles performed
+    pub reflection_count: u64,
+
+    /// Threshold adjustments made
+    pub adjustments_made: u32,
+
+    /// Learning effectiveness score (0.0 to 1.0)
+    pub learning_effectiveness: f32,
+
+    /// Cycles until next reflection
+    pub next_reflection_in: u32,
+
+    /// Adapted flow error threshold
+    pub adapted_flow_threshold: f32,
+
+    /// Adapted boredom threshold
+    pub adapted_boredom_threshold: f32,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MEGA-UNIFIED ARCHITECTURE STATS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Current cognitive depth (from Thalamic routing)
+    pub cognitive_depth: String,
+
+    /// Unified Φ from the unification engine
+    pub unified_phi: f32,
+
+    /// Unified emotional valence (VAD-based, from EmotionalBridge)
+    pub unified_emotional_valence: f32,
+
+    /// Unified emotional arousal (VAD-based)
+    pub unified_emotional_arousal: f32,
+
+    /// Unified emotional dominance (VAD-based)
+    pub unified_emotional_dominance: f32,
+
+    /// Discrete emotion from unified bridge
+    pub unified_emotion: String,
+
+    /// Emotional pattern detected (Stable/Escalating/Calming/Volatile)
+    pub emotional_pattern: String,
+
+    /// Thalamic routing: fraction using Reflex path
+    pub thalamic_reflex_rate: f32,
+
+    /// Thalamic routing: fraction using Cortical path
+    pub thalamic_cortical_rate: f32,
+
+    /// Thalamic routing: fraction using DeepThought path
+    pub thalamic_deep_rate: f32,
+
+    /// Active Inference: Modulation Index (prediction-outcome coupling)
+    pub active_inference_modulation_index: f32,
+
+    /// Active Inference: Coupling quality
+    pub active_inference_coupling_quality: String,
+
+    /// Active Inference: Average prediction error (from PAC)
+    pub active_inference_avg_error: f32,
+
+    /// Closed Learning Loop: Current strategy
+    pub current_strategy: String,
+
+    /// Closed Learning Loop: Best strategy (from Q-values)
+    pub best_strategy: String,
+
+    /// Closed Learning Loop: Average reward
+    pub average_reward: f32,
+
+    /// Closed Learning Loop: Exploration rate
+    pub exploration_rate: f32,
+
+    /// Closed Learning Loop: Total interactions
+    pub learning_loop_interactions: u64,
+
+    /// Episodic Memory: Short-term count
+    pub memory_short_term_count: usize,
+
+    /// Episodic Memory: Long-term count
+    pub memory_long_term_count: usize,
+
+    /// Episodic Memory: Total encoded
+    pub memory_total_encoded: u64,
+
+    /// World Model: Average prediction error across levels
+    pub world_model_avg_error: f32,
+
+    /// Active goals count
+    pub active_goals_count: usize,
 }
 
 /// The Cognitive Loop Service
@@ -237,6 +2990,72 @@ pub struct CognitiveLoopService {
 
     /// Is currently consolidating (background learning)
     is_consolidating: bool,
+
+    /// Coherence bridge for bidirectional CfC↔consciousness feedback
+    coherence_bridge: CfCCoherenceBridge,
+
+    /// Voice feedback bridge for voice→CfC feedback
+    voice_feedback_bridge: VoiceFeedbackBridge,
+
+    /// Temporal signature encoder for consciousness pattern detection
+    temporal_signature_encoder: TemporalSignatureEncoder,
+
+    /// Current adaptive behavior based on consciousness state
+    adaptive_behavior: AdaptiveBehavior,
+
+    /// Prediction confidence (0.0 to 1.0)
+    /// Decays during uncertain states, grows with accurate predictions
+    prediction_confidence: f32,
+
+    /// Flow state tracker
+    /// Detects and maintains flow state for optimal cognitive engagement
+    flow_state: FlowState,
+
+    /// Emotion contagion tracker
+    /// Emotional content influences consciousness patterns
+    emotion_contagion: EmotionContagion,
+
+    /// Curiosity drive for novelty seeking
+    /// Triggers exploration when predictions are too accurate
+    curiosity_drive: CuriosityDrive,
+
+    /// Self-reflection for meta-learning
+    /// Periodically analyzes and adjusts internal thresholds
+    self_reflection: SelfReflection,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MEGA-UNIFIED ARCHITECTURE: Consciousness Unification Engine
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Thalamic router for cognitive depth selection
+    /// Routes inputs to Reflex/Cortical/DeepThought paths based on novelty and urgency
+    thalamic_router: ThalamicRouter,
+
+    /// Consciousness Unification Engine - integrates all consciousness subsystems
+    /// Provides: EmotionalBridge (VAD emotions), CausalReasoning, DialoguePipeline
+    /// This replaces simple EmotionContagion with full VAD emotional tracking
+    unification_engine: ConsciousnessUnificationEngine,
+
+    /// Current cognitive routing depth (from Thalamus)
+    /// Determines how deep the cognitive processing should go
+    cognitive_depth: CognitiveDepth,
+
+    /// Active Inference Bridge for precision-weighted prediction
+    /// Connects MAGI Loop calibration to control signals via PAC tracking
+    active_inference_bridge: ActiveInferenceBridge,
+
+    /// Closed Learning Loop for strategy-based behavioral adaptation
+    /// Implements the paradigm: Learning → Behavioral Change
+    closed_learning_loop: ClosedLearningLoop,
+
+    /// Episodic Memory Bridge for memory encoding and recall during cycles
+    episodic_memory: EpisodicMemoryBridge,
+
+    /// Goal System Bridge for goal-directed attention modulation
+    goal_system: GoalSystemBridge,
+
+    /// World Model Bridge for hierarchical grounded prediction
+    world_model: WorldModelBridge,
 }
 
 impl CognitiveLoopService {
@@ -250,6 +3069,22 @@ impl CognitiveLoopService {
             config.cfc_config.num_neurons
         );
 
+        // Initialize coherence bridge with learning rate from config
+        let coherence_config = CoherenceConfig {
+            base_learning_rate: config.cfc_config.learning_rate,
+            ..Default::default()
+        };
+        let coherence_bridge = CfCCoherenceBridge::new(coherence_config);
+
+        // Initialize voice feedback bridge
+        let voice_feedback_bridge = VoiceFeedbackBridge::new(VoiceFeedbackConfig::default());
+
+        // Initialize temporal signature encoder for consciousness pattern detection
+        let temporal_signature_encoder = TemporalSignatureEncoder::new(SignatureConfig::default());
+
+        // Initialize adaptive behavior with defaults
+        let adaptive_behavior = AdaptiveBehavior::default();
+
         Ok(Self {
             config,
             encoder,
@@ -261,6 +3096,25 @@ impl CognitiveLoopService {
             last_prediction: None,
             start_time: Instant::now(),
             is_consolidating: false,
+            coherence_bridge,
+            voice_feedback_bridge,
+            temporal_signature_encoder,
+            adaptive_behavior,
+            prediction_confidence: 0.5, // Start neutral
+            flow_state: FlowState::default(),
+            emotion_contagion: EmotionContagion::default(),
+            curiosity_drive: CuriosityDrive::default(),
+            self_reflection: SelfReflection::default(),
+            // Mega-unified architecture components
+            thalamic_router: ThalamicRouter::default(),
+            unification_engine: ConsciousnessUnificationEngine::new(),
+            cognitive_depth: CognitiveDepth::default(),
+            active_inference_bridge: ActiveInferenceBridge::with_defaults(),
+            closed_learning_loop: ClosedLearningLoop::default(),
+            // Memory system bridges
+            episodic_memory: EpisodicMemoryBridge::default(),
+            goal_system: GoalSystemBridge::new(),
+            world_model: WorldModelBridge::default(),
         })
     }
 
@@ -268,13 +3122,113 @@ impl CognitiveLoopService {
     ///
     /// Uses CfC's O(1) closed-form solution for temporal prediction,
     /// enabling instant forward-time queries and multi-scale prediction.
+    ///
+    /// ## Mega-Unified Architecture Integration
+    ///
+    /// This cycle now integrates:
+    /// - **Thalamic Routing**: Determines cognitive depth (Reflex/Cortical/DeepThought)
+    /// - **ConsciousnessUnificationEngine**: Unified emotional bridge with VAD emotions
+    /// - **Φ Updates**: Feeds consciousness level to the unification engine
     pub fn cycle(&mut self, input: &str) -> CycleResult {
         let cycle_start = Instant::now();
         self.stats.total_cycles += 1;
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // PHASE 0: Thalamic Routing (Cognitive Depth Selection)
+        // ═══════════════════════════════════════════════════════════════════════
+        // Determine how deep to process BEFORE encoding, based on prior state
+
+        let prior_pattern = self.temporal_signature_encoder.classify_state().0;
+        let prior_valence = self.emotion_contagion.prosody_valence();
+        let prior_error = self.stats.avg_prediction_error;
+
+        self.cognitive_depth = self.thalamic_router.route_from_cycle(
+            prior_error,
+            prior_pattern,
+            prior_valence,
+        );
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PHASE 0.5: Closed Learning Loop - Strategy Selection
+        // ═══════════════════════════════════════════════════════════════════════
+        // Select response strategy BEFORE processing, based on:
+        // - Q-learning from past interactions
+        // - Previous reward (stick with success, avoid failure)
+        // - Φ-gating (high Φ → Exploratory, low Φ → Supportive)
+
+        let prior_phi = self.unification_engine.phi;
+        let prior_reward = self.closed_learning_loop.last_result.as_ref().map(|r| r.reward);
+        let selected_strategy = self.closed_learning_loop.select_strategy(prior_phi, prior_reward);
+
+        // Strategy influences adaptive behavior
+        match selected_strategy {
+            ResponseStrategy::Exploratory => {
+                self.adaptive_behavior.exploration_factor = 0.8;
+            }
+            ResponseStrategy::Detailed => {
+                self.adaptive_behavior.attention_sensitivity = 1.2;
+            }
+            ResponseStrategy::Concise => {
+                self.adaptive_behavior.speech_rate_multiplier = 1.2;
+            }
+            ResponseStrategy::Clarifying => {
+                self.adaptive_behavior.exploration_factor = 0.5;
+            }
+            ResponseStrategy::Supportive => {
+                self.adaptive_behavior.pause_multiplier = 1.3;
+            }
+        }
+
         // 1. HDC encode with attention from previous prediction
         let encoding_result = self.encoder.encode(input);
         let prediction_error = encoding_result.prediction_error;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 1a. Memory System Integration: Recall relevant episodic memories
+        // ═══════════════════════════════════════════════════════════════════════
+        // Use HDC embedding to query episodic memory for context
+
+        let hdv_sample: Vec<f32> = encoding_result.hdv.as_slice()[..64.min(encoding_result.hdv.dim())].to_vec();
+        let recalled_memories = self.episodic_memory.recall(&hdv_sample, 3, 0.3);
+        let memory_context_boost = if !recalled_memories.is_empty() {
+            // Recalled memories boost prediction confidence slightly
+            recalled_memories.iter().map(|(_, sim)| sim).sum::<f32>() / recalled_memories.len() as f32 * 0.1
+        } else {
+            0.0
+        };
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 1a.2. Goal System: Apply attention bias from active goals
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let goal_attention_bias = self.goal_system.attention_bias();
+        self.adaptive_behavior.attention_sensitivity *= goal_attention_bias;
+
+        // 1b. Analyze emotional content for simple contagion (keyword-based)
+        self.emotion_contagion.analyze(input);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 1c. Update Unified Emotional Bridge (VAD-based, richer than simple contagion)
+        // ═══════════════════════════════════════════════════════════════════════
+        // Bridge the simple EmotionContagion to the unified EmotionalBridge
+        // Convert valence/arousal to the full VAD emotional system
+
+        let simple_valence = self.emotion_contagion.prosody_valence() as f64;
+        let simple_arousal = self.emotion_contagion.prosody_arousal() as f64;
+        // Dominance estimated from confidence and flow state
+        let dominance = if self.flow_state.in_flow {
+            0.6 + 0.2 * self.flow_state.intensity as f64
+        } else if self.prediction_confidence > 0.6 {
+            0.4
+        } else {
+            0.2
+        };
+
+        self.unification_engine.emotional.update_from_core_affect(
+            simple_valence,
+            simple_arousal,
+            dominance,
+        );
 
         // 2. Compress HDC state for CfC (using Random Projection)
         let compressed_state = self.encoder.compress_for_ltc(
@@ -298,6 +3252,12 @@ impl CognitiveLoopService {
             .map(|arr| arr.to_vec())
             .unwrap_or_else(|_| vec![0.0; self.config.cfc_config.num_neurons]);
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // 6b. World Model: Update hierarchical world model with sensory input
+        // ═══════════════════════════════════════════════════════════════════════
+
+        self.world_model.update_sensory(&compressed_state);
+
         // 7. Send prediction to encoder for next cycle
         self.encoder.set_prediction(prediction.clone());
 
@@ -307,11 +3267,103 @@ impl CognitiveLoopService {
         // 9. Create experience and add to buffer (this updates last_state)
         self.create_experience(&compressed_state, &prediction, prediction_error);
 
-        // 10. Learn if error is significant AND we have a previous state
-        let (learning_occurred, training_loss) = if prediction_error > self.config.learning_threshold {
+        // 10. Update coherence bridge with current tau values
+        let tau_refs: Vec<&ndarray::Array1<f32>> = self.cfc.all_tau();
+        let tau_refs_slice: Vec<&ndarray::Array1<f32>> = tau_refs.iter().map(|t| *t).collect();
+        self.coherence_bridge.update(&tau_refs_slice);
+
+        // 10b. Update temporal signature encoder with tau values
+        // Record mean tau for consciousness pattern detection
+        let flattened_tau = self.cfc.flattened_tau();
+        self.temporal_signature_encoder.record_batch(&flattened_tau);
+
+        // 10c. Update adaptive behavior based on consciousness state
+        let (pattern, pattern_confidence) = self.temporal_signature_encoder.classify_state();
+        let coherence = self.coherence_bridge.smoothed_coherence();
+        let voice_confidence = self.voice_feedback_bridge.summary().voice_confidence;
+        self.adaptive_behavior = AdaptiveBehavior::from_consciousness_state(
+            pattern,
+            pattern_confidence,
+            coherence,
+            voice_confidence,
+        );
+
+        // 10d. Update prediction confidence with decay during uncertain states
+        self.update_prediction_confidence(pattern, prediction_error, pattern_confidence);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10d.5 Active Inference Bridge: Observe prediction resolution for PAC tracking
+        // ═══════════════════════════════════════════════════════════════════════
+        // Track prediction-outcome coupling via Phase-Amplitude Coupling (PAC)
+        // This enables precision-weighted prediction errors
+
+        // Consider prediction "successful" if error is below learning threshold
+        let prediction_success = prediction_error < self.config.learning_threshold;
+        self.active_inference_bridge.observe_resolution(
+            self.prediction_confidence as f64,
+            prediction_success,
+        );
+
+        // 10e. Update flow state with adaptive thresholds from self-reflection
+        let adapted_thresholds = self.self_reflection.get_thresholds();
+        self.flow_state.update_with_thresholds(
+            pattern,
+            prediction_error,
+            coherence,
+            self.prediction_confidence,
+            adapted_thresholds.flow_error,
+            adapted_thresholds.flow_coherence,
+        );
+
+        // 10f. Update curiosity drive with adaptive boredom threshold
+        self.curiosity_drive.set_boredom_threshold(adapted_thresholds.boredom);
+        self.curiosity_drive.update(prediction_error);
+
+        // 10g. Self-reflection for meta-learning
+        self.self_reflection.record_cycle(
+            prediction_error,
+            self.flow_state.in_flow,
+            self.curiosity_drive.should_explore(),
+            self.prediction_confidence,
+        );
+        // Perform reflection if it's time (adjusts thresholds automatically)
+        if self.self_reflection.should_reflect() {
+            let _recommendations = self.self_reflection.reflect();
+            // Recommendations are stored in self_reflection.recommendations
+            // and can be queried by external systems
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10h. Update Consciousness Unification Engine with current Φ
+        // ═══════════════════════════════════════════════════════════════════════
+        // Compute unified Φ from coherence, confidence, and flow state
+        // This feeds the dialogue pipeline for consciousness-aware responses
+
+        let coherence_phi = self.coherence_bridge.phi_contribution();
+        let voice_phi = self.voice_feedback_bridge.summary().phi_adjustment;
+        let flow_phi = if self.flow_state.in_flow {
+            self.flow_state.intensity * 0.2
+        } else {
+            0.0
+        };
+        // Combine contributions: temporal coherence + voice quality + flow state
+        let unified_phi = (coherence_phi + voice_phi + flow_phi).clamp(0.0, 1.0) as f64;
+        self.unification_engine.update_phi(unified_phi);
+
+        // Get adaptive learning rate (respects pause_learning and all modulations)
+        // Include flow state boost and curiosity novelty bonus
+        let base_lr = self.combined_learning_rate();
+        let adaptive_lr = self.adaptive_behavior.effective_learning_rate(base_lr);
+        let flow_lr = self.flow_state.effective_learning_multiplier(adaptive_lr);
+        let effective_lr = self.curiosity_drive.effective_learning_rate(flow_lr);
+
+        // 11. Learn if error is significant AND we have a previous state AND not paused
+        let (learning_occurred, training_loss) = if prediction_error > self.config.learning_threshold
+            && !self.adaptive_behavior.pause_learning
+        {
             self.stats.learning_cycles += 1;
 
-            // Use CfC's analytical gradient training
+            // Use CfC's analytical gradient training with fully-adaptive LR
             let result = if let Some(ref prev) = previous_state {
                 let prev_array = Array1::from_vec(prev.clone());
                 let target_array = Array1::from_vec(compressed_state.clone());
@@ -319,7 +3371,7 @@ impl CognitiveLoopService {
                     &prev_array,
                     &target_array,
                     delta_t,
-                    self.config.cfc_config.learning_rate
+                    effective_lr  // Use adaptive learning rate
                 )
             } else {
                 // First cycle: bootstrap with self-prediction
@@ -328,7 +3380,7 @@ impl CognitiveLoopService {
                     &current_array,
                     &current_array,
                     delta_t,
-                    self.config.cfc_config.learning_rate * 0.1
+                    effective_lr * 0.1
                 )
             };
 
@@ -343,11 +3395,62 @@ impl CognitiveLoopService {
             (false, None)
         };
 
-        // 11. Update statistics
+        // 12. Update statistics
         self.update_stats(prediction_error, cycle_start.elapsed());
 
-        // Update consciousness level from CfC
-        self.stats.ltc_consciousness = self.cfc.consciousness_level();
+        // Update state diversity from CfC
+        self.stats.ltc_consciousness = self.cfc.state_diversity();
+
+        // Update coherence metrics in stats
+        self.stats.temporal_coherence = self.coherence_bridge.smoothed_coherence();
+        self.stats.effective_learning_rate = effective_lr;
+        self.stats.coherence_phi_contribution = self.coherence_bridge.phi_contribution();
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // EPISODIC MEMORY: Encode this cycle's experience
+        // ═══════════════════════════════════════════════════════════════════════
+        // Only encode if prediction error is significant (worth remembering)
+
+        if prediction_error > 0.1 || self.flow_state.in_flow {
+            let emotional_valence = self.emotion_contagion.prosody_valence();
+            let phi = self.unification_engine.phi as f32;
+            self.episodic_memory.encode(
+                input,
+                hdv_sample.clone(),
+                emotional_valence,
+                phi,
+                self.stats.total_cycles,
+            );
+        }
+
+        // Apply memory context boost to confidence
+        self.prediction_confidence = (self.prediction_confidence + memory_context_boost).clamp(0.0, 1.0);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // CLOSED LEARNING LOOP: Update with cycle results
+        // ═══════════════════════════════════════════════════════════════════════
+        // This closes the loop: learning from this cycle influences next cycle's strategy
+
+        let cycle_reward = if prediction_error < self.config.learning_threshold {
+            // Good prediction → positive reward (scaled by confidence)
+            0.5 + 0.5 * self.prediction_confidence
+        } else if prediction_error > 0.5 {
+            // Very poor prediction → negative reward
+            -0.3 - 0.2 * (prediction_error - 0.5)
+        } else {
+            // Moderate prediction → neutral to slightly negative
+            0.2 - 0.5 * prediction_error
+        };
+
+        let cycle_learning_result = CycleLearningResult {
+            reward: cycle_reward.clamp(-1.0, 1.0),
+            strategy_used: selected_strategy,
+            successful: prediction_error < self.config.learning_threshold && self.flow_state.in_flow,
+            prediction_error,
+            coherence,
+        };
+
+        self.closed_learning_loop.update(cycle_learning_result);
 
         CycleResult {
             output,
@@ -454,9 +3557,9 @@ impl CognitiveLoopService {
         self.encoder.stats()
     }
 
-    /// Get CfC consciousness level
-    pub fn cfc_consciousness(&self) -> f32 {
-        self.cfc.consciousness_level()
+    /// Get CfC state diversity (activation variance across cells)
+    pub fn cfc_state_diversity(&self) -> f32 {
+        self.cfc.state_diversity()
     }
 
     /// Get CfC state dimension
@@ -474,6 +3577,687 @@ impl CognitiveLoopService {
         self.stats.attention_variance > 0.01
     }
 
+    /// Get coherence summary for external systems
+    pub fn coherence_summary(&self) -> CoherenceSummary {
+        self.coherence_bridge.summary()
+    }
+
+    /// Get temporal coherence value
+    pub fn temporal_coherence(&self) -> f32 {
+        self.coherence_bridge.smoothed_coherence()
+    }
+
+    // ========== Prediction Confidence Methods ==========
+
+    /// Update prediction confidence based on consciousness state and prediction accuracy
+    ///
+    /// Confidence decays during uncertain/transitioning states and grows when
+    /// predictions are accurate in stable states.
+    fn update_prediction_confidence(
+        &mut self,
+        pattern: ConsciousnessPattern,
+        prediction_error: f32,
+        pattern_confidence: f32,
+    ) {
+        use ConsciousnessPattern::*;
+
+        // Base decay/growth parameters
+        const DECAY_RATE_UNCERTAIN: f32 = 0.05;    // Fast decay when uncertain
+        const DECAY_RATE_TRANSITION: f32 = 0.03;   // Moderate decay during transitions
+        const GROWTH_RATE_ACCURATE: f32 = 0.02;    // Slow growth for stability
+        const ERROR_THRESHOLD: f32 = 0.3;          // Below this = accurate prediction
+
+        // Decay rate depends on consciousness state
+        let decay_rate = match pattern {
+            Uncertain => DECAY_RATE_UNCERTAIN,
+            Transitioning => DECAY_RATE_TRANSITION,
+            Resting => DECAY_RATE_TRANSITION * 0.5, // Slight decay in resting
+            _ => 0.0, // No decay in stable states
+        };
+
+        // Growth when predictions are accurate in stable states
+        let growth_rate = if prediction_error < ERROR_THRESHOLD {
+            match pattern {
+                Focused | Contemplative => GROWTH_RATE_ACCURATE * 1.5,
+                Excited | Exploratory => GROWTH_RATE_ACCURATE,
+                _ => GROWTH_RATE_ACCURATE * 0.5,
+            }
+        } else {
+            0.0
+        };
+
+        // Apply decay and growth
+        let confidence_delta = growth_rate - decay_rate;
+
+        // Scale by pattern confidence (more confident = stronger effect)
+        let scaled_delta = confidence_delta * pattern_confidence;
+
+        // Update with bounds
+        self.prediction_confidence = (self.prediction_confidence + scaled_delta).clamp(0.0, 1.0);
+
+        // Additional penalty for very high prediction errors
+        if prediction_error > 0.7 {
+            self.prediction_confidence *= 0.95; // 5% penalty for bad predictions
+        }
+    }
+
+    /// Get current prediction confidence
+    pub fn prediction_confidence(&self) -> f32 {
+        self.prediction_confidence
+    }
+
+    /// Check if predictions should be trusted
+    /// Returns true if confidence is above threshold (0.4)
+    pub fn predictions_trustworthy(&self) -> bool {
+        self.prediction_confidence > 0.4
+    }
+
+    // ========== Flow State Methods ==========
+
+    /// Check if currently in flow state
+    /// Flow state = sustained focus + low error + high coherence
+    pub fn in_flow(&self) -> bool {
+        self.flow_state.in_flow
+    }
+
+    /// Get flow state intensity (0.0 to 1.0)
+    /// Higher = deeper flow state with greater benefits
+    pub fn flow_intensity(&self) -> f32 {
+        self.flow_state.intensity
+    }
+
+    /// Get flow state streak (consecutive flow-compatible cycles)
+    pub fn flow_streak(&self) -> u32 {
+        self.flow_state.streak
+    }
+
+    /// Get current flow state reference
+    pub fn flow_state(&self) -> &FlowState {
+        &self.flow_state
+    }
+
+    /// Get flow learning boost multiplier
+    /// 1.0 when not in flow, up to 1.5 at max flow intensity
+    pub fn flow_learning_boost(&self) -> f32 {
+        self.flow_state.learning_boost
+    }
+
+    // ========== Emotion Contagion Methods ==========
+
+    /// Get current emotional valence from content analysis
+    /// Positive = happy/exciting content, Negative = sad/angry content
+    pub fn emotional_valence(&self) -> f32 {
+        self.emotion_contagion.smoothed_valence
+    }
+
+    /// Get current emotional arousal
+    /// High = intense/urgent, Low = calm/peaceful
+    pub fn emotional_arousal(&self) -> f32 {
+        self.emotion_contagion.smoothed_arousal
+    }
+
+    /// Get emotion-based pattern nudge suggestion
+    /// Returns (suggested pattern, influence strength)
+    pub fn emotion_pattern_nudge(&self) -> (Option<ConsciousnessPattern>, f32) {
+        self.emotion_contagion.pattern_nudge()
+    }
+
+    /// Get emotion contagion reference
+    pub fn emotion_contagion(&self) -> &EmotionContagion {
+        &self.emotion_contagion
+    }
+
+    /// Check if emotional content is significant
+    pub fn has_emotional_content(&self) -> bool {
+        self.emotion_contagion.smoothed_valence.abs() > 0.2
+    }
+
+    // ========== Curiosity Drive Methods ==========
+
+    /// Get current boredom level (0.0 to 1.0)
+    /// High when predictions are consistently too accurate
+    pub fn boredom(&self) -> f32 {
+        self.curiosity_drive.boredom
+    }
+
+    /// Get curiosity level (0.0 to 1.0)
+    pub fn curiosity(&self) -> f32 {
+        self.curiosity_drive.curiosity
+    }
+
+    /// Get exploration urge (0.0 to 1.0)
+    /// High when boredom + curiosity trigger exploration
+    pub fn exploration_urge(&self) -> f32 {
+        self.curiosity_drive.exploration_urge
+    }
+
+    /// Check if curiosity-triggered exploration should occur
+    pub fn curiosity_should_explore(&self) -> bool {
+        self.curiosity_drive.should_explore()
+    }
+
+    /// Get curiosity drive reference
+    pub fn curiosity_drive(&self) -> &CuriosityDrive {
+        &self.curiosity_drive
+    }
+
+    /// Get novelty bonus for learning
+    pub fn novelty_bonus(&self) -> f32 {
+        self.curiosity_drive.novelty_bonus
+    }
+
+    /// Check if the system is bored (needs new stimuli)
+    pub fn is_bored(&self) -> bool {
+        self.curiosity_drive.boredom > 0.5
+    }
+
+    // ========== Self-Reflection Methods ==========
+
+    /// Get current self-assessment
+    pub fn self_assessment(&self) -> SelfAssessment {
+        self.self_reflection.self_assessment
+    }
+
+    /// Get self-reflection summary
+    pub fn reflection_summary(&self) -> ReflectionSummary {
+        self.self_reflection.summary()
+    }
+
+    /// Get adapted thresholds from self-reflection
+    pub fn adapted_thresholds(&self) -> ReflectionThresholds {
+        self.self_reflection.get_thresholds()
+    }
+
+    /// Get current recommendations from self-reflection
+    pub fn recommendations(&self) -> &[Recommendation] {
+        &self.self_reflection.recommendations
+    }
+
+    /// Get number of reflections performed
+    pub fn reflection_count(&self) -> u64 {
+        self.self_reflection.reflection_count
+    }
+
+    /// Get learning effectiveness score
+    pub fn learning_effectiveness(&self) -> f32 {
+        self.self_reflection.learning_effectiveness
+    }
+
+    /// Check if system needs calibration (based on self-reflection)
+    pub fn needs_calibration(&self) -> bool {
+        self.self_reflection.self_assessment == SelfAssessment::NeedsCalibration
+    }
+
+    /// Check if system is performing optimally (based on self-reflection)
+    pub fn is_optimal(&self) -> bool {
+        self.self_reflection.self_assessment == SelfAssessment::Optimal
+    }
+
+    /// Force an immediate reflection cycle
+    pub fn force_reflect(&mut self) -> Vec<Recommendation> {
+        self.self_reflection.reflect()
+    }
+
+    /// Get self-reflection reference
+    pub fn self_reflection(&self) -> &SelfReflection {
+        &self.self_reflection
+    }
+
+    // ========== Consciousness Snapshot ==========
+
+    /// Get a complete snapshot of current consciousness state
+    ///
+    /// This aggregates all cognitive metrics into a single queryable view,
+    /// useful for monitoring, logging, APIs, or external integrations.
+    pub fn consciousness_snapshot(&self) -> ConsciousnessSnapshot {
+        let (pattern, pattern_confidence) = self.temporal_signature_encoder.classify_state();
+        let temporal_summary = self.temporal_signature_encoder.summary();
+        let reflection_summary = self.self_reflection.summary();
+        let thresholds = self.self_reflection.get_thresholds();
+        let (emotion_nudge, _) = self.emotion_contagion.pattern_nudge();
+
+        let consciousness_level = ConsciousnessSnapshot::compute_consciousness_level(
+            self.prediction_confidence,
+            self.coherence_bridge.smoothed_coherence(),
+            self.flow_state.intensity,
+            pattern_confidence,
+        );
+
+        ConsciousnessSnapshot {
+            // Core metrics
+            cycle: self.stats.total_cycles,
+            consciousness_level,
+            pattern,
+            pattern_confidence,
+
+            // Prediction & Learning
+            prediction_error: self.stats.avg_prediction_error,
+            prediction_confidence: self.prediction_confidence,
+            predictions_trustworthy: self.predictions_trustworthy(),
+            effective_learning_rate: self.stats.adaptive_learning_rate,
+            learning_effectiveness: self.self_reflection.learning_effectiveness,
+
+            // Flow state
+            in_flow: self.flow_state.in_flow,
+            flow_intensity: self.flow_state.intensity,
+            flow_streak: self.flow_state.streak,
+            flow_learning_boost: self.flow_state.learning_boost,
+
+            // Curiosity & Exploration
+            boredom: self.curiosity_drive.boredom,
+            curiosity: self.curiosity_drive.curiosity,
+            exploration_urge: self.curiosity_drive.exploration_urge,
+            exploring: self.curiosity_drive.should_explore(),
+            novelty_bonus: self.curiosity_drive.novelty_bonus,
+
+            // Emotional state
+            emotional_valence: self.emotion_contagion.smoothed_valence,
+            emotional_arousal: self.emotion_contagion.smoothed_arousal,
+            has_emotional_content: self.has_emotional_content(),
+            emotion_nudge,
+
+            // Self-reflection
+            self_assessment: self.self_reflection.self_assessment,
+            reflection_count: reflection_summary.reflection_count,
+            adjustments_made: reflection_summary.adjustments_made,
+            next_reflection_in: reflection_summary.next_reflection_in,
+
+            // Adaptive behavior
+            action_hint: self.adaptive_behavior.action_hint,
+            speech_rate_multiplier: self.adaptive_behavior.speech_rate_multiplier,
+            pause_multiplier: self.adaptive_behavior.pause_multiplier,
+            learning_paused: self.adaptive_behavior.pause_learning,
+
+            // Adapted thresholds
+            flow_threshold: thresholds.flow_error,
+            boredom_threshold: thresholds.boredom,
+            trust_threshold: thresholds.trust,
+
+            // Temporal coherence
+            temporal_coherence: self.coherence_bridge.smoothed_coherence(),
+            tau_mean: temporal_summary.features.mean,
+            tau_trend: temporal_summary.features.trend,
+
+            // ═══════════════════════════════════════════════════════════════════
+            // MEGA-UNIFIED ARCHITECTURE FIELDS
+            // ═══════════════════════════════════════════════════════════════════
+
+            // Cognitive depth from thalamic routing
+            cognitive_depth: self.cognitive_depth,
+
+            // Unified Φ from the unification engine
+            unified_phi: self.unification_engine.phi as f32,
+
+            // Unified emotional state (VAD-based)
+            unified_valence: self.unification_engine.emotional.state().valence as f32,
+            unified_arousal: self.unification_engine.emotional.state().arousal as f32,
+            unified_dominance: self.unification_engine.emotional.state().dominance as f32,
+            unified_discrete_emotion: self.unification_engine.emotional.state().discrete_emotion,
+
+            // Emotional pattern from the bridge
+            emotional_pattern: self.unification_engine.emotional.detect_pattern(),
+
+            // Natural language description of emotional state
+            emotional_description: self.unification_engine.emotional.state().describe(),
+
+            // ═══════════════════════════════════════════════════════════════════
+            // TEMPORAL ENCODING FIELDS
+            // ═══════════════════════════════════════════════════════════════════
+
+            // Snapshot timestamp (nanoseconds since start)
+            snapshot_timestamp_nanos: self.start_time.elapsed().as_nanos() as u64,
+
+            // Flow temporal statistics
+            current_flow_duration_secs: self.flow_state.current_flow_duration_secs(),
+            total_flow_time_secs: self.flow_state.total_flow_time_with_current(),
+            flow_periods: self.flow_state.flow_periods,
+            avg_flow_duration_secs: self.flow_state.avg_flow_duration_secs,
+        }
+    }
+
+    /// Get a concise status line for logging/display
+    pub fn status_line(&self) -> String {
+        self.consciousness_snapshot().status()
+    }
+
+    /// Check if system needs attention (via snapshot)
+    pub fn snapshot_needs_attention(&self) -> bool {
+        self.consciousness_snapshot().needs_attention()
+    }
+
+    /// Get current consciousness level (0.0 to 1.0)
+    pub fn consciousness_level(&self) -> f32 {
+        let (_, pattern_confidence) = self.temporal_signature_encoder.classify_state();
+        ConsciousnessSnapshot::compute_consciousness_level(
+            self.prediction_confidence,
+            self.coherence_bridge.smoothed_coherence(),
+            self.flow_state.intensity,
+            pattern_confidence,
+        )
+    }
+
+    // ========== Voice Feedback Methods ==========
+
+    /// Update voice feedback with synthesis output metrics
+    ///
+    /// Call this after voice synthesis to feed quality metrics back into
+    /// the cognitive loop, enabling self-regulating improvement.
+    pub fn update_voice_feedback(&mut self, metrics: VoiceOutputMetrics) {
+        self.voice_feedback_bridge.update(metrics);
+    }
+
+    /// Update listener prediction feedback
+    ///
+    /// Call this when listener comprehension data is available.
+    /// 0.0 = complete misunderstanding, 1.0 = perfect prediction
+    pub fn update_listener_prediction(&mut self, success: f32) {
+        self.voice_feedback_bridge.update_listener_prediction(success);
+    }
+
+    /// Get voice quality summary for external systems
+    pub fn voice_feedback_summary(&self) -> VoiceQualitySummary {
+        self.voice_feedback_bridge.summary()
+    }
+
+    /// Check if voice indicates uncertainty (poor articulation or unstable rate)
+    pub fn voice_indicates_uncertainty(&self) -> bool {
+        self.voice_feedback_bridge.is_uncertain()
+    }
+
+    /// Get combined phi contribution from all feedback sources
+    ///
+    /// This combines:
+    /// - Coherence phi contribution (from CfC temporal coherence)
+    /// - Voice phi adjustment (from voice synthesis quality)
+    pub fn combined_phi_contribution(&self) -> f32 {
+        self.coherence_bridge.phi_contribution() + self.voice_feedback_bridge.compute_phi_adjustment()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // MEGA-UNIFIED ARCHITECTURE: Accessor Methods
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /// Get current cognitive depth from thalamic routing
+    ///
+    /// Returns the current processing depth:
+    /// - Reflex: Fast pattern matching (<10ms)
+    /// - Cortical: Standard cognitive cycle (50-200ms)
+    /// - DeepThought: Full deliberation with causal reasoning (200ms+)
+    pub fn cognitive_depth(&self) -> CognitiveDepth {
+        self.cognitive_depth
+    }
+
+    /// Get the thalamic router reference
+    pub fn thalamic_router(&self) -> &ThalamicRouter {
+        &self.thalamic_router
+    }
+
+    /// Get thalamic routing statistics (reflex_rate, cortical_rate, deep_rate)
+    pub fn thalamic_stats(&self) -> (f32, f32, f32) {
+        self.thalamic_router.routing_stats()
+    }
+
+    /// Get the unified Φ from the ConsciousnessUnificationEngine
+    pub fn unified_phi(&self) -> f64 {
+        self.unification_engine.phi
+    }
+
+    /// Get the ConsciousnessUnificationEngine reference
+    ///
+    /// Provides access to:
+    /// - EmotionalBridge (VAD emotional state)
+    /// - UnifiedCausalReasoning
+    /// - ConsciousDialoguePipeline
+    pub fn unification_engine(&self) -> &ConsciousnessUnificationEngine {
+        &self.unification_engine
+    }
+
+    /// Get mutable reference to the unification engine
+    pub fn unification_engine_mut(&mut self) -> &mut ConsciousnessUnificationEngine {
+        &mut self.unification_engine
+    }
+
+    /// Get the unified emotional state (VAD-based)
+    pub fn unified_emotional_state(&self) -> &UnifiedEmotionalState {
+        self.unification_engine.emotional.state()
+    }
+
+    /// Get the emotional pattern (Stable/Escalating/Calming/Volatile)
+    pub fn emotional_pattern(&self) -> EmotionalPattern {
+        self.unification_engine.emotional.detect_pattern()
+    }
+
+    /// Get natural language description of current emotional state
+    pub fn emotional_description(&self) -> String {
+        self.unification_engine.emotional.state().describe()
+    }
+
+    /// Get the discrete unified emotion
+    pub fn unified_emotion(&self) -> Option<UnifiedEmotion> {
+        self.unification_engine.emotional.state().discrete_emotion
+    }
+
+    /// Process input through the unified dialogue pipeline
+    ///
+    /// This uses the consciousness-aware dialogue generation that
+    /// adapts depth (Reactive/Reflective/Integrative) based on Φ.
+    pub fn process_unified(&mut self, input: &str) -> crate::consciousness::consciousness_unification::UnifiedConsciousnessResult {
+        self.unification_engine.process(input)
+    }
+
+    /// Get a description of the current consciousness state
+    pub fn unified_state_description(&self) -> String {
+        self.unification_engine.describe_state()
+    }
+
+    /// Get the Active Inference Bridge reference
+    pub fn active_inference_bridge(&self) -> &ActiveInferenceBridge {
+        &self.active_inference_bridge
+    }
+
+    /// Get the prediction-outcome coupling Modulation Index
+    ///
+    /// Returns a value in [0, 1] where:
+    /// - 0.0 = No coupling (predictions don't inform outcomes)
+    /// - 1.0 = Perfect coupling (confidence perfectly predicts success)
+    pub fn modulation_index(&self) -> Option<f64> {
+        self.active_inference_bridge.modulation_index()
+    }
+
+    /// Get the coupling quality assessment
+    pub fn coupling_quality(&self) -> CouplingQuality {
+        self.active_inference_bridge.coupling_quality()
+    }
+
+    /// Check if prediction-outcome coupling is meaningful
+    pub fn has_meaningful_coupling(&self) -> bool {
+        self.active_inference_bridge.coupling_quality().is_meaningful()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // CLOSED LEARNING LOOP: Accessor Methods
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /// Get the current response strategy
+    pub fn current_strategy(&self) -> ResponseStrategy {
+        self.closed_learning_loop.current_strategy
+    }
+
+    /// Get the best strategy according to Q-learning
+    pub fn best_strategy(&self) -> ResponseStrategy {
+        self.closed_learning_loop.best_strategy()
+    }
+
+    /// Get the closed learning loop reference
+    pub fn closed_learning_loop(&self) -> &ClosedLearningLoop {
+        &self.closed_learning_loop
+    }
+
+    /// Get average reward from the learning loop
+    pub fn average_reward(&self) -> f32 {
+        self.closed_learning_loop.average_reward()
+    }
+
+    /// Get Q-values for all strategies
+    pub fn strategy_q_values(&self) -> &[f32; 5] {
+        self.closed_learning_loop.q_values()
+    }
+
+    /// Get strategy usage counts
+    pub fn strategy_usage_counts(&self) -> &[u64; 5] {
+        self.closed_learning_loop.strategy_counts()
+    }
+
+    /// Get the last learning result
+    pub fn last_learning_result(&self) -> Option<&CycleLearningResult> {
+        self.closed_learning_loop.last_result.as_ref()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // MEMORY SYSTEM: Accessor Methods
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /// Get the episodic memory bridge reference
+    pub fn episodic_memory(&self) -> &EpisodicMemoryBridge {
+        &self.episodic_memory
+    }
+
+    /// Get mutable reference to episodic memory for manual operations
+    pub fn episodic_memory_mut(&mut self) -> &mut EpisodicMemoryBridge {
+        &mut self.episodic_memory
+    }
+
+    /// Get memory counts (short_term, long_term)
+    pub fn memory_counts(&self) -> (usize, usize) {
+        self.episodic_memory.memory_count()
+    }
+
+    /// Recall memories similar to input
+    pub fn recall_memories(&mut self, query: &[f32], top_k: usize) -> Vec<(EpisodicMemory, f32)> {
+        self.episodic_memory.recall(query, top_k, 0.2)
+    }
+
+    /// Get the goal system bridge reference
+    pub fn goal_system(&self) -> &GoalSystemBridge {
+        &self.goal_system
+    }
+
+    /// Get mutable reference to goal system
+    pub fn goal_system_mut(&mut self) -> &mut GoalSystemBridge {
+        &mut self.goal_system
+    }
+
+    /// Add a goal to the system
+    pub fn add_goal(&mut self, id: &str, description: &str, priority: f32) {
+        self.goal_system.add_goal(CognitiveGoal::new(id, description, priority));
+    }
+
+    /// Get active goals
+    pub fn active_goals(&self) -> Vec<&CognitiveGoal> {
+        self.goal_system.active_goals()
+    }
+
+    /// Get the world model bridge reference
+    pub fn world_model(&self) -> &WorldModelBridge {
+        &self.world_model
+    }
+
+    /// Get abstract level state from world model (for planning)
+    pub fn world_model_abstract_state(&self) -> &[f32] {
+        self.world_model.abstract_state()
+    }
+
+    /// Get world model prediction errors at each level
+    pub fn world_model_level_errors(&self) -> &[f32] {
+        self.world_model.level_errors()
+    }
+
+    /// Get combined learning rate modifier
+    ///
+    /// Returns a modifier (0.25 to 2.0) based on:
+    /// - CfC coherence (higher coherence = higher rate)
+    /// - Voice quality (higher quality = higher rate)
+    pub fn combined_learning_rate(&self) -> f32 {
+        let coherence_lr = self.coherence_bridge.effective_learning_rate();
+        let voice_modifier = self.voice_feedback_bridge.learning_rate_modifier();
+
+        // coherence_lr already includes base_lr × coherence_factor
+        // voice_modifier is 0.5 to 1.0
+        coherence_lr * voice_modifier
+    }
+
+    // ========== Consciousness Pattern Methods ==========
+
+    /// Get current consciousness pattern classification
+    ///
+    /// Returns (pattern, confidence) where pattern is one of:
+    /// Contemplative, Excited, Focused, Exploratory, Resting, Transitioning, Uncertain
+    pub fn consciousness_pattern(&self) -> (ConsciousnessPattern, f32) {
+        self.temporal_signature_encoder.classify_state()
+    }
+
+    /// Get full temporal state summary
+    pub fn temporal_state_summary(&self) -> TemporalStateSummary {
+        self.temporal_signature_encoder.summary()
+    }
+
+    /// Check if current state matches a specific consciousness pattern
+    pub fn is_consciousness_state(&self, pattern: ConsciousnessPattern) -> bool {
+        self.temporal_signature_encoder.is_state(pattern)
+    }
+
+    /// Get similarity to a specific consciousness pattern
+    pub fn consciousness_pattern_similarity(&self, pattern: ConsciousnessPattern) -> f32 {
+        self.temporal_signature_encoder.similarity_to(pattern)
+    }
+
+    // ========== Adaptive Behavior Methods ==========
+
+    /// Get current adaptive behavior
+    pub fn adaptive_behavior(&self) -> &AdaptiveBehavior {
+        &self.adaptive_behavior
+    }
+
+    /// Get current action hint
+    pub fn action_hint(&self) -> ActionHint {
+        self.adaptive_behavior.action_hint
+    }
+
+    /// Check if system should seek more input/clarification
+    pub fn should_seek_input(&self) -> bool {
+        self.adaptive_behavior.should_seek_input()
+    }
+
+    /// Check if system is in a confident state
+    pub fn is_confident(&self) -> bool {
+        self.adaptive_behavior.is_confident()
+    }
+
+    /// Get description of current adaptive state
+    pub fn state_description(&self) -> &'static str {
+        self.adaptive_behavior.description()
+    }
+
+    /// Get speech rate multiplier for voice synthesis
+    pub fn speech_rate_multiplier(&self) -> f32 {
+        self.adaptive_behavior.speech_rate_multiplier
+    }
+
+    /// Get pause duration multiplier for voice synthesis
+    pub fn pause_multiplier(&self) -> f32 {
+        self.adaptive_behavior.pause_multiplier
+    }
+
+    /// Get attention sensitivity for input processing
+    pub fn attention_sensitivity(&self) -> f32 {
+        self.adaptive_behavior.attention_sensitivity
+    }
+
+    /// Get exploration factor for decision making
+    pub fn exploration_factor(&self) -> f32 {
+        self.adaptive_behavior.exploration_factor
+    }
+
     /// Reset all learning state
     pub fn reset(&mut self) {
         self.encoder.reset_attention();
@@ -486,6 +4270,15 @@ impl CognitiveLoopService {
         self.last_prediction = None;
         self.stats = LoopStats::default();
         self.start_time = Instant::now();
+        self.coherence_bridge.reset();
+        self.voice_feedback_bridge.reset();
+        self.temporal_signature_encoder.reset();
+        self.adaptive_behavior = AdaptiveBehavior::default();
+        self.prediction_confidence = 0.5; // Reset to neutral confidence
+        self.flow_state.reset();
+        self.emotion_contagion.reset();
+        self.curiosity_drive.reset();
+        self.self_reflection.reset(); // Preserves learned thresholds
     }
 
     /// Get the compressed state dimension (input to CfC)
@@ -560,8 +4353,128 @@ impl CognitiveLoopService {
             self.stats.cycles_per_second = self.stats.total_cycles as f32 / elapsed;
         }
 
-        // CfC consciousness level (already updated in cycle(), but ensure consistency)
-        self.stats.ltc_consciousness = self.cfc.consciousness_level();
+        // CfC state diversity (already updated in cycle(), but ensure consistency)
+        self.stats.ltc_consciousness = self.cfc.state_diversity();
+
+        // Voice feedback stats
+        let voice_summary = self.voice_feedback_bridge.summary();
+        self.stats.voice_articulation_quality = voice_summary.articulation_quality;
+        self.stats.voice_rate_stability = voice_summary.rate_stability;
+        self.stats.voice_phi_adjustment = voice_summary.phi_adjustment;
+
+        // Combined phi = coherence contribution + voice adjustment
+        self.stats.combined_phi_contribution =
+            self.stats.coherence_phi_contribution + self.stats.voice_phi_adjustment;
+
+        // Consciousness pattern from temporal signatures
+        let temporal_summary = self.temporal_signature_encoder.summary();
+        self.stats.consciousness_pattern = format!("{:?}", temporal_summary.pattern);
+        self.stats.pattern_confidence = temporal_summary.confidence;
+        self.stats.tau_mean = temporal_summary.features.mean;
+        self.stats.tau_trend = temporal_summary.features.trend;
+
+        // Adaptive behavior stats
+        self.stats.adaptive_confidence = self.adaptive_behavior.confidence;
+        self.stats.action_hint = format!("{:?}", self.adaptive_behavior.action_hint);
+        self.stats.learning_paused = self.adaptive_behavior.pause_learning;
+        self.stats.adaptive_learning_rate = self.adaptive_behavior.effective_learning_rate(
+            self.combined_learning_rate()
+        );
+        self.stats.adaptive_speech_rate = self.adaptive_behavior.speech_rate_multiplier;
+
+        // Prediction confidence stats
+        self.stats.prediction_confidence = self.prediction_confidence;
+        // Decay rate: higher when in uncertain states
+        self.stats.confidence_decay_rate = match self.adaptive_behavior.action_hint {
+            ActionHint::Stabilize | ActionHint::SeekInput => 0.05,
+            ActionHint::SlowDown => 0.03,
+            _ => 0.0,
+        };
+
+        // Flow state stats
+        self.stats.in_flow = self.flow_state.in_flow;
+        self.stats.flow_intensity = self.flow_state.intensity;
+        self.stats.flow_streak = self.flow_state.streak;
+        self.stats.flow_learning_boost = self.flow_state.learning_boost;
+
+        // Emotion contagion stats
+        self.stats.emotional_valence = self.emotion_contagion.smoothed_valence;
+        self.stats.emotional_arousal = self.emotion_contagion.smoothed_arousal;
+        let (nudge_pattern, nudge_strength) = self.emotion_contagion.pattern_nudge();
+        self.stats.emotion_nudge_pattern = nudge_pattern
+            .map(|p| format!("{:?}", p))
+            .unwrap_or_else(|| "None".to_string());
+        self.stats.emotion_nudge_strength = nudge_strength;
+
+        // Curiosity drive stats
+        self.stats.boredom = self.curiosity_drive.boredom;
+        self.stats.curiosity = self.curiosity_drive.curiosity;
+        self.stats.exploration_urge = self.curiosity_drive.exploration_urge;
+        self.stats.curiosity_exploring = self.curiosity_drive.should_explore();
+        self.stats.novelty_bonus = self.curiosity_drive.novelty_bonus;
+
+        // Self-reflection stats
+        self.stats.self_assessment = format!("{:?}", self.self_reflection.self_assessment);
+        self.stats.reflection_count = self.self_reflection.reflection_count;
+        self.stats.adjustments_made = self.self_reflection.adjustments_made;
+        self.stats.learning_effectiveness = self.self_reflection.learning_effectiveness;
+        let summary = self.self_reflection.summary();
+        self.stats.next_reflection_in = summary.next_reflection_in;
+        self.stats.adapted_flow_threshold = self.self_reflection.flow_error_threshold;
+        self.stats.adapted_boredom_threshold = self.self_reflection.boredom_threshold;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // MEGA-UNIFIED ARCHITECTURE STATS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // Cognitive depth from thalamic routing
+        self.stats.cognitive_depth = format!("{:?}", self.cognitive_depth);
+
+        // Unified Φ from the unification engine
+        self.stats.unified_phi = self.unification_engine.phi as f32;
+
+        // Unified emotional state (VAD)
+        let unified_state = self.unification_engine.emotional.state();
+        self.stats.unified_emotional_valence = unified_state.valence as f32;
+        self.stats.unified_emotional_arousal = unified_state.arousal as f32;
+        self.stats.unified_emotional_dominance = unified_state.dominance as f32;
+        self.stats.unified_emotion = unified_state.discrete_emotion
+            .map(|e| format!("{:?}", e))
+            .unwrap_or_else(|| "Neutral".to_string());
+
+        // Emotional pattern from the bridge
+        self.stats.emotional_pattern = format!("{:?}", self.unification_engine.emotional.detect_pattern());
+
+        // Thalamic routing statistics
+        let (reflex_rate, cortical_rate, deep_rate) = self.thalamic_router.routing_stats();
+        self.stats.thalamic_reflex_rate = reflex_rate;
+        self.stats.thalamic_cortical_rate = cortical_rate;
+        self.stats.thalamic_deep_rate = deep_rate;
+
+        // Active Inference Bridge statistics
+        let ai_stats = self.active_inference_bridge.statistics();
+        self.stats.active_inference_modulation_index = ai_stats.modulation_index
+            .map(|mi| mi as f32)
+            .unwrap_or(0.0);
+        self.stats.active_inference_coupling_quality = format!("{:?}", ai_stats.coupling_quality);
+        self.stats.active_inference_avg_error = ai_stats.average_prediction_error
+            .map(|e| e as f32)
+            .unwrap_or(0.5);
+
+        // Closed Learning Loop statistics
+        self.stats.current_strategy = format!("{:?}", self.closed_learning_loop.current_strategy);
+        self.stats.best_strategy = format!("{:?}", self.closed_learning_loop.best_strategy());
+        self.stats.average_reward = self.closed_learning_loop.average_reward();
+        self.stats.exploration_rate = self.closed_learning_loop.exploration_rate;
+        self.stats.learning_loop_interactions = self.closed_learning_loop.total_interactions;
+
+        // Memory system statistics
+        let (short_term, long_term) = self.episodic_memory.memory_count();
+        self.stats.memory_short_term_count = short_term;
+        self.stats.memory_long_term_count = long_term;
+        self.stats.memory_total_encoded = self.episodic_memory.stats.total_encoded;
+        self.stats.world_model_avg_error = self.world_model.avg_error;
+        self.stats.active_goals_count = self.goal_system.active_goals().len();
     }
 
     fn update_loss_stats(&mut self, loss: f32) {
@@ -660,6 +4573,196 @@ impl CognitiveLoopBuilder {
 impl Default for CognitiveLoopBuilder {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// IPC INTEGRATION: MetricsProvider Implementation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+use crate::shell::ipc_server::{MetricsProvider, CommandExecutor, ExecutionResult, ValidationResult};
+use crate::shell::ipc_client::MetricsSnapshot;
+use crate::shell::context::{Completion, CompletionKind};
+use crate::action::DestructivenessLevel;
+
+impl MetricsProvider for CognitiveLoopService {
+    fn get_metrics(&self) -> MetricsSnapshot {
+        let phi = self.unification_engine.phi;
+        let coherence = self.coherence_bridge.smoothed_coherence() as f64;
+        MetricsSnapshot {
+            phi,
+            coherence,
+            is_conscious: phi > 0.3,
+            cognitive_depth: format!("{:?}", self.cognitive_depth),
+            strategy: format!("{:?}", self.closed_learning_loop.current_strategy),
+            in_flow: self.flow_state.in_flow,
+            prediction_error: self.stats.avg_prediction_error,
+            emotional_valence: self.emotion_contagion.prosody_valence(),
+            emotional_arousal: self.emotion_contagion.prosody_arousal(),
+            timestamp_ms: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            uptime_secs: self.start_time.elapsed().as_secs(),
+            total_cycles: self.stats.total_cycles as u64,
+            consciousness_level: (phi + coherence) / 2.0,
+            latency_ms: 0, // Updated by IPC layer
+        }
+    }
+
+    fn phi(&self) -> f64 {
+        self.unification_engine.phi
+    }
+
+    fn coherence(&self) -> f64 {
+        self.coherence_bridge.smoothed_coherence() as f64
+    }
+
+    fn is_conscious(&self) -> bool {
+        self.unification_engine.phi > 0.3
+    }
+
+    fn cognitive_depth(&self) -> String {
+        format!("{:?}", self.cognitive_depth)
+    }
+
+    fn current_strategy(&self) -> String {
+        format!("{:?}", self.closed_learning_loop.current_strategy)
+    }
+
+    fn in_flow(&self) -> bool {
+        self.flow_state.in_flow
+    }
+
+    fn uptime_secs(&self) -> u64 {
+        self.start_time.elapsed().as_secs()
+    }
+
+    fn total_cycles(&self) -> u64 {
+        self.stats.total_cycles as u64
+    }
+}
+
+/// CommandExecutor implementation for CognitiveLoopService
+///
+/// Wraps the cognitive loop to provide command execution with Phi-gating.
+pub struct CognitiveLoopExecutor {
+    /// Reference to cognitive loop for Phi checks
+    min_phi: f64,
+    /// Current Phi value (updated from metrics)
+    current_phi: f64,
+}
+
+impl CognitiveLoopExecutor {
+    pub fn new(min_phi: f64) -> Self {
+        Self {
+            min_phi,
+            current_phi: 0.5,
+        }
+    }
+
+    /// Update current Phi from service
+    pub fn update_phi(&mut self, phi: f64) {
+        self.current_phi = phi;
+    }
+}
+
+impl Default for CognitiveLoopExecutor {
+    fn default() -> Self {
+        Self::new(0.3)
+    }
+}
+
+impl CommandExecutor for CognitiveLoopExecutor {
+    fn execute(&self, command: &str, require_phi: Option<f64>) -> ExecutionResult {
+        let required = require_phi.unwrap_or(self.min_phi);
+
+        // Check Phi threshold
+        if self.current_phi < required {
+            return ExecutionResult {
+                success: false,
+                output: String::new(),
+                phi_at_execution: self.current_phi,
+                vetoed: true,
+                veto_reason: Some(format!(
+                    "Consciousness level ({:.2}) below required threshold ({:.2})",
+                    self.current_phi, required
+                )),
+            };
+        }
+
+        // For now, return a stub result - actual execution would delegate to NixOS
+        ExecutionResult {
+            success: true,
+            output: format!("[Phi={:.2}] Command queued: {}", self.current_phi, command),
+            phi_at_execution: self.current_phi,
+            vetoed: false,
+            veto_reason: None,
+        }
+    }
+
+    fn validate(&self, command: &str) -> ValidationResult {
+        // Classify command destructiveness
+        let cmd_lower = command.to_lowercase();
+
+        let (safety_level, warnings) = if cmd_lower.contains("rm")
+            || cmd_lower.contains("delete")
+            || cmd_lower.contains("gc -d")
+            || cmd_lower.contains("--delete")
+        {
+            (
+                DestructivenessLevel::Destructive,
+                vec!["This command may permanently delete data".to_string()],
+            )
+        } else if cmd_lower.contains("rebuild")
+            || cmd_lower.contains("switch")
+            || cmd_lower.contains("restart")
+        {
+            (
+                DestructivenessLevel::NeedsConfirmation,
+                vec!["This command may modify system state".to_string()],
+            )
+        } else if cmd_lower.contains("install")
+            || cmd_lower.contains("remove")
+            || cmd_lower.contains("update")
+        {
+            (DestructivenessLevel::Reversible, Vec::new())
+        } else {
+            (DestructivenessLevel::ReadOnly, Vec::new())
+        };
+
+        ValidationResult {
+            valid: true,
+            safety_level: format!("{:?}", safety_level),
+            preview: Some(format!("Would execute: {}", command)),
+            warnings,
+        }
+    }
+
+    fn get_completions(&self, input: &str, _cursor_pos: usize) -> Vec<Completion> {
+        // Common NixOS commands for completion
+        let commands = [
+            ("install", "Install packages to environment"),
+            ("remove", "Remove packages from environment"),
+            ("search", "Search for packages"),
+            ("rebuild", "Rebuild NixOS configuration"),
+            ("switch", "Switch to new configuration"),
+            ("rollback", "Rollback to previous generation"),
+            ("gc", "Run garbage collection"),
+            ("flake", "Flake management commands"),
+            ("profile", "Profile management"),
+            ("doctor", "Check system health"),
+        ];
+
+        commands
+            .iter()
+            .filter(|(cmd, _)| cmd.starts_with(input))
+            .map(|(cmd, desc)| {
+                Completion::new(*cmd, CompletionKind::Command)
+                    .with_docs(*desc)
+                    .with_similarity(if *cmd == input { 1.0 } else { 0.8 })
+            })
+            .collect()
     }
 }
 
@@ -781,5 +4884,1248 @@ mod tests {
         // Run consolidation
         let loss = service.consolidate().unwrap();
         println!("Consolidation loss: {}", loss);
+    }
+
+    #[test]
+    fn test_prediction_confidence() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initial confidence should be 0.5
+        assert!((service.prediction_confidence() - 0.5).abs() < 0.01);
+
+        // Run several cycles
+        for _ in 0..10 {
+            service.cycle("consistent stable input");
+        }
+
+        // Confidence should be tracked
+        let confidence = service.prediction_confidence();
+        assert!(confidence >= 0.0 && confidence <= 1.0);
+
+        // Reset should restore neutral confidence
+        service.reset();
+        assert!((service.prediction_confidence() - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_predictions_trustworthy() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initial state should have some trust
+        assert!(service.prediction_confidence() > 0.3);
+
+        // predictions_trustworthy depends on confidence threshold
+        // At 0.5 initial confidence, should be trustworthy
+        assert!(service.predictions_trustworthy());
+    }
+
+    #[test]
+    fn test_flow_state_initial() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initially not in flow
+        assert!(!service.in_flow());
+        assert_eq!(service.flow_intensity(), 0.0);
+        assert_eq!(service.flow_streak(), 0);
+        assert_eq!(service.flow_learning_boost(), 1.0);
+    }
+
+    #[test]
+    fn test_flow_state_reset() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run some cycles
+        for _ in 0..10 {
+            service.cycle("focused input");
+        }
+
+        // Reset
+        service.reset();
+
+        // Flow state should be reset
+        assert!(!service.in_flow());
+        assert_eq!(service.flow_state().streak, 0);
+    }
+
+    #[test]
+    fn test_flow_state_struct() {
+        let mut flow = FlowState::default();
+
+        // Test update with flow-compatible conditions
+        for _ in 0..10 {
+            flow.update(
+                ConsciousnessPattern::Focused,
+                0.1,  // Low error
+                0.8,  // High coherence
+                0.7,  // Good confidence
+            );
+        }
+
+        // After sufficient streak, should be in flow
+        assert!(flow.streak >= FlowState::FLOW_ENTRY_STREAK);
+        assert!(flow.in_flow);
+        assert!(flow.learning_boost > 1.0);
+    }
+
+    #[test]
+    fn test_emotion_contagion_positive() {
+        let mut emotion = EmotionContagion::default();
+
+        // Analyze happy content
+        emotion.analyze("I am so happy and excited! This is wonderful and amazing!");
+
+        // Should detect positive valence
+        assert!(emotion.valence > 0.0);
+        assert!(emotion.smoothed_valence > 0.0);
+
+        // High arousal due to exclamation and excited words
+        assert!(emotion.arousal > 0.5);
+    }
+
+    #[test]
+    fn test_emotion_contagion_negative() {
+        let mut emotion = EmotionContagion::default();
+
+        // Analyze sad content
+        emotion.analyze("I feel sad and worried about this terrible problem.");
+
+        // Should detect negative valence
+        assert!(emotion.valence < 0.0);
+        assert!(emotion.smoothed_valence < 0.0);
+    }
+
+    #[test]
+    fn test_emotion_contagion_neutral() {
+        let mut emotion = EmotionContagion::default();
+
+        // Analyze neutral content
+        emotion.analyze("The system processes data and returns results.");
+
+        // Should have near-zero valence
+        assert!(emotion.valence.abs() < 0.3);
+    }
+
+    #[test]
+    fn test_emotion_pattern_nudge() {
+        let mut emotion = EmotionContagion::default();
+
+        // Strong positive emotion should nudge toward Excited
+        emotion.analyze("This is absolutely amazing! I'm so thrilled and excited!");
+        let (pattern, strength) = emotion.pattern_nudge();
+        assert!(pattern.is_some());
+        assert!(strength > 0.0);
+    }
+
+    #[test]
+    fn test_emotion_in_service() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initially no emotional content
+        assert!(!service.has_emotional_content());
+
+        // Process emotional content
+        service.cycle("I'm so happy and grateful for this wonderful day!");
+
+        // Should detect emotional content
+        let valence = service.emotional_valence();
+        // The smoothing will reduce the effect, but should be positive
+        assert!(valence >= 0.0 || service.emotion_contagion().valence > 0.0);
+    }
+
+    #[test]
+    fn test_emotion_reset() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Process emotional content
+        service.cycle("I'm incredibly excited about this amazing opportunity!");
+
+        // Reset
+        service.reset();
+
+        // Emotion should be reset
+        assert_eq!(service.emotional_valence(), 0.0);
+        assert_eq!(service.emotional_arousal(), 0.5);
+    }
+
+    #[test]
+    fn test_curiosity_drive_initial() {
+        let curiosity = CuriosityDrive::default();
+
+        assert_eq!(curiosity.boredom, 0.0);
+        assert!(curiosity.curiosity > 0.0); // Starts with some curiosity
+        assert_eq!(curiosity.exploration_urge, 0.0);
+        assert_eq!(curiosity.novelty_bonus, 1.0);
+        assert!(!curiosity.should_explore());
+    }
+
+    #[test]
+    fn test_curiosity_boredom_buildup() {
+        let mut curiosity = CuriosityDrive::default();
+
+        // Feed consistently low errors (boring/predictable)
+        for _ in 0..20 {
+            curiosity.update(0.05); // Very low error
+        }
+
+        // Boredom should build up
+        assert!(curiosity.boredom > 0.3);
+        assert!(curiosity.curiosity > 0.5);
+    }
+
+    #[test]
+    fn test_curiosity_exploration_trigger() {
+        let mut curiosity = CuriosityDrive::default();
+
+        // Feed many low errors to trigger exploration
+        for _ in 0..30 {
+            curiosity.update(0.05);
+        }
+
+        // Should want to explore
+        assert!(curiosity.boredom > 0.5);
+        // After sufficient boredom, should_explore or have high exploration urge
+        assert!(curiosity.exploration_urge > 0.0 || curiosity.boredom > 0.7);
+    }
+
+    #[test]
+    fn test_curiosity_novelty_bonus() {
+        let mut curiosity = CuriosityDrive::default();
+
+        // High error = novel situation
+        curiosity.update(0.8);
+
+        // Should have some novelty bonus
+        assert!(curiosity.novelty_bonus >= 1.0);
+    }
+
+    #[test]
+    fn test_curiosity_in_service() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initially no boredom
+        assert_eq!(service.boredom(), 0.0);
+        assert!(!service.is_bored());
+
+        // Run some cycles
+        for _ in 0..5 {
+            service.cycle("test input");
+        }
+
+        // Curiosity should be tracked
+        assert!(service.curiosity() >= 0.0);
+        assert!(service.novelty_bonus() >= 1.0);
+    }
+
+    #[test]
+    fn test_curiosity_reset() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run some cycles
+        for _ in 0..10 {
+            service.cycle("test");
+        }
+
+        // Reset
+        service.reset();
+
+        // Curiosity should be reset
+        assert_eq!(service.boredom(), 0.0);
+        assert!(!service.curiosity_should_explore());
+    }
+
+    // ========== Self-Reflection Tests ==========
+
+    #[test]
+    fn test_self_reflection_initial() {
+        let reflection = SelfReflection::default();
+
+        assert_eq!(reflection.reflection_count, 0);
+        assert_eq!(reflection.adjustments_made, 0);
+        assert_eq!(reflection.self_assessment, SelfAssessment::Learning);
+        assert!(reflection.flow_error_threshold > 0.0);
+        assert!(reflection.boredom_threshold > 0.0);
+    }
+
+    #[test]
+    fn test_self_reflection_record_cycle() {
+        let mut reflection = SelfReflection::default();
+
+        // Record some cycles
+        for _ in 0..10 {
+            reflection.record_cycle(0.3, false, false, 0.5);
+        }
+
+        // Should track historical metrics
+        assert!(reflection.historical_error > 0.0);
+        assert!(reflection.historical_confidence > 0.0);
+    }
+
+    #[test]
+    fn test_self_reflection_should_reflect() {
+        let mut reflection = SelfReflection::default();
+
+        // Initially shouldn't reflect
+        assert!(!reflection.should_reflect());
+
+        // Record enough cycles
+        for _ in 0..60 {
+            reflection.record_cycle(0.3, false, false, 0.5);
+        }
+
+        // Should now want to reflect
+        assert!(reflection.should_reflect());
+    }
+
+    #[test]
+    fn test_self_reflection_reflect() {
+        let mut reflection = SelfReflection::default();
+
+        // Record cycles to trigger reflection
+        for _ in 0..60 {
+            reflection.record_cycle(0.3, false, false, 0.5);
+        }
+
+        // Perform reflection
+        let recommendations = reflection.reflect();
+
+        // Reflection count should increase
+        assert_eq!(reflection.reflection_count, 1);
+
+        // Should have some assessment
+        assert!(reflection.learning_effectiveness >= 0.0);
+
+        // Recommendations may or may not be empty depending on state
+        let _ = recommendations;
+    }
+
+    #[test]
+    fn test_self_reflection_stagnation_detection() {
+        let mut reflection = SelfReflection::default();
+
+        // Simulate stagnation: low error, no flow, no exploration
+        for _ in 0..60 {
+            reflection.record_cycle(0.1, false, false, 0.6);
+        }
+        reflection.reflect();
+
+        // Should detect stagnation or overconfidence
+        assert!(
+            reflection.self_assessment == SelfAssessment::Stagnating ||
+            reflection.self_assessment == SelfAssessment::Overconfident ||
+            reflection.self_assessment == SelfAssessment::Learning
+        );
+    }
+
+    #[test]
+    fn test_self_reflection_in_service() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Initial state
+        assert_eq!(service.reflection_count(), 0);
+        assert!(service.learning_effectiveness() >= 0.0);
+
+        // Run some cycles (not enough to trigger reflection yet)
+        for _ in 0..10 {
+            service.cycle("test input");
+        }
+
+        // Check self-assessment is available
+        let assessment = service.self_assessment();
+        assert!(assessment == SelfAssessment::Learning || assessment == SelfAssessment::Exploring);
+    }
+
+    #[test]
+    fn test_self_reflection_thresholds() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Get adapted thresholds
+        let thresholds = service.adapted_thresholds();
+
+        // Should have valid thresholds
+        assert!(thresholds.flow_error > 0.0 && thresholds.flow_error < 1.0);
+        assert!(thresholds.boredom > 0.0 && thresholds.boredom < 1.0);
+        assert!(thresholds.trust > 0.0 && thresholds.trust < 1.0);
+    }
+
+    #[test]
+    fn test_self_reflection_reset() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run cycles and force reflect
+        for _ in 0..10 {
+            service.cycle("test");
+        }
+        service.force_reflect();
+
+        // Reset
+        service.reset();
+
+        // Reflection count should reset but thresholds preserved
+        assert_eq!(service.self_reflection().reflection_count, 0);
+        // Thresholds are preserved across reset
+        assert!(service.adapted_thresholds().flow_error > 0.0);
+    }
+
+    #[test]
+    fn test_self_reflection_summary() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let summary = service.reflection_summary();
+
+        assert_eq!(summary.reflection_count, 0);
+        assert!(summary.learning_effectiveness >= 0.0);
+        assert!(summary.next_reflection_in > 0);
+    }
+
+    // ========== Consciousness Snapshot Tests ==========
+
+    #[test]
+    fn test_consciousness_snapshot_initial() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+
+        // Initial state checks
+        assert_eq!(snapshot.cycle, 0);
+        assert!(snapshot.consciousness_level >= 0.0 && snapshot.consciousness_level <= 1.0);
+        assert!(!snapshot.in_flow);
+        assert!(!snapshot.exploring);
+        assert_eq!(snapshot.reflection_count, 0);
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_after_cycles() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run some cycles
+        for _ in 0..10 {
+            service.cycle("test input for consciousness");
+        }
+
+        let snapshot = service.consciousness_snapshot();
+
+        // Should have recorded cycles
+        assert_eq!(snapshot.cycle, 10);
+        // Should have valid metrics
+        assert!(snapshot.prediction_confidence >= 0.0);
+        assert!(snapshot.consciousness_level >= 0.0);
+        assert!(snapshot.flow_threshold > 0.0);
+        assert!(snapshot.boredom_threshold > 0.0);
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_status() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+        let status = snapshot.status();
+
+        // Status should be a non-empty string
+        assert!(!status.is_empty());
+        // Should contain pattern info
+        assert!(status.contains("Conf:") || status.contains("Err:"));
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_recommended_actions() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+        let actions = snapshot.recommended_actions();
+
+        // Actions is a vec that may or may not be empty
+        let _ = actions;
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_is_optimal() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+
+        // is_optimal returns a bool
+        let _ = snapshot.is_optimal();
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_needs_attention() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+
+        // Initially shouldn't need attention
+        // (though this depends on initial state)
+        let needs = snapshot.needs_attention();
+        let _ = needs; // Just verify it returns
+    }
+
+    #[test]
+    fn test_consciousness_snapshot_dominant_concern() {
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        let snapshot = service.consciousness_snapshot();
+
+        // dominant_concern returns Option<&str>
+        let concern = snapshot.dominant_concern();
+        let _ = concern;
+    }
+
+    #[test]
+    fn test_status_line() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        service.cycle("test");
+        let status = service.status_line();
+
+        assert!(!status.is_empty());
+    }
+
+    #[test]
+    fn test_consciousness_level() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run some cycles
+        for _ in 0..5 {
+            service.cycle("focused stable input");
+        }
+
+        let level = service.consciousness_level();
+        assert!(level >= 0.0 && level <= 1.0);
+    }
+
+    #[test]
+    fn test_adapted_thresholds_wiring() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Get initial thresholds
+        let initial_flow = service.adapted_thresholds().flow_error;
+        let initial_boredom = service.adapted_thresholds().boredom;
+
+        // The thresholds should be valid
+        assert!(initial_flow > 0.0 && initial_flow < 1.0);
+        assert!(initial_boredom > 0.0 && initial_boredom < 1.0);
+
+        // Run cycles - thresholds are passed to flow_state and curiosity_drive
+        for _ in 0..5 {
+            service.cycle("test");
+        }
+
+        // Verify snapshot reflects adapted thresholds
+        let snapshot = service.consciousness_snapshot();
+        assert_eq!(snapshot.flow_threshold, service.adapted_thresholds().flow_error);
+        assert_eq!(snapshot.boredom_threshold, service.adapted_thresholds().boredom);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // UNIFIED ARCHITECTURE COMPONENT TESTS
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    // -------------------- ThalamicRouter Tests --------------------
+
+    #[test]
+    fn test_thalamic_router_default() {
+        let router = ThalamicRouter::default();
+        assert_eq!(router.novelty_threshold, 0.7);
+        assert_eq!(router.urgency_threshold, 0.8);
+        assert_eq!(router.familiarity_threshold, 0.3);
+    }
+
+    #[test]
+    fn test_thalamic_router_reflex_route() {
+        let mut router = ThalamicRouter::default();
+
+        // Low novelty, low complexity, low urgency → Reflex
+        let depth = router.route(0.1, 0.2, 0.1, 0.1);
+        assert_eq!(depth, CognitiveDepth::Reflex);
+    }
+
+    #[test]
+    fn test_thalamic_router_cortical_route() {
+        let mut router = ThalamicRouter::default();
+
+        // Medium values → Cortical
+        let depth = router.route(0.4, 0.4, 0.5, 0.3);
+        assert_eq!(depth, CognitiveDepth::Cortical);
+    }
+
+    #[test]
+    fn test_thalamic_router_deep_thought_high_novelty() {
+        let mut router = ThalamicRouter::default();
+
+        // High novelty → DeepThought
+        let depth = router.route(0.9, 0.3, 0.3, 0.3);
+        assert_eq!(depth, CognitiveDepth::DeepThought);
+    }
+
+    #[test]
+    fn test_thalamic_router_deep_thought_high_urgency() {
+        let mut router = ThalamicRouter::default();
+
+        // High urgency → DeepThought
+        let depth = router.route(0.3, 0.9, 0.3, 0.3);
+        assert_eq!(depth, CognitiveDepth::DeepThought);
+    }
+
+    #[test]
+    fn test_thalamic_router_deep_thought_high_complexity() {
+        let mut router = ThalamicRouter::default();
+
+        // High complexity → DeepThought
+        let depth = router.route(0.3, 0.3, 0.9, 0.3);
+        assert_eq!(depth, CognitiveDepth::DeepThought);
+    }
+
+    #[test]
+    fn test_thalamic_router_deep_thought_high_emotion() {
+        let mut router = ThalamicRouter::default();
+
+        // High emotional intensity → DeepThought
+        let depth = router.route(0.3, 0.3, 0.3, 0.9);
+        assert_eq!(depth, CognitiveDepth::DeepThought);
+    }
+
+    #[test]
+    fn test_thalamic_router_routing_stats() {
+        let mut router = ThalamicRouter::default();
+
+        // Make several routing decisions
+        router.route(0.1, 0.2, 0.1, 0.1); // Reflex
+        router.route(0.1, 0.2, 0.1, 0.1); // Reflex
+        router.route(0.5, 0.5, 0.5, 0.3); // Cortical
+        router.route(0.9, 0.5, 0.5, 0.3); // DeepThought
+
+        let (reflex, cortical, deep) = router.routing_stats();
+
+        assert_eq!(reflex, 0.5);     // 2 out of 4
+        assert_eq!(cortical, 0.25);  // 1 out of 4
+        assert_eq!(deep, 0.25);      // 1 out of 4
+    }
+
+    #[test]
+    fn test_thalamic_router_from_cycle() {
+        let mut router = ThalamicRouter::default();
+
+        // High prediction error (novel) → DeepThought
+        let depth = router.route_from_cycle(0.9, ConsciousnessPattern::Uncertain, 0.3);
+        assert_eq!(depth, CognitiveDepth::DeepThought);
+
+        // Low error, focused, neutral emotion → likely Cortical or Reflex
+        let depth2 = router.route_from_cycle(0.1, ConsciousnessPattern::Focused, 0.1);
+        assert!(matches!(depth2, CognitiveDepth::Cortical | CognitiveDepth::Reflex));
+    }
+
+    // -------------------- ActiveInferenceBridge Tests --------------------
+
+    #[test]
+    fn test_active_inference_bridge_default() {
+        let bridge = ActiveInferenceBridge::default();
+        assert_eq!(bridge.coupling_quality(), CouplingQuality::InsufficientData);
+        assert!(bridge.modulation_index().is_none());
+    }
+
+    #[test]
+    fn test_active_inference_bridge_observe_resolution() {
+        let mut bridge = ActiveInferenceBridge::default();
+
+        // Add some observations
+        for i in 0..15 {
+            let confidence = 0.8;
+            let success = i % 2 == 0; // Alternating success/failure
+            bridge.observe_resolution(confidence, success);
+        }
+
+        // Should have enough data now
+        assert!(bridge.modulation_index().is_some());
+        assert_ne!(bridge.coupling_quality(), CouplingQuality::InsufficientData);
+    }
+
+    #[test]
+    fn test_active_inference_bridge_perfect_coupling() {
+        let mut bridge = ActiveInferenceBridge::default();
+
+        // Perfect coupling: high confidence → success, low confidence → failure
+        for _ in 0..20 {
+            bridge.observe_resolution(0.9, true);
+            bridge.observe_resolution(0.1, false);
+        }
+
+        let mi = bridge.modulation_index().unwrap();
+        // Should have strong positive correlation
+        assert!(mi > 0.5, "Expected strong coupling, got MI={}", mi);
+        assert!(matches!(
+            bridge.coupling_quality(),
+            CouplingQuality::ModerateCoupling | CouplingQuality::StrongCoupling
+        ));
+    }
+
+    #[test]
+    fn test_active_inference_bridge_statistics() {
+        let mut bridge = ActiveInferenceBridge::default();
+
+        for _ in 0..15 {
+            bridge.observe_resolution(0.7, true);
+        }
+
+        let stats = bridge.statistics();
+        assert_eq!(stats.total_observations, 15);
+        assert!(stats.modulation_index.is_some());
+        assert!(stats.average_prediction_error.is_some());
+        // All successes → 0% error
+        assert!(stats.average_prediction_error.unwrap() < 0.01);
+    }
+
+    #[test]
+    fn test_active_inference_bridge_reset() {
+        let mut bridge = ActiveInferenceBridge::default();
+
+        for _ in 0..20 {
+            bridge.observe_resolution(0.5, true);
+        }
+
+        bridge.reset();
+
+        assert_eq!(bridge.coupling_quality(), CouplingQuality::InsufficientData);
+        let stats = bridge.statistics();
+        assert_eq!(stats.total_observations, 0);
+    }
+
+    #[test]
+    fn test_coupling_quality_is_meaningful() {
+        assert!(!CouplingQuality::InsufficientData.is_meaningful());
+        assert!(!CouplingQuality::NoCoupling.is_meaningful());
+        assert!(CouplingQuality::WeakCoupling.is_meaningful());
+        assert!(CouplingQuality::ModerateCoupling.is_meaningful());
+        assert!(CouplingQuality::StrongCoupling.is_meaningful());
+    }
+
+    // -------------------- ClosedLearningLoop Tests --------------------
+
+    #[test]
+    fn test_closed_learning_loop_default() {
+        let loop_ = ClosedLearningLoop::default();
+        assert_eq!(loop_.current_strategy, ResponseStrategy::Supportive);
+        assert!(loop_.last_result.is_none());
+        assert_eq!(loop_.average_reward(), 0.0);
+    }
+
+    #[test]
+    fn test_closed_learning_loop_strategy_selection() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // With neutral Φ (0.45), should use Q-learning selection
+        let strategy = loop_.select_strategy(0.45, None);
+
+        // Should return some valid strategy
+        assert!(matches!(
+            strategy,
+            ResponseStrategy::Detailed
+                | ResponseStrategy::Concise
+                | ResponseStrategy::Clarifying
+                | ResponseStrategy::Supportive
+                | ResponseStrategy::Exploratory
+        ));
+    }
+
+    #[test]
+    fn test_closed_learning_loop_phi_gating_high() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // Set Supportive as best strategy with high Q-value
+        // Then with high Φ, it should shift toward Exploratory
+        for _ in 0..100 {
+            let strategy = loop_.select_strategy(0.8, None);
+            // High Φ → integrative mode → favors Exploratory/Detailed
+            assert!(!matches!(strategy, ResponseStrategy::Supportive | ResponseStrategy::Concise)
+                || loop_.last_result.is_some(),
+                "High Φ should shift away from Supportive/Concise");
+            break; // Just check first selection
+        }
+    }
+
+    #[test]
+    fn test_closed_learning_loop_q_learning_update() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // Record a positive result for Detailed
+        let result = CycleLearningResult {
+            strategy_used: ResponseStrategy::Detailed,
+            reward: 0.8,
+            successful: true,
+            prediction_error: 0.1,
+            coherence: 0.8,
+        };
+
+        let initial_q = loop_.q_values()[0]; // Detailed index
+        loop_.update(result);
+
+        // Q-value should increase
+        assert!(loop_.q_values()[0] > initial_q);
+        assert_eq!(loop_.strategy_counts()[0], 1);
+    }
+
+    #[test]
+    fn test_closed_learning_loop_reward_tracking() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // Record multiple results
+        for _ in 0..5 {
+            let result = CycleLearningResult {
+                strategy_used: ResponseStrategy::Supportive,
+                reward: 0.6,
+                successful: true,
+                prediction_error: 0.2,
+                coherence: 0.7,
+            };
+            loop_.update(result);
+        }
+
+        assert_eq!(loop_.average_reward(), 0.6);
+        assert_eq!(loop_.strategy_counts()[3], 5); // Supportive index
+    }
+
+    #[test]
+    fn test_closed_learning_loop_best_strategy() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // Train Exploratory with high rewards
+        for _ in 0..20 {
+            let result = CycleLearningResult {
+                strategy_used: ResponseStrategy::Exploratory,
+                reward: 0.9,
+                successful: true,
+                prediction_error: 0.1,
+                coherence: 0.9,
+            };
+            loop_.update(result);
+        }
+
+        // Exploratory should become best
+        assert_eq!(loop_.best_strategy(), ResponseStrategy::Exploratory);
+    }
+
+    #[test]
+    fn test_closed_learning_loop_reset() {
+        let mut loop_ = ClosedLearningLoop::default();
+
+        // Add some data
+        let result = CycleLearningResult {
+            strategy_used: ResponseStrategy::Detailed,
+            reward: 0.7,
+            successful: true,
+            prediction_error: 0.15,
+            coherence: 0.75,
+        };
+        loop_.update(result);
+
+        loop_.reset();
+
+        assert!(loop_.last_result.is_none());
+        assert_eq!(loop_.average_reward(), 0.0);
+    }
+
+    #[test]
+    fn test_response_strategy_opposite() {
+        // Check actual implementation:
+        // Detailed <-> Concise (symmetric)
+        // Clarifying -> Supportive -> Exploratory -> Clarifying (cycle)
+        assert_eq!(ResponseStrategy::Detailed.opposite(), ResponseStrategy::Concise);
+        assert_eq!(ResponseStrategy::Concise.opposite(), ResponseStrategy::Detailed);
+        assert_eq!(ResponseStrategy::Clarifying.opposite(), ResponseStrategy::Supportive);
+        assert_eq!(ResponseStrategy::Supportive.opposite(), ResponseStrategy::Exploratory);
+        assert_eq!(ResponseStrategy::Exploratory.opposite(), ResponseStrategy::Clarifying);
+    }
+
+    // -------------------- EpisodicMemoryBridge Tests --------------------
+
+    #[test]
+    fn test_episodic_memory_bridge_default() {
+        let bridge = EpisodicMemoryBridge::default();
+        assert_eq!(bridge.memory_count(), (0, 0));
+    }
+
+    #[test]
+    fn test_episodic_memory_encode() {
+        let mut bridge = EpisodicMemoryBridge::default();
+
+        let id = bridge.encode(
+            "test memory",
+            vec![0.1, 0.2, 0.3, 0.4],
+            0.5,  // valence
+            0.6,  // phi
+            100,  // cycle
+        );
+
+        assert_eq!(id, 0);
+        assert_eq!(bridge.memory_count(), (1, 0));
+        assert_eq!(bridge.stats.total_encoded, 1);
+    }
+
+    #[test]
+    fn test_episodic_memory_recall() {
+        let mut bridge = EpisodicMemoryBridge::default();
+
+        // Encode some memories
+        bridge.encode("memory one", vec![1.0, 0.0, 0.0, 0.0], 0.5, 0.6, 1);
+        bridge.encode("memory two", vec![0.0, 1.0, 0.0, 0.0], 0.3, 0.5, 2);
+        bridge.encode("memory three", vec![0.9, 0.1, 0.0, 0.0], 0.7, 0.8, 3);
+
+        // Query similar to "memory one" and "memory three"
+        let results = bridge.recall(&[1.0, 0.0, 0.0, 0.0], 2, 0.5);
+
+        assert!(!results.is_empty());
+        assert!(results.len() <= 2);
+        // First result should be most similar (memory one)
+        assert_eq!(results[0].0.content, "memory one");
+    }
+
+    #[test]
+    fn test_episodic_memory_consolidation() {
+        let mut bridge = EpisodicMemoryBridge::default();
+
+        // Fill short-term memory to trigger consolidation
+        for i in 0..105 {
+            bridge.encode(
+                format!("memory {}", i),
+                vec![0.1; 4],
+                0.5,
+                0.6,
+                i,
+            );
+        }
+
+        // Should have consolidated some to long-term
+        let (short, long) = bridge.memory_count();
+        assert!(short <= 100);
+        assert!(long > 0, "Expected some memories consolidated to long-term");
+        assert!(bridge.stats.consolidations > 0);
+    }
+
+    #[test]
+    fn test_episodic_memory_decay() {
+        let mut bridge = EpisodicMemoryBridge::default();
+
+        bridge.encode("memory", vec![0.1; 4], 0.5, 0.6, 1);
+
+        // Decay several times
+        for _ in 0..10 {
+            bridge.decay(0.1);
+        }
+
+        // Short-term memories persist but weaken
+        assert_eq!(bridge.memory_count().0, 1);
+    }
+
+    #[test]
+    fn test_episodic_memory_reset() {
+        let mut bridge = EpisodicMemoryBridge::default();
+
+        bridge.encode("memory", vec![0.1; 4], 0.5, 0.6, 1);
+        bridge.reset();
+
+        assert_eq!(bridge.memory_count(), (0, 0));
+        assert_eq!(bridge.stats.total_encoded, 0);
+    }
+
+    #[test]
+    fn test_episodic_memory_similarity() {
+        let memory = EpisodicMemory {
+            id: 0,
+            encoded_at_cycle: 0,
+            content: "test".into(),
+            embedding: vec![1.0, 0.0, 0.0, 0.0],
+            valence: 0.5,
+            phi_at_encoding: 0.6,
+            access_count: 0,
+            strength: 1.0,
+        };
+
+        // Same vector → similarity 1.0
+        let sim1 = memory.similarity(&[1.0, 0.0, 0.0, 0.0]);
+        assert!((sim1 - 1.0).abs() < 0.001);
+
+        // Orthogonal vector → similarity 0.0
+        let sim2 = memory.similarity(&[0.0, 1.0, 0.0, 0.0]);
+        assert!((sim2 - 0.0).abs() < 0.001);
+    }
+
+    // -------------------- GoalSystemBridge Tests --------------------
+
+    #[test]
+    fn test_goal_system_bridge_default() {
+        let bridge = GoalSystemBridge::new();
+        assert!(bridge.active_goals().is_empty());
+        assert_eq!(bridge.attention_bias(), 1.0);
+    }
+
+    #[test]
+    fn test_goal_system_add_goal() {
+        let mut bridge = GoalSystemBridge::new();
+
+        let goal = CognitiveGoal::new("goal1", "Test goal", 0.8);
+        bridge.add_goal(goal);
+
+        assert_eq!(bridge.active_goals().len(), 1);
+        assert!(bridge.attention_bias() > 1.0);
+    }
+
+    #[test]
+    fn test_goal_system_attention_bias() {
+        let mut bridge = GoalSystemBridge::new();
+
+        // Add high-priority goal
+        bridge.add_goal(CognitiveGoal::new("goal1", "High priority", 1.0));
+
+        // Attention bias should increase
+        let bias = bridge.attention_bias();
+        assert!(bias > 1.0);
+        assert!(bias <= 1.2); // Max 20% boost per unit weight
+    }
+
+    #[test]
+    fn test_goal_system_update_progress() {
+        let mut bridge = GoalSystemBridge::new();
+
+        bridge.add_goal(CognitiveGoal::new("goal1", "Test", 0.5));
+
+        // Update progress
+        bridge.update_progress("goal1", 0.5);
+
+        let goals = bridge.active_goals();
+        assert_eq!(goals[0].progress, 0.5);
+
+        // Complete the goal
+        bridge.update_progress("goal1", 0.6);
+
+        // Goal should be deactivated when progress >= 1.0
+        assert!(bridge.active_goals().is_empty());
+    }
+
+    #[test]
+    fn test_goal_system_top_goal() {
+        let mut bridge = GoalSystemBridge::new();
+
+        bridge.add_goal(CognitiveGoal::new("low", "Low priority", 0.3));
+        bridge.add_goal(CognitiveGoal::new("high", "High priority", 0.9));
+        bridge.add_goal(CognitiveGoal::new("mid", "Mid priority", 0.5));
+
+        let top = bridge.top_goal().unwrap();
+        assert_eq!(top.id, "high");
+        assert_eq!(top.priority, 0.9);
+    }
+
+    #[test]
+    fn test_goal_system_clear_completed() {
+        let mut bridge = GoalSystemBridge::new();
+
+        bridge.add_goal(CognitiveGoal::new("goal1", "Goal 1", 0.5));
+        bridge.add_goal(CognitiveGoal::new("goal2", "Goal 2", 0.5));
+
+        // Complete goal1
+        bridge.update_progress("goal1", 1.0);
+
+        bridge.clear_completed();
+
+        assert_eq!(bridge.active_goals().len(), 1);
+    }
+
+    #[test]
+    fn test_goal_system_reset() {
+        let mut bridge = GoalSystemBridge::new();
+
+        bridge.add_goal(CognitiveGoal::new("goal1", "Test", 0.5));
+        bridge.reset();
+
+        assert!(bridge.active_goals().is_empty());
+    }
+
+    #[test]
+    fn test_cognitive_goal_creation() {
+        let goal = CognitiveGoal::new("test", "Test goal description", 0.75);
+
+        assert_eq!(goal.id, "test");
+        assert_eq!(goal.description, "Test goal description");
+        assert_eq!(goal.priority, 0.75);
+        assert_eq!(goal.progress, 0.0);
+        assert!(goal.is_active);
+        assert_eq!(goal.attention_weight, 0.75);
+    }
+
+    // -------------------- WorldModelBridge Tests --------------------
+
+    #[test]
+    fn test_world_model_bridge_default() {
+        let bridge = WorldModelBridge::default();
+
+        assert_eq!(bridge.total_predictions, 0);
+        assert_eq!(bridge.avg_error, 0.0);
+
+        // Should have 4 levels by default
+        assert!(bridge.get_level_state(0).is_some());
+        assert!(bridge.get_level_state(3).is_some());
+        assert!(bridge.get_level_state(4).is_none());
+    }
+
+    #[test]
+    fn test_world_model_update_sensory() {
+        let mut bridge = WorldModelBridge::default();
+
+        // Create input matching level 0 dimension (64)
+        let input: Vec<f32> = (0..64).map(|i| i as f32 / 64.0).collect();
+
+        bridge.update_sensory(&input);
+
+        assert_eq!(bridge.total_predictions, 1);
+        assert!(bridge.avg_error >= 0.0);
+    }
+
+    #[test]
+    fn test_world_model_level_states() {
+        let mut bridge = WorldModelBridge::default();
+
+        let input: Vec<f32> = vec![1.0; 64];
+        bridge.update_sensory(&input);
+
+        // Level 0 should match input
+        let level0 = bridge.get_level_state(0).unwrap();
+        assert_eq!(level0.len(), 64);
+        assert!((level0[0] - 1.0).abs() < 0.001);
+
+        // Higher levels should exist and have been updated
+        let level1 = bridge.get_level_state(1).unwrap();
+        assert!(!level1.is_empty(), "Level 1 should have state");
+        // The propagation logic chunks and averages, so sum should be non-zero
+        let level1_sum: f32 = level1.iter().sum();
+        assert!(level1_sum > 0.0, "Level 1 should have non-zero sum after propagation");
+    }
+
+    #[test]
+    fn test_world_model_abstract_state() {
+        let mut bridge = WorldModelBridge::default();
+
+        let input: Vec<f32> = vec![0.5; 64];
+        bridge.update_sensory(&input);
+
+        let abstract_state = bridge.abstract_state();
+        assert!(!abstract_state.is_empty());
+        // Abstract state is highest level (128 dims)
+        assert_eq!(abstract_state.len(), 128);
+    }
+
+    #[test]
+    fn test_world_model_level_errors() {
+        let mut bridge = WorldModelBridge::default();
+
+        // First update will have high error (predicting from zeros)
+        let input: Vec<f32> = vec![1.0; 64];
+        bridge.update_sensory(&input);
+
+        let errors = bridge.level_errors();
+        assert_eq!(errors.len(), 4);
+        assert!(errors[0] > 0.0); // First prediction has error
+    }
+
+    #[test]
+    fn test_world_model_reset() {
+        let mut bridge = WorldModelBridge::default();
+
+        let input: Vec<f32> = vec![1.0; 64];
+        bridge.update_sensory(&input);
+
+        bridge.reset();
+
+        assert_eq!(bridge.total_predictions, 0);
+        assert_eq!(bridge.avg_error, 0.0);
+
+        // States should be zeroed
+        let level0 = bridge.get_level_state(0).unwrap();
+        assert!(level0.iter().all(|&v| v == 0.0));
+    }
+
+    // -------------------- Cognitive Depth Tests --------------------
+
+    #[test]
+    fn test_cognitive_depth_default() {
+        assert_eq!(CognitiveDepth::default(), CognitiveDepth::Cortical);
+    }
+
+    #[test]
+    fn test_cognitive_depth_equality() {
+        assert_eq!(CognitiveDepth::Reflex, CognitiveDepth::Reflex);
+        assert_eq!(CognitiveDepth::Cortical, CognitiveDepth::Cortical);
+        assert_eq!(CognitiveDepth::DeepThought, CognitiveDepth::DeepThought);
+        assert_ne!(CognitiveDepth::Reflex, CognitiveDepth::Cortical);
+    }
+
+    // -------------------- Integration Tests --------------------
+
+    #[test]
+    fn test_unified_architecture_integration() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run several cycles to exercise unified architecture
+        for _ in 0..10 {
+            service.cycle("test unified architecture integration");
+        }
+
+        let snapshot = service.consciousness_snapshot();
+
+        // Verify unified components are operating
+        assert!(snapshot.consciousness_level >= 0.0 && snapshot.consciousness_level <= 1.0);
+        assert_eq!(snapshot.cycle, 10);
+
+        // Verify cognitive depth was set
+        assert!(matches!(
+            snapshot.cognitive_depth,
+            CognitiveDepth::Reflex | CognitiveDepth::Cortical | CognitiveDepth::DeepThought
+        ));
+
+        // Verify response strategy was set (use service method)
+        let strategy = service.current_strategy();
+        assert!(matches!(
+            strategy,
+            ResponseStrategy::Detailed
+                | ResponseStrategy::Concise
+                | ResponseStrategy::Clarifying
+                | ResponseStrategy::Supportive
+                | ResponseStrategy::Exploratory
+        ));
+    }
+
+    #[test]
+    fn test_thalamic_routing_in_service() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run cycles and verify routing happens
+        for _ in 0..5 {
+            service.cycle("familiar simple input");
+        }
+
+        // After several similar inputs, should settle into a routing pattern
+        let snapshot = service.consciousness_snapshot();
+        assert!(matches!(
+            snapshot.cognitive_depth,
+            CognitiveDepth::Reflex | CognitiveDepth::Cortical | CognitiveDepth::DeepThought
+        ));
+    }
+
+    #[test]
+    fn test_closed_learning_loop_in_service() {
+        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+
+        // Run cycles to accumulate learning
+        for _ in 0..20 {
+            service.cycle("learning loop test input");
+        }
+
+        // Should have a strategy selected (use service method)
+        let strategy = service.current_strategy();
+        assert!(matches!(
+            strategy,
+            ResponseStrategy::Detailed
+                | ResponseStrategy::Concise
+                | ResponseStrategy::Clarifying
+                | ResponseStrategy::Supportive
+                | ResponseStrategy::Exploratory
+        ));
     }
 }

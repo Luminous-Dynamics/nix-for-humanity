@@ -149,14 +149,14 @@ impl CantorLtcNode {
         node
     }
 
-    /// LTC dynamics step with HDC binding
+    /// LTC dynamics step for a single node (non-recursive)
     ///
     /// The core innovation: uses HDC binding (⊗) instead of matrix multiplication
     ///
     /// ```text
     /// dx/dt = (-x + σ(W⊗x + parent⊗bundle(children) + bias)) / τ
     /// ```
-    pub fn step(&mut self, dt: f32, parent_state: Option<&RealHV>) {
+    fn step_single(&mut self, dt: f32, parent_state: Option<&RealHV>) {
         // Save history for BPTT
         self.history.push(self.state.clone());
         if self.history.len() > 100 {
@@ -195,15 +195,73 @@ impl CantorLtcNode {
             .map(|(&x, &t)| (-x + t) / self.tau)
             .collect();
 
+        // Euler stability: dt should be < 2*tau for stable integration.
+        // For leaf nodes (tau ≈ 0.46ms), this is critical.
+        // We clamp effective_dt to the stability limit to ensure numerical stability.
+        // Note: This is not a debug_assert because the clamping handles it gracefully,
+        // and some legitimate use cases (e.g., rhythm detection at 30fps) may have
+        // dt larger than 2*tau for deep leaf nodes.
+        let effective_dt = dt.min(1.9 * self.tau);
+
         // Euler integration
         for (s, d) in self.state.values.iter_mut().zip(dx.iter()) {
-            *s += dt * d;
+            *s += effective_dt * d;
+        }
+    }
+
+    /// LTC dynamics step with HDC binding (iterative, avoids stack overflow)
+    ///
+    /// Uses breadth-first traversal with an explicit work queue to avoid
+    /// deep recursion that could overflow the call stack.
+    pub fn step(&mut self, dt: f32, parent_state: Option<&RealHV>) {
+        use std::collections::HashMap;
+
+        // Store parent states by node index for efficient lookup
+        let mut parent_states: HashMap<usize, RealHV> = HashMap::new();
+
+        // First, process this node (the root or starting node)
+        self.step_single(dt, parent_state);
+
+        // Store this node's state for its children to use
+        parent_states.insert(self.index, self.state.clone());
+
+        // Now use BFS to process children iteratively
+        // We use raw pointers to avoid borrow checker issues with the tree structure
+        let mut current_level: Vec<*mut CantorLtcNode> = Vec::new();
+
+        // Add children of this node to current level
+        if let Some((ref mut left, ref mut right)) = self.children {
+            current_level.push(left.as_mut() as *mut CantorLtcNode);
+            current_level.push(right.as_mut() as *mut CantorLtcNode);
         }
 
-        // Recursively step children
-        if let Some((ref mut left, ref mut right)) = self.children {
-            left.step(dt, Some(&self.state));
-            right.step(dt, Some(&self.state));
+        // Process level by level
+        while !current_level.is_empty() {
+            let mut next_level: Vec<*mut CantorLtcNode> = Vec::new();
+
+            for node_ptr in current_level {
+                // SAFETY: We have exclusive access to the tree through &mut self,
+                // and we're processing each node exactly once per level.
+                let node = unsafe { &mut *node_ptr };
+
+                // Get parent state from our cache
+                // For a node at index i, parent is at (i-1)/2
+                let parent_index = (node.index - 1) / 2;
+                let parent_state_for_child = parent_states.get(&parent_index);
+
+                node.step_single(dt, parent_state_for_child);
+
+                // Store this node's updated state for its children
+                parent_states.insert(node.index, node.state.clone());
+
+                // Add children to next level
+                if let Some((ref mut left, ref mut right)) = node.children {
+                    next_level.push(left.as_mut() as *mut CantorLtcNode);
+                    next_level.push(right.as_mut() as *mut CantorLtcNode);
+                }
+            }
+
+            current_level = next_level;
         }
     }
 

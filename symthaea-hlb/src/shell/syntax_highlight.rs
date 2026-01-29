@@ -132,7 +132,7 @@ impl NixHighlighter {
     /// Highlight a line of Nix code
     pub fn highlight_line(&self, line: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
-        let mut chars: Vec<char> = line.chars().collect();
+        let chars: Vec<char> = line.chars().collect();
         let mut pos = 0;
 
         while pos < chars.len() {

@@ -14,6 +14,7 @@ use symthaea::shell::{
     IntelliSenseEngine, PhiGate, GateDecision, ExecutionRequest,
     ShellContext, CommandClassification,
     EpistemicOverlayEngine, KnowledgeSource, CommandContext, OverlayType,
+    classify_command_destructiveness,
 };
 use symthaea::action::DestructivenessLevel;
 
@@ -25,14 +26,9 @@ mod intellisense_tests {
         let mut engine = IntelliSenseEngine::new();
         engine.set_phi(0.8);
 
-        // Complete with history
-        let history = vec![
-            "nix-env -i firefox".to_string(),
-            "nix search nixpkgs#rust".to_string(),
-            "nixos-rebuild switch".to_string(),
-        ];
-
-        let completions = engine.complete("nix", &history);
+        // Complete with input (cursor at end)
+        let input = "nix";
+        let completions = engine.complete(input, input.len());
         assert!(!completions.is_empty(), "Should have completions for 'nix'");
 
         // Verify completions are NixOS-related
@@ -50,7 +46,8 @@ mod intellisense_tests {
         let mut engine = IntelliSenseEngine::new();
         engine.set_phi(0.75);
 
-        let completions = engine.complete("nix-env", &[]);
+        let input = "nix-env";
+        let completions = engine.complete(input, input.len());
 
         if completions.len() >= 2 {
             // Completions should be ordered by confidence (descending)
@@ -68,7 +65,8 @@ mod intellisense_tests {
         let mut engine = IntelliSenseEngine::new();
         engine.set_phi(0.9);
 
-        let completions = engine.complete("nix-collect-garbage", &[]);
+        let input = "nix-collect-garbage";
+        let completions = engine.complete(input, input.len());
 
         // Should include destructive command detection
         for c in completions.iter().filter(|c| c.text.contains("-d")) {
@@ -85,7 +83,8 @@ mod intellisense_tests {
         engine.set_phi(0.8);
 
         // Related commands should appear as completions
-        let completions = engine.complete("install", &[]);
+        let input = "install";
+        let completions = engine.complete(input, input.len());
 
         // Should find nix-env -i since it's semantically related to "install"
         let has_install_related = completions.iter().any(|c| {
@@ -107,8 +106,9 @@ mod phi_gate_tests {
         let mut gate = PhiGate::new();
         gate.update_metrics(0.8, 0.9, true);
 
-        let request = ExecutionRequest::from_command("nix search nixpkgs#firefox");
-        let decision = gate.evaluate(&request);
+        let command = "nix search nixpkgs#firefox";
+        let destructiveness = classify_command_destructiveness(command);
+        let decision = gate.evaluate(command, destructiveness);
 
         match decision {
             GateDecision::Allowed { phi, .. } => {
@@ -126,15 +126,15 @@ mod phi_gate_tests {
         let mut gate = PhiGate::new();
         gate.update_metrics(0.6, 0.7, true);
 
-        let request = ExecutionRequest::from_command("nix-collect-garbage -d");
-        let decision = gate.evaluate(&request);
+        let command = "nix-collect-garbage -d";
+        let destructiveness = classify_command_destructiveness(command);
+        let decision = gate.evaluate(command, destructiveness);
 
         match decision {
             GateDecision::NeedsConfirmation { reason, phi, .. } => {
                 assert!(phi > 0.0, "Should report current Phi");
                 // Reason should indicate why confirmation is needed
-                let reason_str = reason.description();
-                assert!(!reason_str.is_empty(), "Should have a reason");
+                assert!(!reason.is_empty(), "Should have a reason");
             }
             GateDecision::Allowed { .. } => {
                 // Could be allowed if Phi is very high
@@ -152,11 +152,12 @@ mod phi_gate_tests {
         gate.update_metrics(0.5, 0.6, true);
 
         // Known dangerous pattern
-        let request = ExecutionRequest::from_command("rm -rf /");
-        let decision = gate.evaluate(&request);
+        let command = "rm -rf /";
+        let destructiveness = classify_command_destructiveness(command);
+        let decision = gate.evaluate(command, destructiveness);
 
         match decision {
-            GateDecision::Vetoed { reason, message } => {
+            GateDecision::Vetoed { reason: _, message } => {
                 assert!(!message.is_empty(), "Should have veto message");
                 // Amygdala should have vetoed this
             }
@@ -173,8 +174,9 @@ mod phi_gate_tests {
         // Set very low Phi
         gate.update_metrics(0.1, 0.2, false);
 
-        let request = ExecutionRequest::from_command("nixos-rebuild switch");
-        let decision = gate.evaluate(&request);
+        let command = "nixos-rebuild switch";
+        let destructiveness = classify_command_destructiveness(command);
+        let decision = gate.evaluate(command, destructiveness);
 
         match decision {
             GateDecision::InsufficientPhi { current_phi, required_phi, .. } => {
@@ -379,7 +381,7 @@ mod integration_flow_tests {
 
         // 3. User starts typing
         let input = "nix search";
-        let completions = intellisense.complete(input, &context.history);
+        let completions = intellisense.complete(input, input.len());
 
         // 4. User selects a completion and executes
         let command = if !completions.is_empty() {
@@ -390,8 +392,8 @@ mod integration_flow_tests {
 
         // 5. Classify and gate
         let classification = CommandClassification::from_command(&command);
-        let request = ExecutionRequest::from_command(&command);
-        let decision = phi_gate.evaluate(&request);
+        let destructiveness = classify_command_destructiveness(&command);
+        let decision = phi_gate.evaluate(&command, destructiveness);
 
         // 6. Verify the flow
         assert_eq!(classification.destructiveness, DestructivenessLevel::ReadOnly);
@@ -448,8 +450,8 @@ mod integration_flow_tests {
         });
 
         // Gate the command
-        let request = ExecutionRequest::from_command(command);
-        let decision = phi_gate.evaluate(&request);
+        let destructiveness = classify_command_destructiveness(command);
+        let decision = phi_gate.evaluate(command, destructiveness);
 
         // Should require confirmation or be vetoed
         match decision {
@@ -469,28 +471,17 @@ mod integration_flow_tests {
         }
     }
 
-    /// Test that history influences completions
+    /// Test that completions work with cursor position
     #[test]
-    fn test_history_influences_completions() {
+    fn test_completions_with_cursor_position() {
         let mut intellisense = IntelliSenseEngine::new();
         intellisense.set_phi(0.8);
 
-        // Build up history
-        let history = vec![
-            "nix-env -i firefox".to_string(),
-            "nix-env -i vim".to_string(),
-            "nix-env -i git".to_string(),
-        ];
+        // Get completions with cursor at end
+        let input = "nix-env";
+        let completions = intellisense.complete(input, input.len());
 
-        // Get completions with and without history
-        let without_history = intellisense.complete("nix-env", &[]);
-        let with_history = intellisense.complete("nix-env", &history);
-
-        // Both should have completions
-        assert!(!without_history.is_empty(), "Should have completions without history");
-        assert!(!with_history.is_empty(), "Should have completions with history");
-
-        // With history, completions may be influenced by past commands
-        // (specific behavior depends on implementation)
+        // Should have completions
+        assert!(!completions.is_empty(), "Should have completions");
     }
 }

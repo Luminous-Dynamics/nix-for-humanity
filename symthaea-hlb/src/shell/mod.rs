@@ -5,8 +5,11 @@
 //! - Epistemic overlays for uncertainty
 //! - Error explanation with context
 //! - Flake environment management
+//! - IPC client/server for service communication
+//! - IntelliSense completions with HDC similarity
 //! - Keybindings and theming
 //! - Notifications and service state
+//! - Phi-gated execution
 //! - Syntax highlighting
 //! - Undo/redo operations
 //! - What-if speculation
@@ -14,9 +17,12 @@
 use serde::{Deserialize, Serialize};
 
 pub mod aliases;
+pub mod context;
 pub mod epistemic_overlay;
 pub mod error_explainer;
 pub mod flake_context;
+pub mod ipc_client;
+pub mod ipc_server;
 pub mod keybindings;
 pub mod notifications;
 pub mod service_state;
@@ -27,9 +33,34 @@ pub mod whatif;
 
 // Re-export commonly used types
 pub use aliases::{AliasManager, Alias};
-pub use epistemic_overlay::{OverlayPosition, OverlayType, EpistemicStyle};
+pub use context::{
+    ShellContext, IntelliSenseEngine, PhiGate, GateDecision,
+    Completion, CompletionKind, ExecutionRequest, CommandClassification,
+    CompletionPreview, PreviewStep, classify_command_destructiveness,
+    CommandContext as ShellCommandContext, // Renamed to avoid conflict
+};
+pub use epistemic_overlay::{
+    EpistemicOverlayEngine, EpistemicOverlay, EpistemicStyle,
+    OverlayPosition, OverlayType, KnowledgeSource,
+    CommandContext, // Epistemic command context (with k_index, etc.)
+};
+pub use ipc_client::{
+    ShellIpcClient, IpcClientConfig, ConnectionState,
+    discover_socket, MetricsSnapshot, IpcRequest, IpcResponse,
+    // Wire protocol types
+    Request, Response, RequestEnvelope, ResponseEnvelope,
+    WireProtocol, ShellContextData, SafetyLevelData,
+};
+pub use ipc_server::{
+    IpcServer, IpcServerConfig, MetricsProvider, CommandExecutor,
+    ExecutionResult, ValidationResult,
+    StubMetricsProvider, StubCommandExecutor,
+};
+pub use service_state::StateManager;
+pub use flake_context::{FlakeContext, ContextualSuggestion, SuggestionSource};
+pub use error_explainer::{ErrorExplainer, ErrorExplanation, quick_error_check};
+pub use whatif::{WhatIfSimulator, WhatIfResult};
 pub use undo::{UndoAction, ActionType, ActionData};
-pub use whatif::WhatIfResult;
 
 /// Shell configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -46,8 +46,9 @@ use ratatui::{
 use symthaea::shell::{
     ShellContext, IntelliSenseEngine, PhiGate, GateDecision,
     Completion, CompletionKind,
+    classify_command_destructiveness,
     ipc_client::{
-        ShellIpcClient, IpcClientConfig, ConnectionState,
+        ShellIpcClient, ConnectionState,
         discover_socket, MetricsSnapshot,
     },
     // B5: Epistemic Overlays
@@ -56,9 +57,9 @@ use symthaea::shell::{
     // B6: Session Persistence
     StateManager,
     // B7: Live Flake Context
-    FlakeContext, ContextualSuggestion, SuggestionSource,
+    FlakeContext, SuggestionSource,
     // B8: Error Explanation
-    ErrorExplainer, ErrorExplanation, quick_error_check,
+    ErrorExplainer, ErrorExplanation,
     // B9: What-If Simulation
     WhatIfSimulator, WhatIfResult,
 };
@@ -177,7 +178,8 @@ struct App {
     flake_check_interval: Duration,
 
     // === B8: Error Explanation ===
-    /// Error explainer for inline diagnosis
+    /// Error explainer for inline diagnosis (used by process_output_for_errors)
+    #[allow(dead_code)]
     error_explainer: ErrorExplainer,
     /// Last error explanation (for /explain command)
     last_error: Option<ErrorExplanation>,
@@ -229,6 +231,7 @@ struct CommandPreview {
 #[derive(Debug, Clone)]
 struct HistoryEntry {
     command: String,
+    #[allow(dead_code)]
     timestamp: chrono::DateTime<chrono::Local>,
     phi_at_execution: f64,
     success: bool,
@@ -239,6 +242,7 @@ struct HistoryEntry {
 struct OutputLine {
     content: String,
     style: OutputStyle,
+    #[allow(dead_code)]
     timestamp: chrono::DateTime<chrono::Local>,
 }
 
@@ -255,6 +259,7 @@ enum OutputStyle {
 
 /// Shell modes
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum ShellMode {
     Normal,
     Completing,
@@ -270,6 +275,7 @@ enum ShellMode {
 
 /// Syntax token type for highlighting
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum NixToken {
     Keyword,      // let, in, if, then, else, with, inherit, rec
     Builtin,      // builtins, import, fetchurl, derivation
@@ -284,6 +290,7 @@ enum NixToken {
     Normal,       // default
 }
 
+#[allow(dead_code)]
 impl NixToken {
     fn color(&self) -> Color {
         match self {
@@ -303,8 +310,10 @@ impl NixToken {
 }
 
 /// Simple Nix syntax highlighter
+#[allow(dead_code)]
 struct NixHighlighter;
 
+#[allow(dead_code)]
 impl NixHighlighter {
     const KEYWORDS: &'static [&'static str] = &[
         "let", "in", "if", "then", "else", "with", "inherit", "rec",
@@ -464,6 +473,7 @@ impl App {
             is_conscious: true,
             timestamp_ms: 0,
             latency_ms: 0,
+            ..Default::default()
         };
 
         let (ipc_client, connection_state, metrics_rx, initial_phi, initial_coherence, initial_conscious) =
@@ -852,11 +862,8 @@ impl App {
         // B7: Check for flake.nix changes periodically
         self.maybe_reload_flake();
 
-        let history_strings: Vec<String> = self.history.iter()
-            .map(|h| h.command.clone())
-            .collect();
-
-        self.completions = self.intellisense.complete(&self.input, &history_strings);
+        // Get completions based on input and cursor position
+        self.completions = self.intellisense.complete(&self.input, self.cursor);
 
         // B7: Add contextual suggestions from flake.nix
         let flake_suggestions = self.flake_context.get_contextual_suggestions(&self.input);
@@ -865,7 +872,7 @@ impl App {
             let completion = Completion {
                 text: suggestion.text.clone(),
                 display: suggestion.text.clone(),
-                description: suggestion.description,
+                description: suggestion.description.clone(),
                 kind: match suggestion.source {
                     SuggestionSource::InstalledPackage => CompletionKind::NixCommand,
                     SuggestionSource::EnabledService => CompletionKind::NixCommand,
@@ -876,6 +883,7 @@ impl App {
                 },
                 confidence: suggestion.confidence as f32,
                 hdc_distance: 0.0,
+                ..Default::default()
             };
 
             // Insert based on confidence (higher confidence = earlier position)
@@ -969,8 +977,8 @@ impl App {
         }
 
         // Create execution request and evaluate through Phi gate
-        let request = symthaea::shell::ExecutionRequest::from_command(&command);
-        let decision = self.phi_gate.evaluate(&request);
+        let destructiveness = classify_command_destructiveness(&command);
+        let decision = self.phi_gate.evaluate(&command, destructiveness);
 
         match decision {
             GateDecision::Allowed { phi, confidence } => {
@@ -1028,7 +1036,7 @@ impl App {
                 });
 
                 self.output_lines.push(OutputLine {
-                    content: format!("Reason: {}", reason.description()),
+                    content: format!("Reason: {}", reason),
                     style: OutputStyle::Warning,
                     timestamp: chrono::Local::now(),
                 });
@@ -1051,7 +1059,7 @@ impl App {
                 // Store the pending command
                 self.pending_command = Some(PendingCommand {
                     command: command.clone(),
-                    reason: reason.description().to_string(),
+                    reason: reason.clone(),
                     risk_level,
                     rollback_hint,
                 });
@@ -1294,6 +1302,7 @@ impl App {
     // =========================================================================
 
     /// Process output and detect/explain errors
+    #[allow(dead_code)]
     fn process_output_for_errors(&mut self, output: &str) {
         // Check if this looks like an error
         if ErrorExplainer::is_error_output(output) {
@@ -1302,6 +1311,7 @@ impl App {
     }
 
     /// Explain an error and display inline
+    #[allow(dead_code)]
     fn explain_error(&mut self, error_output: &str) {
         let explanation = self.error_explainer.explain(error_output);
 
@@ -1675,13 +1685,13 @@ impl App {
 
                     // Re-discover socket and connect with retry
                     let discovered = discover_socket();
-                    if let Some(ref path) = discovered {
+                    if let Some(ref _path) = discovered {
                         let mut client = ShellIpcClient::new(); // Uses auto-discovery
                         let rt = Arc::clone(&self.runtime);
 
                         // Try connect with retry (exponential backoff)
                         let connected = rt.block_on(async {
-                            client.connect_with_retry().await.is_ok()
+                            client.connect_with_retry(3).await.is_ok()
                         });
 
                         if connected {
@@ -2167,12 +2177,13 @@ fn ui(f: &mut Frame, app: &App) {
             Constraint::Min(10),     // Main area
             Constraint::Length(3),   // Status bar
         ])
-        .split(f.size());
+        .split(f.area());
 
     // Input area with connection state indicator
     let connection_color = match app.connection_state {
         ConnectionState::Connected => Color::Green,
-        ConnectionState::Connecting | ConnectionState::Reconnecting { .. } => Color::Yellow,
+        ConnectionState::Connecting | ConnectionState::Reconnecting => Color::Yellow,
+        ConnectionState::Degraded => Color::Rgb(255, 165, 0), // Orange
         ConnectionState::Disconnected => Color::Gray,
     };
 
@@ -2471,10 +2482,10 @@ fn ui(f: &mut Frame, app: &App) {
     if app.mode == ShellMode::Confirming {
         if let Some(ref pending) = app.pending_command {
             // Calculate centered popup area
-            let popup_width = 60u16.min(f.size().width.saturating_sub(4));
-            let popup_height = 14u16.min(f.size().height.saturating_sub(4));
-            let popup_x = (f.size().width.saturating_sub(popup_width)) / 2;
-            let popup_y = (f.size().height.saturating_sub(popup_height)) / 2;
+            let popup_width = 60u16.min(f.area().width.saturating_sub(4));
+            let popup_height = 14u16.min(f.area().height.saturating_sub(4));
+            let popup_x = (f.area().width.saturating_sub(popup_width)) / 2;
+            let popup_y = (f.area().height.saturating_sub(popup_height)) / 2;
             let popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
 
             // Clear the area first
@@ -2556,7 +2567,7 @@ fn ui(f: &mut Frame, app: &App) {
                         // Near input cursor, offset by overlay index
                         let x = 5 + app.cursor as u16 + (i as u16 * 3);
                         let y = 4 + (i as u16 * 2);
-                        (x.min(f.size().width.saturating_sub(35)), y, 32u16, 5u16)
+                        (x.min(f.area().width.saturating_sub(35)), y, 32u16, 5u16)
                     }
                     OverlayPosition::AboveCompletion => {
                         // Above completions list
@@ -2568,28 +2579,28 @@ fn ui(f: &mut Frame, app: &App) {
                         // In the metrics/right panel area
                         let x = main_chunks[1].x + 1;
                         let y = right_chunks[0].bottom() + (i as u16 * 6);
-                        (x, y.min(f.size().height.saturating_sub(6)), 28u16, 5u16)
+                        (x, y.min(f.area().height.saturating_sub(6)), 28u16, 5u16)
                     }
                     OverlayPosition::Centered => {
                         // Centered on screen
                         let w = 45u16;
                         let h = 8u16;
-                        let x = (f.size().width.saturating_sub(w)) / 2;
-                        let y = (f.size().height.saturating_sub(h)) / 2;
+                        let x = (f.area().width.saturating_sub(w)) / 2;
+                        let y = (f.area().height.saturating_sub(h)) / 2;
                         (x, y, w, h)
                     }
                 };
 
                 // Don't render if off-screen
-                if overlay_x >= f.size().width || overlay_y >= f.size().height {
+                if overlay_x >= f.area().width || overlay_y >= f.area().height {
                     continue;
                 }
 
                 let overlay_area = Rect::new(
                     overlay_x,
                     overlay_y,
-                    overlay_width.min(f.size().width.saturating_sub(overlay_x)),
-                    overlay_height.min(f.size().height.saturating_sub(overlay_y)),
+                    overlay_width.min(f.area().width.saturating_sub(overlay_x)),
+                    overlay_height.min(f.area().height.saturating_sub(overlay_y)),
                 );
 
                 // Epistemic style colors
