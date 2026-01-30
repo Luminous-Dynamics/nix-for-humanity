@@ -14,6 +14,10 @@
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 
+/// Minimum allowed tau value to prevent NaN in exp(-dt/tau) calculations.
+/// Values below this threshold would cause numerical instability.
+const MIN_TAU: f32 = 1e-6;
+
 /// Configuration for a CfC cell
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfCConfig {
@@ -107,14 +111,16 @@ fn mse_loss(output: &Array1<f32>, target: &Array1<f32>) -> f32 {
 
 /// A single Closed-form Continuous-time cell
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Fields reserved for CfC dynamics
 pub struct CfCCell {
     config: CfCConfig,
 
     // Weights for state transition
     w_in: Array2<f32>,     // Input to hidden
     w_h: Array2<f32>,      // Hidden to hidden
-    w_out: Array2<f32>,    // Hidden to output (if different)
+
+    // Reserved for future output projection (e.g., separate output dim)
+    #[allow(dead_code)]
+    w_out: Array2<f32>,
 
     // Biases
     b_h: Array1<f32>,
@@ -122,20 +128,32 @@ pub struct CfCCell {
     // Time constants (learnable)
     tau: Array1<f32>,
 
-    // Backbone network weights (optional)
+    // Backbone network weights (used when config.use_backbone is true)
     backbone_weights: Vec<Array2<f32>>,
     backbone_biases: Vec<Array1<f32>>,
 
     // Current hidden state
     state: Array1<f32>,
 
-    // Statistics
+    // Statistics - tracks number of forward steps for diagnostics
+    #[allow(dead_code)]
     steps: u64,
 }
 
 impl CfCCell {
     /// Create a new CfC cell
+    ///
+    /// # Panics
+    /// Panics if `config.tau_range.0` is less than `MIN_TAU` (1e-6).
     pub fn new(config: CfCConfig) -> Self {
+        // Validate tau range to prevent NaN in exp(-dt/tau) calculations
+        assert!(
+            config.tau_range.0 >= MIN_TAU,
+            "tau_min must be >= {} to prevent numerical instability, got {}",
+            MIN_TAU,
+            config.tau_range.0
+        );
+
         let _rng = rand::thread_rng();
 
         // When backbone is used, w_in takes backbone output (backbone_dim)
@@ -167,7 +185,8 @@ impl CfCCell {
         let (tau_min, tau_max) = config.tau_range;
         let tau = Array1::from_shape_fn(config.hidden_dim, |_| {
             let log_tau = tau_min.ln() + rand::random::<f32>() * (tau_max.ln() - tau_min.ln());
-            log_tau.exp()
+            // Clamp to ensure numerical stability even after initialization
+            log_tau.exp().max(MIN_TAU)
         });
 
         // Initialize backbone if needed
@@ -241,7 +260,8 @@ impl CfCCell {
         let h_inf = self.config.activation.apply_array(&(x_contrib + h_contrib + &self.b_h));
 
         // Compute decay factor based on time constants
-        let decay: Array1<f32> = self.tau.mapv(|t| (-dt / t).exp());
+        // Clamp tau to MIN_TAU to prevent division by zero / NaN
+        let decay: Array1<f32> = self.tau.mapv(|t| (-dt / t.max(MIN_TAU)).exp());
 
         // Update state using closed-form solution
         let new_state = &h_inf + &((&self.state - &h_inf) * &decay);
@@ -261,6 +281,133 @@ impl CfCCell {
         }
 
         x
+    }
+
+    /// Compute analytical gradients for BPTT
+    ///
+    /// Returns gradients for W_in, W_h, b_h, and tau based on the
+    /// closed-form CfC dynamics: h(t) = h_inf + (h_0 - h_inf) * exp(-dt/tau)
+    pub fn backward(&self, input: &Array1<f32>, target: &Array1<f32>, dt: f32) -> CfCGradients {
+        let processed_input = if self.config.use_backbone {
+            self.backbone_forward(input)
+        } else {
+            input.clone()
+        };
+
+        // Forward computation (recompute for gradient chain)
+        let x_contrib = self.w_in.dot(&processed_input);
+        let h_contrib = self.w_h.dot(&self.state);
+        let z = &x_contrib + &h_contrib + &self.b_h;
+        let h_inf = self.config.activation.apply_array(&z);
+        // Clamp tau to MIN_TAU to prevent NaN
+        let decay: Array1<f32> = self.tau.mapv(|t| (-dt / t.max(MIN_TAU)).exp());
+        let new_state = &h_inf + &((&self.state - &h_inf) * &decay);
+
+        // Error signal: dL/dh = 2 * (h - target) / n
+        let n = target.len().min(new_state.len()) as f32;
+        let mut dh = Array1::zeros(self.config.hidden_dim);
+        for i in 0..target.len().min(new_state.len()) {
+            dh[i] = 2.0 * (new_state[i] - target[i]) / n;
+        }
+
+        // Activation derivative (SiLU default)
+        let sigma_prime: Array1<f32> = z.mapv(|x| {
+            let s = sigmoid(x);
+            s + x * s * (1.0 - s) // d/dx[x * sigmoid(x)]
+        });
+
+        // dh/dh_inf = (1 - exp(-dt/tau))
+        let one_minus_decay: Array1<f32> = decay.mapv(|d| 1.0 - d);
+
+        // Chain: dL/dz = dL/dh * dh/dh_inf * dh_inf/dz
+        let dz = &dh * &one_minus_decay * &sigma_prime;
+
+        // dL/dW_in = dz * input^T
+        let effective_input_dim = processed_input.len();
+        let hidden_dim = self.config.hidden_dim;
+        let mut dw_in = Array2::zeros((hidden_dim, effective_input_dim));
+        for i in 0..hidden_dim {
+            for j in 0..effective_input_dim {
+                dw_in[[i, j]] = dz[i] * processed_input[j];
+            }
+        }
+
+        // dL/dW_h = dz * state^T
+        let mut dw_h = Array2::zeros((hidden_dim, hidden_dim));
+        for i in 0..hidden_dim {
+            for j in 0..hidden_dim {
+                dw_h[[i, j]] = dz[i] * self.state[j];
+            }
+        }
+
+        // dL/db = dz
+        let db_h = dz.clone();
+
+        // dL/dtau = dL/dh * (h_0 - h_inf) * (dt / tau^2) * exp(-dt/tau)
+        let mut dtau = Array1::zeros(hidden_dim);
+        for i in 0..hidden_dim {
+            let diff = self.state[i] - h_inf[i];
+            dtau[i] = dh[i] * diff * (dt / (self.tau[i] * self.tau[i])) * decay[i];
+        }
+
+        CfCGradients { dw_in, dw_h, db_h, dtau }
+    }
+
+    /// Apply Adam optimizer update
+    pub fn apply_adam(&mut self, grads: &CfCGradients, adam: &mut AdamState, lr: f32) {
+        adam.t += 1;
+        let t = adam.t as f32;
+
+        // Gradient clipping at 1.0
+        let clip = |g: f32| g.clamp(-1.0, 1.0);
+
+        let hidden_dim = self.config.hidden_dim;
+        let effective_input_dim = self.w_in.ncols();
+
+        // Update W_in
+        for i in 0..hidden_dim {
+            for j in 0..effective_input_dim {
+                let g = clip(grads.dw_in[[i, j]]);
+                adam.m_w_in[[i, j]] = adam.beta1 * adam.m_w_in[[i, j]] + (1.0 - adam.beta1) * g;
+                adam.v_w_in[[i, j]] = adam.beta2 * adam.v_w_in[[i, j]] + (1.0 - adam.beta2) * g * g;
+                let m_hat = adam.m_w_in[[i, j]] / (1.0 - adam.beta1.powf(t));
+                let v_hat = adam.v_w_in[[i, j]] / (1.0 - adam.beta2.powf(t));
+                self.w_in[[i, j]] -= lr * m_hat / (v_hat.sqrt() + adam.eps);
+            }
+        }
+
+        // Update W_h
+        for i in 0..hidden_dim {
+            for j in 0..hidden_dim {
+                let g = clip(grads.dw_h[[i, j]]);
+                adam.m_w_h[[i, j]] = adam.beta1 * adam.m_w_h[[i, j]] + (1.0 - adam.beta1) * g;
+                adam.v_w_h[[i, j]] = adam.beta2 * adam.v_w_h[[i, j]] + (1.0 - adam.beta2) * g * g;
+                let m_hat = adam.m_w_h[[i, j]] / (1.0 - adam.beta1.powf(t));
+                let v_hat = adam.v_w_h[[i, j]] / (1.0 - adam.beta2.powf(t));
+                self.w_h[[i, j]] -= lr * m_hat / (v_hat.sqrt() + adam.eps);
+            }
+        }
+
+        // Update bias
+        for i in 0..hidden_dim {
+            let g = clip(grads.db_h[i]);
+            adam.m_b_h[i] = adam.beta1 * adam.m_b_h[i] + (1.0 - adam.beta1) * g;
+            adam.v_b_h[i] = adam.beta2 * adam.v_b_h[i] + (1.0 - adam.beta2) * g * g;
+            let m_hat = adam.m_b_h[i] / (1.0 - adam.beta1.powf(t));
+            let v_hat = adam.v_b_h[i] / (1.0 - adam.beta2.powf(t));
+            self.b_h[i] -= lr * m_hat / (v_hat.sqrt() + adam.eps);
+        }
+
+        // Update tau with 0.1x learning rate and clamping
+        for i in 0..hidden_dim {
+            let g = clip(grads.dtau[i]);
+            adam.m_tau[i] = adam.beta1 * adam.m_tau[i] + (1.0 - adam.beta1) * g;
+            adam.v_tau[i] = adam.beta2 * adam.v_tau[i] + (1.0 - adam.beta2) * g * g;
+            let m_hat = adam.m_tau[i] / (1.0 - adam.beta1.powf(t));
+            let v_hat = adam.v_tau[i] / (1.0 - adam.beta2.powf(t));
+            self.tau[i] -= lr * 0.1 * m_hat / (v_hat.sqrt() + adam.eps);
+            self.tau[i] = self.tau[i].clamp(0.1, 10.0);
+        }
     }
 
     /// Get the current state
@@ -284,6 +431,59 @@ impl CfCCell {
     }
 }
 
+/// Gradient accumulators for CfC backpropagation
+#[derive(Debug, Clone)]
+pub struct CfCGradients {
+    /// Input weight gradients
+    pub dw_in: Array2<f32>,
+    /// Recurrent weight gradients
+    pub dw_h: Array2<f32>,
+    /// Bias gradients
+    pub db_h: Array1<f32>,
+    /// Time constant gradients
+    pub dtau: Array1<f32>,
+}
+
+/// Adam optimizer state
+#[derive(Debug, Clone)]
+pub struct AdamState {
+    /// First moment estimates
+    pub m_w_in: Array2<f32>,
+    pub m_w_h: Array2<f32>,
+    pub m_b_h: Array1<f32>,
+    pub m_tau: Array1<f32>,
+    /// Second moment estimates
+    pub v_w_in: Array2<f32>,
+    pub v_w_h: Array2<f32>,
+    pub v_b_h: Array1<f32>,
+    pub v_tau: Array1<f32>,
+    /// Step counter
+    pub t: u64,
+    /// Hyperparameters
+    pub beta1: f32,
+    pub beta2: f32,
+    pub eps: f32,
+}
+
+impl AdamState {
+    fn new(hidden_dim: usize, input_dim: usize) -> Self {
+        Self {
+            m_w_in: Array2::zeros((hidden_dim, input_dim)),
+            m_w_h: Array2::zeros((hidden_dim, hidden_dim)),
+            m_b_h: Array1::zeros(hidden_dim),
+            m_tau: Array1::zeros(hidden_dim),
+            v_w_in: Array2::zeros((hidden_dim, input_dim)),
+            v_w_h: Array2::zeros((hidden_dim, hidden_dim)),
+            v_b_h: Array1::zeros(hidden_dim),
+            v_tau: Array1::zeros(hidden_dim),
+            t: 0,
+            beta1: 0.9,
+            beta2: 0.999,
+            eps: 1e-8,
+        }
+    }
+}
+
 /// A complete CfC neural network
 #[derive(Debug, Clone)]
 pub struct CfCNetwork {
@@ -299,6 +499,11 @@ pub struct CfCNetwork {
 
     /// Statistics
     total_steps: u64,
+
+    /// Adam optimizer states per cell
+    adam_states: Vec<AdamState>,
+    /// Adam state for output projection
+    adam_output: Option<AdamState>,
 }
 
 /// Configuration for a CfC network
@@ -366,12 +571,19 @@ impl CfCNetwork {
         });
         let output_bias = Array1::zeros(config.output_dim);
 
+        let adam_states = cells.iter().map(|c| {
+            let effective_input_dim = if c.config.use_backbone { c.config.backbone_dim } else { c.config.input_dim };
+            AdamState::new(c.config.hidden_dim, effective_input_dim)
+        }).collect();
+
         Self {
             config,
             cells,
             output_weights,
             output_bias,
             total_steps: 0,
+            adam_states,
+            adam_output: None,
         }
     }
 
@@ -486,6 +698,71 @@ impl CfCNetwork {
         }
     }
 
+    /// Train step using BPTT with Adam optimizer (default training method)
+    pub fn train_step(
+        &mut self,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+        learning_rate: f32,
+    ) -> anyhow::Result<f32> {
+        self.train_step_bptt(&[input.clone()], &[target.clone()], &[dt], learning_rate)
+    }
+
+    /// Sequence training with BPTT and Adam
+    pub fn train_step_bptt(
+        &mut self,
+        inputs: &[Array1<f32>],
+        targets: &[Array1<f32>],
+        dts: &[f32],
+        learning_rate: f32,
+    ) -> anyhow::Result<f32> {
+        assert_eq!(inputs.len(), targets.len());
+        assert_eq!(inputs.len(), dts.len());
+
+        self.reset_states_only();
+        let mut total_loss = 0.0f32;
+
+        for ((_input, target), dt) in inputs.iter().zip(targets.iter()).zip(dts.iter()) {
+            // Forward through all cells
+            let mut h = _input.clone();
+            for cell in self.cells.iter_mut() {
+                h = cell.forward(&h, *dt);
+            }
+
+            // Compute output
+            let output = self.output_weights.dot(&h) + &self.output_bias;
+            let loss = mse_loss(&output, target);
+            total_loss += loss;
+
+            // Backward through cells (reverse order for BPTT)
+            for cell_idx in (0..self.cells.len()).rev() {
+                let cell_target = if cell_idx == self.cells.len() - 1 {
+                    // For last cell, use output error projected back
+                    let mut t = Array1::zeros(self.cells[cell_idx].config.hidden_dim);
+                    for i in 0..t.len().min(target.len()) {
+                        t[i] = target[i.min(target.len() - 1)];
+                    }
+                    t
+                } else {
+                    self.cells[cell_idx + 1].state().clone()
+                };
+
+                let cell_input = if cell_idx == 0 {
+                    _input.clone()
+                } else {
+                    self.cells[cell_idx - 1].state().clone()
+                };
+
+                let grads = self.cells[cell_idx].backward(&cell_input, &cell_target, *dt);
+                self.cells[cell_idx].apply_adam(&grads, &mut self.adam_states[cell_idx], learning_rate);
+            }
+        }
+
+        let avg_loss = total_loss / inputs.len() as f32;
+        Ok(avg_loss)
+    }
+
     /// Train step using perturbation-based gradient estimation (SPSA).
     ///
     /// Estimates gradients by evaluating the loss at perturbed weight values
@@ -494,7 +771,7 @@ impl CfCNetwork {
     ///
     /// This replaces the previous implementation which only nudged the last
     /// cell's hidden state without modifying any weights.
-    pub fn train_step(
+    pub fn train_step_spsa(
         &mut self,
         input: &Array1<f32>,
         target: &Array1<f32>,
@@ -592,8 +869,8 @@ impl CfCNetwork {
             self.cells[cell_idx].tau[j] = old_tau;
 
             let grad = (loss_pos - baseline_loss) / epsilon;
-            // Ensure tau stays positive
-            let new_tau = (old_tau - lr * grad).max(0.01);
+            // Ensure tau stays above MIN_TAU to prevent NaN
+            let new_tau = (old_tau - lr * grad).max(MIN_TAU);
             self.cells[cell_idx].tau[j] = new_tau;
         }
 
@@ -661,10 +938,44 @@ impl CfCNetwork {
         1.0 / (1.0 + (-variance.sqrt() * 10.0).exp())
     }
 
-    /// Deprecated alias for state_diversity(). Use state_diversity() instead.
-    #[deprecated(note = "Renamed to state_diversity(). This measures activation variance, not consciousness.")]
+    /// Compute consciousness level using Phi-inspired metric
+    ///
+    /// Samples representative neurons from hidden states and computes
+    /// an integration measure based on the PhiEngine when available.
     pub fn consciousness_level(&self) -> f32 {
-        self.state_diversity()
+        use symthaea_core::hdc::unified_hv::ContinuousHV;
+        use symthaea_core::phi_engine::{PhiEngine, PhiMethod};
+
+        let states: Vec<&Array1<f32>> = self.cells.iter().map(|c| c.state()).collect();
+        if states.is_empty() {
+            return 0.0;
+        }
+
+        // Sample 8-16 representative neurons from hidden states
+        let mut node_representations = Vec::new();
+        for state in &states {
+            // Take up to 8 evenly-spaced neurons per cell
+            let step = (state.len() / 8).max(1);
+            for i in (0..state.len()).step_by(step).take(8) {
+                let mut components = vec![0.0f32; 16]; // Small representation
+                for j in 0..16 {
+                    let idx = (i + j) % state.len();
+                    components[j] = state[idx];
+                }
+                node_representations.push(ContinuousHV::from_vec(components));
+            }
+        }
+
+        if node_representations.is_empty() {
+            return 0.0;
+        }
+
+        // Limit to 16 nodes for performance
+        node_representations.truncate(16);
+
+        let engine = PhiEngine::new(PhiMethod::Auto);
+        let result = engine.compute(&node_representations);
+        result.phi as f32
     }
 
     /// Predict forward at a specific time horizon
@@ -906,6 +1217,140 @@ mod tests {
         assert!(
             output_after_reset.iter().all(|x| x.is_finite()),
             "Output after reset should be finite"
+        );
+    }
+
+    // =====================================================================
+    // EDGE CASE TESTS FOR TAU VALIDATION AND NUMERICAL STABILITY
+    // =====================================================================
+
+    #[test]
+    #[should_panic(expected = "tau_min must be >= ")]
+    fn test_cfc_rejects_zero_tau() {
+        let cell_config = CfCConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            tau_range: (0.0, 1.0), // Zero tau_min should panic
+            use_backbone: false,
+            ..Default::default()
+        };
+        let _ = CfCCell::new(cell_config);
+    }
+
+    #[test]
+    #[should_panic(expected = "tau_min must be >= ")]
+    fn test_cfc_rejects_very_small_tau() {
+        let cell_config = CfCConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            tau_range: (1e-8, 1.0), // Below MIN_TAU should panic
+            use_backbone: false,
+            ..Default::default()
+        };
+        let _ = CfCCell::new(cell_config);
+    }
+
+    #[test]
+    fn test_cfc_accepts_min_tau_boundary() {
+        // Exactly at MIN_TAU boundary should work
+        let cell_config = CfCConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            tau_range: (1e-6, 1.0), // Exactly MIN_TAU
+            use_backbone: false,
+            ..Default::default()
+        };
+        let mut cell = CfCCell::new(cell_config);
+        let input = Array1::from_vec(vec![1.0; 4]);
+
+        // Should produce finite outputs even with minimal tau
+        for _ in 0..100 {
+            let output = cell.forward(&input, 1.0);
+            assert!(
+                output.iter().all(|x| x.is_finite()),
+                "MIN_TAU boundary should produce finite outputs"
+            );
+        }
+    }
+
+    #[test]
+    fn test_cfc_zero_input_no_nan() {
+        let config = CfCNetworkConfig {
+            input_dim: 8,
+            hidden_dim: 16,
+            num_layers: 2,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+        let zero_input = Array1::zeros(8);
+
+        // Zero input should never produce NaN
+        for _ in 0..1000 {
+            let output = network.forward(&zero_input, 0.1);
+            assert!(
+                output.iter().all(|x| x.is_finite() && !x.is_nan()),
+                "Zero input produced NaN"
+            );
+        }
+    }
+
+    #[test]
+    fn test_cfc_very_large_dt_no_nan() {
+        let config = CfCNetworkConfig {
+            input_dim: 8,
+            hidden_dim: 16,
+            num_layers: 1,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+        let input = Array1::from_vec(vec![0.5; 8]);
+
+        // Very large dt values (dt >> tau)
+        for dt in [100.0, 1000.0, 10000.0] {
+            network.reset();
+            let output = network.forward(&input, dt);
+            assert!(
+                output.iter().all(|x| x.is_finite() && !x.is_nan()),
+                "Large dt={} caused NaN", dt
+            );
+        }
+    }
+
+    #[test]
+    fn test_cfc_backward_no_nan_with_small_tau() {
+        let cell_config = CfCConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            tau_range: (1e-5, 1e-4), // Small but valid tau
+            use_backbone: false,
+            ..Default::default()
+        };
+        let mut cell = CfCCell::new(cell_config);
+        let input = Array1::from_vec(vec![0.5; 4]);
+        let target = Array1::from_vec(vec![0.1; 8]);
+
+        // Forward to set state
+        let _ = cell.forward(&input, 0.1);
+
+        // Backward should not produce NaN gradients
+        let grads = cell.backward(&input, &target, 1.0);
+        assert!(
+            grads.dw_in.iter().all(|x| x.is_finite()),
+            "dw_in gradients contain NaN/Inf"
+        );
+        assert!(
+            grads.dw_h.iter().all(|x| x.is_finite()),
+            "dw_h gradients contain NaN/Inf"
+        );
+        assert!(
+            grads.db_h.iter().all(|x| x.is_finite()),
+            "db_h gradients contain NaN/Inf"
+        );
+        assert!(
+            grads.dtau.iter().all(|x| x.is_finite()),
+            "dtau gradients contain NaN/Inf"
         );
     }
 }

@@ -5,7 +5,9 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use std::thread;
 
@@ -37,8 +39,8 @@ pub struct WatchEvent {
 
 /// Configuration file watcher
 pub struct ConfigWatcher {
-    /// Paths being watched
-    watched_paths: HashSet<PathBuf>,
+    /// Paths being watched (shared with watcher thread)
+    watched_paths: Arc<RwLock<HashSet<Arc<PathBuf>>>>,
     /// Event receiver
     event_rx: Option<Receiver<WatchEvent>>,
     /// Event sender (for thread)
@@ -49,6 +51,8 @@ pub struct ConfigWatcher {
     running: bool,
     /// Last modification times
     last_modified: std::collections::HashMap<PathBuf, std::time::SystemTime>,
+    /// Shutdown signal for watcher thread
+    shutdown: Arc<AtomicBool>,
 }
 
 impl ConfigWatcher {
@@ -56,12 +60,13 @@ impl ConfigWatcher {
     pub fn new() -> Self {
         let (tx, rx) = channel();
         Self {
-            watched_paths: HashSet::new(),
+            watched_paths: Arc::new(RwLock::new(HashSet::new())),
             event_rx: Some(rx),
             event_tx: tx,
             debounce: Duration::from_millis(500),
             running: false,
             last_modified: std::collections::HashMap::new(),
+            shutdown: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -79,14 +84,17 @@ impl ConfigWatcher {
             return Err(WatchError::PathNotFound(path));
         }
 
-        self.watched_paths.insert(path.clone());
-
         // Record initial modification time
         if let Ok(metadata) = std::fs::metadata(&path) {
             if let Ok(modified) = metadata.modified() {
-                self.last_modified.insert(path, modified);
+                self.last_modified.insert(path.clone(), modified);
             }
         }
+
+        self.watched_paths
+            .write()
+            .expect("watched_paths lock poisoned")
+            .insert(Arc::new(path));
 
         Ok(())
     }
@@ -121,7 +129,11 @@ impl ConfigWatcher {
 
     /// Remove a path from watch
     pub fn unwatch(&mut self, path: impl AsRef<Path>) {
-        self.watched_paths.remove(path.as_ref());
+        let path_buf = path.as_ref().to_path_buf();
+        self.watched_paths
+            .write()
+            .expect("watched_paths lock poisoned")
+            .retain(|p| **p != path_buf);
         self.last_modified.remove(path.as_ref());
     }
 
@@ -131,23 +143,40 @@ impl ConfigWatcher {
             return Ok(());
         }
 
-        let paths = self.watched_paths.clone();
+        // Reset shutdown flag in case of restart
+        self.shutdown.store(false, Ordering::Relaxed);
+
+        let paths = Arc::clone(&self.watched_paths);
         let tx = self.event_tx.clone();
         let debounce = self.debounce;
         let mut last_modified = self.last_modified.clone();
+        let shutdown = Arc::clone(&self.shutdown);
 
         self.running = true;
 
         thread::spawn(move || {
             let poll_interval = Duration::from_millis(100);
 
-            loop {
+            while !shutdown.load(Ordering::Relaxed) {
                 thread::sleep(poll_interval);
 
-                for path in &paths {
-                    if let Ok(metadata) = std::fs::metadata(path) {
+                // Get a snapshot of paths under read lock
+                let paths_snapshot: Vec<Arc<PathBuf>> = paths
+                    .read()
+                    .expect("watched_paths lock poisoned")
+                    .iter()
+                    .cloned()
+                    .collect();
+
+                for path in paths_snapshot {
+                    // Check shutdown between iterations
+                    if shutdown.load(Ordering::Relaxed) {
+                        return;
+                    }
+
+                    if let Ok(metadata) = std::fs::metadata(&*path) {
                         if let Ok(modified) = metadata.modified() {
-                            let changed = last_modified.get(path)
+                            let changed = last_modified.get(&*path)
                                 .map(|&last| modified > last)
                                 .unwrap_or(true);
 
@@ -155,15 +184,20 @@ impl ConfigWatcher {
                                 // Debounce
                                 thread::sleep(debounce);
 
+                                // Check shutdown after debounce
+                                if shutdown.load(Ordering::Relaxed) {
+                                    return;
+                                }
+
                                 // Recheck after debounce
-                                if let Ok(metadata2) = std::fs::metadata(path) {
+                                if let Ok(metadata2) = std::fs::metadata(&*path) {
                                     if let Ok(modified2) = metadata2.modified() {
                                         if modified2 == modified {
                                             // File has stabilized
-                                            last_modified.insert(path.clone(), modified2);
+                                            last_modified.insert((*path).clone(), modified2);
 
                                             let event = WatchEvent {
-                                                path: path.clone(),
+                                                path: (*path).clone(),
                                                 kind: WatchEventKind::Modify,
                                                 timestamp: Instant::now(),
                                             };
@@ -179,11 +213,11 @@ impl ConfigWatcher {
                         }
                     } else {
                         // File deleted?
-                        if last_modified.contains_key(path) {
-                            last_modified.remove(path);
+                        if last_modified.contains_key(&*path) {
+                            last_modified.remove(&*path);
 
                             let event = WatchEvent {
-                                path: path.clone(),
+                                path: (*path).clone(),
                                 kind: WatchEventKind::Delete,
                                 timestamp: Instant::now(),
                             };
@@ -198,6 +232,11 @@ impl ConfigWatcher {
         });
 
         Ok(())
+    }
+
+    /// Stop the watcher thread
+    pub fn stop(&self) {
+        self.shutdown.store(true, Ordering::Relaxed);
     }
 
     /// Take the event receiver (can only be called once)
@@ -216,14 +255,24 @@ impl ConfigWatcher {
         events
     }
 
-    /// Get watched paths
-    pub fn watched_paths(&self) -> &HashSet<PathBuf> {
-        &self.watched_paths
+    /// Get watched paths (returns a clone of the current paths)
+    pub fn watched_paths(&self) -> HashSet<PathBuf> {
+        self.watched_paths
+            .read()
+            .expect("watched_paths lock poisoned")
+            .iter()
+            .map(|p| (**p).clone())
+            .collect()
     }
 
     /// Check if a path is being watched
     pub fn is_watching(&self, path: impl AsRef<Path>) -> bool {
-        self.watched_paths.contains(path.as_ref())
+        let path_buf = path.as_ref().to_path_buf();
+        self.watched_paths
+            .read()
+            .expect("watched_paths lock poisoned")
+            .iter()
+            .any(|p| **p == path_buf)
     }
 }
 
@@ -290,8 +339,8 @@ impl ConfigChangeDetector {
 
         // Load initial content
         for path in self.watcher.watched_paths() {
-            if let Ok(content) = std::fs::read_to_string(path) {
-                self.previous_content.insert(path.clone(), content);
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                self.previous_content.insert(path, content);
             }
         }
 

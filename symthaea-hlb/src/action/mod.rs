@@ -414,6 +414,17 @@ pub enum ExecutionError {
     Unsupported(String),
 }
 
+/// Action-level errors for simulation and planning.
+#[derive(Debug, Clone, Error)]
+pub enum ActionError {
+    #[error("unexpected simulation outcome: {0}")]
+    UnexpectedOutcome(String),
+    #[error("action validation failed: {0}")]
+    ValidationFailed(String),
+    #[error("simulation mismatch: expected {expected}, got {actual}")]
+    SimulationMismatch { expected: String, actual: String },
+}
+
 impl From<PolicyViolation> for ExecutionError {
     fn from(err: PolicyViolation) -> Self {
         ExecutionError::Policy(err)
@@ -869,9 +880,10 @@ mod tests {
     }
 
     #[test]
-    fn simple_executor_read_write_roundtrip() {
+    fn simple_executor_read_write_roundtrip() -> Result<(), ActionError> {
         let policy = PolicyBundle::restrictive();
-        let sandbox = SandboxRoot::new("test_exec_rw").unwrap();
+        let sandbox = SandboxRoot::new("test_exec_rw")
+            .map_err(|e| ActionError::ValidationFailed(e.to_string()))?;
         let path = sandbox.root().join("note.txt");
         let mut executor = SimpleExecutor::new();
 
@@ -880,20 +892,26 @@ mod tests {
             content: b"hello".to_vec(),
             create_dirs: true,
         };
-        executor.execute(&write, &policy, &sandbox).expect("write should succeed");
+        executor.execute(&write, &policy, &sandbox)
+            .map_err(|e| ActionError::ValidationFailed(e.to_string()))?;
 
         let read = ActionIR::ReadFile { path: path.clone(), encoding: None };
-        let result = executor.execute(&read, &policy, &sandbox).unwrap();
+        let result = executor.execute(&read, &policy, &sandbox)
+            .map_err(|e| ActionError::ValidationFailed(e.to_string()))?;
         match result.outcome {
-            ActionOutcome::FileContent(data) => assert_eq!(data, b"hello"),
-            other => panic!("unexpected outcome: {:?}", other),
+            ActionOutcome::FileContent(data) => {
+                assert_eq!(data, b"hello");
+                Ok(())
+            }
+            other => Err(ActionError::UnexpectedOutcome(format!("{:?}", other))),
         }
     }
 
     #[test]
-    fn simple_executor_simulates_commands() {
+    fn simple_executor_simulates_commands() -> Result<(), ActionError> {
         let policy = PolicyBundle::restrictive();
-        let sandbox = SandboxRoot::new("test_exec_cmd").unwrap();
+        let sandbox = SandboxRoot::new("test_exec_cmd")
+            .map_err(|e| ActionError::ValidationFailed(e.to_string()))?;
         let mut executor = SimpleExecutor::new();
 
         let action = ActionIR::RunCommand {
@@ -903,13 +921,18 @@ mod tests {
             working_dir: None,
         };
 
-        let outcome = executor.execute(&action, &policy, &sandbox).unwrap();
+        let outcome = executor.execute(&action, &policy, &sandbox)
+            .map_err(|e| ActionError::ValidationFailed(e.to_string()))?;
         match outcome.outcome {
             ActionOutcome::SimulatedCommand { program, args } => {
                 assert_eq!(program, "nix");
                 assert!(args.contains(&"vim".to_string()));
+                Ok(())
             }
-            other => panic!("expected simulated command, got {:?}", other),
+            other => Err(ActionError::SimulationMismatch {
+                expected: "SimulatedCommand".to_string(),
+                actual: format!("{:?}", other),
+            }),
         }
     }
 }

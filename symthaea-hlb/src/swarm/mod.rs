@@ -99,7 +99,7 @@ pub use holochain::{
 pub use iroh::{IrohNode, IrohChannel, TensorStream, StreamConfig};
 
 // Handshake types
-pub use handshake::{HybridHandshake, HandshakeResult};
+pub use handshake::{HybridHandshake, HandshakeResult, HandshakeError, SwarmMessageExt};
 
 // ============================================================================
 // SWARM NODE - Main Entry Point

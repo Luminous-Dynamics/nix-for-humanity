@@ -922,7 +922,7 @@ mod tests {
             ExecutionStrategy::Confident { execute_immediately, .. } => {
                 assert!(execute_immediately);
             }
-            _ => panic!("Expected Confident strategy"),
+            other => unreachable!("Expected Confident strategy, got {:?}", other),
         }
 
         // Low Φ + High Confidence: Autopilot
@@ -935,7 +935,7 @@ mod tests {
             ExecutionStrategy::Autopilot { execute_efficiently, .. } => {
                 assert!(execute_efficiently);
             }
-            _ => panic!("Expected Autopilot strategy"),
+            other => unreachable!("Expected Autopilot strategy, got {:?}", other),
         }
 
         // High Φ + Low Confidence: Curious
@@ -948,7 +948,7 @@ mod tests {
             ExecutionStrategy::Curious { explore_first, .. } => {
                 assert!(explore_first);
             }
-            _ => panic!("Expected Curious strategy"),
+            other => unreachable!("Expected Curious strategy, got {:?}", other),
         }
 
         // Low Φ + Low Confidence: Lost
@@ -961,7 +961,7 @@ mod tests {
             ExecutionStrategy::Lost { request_help, .. } => {
                 assert!(request_help);
             }
-            _ => panic!("Expected Lost strategy"),
+            other => unreachable!("Expected Lost strategy, got {:?}", other),
         }
     }
 }

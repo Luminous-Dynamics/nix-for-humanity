@@ -252,35 +252,22 @@ impl ExperienceBus {
         let start = std::time::Instant::now();
         let mut metadata = ThoughtMetadata::default();
 
-        // 1. Retrieve similar experiences
-        let retrieval_start = std::time::Instant::now();
-        let similar = self.retrieve_similar_experiences(input_hdv);
-        metadata.experience_retrieval_time_ms = retrieval_start.elapsed().as_millis() as u64;
-
-        // 2. Update epistemic mirror if we have user context
+        // 1. Update epistemic mirror if we have user context (mutable op first)
         if let Some(user_hash) = user_context {
             self.load_or_create_user_mirror(user_hash);
         }
 
-        // 3. Compute principled signals
+        // 2. Retrieve similar experiences (returns references, no clone)
+        let retrieval_start = std::time::Instant::now();
+        let similar = self.retrieve_similar_experiences(input_hdv);
+        metadata.experience_retrieval_time_ms = retrieval_start.elapsed().as_millis() as u64;
+
+        // 3. Compute principled signals and extract summaries while we have the borrow
         let signal_start = std::time::Instant::now();
-        self.current_signals = self.compute_signals(input_hdv, &similar);
+        let signals = self.compute_signals(input_hdv, &similar);
         metadata.signal_computation_time_ms = signal_start.elapsed().as_millis() as u64;
 
-        // 4. Select primitives based on principled signals
-        let rule_start = std::time::Instant::now();
-        let (primitives, rules_applied) = self.select_primitives_principled();
-        metadata.rule_evaluation_time_ms = rule_start.elapsed().as_millis() as u64;
-
-        // 5. Create kosmic snapshot
-        let kosmic_snapshot = KosmicSongSnapshot {
-            phi_monitor: self.kosmic_state.phi,
-            dominant_harmony: self.kosmic_state.harmonies.dominant().to_string(),
-            gis_type: self.kosmic_state.gis_state.current_type.clone(),
-            moral_uncertainty_total: self.kosmic_state.moral_uncertainty.total(),
-        };
-
-        // 6. Create experience summaries
+        // 4. Create experience summaries (extract data before dropping borrow)
         let similar_summaries: Vec<ExperienceSummary> = similar
             .iter()
             .map(|(exp, sim)| ExperienceSummary {
@@ -290,6 +277,25 @@ impl ExperienceBus {
                 outcome_success: exp.outcome.as_ref().map(|o| o.task_completion).unwrap_or(false),
             })
             .collect();
+
+        // Drop the immutable borrow of similar before mutable operations
+        drop(similar);
+
+        // 5. Store computed signals
+        self.current_signals = signals;
+
+        // 6. Select primitives based on principled signals
+        let rule_start = std::time::Instant::now();
+        let (primitives, rules_applied) = self.select_primitives_principled();
+        metadata.rule_evaluation_time_ms = rule_start.elapsed().as_millis() as u64;
+
+        // 7. Create kosmic snapshot
+        let kosmic_snapshot = KosmicSongSnapshot {
+            phi_monitor: self.kosmic_state.phi,
+            dominant_harmony: self.kosmic_state.harmonies.dominant().to_string(),
+            gis_type: self.kosmic_state.gis_state.current_type.clone(),
+            moral_uncertainty_total: self.kosmic_state.moral_uncertainty.total(),
+        };
 
         metadata.generation_time_ms = start.elapsed().as_millis() as u64;
 
@@ -305,13 +311,13 @@ impl ExperienceBus {
     }
 
     /// Retrieve similar experiences from memory/database
-    fn retrieve_similar_experiences(&self, input_hdv: &RealHV) -> Vec<(EpisodicMemory, f32)> {
+    fn retrieve_similar_experiences(&self, input_hdv: &RealHV) -> Vec<(&EpisodicMemory, f32)> {
         let mut results = Vec::new();
 
         for exp in &self.memory_cache.experiences {
             let similarity = self.compute_similarity(input_hdv, &exp.hdv_embedding);
             if similarity >= self.config.similarity_threshold {
-                results.push((exp.clone(), similarity));
+                results.push((exp, similarity));
             }
         }
 
@@ -345,7 +351,7 @@ impl ExperienceBus {
     fn compute_signals(
         &self,
         input_hdv: &RealHV,
-        similar_experiences: &[(EpisodicMemory, f32)],
+        similar_experiences: &[(&EpisodicMemory, f32)],
     ) -> PrincipledSignals {
         // Prediction Error: How different is this from expected?
         let prediction_error = if similar_experiences.is_empty() {
@@ -385,7 +391,7 @@ impl ExperienceBus {
     }
 
     /// Compute uncertainty from experiences and GIS state
-    fn compute_uncertainty(&self, experiences: &[(EpisodicMemory, f32)]) -> f32 {
+    fn compute_uncertainty(&self, experiences: &[(&EpisodicMemory, f32)]) -> f32 {
         // Base uncertainty from GIS type
         let gis_uncertainty = match self.kosmic_state.gis_state.current_type {
             GisType::KnownKnown => 0.1,
@@ -524,29 +530,32 @@ impl ExperienceBus {
 
     /// Record an experience for learning
     pub fn record_experience(&mut self, experience: EpisodicMemory) {
-        // Add to memory cache
-        self.memory_cache.experiences.push(experience.clone());
+        // Update primitive stats before moving experience into cache
+        let task_completed = experience.outcome.as_ref().map(|o| o.task_completion).unwrap_or(false);
+        let coherence = experience.coherence;
 
-        // Enforce cache limit
-        if self.memory_cache.experiences.len() > self.config.max_memory_cache {
-            self.memory_cache.experiences.remove(0);
-        }
-
-        // Update primitive stats
         for primitive in &experience.thought_primitives {
             let stats = self
                 .memory_cache
                 .primitive_stats
-                .entry(primitive.clone())
+                .entry(primitive.as_str().to_owned())
                 .or_default();
             stats.total_uses += 1;
-            if experience.outcome.as_ref().map(|o| o.task_completion).unwrap_or(false) {
+            if task_completed {
                 stats.success_count += 1;
             }
             // Rolling average for coherence
             let n = stats.total_uses as f32;
             stats.avg_coherence =
-                (stats.avg_coherence * (n - 1.0) + experience.coherence) / n;
+                (stats.avg_coherence * (n - 1.0) + coherence) / n;
+        }
+
+        // Move experience into memory cache (no clone needed)
+        self.memory_cache.experiences.push(experience);
+
+        // Enforce cache limit
+        if self.memory_cache.experiences.len() > self.config.max_memory_cache {
+            self.memory_cache.experiences.remove(0);
         }
     }
 

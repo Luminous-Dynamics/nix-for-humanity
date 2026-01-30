@@ -424,9 +424,20 @@ impl HippocampusActor {
             results.push((memory.clone(), similarity));
         }
 
-        // Sort by similarity descending
+        // Optimize top-k selection: use select_nth_unstable for O(n) average
+        // instead of full O(n log n) sort when results exceed top_k
+        let k = query.top_k;
+        if results.len() > k && k > 0 {
+            // Partition so that the k largest elements are in results[0..k]
+            // select_nth_unstable_by places the k-th element at index k-1 and
+            // partitions such that elements before are >= and after are <=
+            results.select_nth_unstable_by(k - 1, |a, b| {
+                b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+            });
+            results.truncate(k);
+        }
+        // Sort only the top-k results (small constant size)
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-        results.truncate(query.top_k);
 
         let elapsed = start.elapsed().as_secs_f32() * 1000.0;
 
@@ -598,5 +609,59 @@ mod tests {
 
         let c = vec![0.0, 1.0, 0.0];
         assert!((cosine_similarity(&a, &c) - 0.0).abs() < 0.001);
+    }
+
+    /// Test that top-k selection returns correct results with optimized algorithm
+    #[tokio::test]
+    async fn test_recall_top_k_correctness() {
+        let mut hippo = HippocampusActor::new(10000);
+
+        // Create embeddings with known similarity values
+        let query_emb = vec![1.0f32; 128];
+
+        // Add memories with decreasing similarity to query
+        for i in 0..100 {
+            // Each embedding differs more from query as i increases
+            let mut emb = vec![1.0f32; 128];
+            for j in 0..i.min(128) {
+                emb[j] = 0.0; // Make embeddings progressively different
+            }
+            hippo.encode(format!("Memory {}", i), emb, EmotionalValence::Neutral).await.unwrap();
+        }
+
+        // Request top 5
+        let query = RecallQuery::from_embedding(query_emb.clone()).with_top_k(5);
+        let result = hippo.recall(query).await.unwrap();
+
+        // Should get exactly 5 results
+        assert_eq!(result.memories.len(), 5);
+
+        // Results should be sorted by similarity (descending)
+        for i in 1..result.scores.len() {
+            assert!(result.scores[i - 1] >= result.scores[i],
+                "Results should be sorted by similarity descending");
+        }
+
+        // First result should be the most similar (Memory 0, which is identical to query)
+        assert_eq!(result.memories[0].content, "Memory 0");
+    }
+
+    /// Test edge cases for top-k selection
+    #[tokio::test]
+    async fn test_recall_top_k_edge_cases() {
+        let mut hippo = HippocampusActor::new(100);
+        let embedding = vec![0.5f32; 128];
+
+        // Test with fewer results than k
+        hippo.encode("Only memory", embedding.clone(), EmotionalValence::Neutral).await.unwrap();
+
+        let query = RecallQuery::from_embedding(embedding.clone()).with_top_k(10);
+        let result = hippo.recall(query).await.unwrap();
+        assert_eq!(result.memories.len(), 1);
+
+        // Test with k=0
+        let query_zero = RecallQuery::from_embedding(embedding.clone()).with_top_k(0);
+        let result_zero = hippo.recall(query_zero).await.unwrap();
+        assert_eq!(result_zero.memories.len(), 0);
     }
 }

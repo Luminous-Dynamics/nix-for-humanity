@@ -44,8 +44,118 @@ use crate::swarm::{
     SwarmConfig, SwarmResult, SwarmError,
     TrustLevel, SwarmMessage,
 };
+use std::fmt;
 use std::time::{SystemTime, Duration};
 use rand::Rng;
+use tracing::warn;
+
+// ============================================================================
+// HANDSHAKE ERRORS
+// ============================================================================
+
+/// Errors specific to the handshake protocol
+#[derive(Debug, Clone)]
+pub enum HandshakeError {
+    /// Expected a TrustChallenge message but received a different variant
+    UnexpectedMessageType {
+        expected: &'static str,
+        actual: String,
+    },
+    /// Challenge nonce extraction failed
+    ChallengeExtractionFailed {
+        reason: String,
+    },
+    /// Response extraction failed
+    ResponseExtractionFailed {
+        reason: String,
+    },
+    /// Invalid handshake state
+    InvalidState {
+        expected: String,
+        actual: String,
+    },
+    /// Protocol violation
+    ProtocolViolation {
+        message: String,
+    },
+}
+
+impl fmt::Display for HandshakeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnexpectedMessageType { expected, actual } => {
+                write!(f, "Expected {} message, got {}", expected, actual)
+            }
+            Self::ChallengeExtractionFailed { reason } => {
+                write!(f, "Failed to extract challenge: {}", reason)
+            }
+            Self::ResponseExtractionFailed { reason } => {
+                write!(f, "Failed to extract response: {}", reason)
+            }
+            Self::InvalidState { expected, actual } => {
+                write!(f, "Invalid handshake state: expected {}, got {}", expected, actual)
+            }
+            Self::ProtocolViolation { message } => {
+                write!(f, "Handshake protocol violation: {}", message)
+            }
+        }
+    }
+}
+
+impl std::error::Error for HandshakeError {}
+
+// ============================================================================
+// SWARM MESSAGE HELPERS
+// ============================================================================
+
+/// Extension trait for extracting specific message types from SwarmMessage
+pub trait SwarmMessageExt {
+    /// Try to extract the nonce from a TrustChallenge message
+    fn try_into_challenge_nonce(self) -> Result<Vec<u8>, HandshakeError>;
+
+    /// Try to extract (signed_nonce, agent_key) from a TrustResponse message
+    fn try_into_response(self) -> Result<(Vec<u8>, String), HandshakeError>;
+}
+
+impl SwarmMessageExt for SwarmMessage {
+    fn try_into_challenge_nonce(self) -> Result<Vec<u8>, HandshakeError> {
+        match self {
+            SwarmMessage::TrustChallenge { nonce } => Ok(nonce),
+            other => {
+                let actual = other.message_type().to_string();
+                warn!(
+                    expected = "TrustChallenge",
+                    actual = %actual,
+                    "Unexpected message type during handshake"
+                );
+                Err(HandshakeError::UnexpectedMessageType {
+                    expected: "TrustChallenge",
+                    actual,
+                })
+            }
+        }
+    }
+
+    fn try_into_response(self) -> Result<(Vec<u8>, String), HandshakeError> {
+        match self {
+            SwarmMessage::TrustResponse { signed_nonce, agent_key } => {
+                Ok((signed_nonce, agent_key))
+            }
+            other => {
+                let actual = other.message_type().to_string();
+                warn!(
+                    expected = "TrustResponse",
+                    actual = %actual,
+                    "Unexpected message type during handshake"
+                );
+                Err(HandshakeError::UnexpectedMessageType {
+                    expected: "TrustResponse",
+                    actual,
+                })
+            }
+        }
+    }
+}
 
 /// Length of the BLAKE3 MAC output in bytes
 const MAC_LEN: usize = 32;
@@ -279,12 +389,9 @@ mod tests {
 
         let challenge = handshake.create_challenge("peer-123");
 
-        match challenge {
-            SwarmMessage::TrustChallenge { nonce } => {
-                assert_eq!(nonce.len(), 32);
-            }
-            _ => panic!("Expected TrustChallenge"),
-        }
+        let nonce = challenge.try_into_challenge_nonce()
+            .expect("create_challenge should return TrustChallenge");
+        assert_eq!(nonce.len(), 32);
 
         assert_eq!(handshake.pending_count(), 1);
     }
@@ -297,14 +404,11 @@ mod tests {
         let nonce = vec![1, 2, 3, 4];
         let response = handshake.create_response(&nonce, "agent-key", b"private-key");
 
-        match response {
-            SwarmMessage::TrustResponse { signed_nonce, agent_key } => {
-                // MAC should be exactly 32 bytes (BLAKE3 output)
-                assert_eq!(signed_nonce.len(), MAC_LEN);
-                assert_eq!(agent_key, "agent-key");
-            }
-            _ => panic!("Expected TrustResponse"),
-        }
+        let (signed_nonce, agent_key) = response.try_into_response()
+            .expect("create_response should return TrustResponse");
+        // MAC should be exactly 32 bytes (BLAKE3 output)
+        assert_eq!(signed_nonce.len(), MAC_LEN);
+        assert_eq!(agent_key, "agent-key");
     }
 
     #[test]
@@ -314,17 +418,13 @@ mod tests {
 
         // Create challenge
         let challenge = handshake.create_challenge("peer-123");
-        let nonce = match challenge {
-            SwarmMessage::TrustChallenge { nonce } => nonce,
-            _ => panic!("Expected TrustChallenge"),
-        };
+        let nonce = challenge.try_into_challenge_nonce()
+            .expect("create_challenge should return TrustChallenge");
 
         // Create response using agent_key as key material (matches verify_response lookup)
         let response = handshake.create_response(&nonce, "agent-key", b"agent-key");
-        let (signed_nonce, agent_key) = match response {
-            SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
-            _ => panic!("Expected TrustResponse"),
-        };
+        let (signed_nonce, agent_key) = response.try_into_response()
+            .expect("create_response should return TrustResponse");
 
         // Verify
         let trust = handshake.verify_response("peer-123", &signed_nonce, &agent_key).unwrap();
@@ -338,17 +438,13 @@ mod tests {
 
         // Create challenge
         let challenge = handshake.create_challenge("peer-123");
-        let nonce = match challenge {
-            SwarmMessage::TrustChallenge { nonce } => nonce,
-            _ => panic!("Expected TrustChallenge"),
-        };
+        let nonce = challenge.try_into_challenge_nonce()
+            .expect("create_challenge should return TrustChallenge");
 
         // Create response with a DIFFERENT private key
         let response = handshake.create_response(&nonce, "agent-key", b"wrong-key");
-        let (signed_nonce, agent_key) = match response {
-            SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
-            _ => panic!("Expected TrustResponse"),
-        };
+        let (signed_nonce, agent_key) = response.try_into_response()
+            .expect("create_response should return TrustResponse");
 
         // Verification should fail because MAC was computed with wrong key
         let result = handshake.verify_response("peer-123", &signed_nonce, &agent_key);
@@ -361,16 +457,12 @@ mod tests {
         let mut handshake = HybridHandshake::new(config);
 
         let challenge = handshake.create_challenge("peer-123");
-        let nonce = match challenge {
-            SwarmMessage::TrustChallenge { nonce } => nonce,
-            _ => panic!("Expected TrustChallenge"),
-        };
+        let nonce = challenge.try_into_challenge_nonce()
+            .expect("create_challenge should return TrustChallenge");
 
         let response = handshake.create_response(&nonce, "agent-key", b"agent-key");
-        let (mut signed_nonce, agent_key) = match response {
-            SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
-            _ => panic!("Expected TrustResponse"),
-        };
+        let (mut signed_nonce, agent_key) = response.try_into_response()
+            .expect("create_response should return TrustResponse");
 
         // Tamper with the MAC
         signed_nonce[0] ^= 0xFF;

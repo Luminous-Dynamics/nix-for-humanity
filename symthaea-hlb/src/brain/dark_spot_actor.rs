@@ -83,6 +83,25 @@ pub enum DarkSpotMessage {
     },
 }
 
+/// Errors that can occur during actor message handling
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum ActorError {
+    /// Received an unexpected message type
+    #[error("Unexpected message type: {0}")]
+    UnexpectedMessage(String),
+
+    /// Message handling failed
+    #[error("Message handling failed: {0}")]
+    HandlingFailed(String),
+
+    /// Response variant mismatch
+    #[error("Unexpected response variant: expected {expected}, got {actual}")]
+    UnexpectedResponse {
+        expected: &'static str,
+        actual: String,
+    },
+}
+
 /// Responses from Dark Spot operations
 #[derive(Debug, Clone)]
 pub enum DarkSpotResponse {
@@ -599,6 +618,61 @@ impl Clone for SharedDarkSpotDHT {
 mod tests {
     use super::*;
 
+    /// Helper to extract expected response variant or return an error
+    fn expect_published(response: DarkSpotResponse) -> Result<String, ActorError> {
+        match response {
+            DarkSpotResponse::Published { signature_id } => Ok(signature_id),
+            other => {
+                log::warn!("Received unexpected response: {:?}", other);
+                Err(ActorError::UnexpectedResponse {
+                    expected: "Published",
+                    actual: format!("{:?}", other),
+                })
+            }
+        }
+    }
+
+    fn expect_knowledge_added(response: DarkSpotResponse) -> Result<String, ActorError> {
+        match response {
+            DarkSpotResponse::KnowledgeAdded { id } => Ok(id),
+            other => {
+                log::warn!("Received unexpected response: {:?}", other);
+                Err(ActorError::UnexpectedResponse {
+                    expected: "KnowledgeAdded",
+                    actual: format!("{:?}", other),
+                })
+            }
+        }
+    }
+
+    fn expect_blind_spots(response: DarkSpotResponse) -> Result<Vec<CollectiveBlindSpot>, ActorError> {
+        match response {
+            DarkSpotResponse::BlindSpots { spots } => Ok(spots),
+            other => {
+                log::warn!("Received unexpected response: {:?}", other);
+                Err(ActorError::UnexpectedResponse {
+                    expected: "BlindSpots",
+                    actual: format!("{:?}", other),
+                })
+            }
+        }
+    }
+
+    fn expect_stats(response: DarkSpotResponse) -> Result<(usize, usize, usize), ActorError> {
+        match response {
+            DarkSpotResponse::Stats { signature_count, knowledge_count, blind_spot_count } => {
+                Ok((signature_count, knowledge_count, blind_spot_count))
+            }
+            other => {
+                log::warn!("Received unexpected response: {:?}", other);
+                Err(ActorError::UnexpectedResponse {
+                    expected: "Stats",
+                    actual: format!("{:?}", other),
+                })
+            }
+        }
+    }
+
     #[test]
     fn test_dark_spot_actor_creation() {
         let actor = DarkSpotDHTActor::new();
@@ -606,20 +680,17 @@ mod tests {
     }
 
     #[test]
-    fn test_publish_ignorance() {
+    fn test_publish_ignorance() -> Result<(), ActorError> {
         let mut actor = DarkSpotDHTActor::new();
         let response = actor.publish_ignorance("quantum entanglement", "physics", 0.8);
 
-        match response {
-            DarkSpotResponse::Published { signature_id } => {
-                assert!(signature_id.starts_with("zk_physics_"));
-            }
-            _ => panic!("Expected Published response"),
-        }
+        let signature_id = expect_published(response)?;
+        assert!(signature_id.starts_with("zk_physics_"));
+        Ok(())
     }
 
     #[test]
-    fn test_add_knowledge() {
+    fn test_add_knowledge() -> Result<(), ActorError> {
         let mut actor = DarkSpotDHTActor::new();
         let response = actor.add_knowledge(
             "k1".to_string(),
@@ -628,29 +699,23 @@ mod tests {
             0.9,
         );
 
-        match response {
-            DarkSpotResponse::KnowledgeAdded { id } => {
-                assert_eq!(id, "k1");
-            }
-            _ => panic!("Expected KnowledgeAdded response"),
-        }
+        let id = expect_knowledge_added(response)?;
+        assert_eq!(id, "k1");
+        Ok(())
     }
 
     #[test]
-    fn test_query_blind_spots_empty() {
+    fn test_query_blind_spots_empty() -> Result<(), ActorError> {
         let mut actor = DarkSpotDHTActor::new();
         let response = actor.query_blind_spots();
 
-        match response {
-            DarkSpotResponse::BlindSpots { spots } => {
-                assert!(spots.is_empty());
-            }
-            _ => panic!("Expected BlindSpots response"),
-        }
+        let spots = expect_blind_spots(response)?;
+        assert!(spots.is_empty());
+        Ok(())
     }
 
     #[test]
-    fn test_get_stats() {
+    fn test_get_stats() -> Result<(), ActorError> {
         let mut actor = DarkSpotDHTActor::new();
 
         // Add some data
@@ -659,13 +724,10 @@ mod tests {
 
         let response = actor.get_stats();
 
-        match response {
-            DarkSpotResponse::Stats { signature_count, knowledge_count, .. } => {
-                assert_eq!(signature_count, 1);
-                assert_eq!(knowledge_count, 1);
-            }
-            _ => panic!("Expected Stats response"),
-        }
+        let (signature_count, knowledge_count, _) = expect_stats(response)?;
+        assert_eq!(signature_count, 1);
+        assert_eq!(knowledge_count, 1);
+        Ok(())
     }
 
     #[test]
@@ -689,7 +751,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_shared_dht() {
+    async fn test_shared_dht() -> Result<(), ActorError> {
         let shared = SharedDarkSpotDHT::new();
 
         // Publish from one "thread"
@@ -698,11 +760,8 @@ mod tests {
 
         // Query from another
         let stats = shared.get_stats().await;
-        match stats {
-            DarkSpotResponse::Stats { signature_count, .. } => {
-                assert_eq!(signature_count, 1);
-            }
-            _ => panic!("Expected stats"),
-        }
+        let (signature_count, _, _) = expect_stats(stats)?;
+        assert_eq!(signature_count, 1);
+        Ok(())
     }
 }

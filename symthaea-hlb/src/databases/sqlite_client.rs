@@ -135,7 +135,13 @@ impl ConsciousnessDatabase for SqliteMemory {
 
         let encoding_bytes = Self::hv_to_bytes(&record.encoding);
         let memory_type_str = Self::memory_type_to_str(record.memory_type);
-        let topics_json = serde_json::to_string(&record.topics).unwrap_or_default();
+        let topics_json = match serde_json::to_string(&record.topics) {
+            Ok(json) => json,
+            Err(e) => {
+                tracing::warn!("Failed to serialize topics: {}. Using empty array.", e);
+                "[]".to_string()
+            }
+        };
 
         conn.execute(
             r#"INSERT OR REPLACE INTO memories
@@ -169,12 +175,26 @@ impl ConsciousnessDatabase for SqliteMemory {
         let rows = stmt.query_map([], |row| {
             let encoding_bytes: Vec<u8> = row.get(1)?;
             let topics_json: String = row.get(8)?;
-            let topics: Vec<String> = serde_json::from_str(&topics_json).unwrap_or_default();
+            let topics: Vec<String> = match serde_json::from_str(&topics_json) {
+                Ok(t) => t,
+                Err(e) => {
+                    tracing::warn!("Failed to deserialize topics: {}. Using empty array.", e);
+                    Vec::new()
+                }
+            };
 
             Ok(MemoryRecord {
                 id: row.get(0)?,
                 encoding: Self::bytes_to_hv(&encoding_bytes),
-                timestamp_ms: row.get::<_, i64>(2)? as u64,
+                timestamp_ms: {
+                    let ts = row.get::<_, i64>(2)?;
+                    if ts < 0 {
+                        tracing::warn!("Negative timestamp {} found, using 0", ts);
+                        0u64
+                    } else {
+                        ts as u64
+                    }
+                },
                 memory_type: Self::str_to_memory_type(&row.get::<_, String>(3)?),
                 content: row.get(4)?,
                 valence: row.get::<_, f64>(5)? as f32,
@@ -212,12 +232,26 @@ impl ConsciousnessDatabase for SqliteMemory {
         let result = stmt.query_row([id], |row| {
             let encoding_bytes: Vec<u8> = row.get(1)?;
             let topics_json: String = row.get(8)?;
-            let topics: Vec<String> = serde_json::from_str(&topics_json).unwrap_or_default();
+            let topics: Vec<String> = match serde_json::from_str(&topics_json) {
+                Ok(t) => t,
+                Err(e) => {
+                    tracing::warn!("Failed to deserialize topics: {}. Using empty array.", e);
+                    Vec::new()
+                }
+            };
 
             Ok(MemoryRecord {
                 id: row.get(0)?,
                 encoding: Self::bytes_to_hv(&encoding_bytes),
-                timestamp_ms: row.get::<_, i64>(2)? as u64,
+                timestamp_ms: {
+                    let ts = row.get::<_, i64>(2)?;
+                    if ts < 0 {
+                        tracing::warn!("Negative timestamp {} found, using 0", ts);
+                        0u64
+                    } else {
+                        ts as u64
+                    }
+                },
                 memory_type: Self::str_to_memory_type(&row.get::<_, String>(3)?),
                 content: row.get(4)?,
                 valence: row.get::<_, f64>(5)? as f32,
