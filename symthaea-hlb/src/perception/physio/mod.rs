@@ -21,13 +21,13 @@
 //! The MeditationSentinel uses Frontal Midline Theta, Alpha Coherence,
 //! and Gamma Synchrony to detect Flow/Focus states. Protocol: "Proof of Focus"
 //!
-//! NOTE: sleep_sentinel temporarily disabled - depends on unified_ltc.
+//! All three Sentinels are now active and using the unified_ltc module.
 
 pub mod edf_loader;
 pub mod emotion_detector;
 pub mod meditation_detector;
 pub mod entropy;  // Permutation Entropy for consciousness detection
-// pub mod sleep_sentinel;  // Disabled: requires unified_ltc module
+pub mod sleep_sentinel;
 
 pub use edf_loader::{EdfFile, EdfSignal, SleepAnnotation, SleepStage};
 pub use emotion_detector::{
@@ -41,4 +41,8 @@ pub use meditation_detector::{
     MeditationSimulator,
 };
 pub use entropy::{permutation_entropy_order3, permutation_entropy_order4, weighted_permutation_entropy};
-// pub use sleep_sentinel::{SleepSentinel, ConsciousnessState, SleepSentinelConfig};
+pub use sleep_sentinel::{
+    SleepSentinel, ConsciousnessState, SleepSentinelConfig,
+    IntegrationMetrics, SleepSentinelStats, CalibrationState,
+    AdaptiveThresholdConfig, CalibrationData,
+};

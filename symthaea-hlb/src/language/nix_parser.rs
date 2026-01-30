@@ -51,11 +51,9 @@ pub struct NixConfig {
     pub module_args: Vec<String>,
 
     /// Raw AST for advanced queries
-    #[allow(dead_code)] // Reserved for AST traversal
     tree: Option<Tree>,
 
     /// Source text for node extraction
-    #[allow(dead_code)] // Reserved for node extraction
     source: String,
 
     /// Parse errors encountered
@@ -470,6 +468,224 @@ impl NixConfig {
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
+
+    // ============================================
+    // AST Traversal Methods
+    // ============================================
+
+    /// Get the raw tree-sitter Tree for advanced queries
+    ///
+    /// Returns None if parsing failed or tree is unavailable.
+    pub fn tree(&self) -> Option<&Tree> {
+        self.tree.as_ref()
+    }
+
+    /// Get the source text used for parsing
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+
+    /// Traverse all nodes in the AST in pre-order (depth-first)
+    ///
+    /// Returns an iterator that yields each node in the tree exactly once.
+    /// Nodes are visited in pre-order: parent before children, left to right.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let config = parser.parse(source)?;
+    /// for node in config.traverse_ast() {
+    ///     println!("{}: {}", node.kind(), config.get_source_range(&node));
+    /// }
+    /// ```
+    pub fn traverse_ast(&self) -> impl Iterator<Item = Node<'_>> {
+        AstIterator::new(self.tree.as_ref())
+    }
+
+    /// Find all nodes of a specific kind (type)
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The tree-sitter node type to search for (e.g., "binding", "identifier", "string_expression")
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // Find all string literals
+    /// let strings = config.find_nodes("string_expression");
+    /// for node in strings {
+    ///     println!("String: {}", config.get_source_range(&node));
+    /// }
+    /// ```
+    pub fn find_nodes(&self, kind: &str) -> Vec<Node<'_>> {
+        self.traverse_ast()
+            .filter(|node| node.kind() == kind)
+            .collect()
+    }
+
+    /// Extract let bindings from the AST
+    ///
+    /// Returns a vector of (name, value) pairs for all let bindings found.
+    /// This includes both `let x = ...;` and `let { x = ...; } in ...` forms.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let config = parser.parse(r#"
+    ///     let
+    ///       x = 1;
+    ///       y = "hello";
+    ///     in x + y
+    /// "#)?;
+    ///
+    /// for (name, value) in config.extract_bindings() {
+    ///     println!("{} = {}", name, value);
+    /// }
+    /// ```
+    pub fn extract_bindings(&self) -> Vec<(String, String)> {
+        let mut bindings = Vec::new();
+
+        // Look for let_expression nodes which contain bindings
+        for node in self.traverse_ast() {
+            if node.kind() == "let_expression" {
+                // Inside let_expression, find the binding_set
+                let mut cursor = node.walk();
+                for child in node.children(&mut cursor) {
+                    if child.kind() == "binding_set" || child.kind() == "attrset_expression" {
+                        self.extract_bindings_from_set(&child, &mut bindings);
+                    }
+                }
+            }
+            // Also capture top-level bindings in attrset expressions
+            // (for module-style Nix like { x = 1; })
+            else if node.kind() == "binding" {
+                if let Some((name, value)) = self.extract_single_binding(&node) {
+                    bindings.push((name, value));
+                }
+            }
+        }
+
+        bindings
+    }
+
+    /// Helper to extract bindings from a binding_set or attrset
+    fn extract_bindings_from_set(&self, node: &Node<'_>, bindings: &mut Vec<(String, String)>) {
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            if child.kind() == "binding" {
+                if let Some((name, value)) = self.extract_single_binding(&child) {
+                    bindings.push((name, value));
+                }
+            }
+        }
+    }
+
+    /// Helper to extract a single binding's name and value
+    fn extract_single_binding(&self, binding: &Node<'_>) -> Option<(String, String)> {
+        let attr_path = binding.child_by_field_name("attrpath")?;
+        let expression = binding.child_by_field_name("expression")?;
+
+        let name = self.get_source_range(&attr_path).to_string();
+        let value = self.get_source_range(&expression).to_string();
+
+        Some((name, value))
+    }
+
+    /// Get the source text for a specific AST node
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - A tree-sitter Node from this config's AST
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// for node in config.find_nodes("identifier") {
+    ///     let text = config.get_source_range(&node);
+    ///     println!("Identifier: {}", text);
+    /// }
+    /// ```
+    pub fn get_source_range(&self, node: &Node<'_>) -> &str {
+        let range = node.byte_range();
+        // Safety: byte_range should be valid for the source that was parsed
+        self.source.get(range).unwrap_or("")
+    }
+
+    /// Get nodes at a specific line and column position
+    ///
+    /// Returns the deepest node that contains the given position.
+    pub fn node_at_position(&self, line: usize, column: usize) -> Option<Node<'_>> {
+        let tree = self.tree.as_ref()?;
+        let root = tree.root_node();
+
+        // tree-sitter uses 0-indexed positions
+        let point = tree_sitter::Point::new(line.saturating_sub(1), column.saturating_sub(1));
+
+        self.find_deepest_node_at_point(&root, point)
+    }
+
+    /// Helper to find deepest node containing a point
+    fn find_deepest_node_at_point<'a>(&self, node: &Node<'a>, point: tree_sitter::Point) -> Option<Node<'a>> {
+        let start = node.start_position();
+        let end = node.end_position();
+
+        // Check if point is within this node
+        if point < start || point > end {
+            return None;
+        }
+
+        // Try to find a more specific child
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            if let Some(deeper) = self.find_deepest_node_at_point(&child, point) {
+                return Some(deeper);
+            }
+        }
+
+        // No child contains the point, return this node
+        Some(node.clone())
+    }
+
+    /// Get all named children of a node (excludes syntax tokens like brackets, semicolons)
+    pub fn named_children<'a>(&'a self, node: &'a Node<'a>) -> impl Iterator<Item = Node<'a>> {
+        let mut cursor = node.walk();
+        let children: Vec<_> = node.children(&mut cursor)
+            .filter(|n| n.is_named())
+            .collect();
+        children.into_iter()
+    }
+}
+
+/// Iterator for pre-order AST traversal
+struct AstIterator<'a> {
+    stack: Vec<Node<'a>>,
+}
+
+impl<'a> AstIterator<'a> {
+    fn new(tree: Option<&'a Tree>) -> Self {
+        let stack = match tree {
+            Some(t) => vec![t.root_node()],
+            None => Vec::new(),
+        };
+        Self { stack }
+    }
+}
+
+impl<'a> Iterator for AstIterator<'a> {
+    type Item = Node<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let node = self.stack.pop()?;
+
+        // Push children in reverse order so they're visited left-to-right
+        let mut cursor = node.walk();
+        let children: Vec<_> = node.children(&mut cursor).collect();
+        for child in children.into_iter().rev() {
+            self.stack.push(child);
+        }
+
+        Some(node)
+    }
 }
 
 impl NixValue {
@@ -614,5 +830,171 @@ mod tests {
         if let Some(opt) = config.get_option("nullVal") {
             assert!(matches!(opt.value, NixValue::Null));
         }
+    }
+
+    // ============================================
+    // AST Traversal Tests
+    // ============================================
+
+    #[test]
+    fn test_traverse_ast() {
+        let mut parser = NixParser::new();
+        let config = parser.parse(r#"
+            { x = 1; y = 2; }
+        "#).unwrap();
+
+        // Traverse should yield multiple nodes
+        let nodes: Vec<_> = config.traverse_ast().collect();
+        assert!(!nodes.is_empty(), "traverse_ast should yield nodes");
+
+        // Should include the root source_code node
+        let kinds: Vec<_> = nodes.iter().map(|n| n.kind()).collect();
+        assert!(kinds.contains(&"source_code") || kinds.contains(&"attrset_expression"),
+            "Should contain root or attrset node");
+    }
+
+    #[test]
+    fn test_find_nodes_by_kind() {
+        let mut parser = NixParser::new();
+        let config = parser.parse(r#"
+            {
+                a = 1;
+                b = 2;
+                c = 3;
+            }
+        "#).unwrap();
+
+        // Find all binding nodes
+        let bindings = config.find_nodes("binding");
+        assert_eq!(bindings.len(), 3, "Should find 3 bindings");
+
+        // Find all integer expressions
+        let integers = config.find_nodes("integer_expression");
+        assert_eq!(integers.len(), 3, "Should find 3 integers");
+    }
+
+    #[test]
+    fn test_extract_let_bindings() {
+        let mut parser = NixParser::new();
+        let config = parser.parse(r#"
+            let
+              x = 1;
+              y = "hello";
+              z = true;
+            in x
+        "#).unwrap();
+
+        let bindings = config.extract_bindings();
+        assert!(!bindings.is_empty(), "Should extract some bindings");
+
+        // Check that we found x, y, z
+        let names: Vec<_> = bindings.iter().map(|(n, _)| n.as_str()).collect();
+        assert!(names.contains(&"x"), "Should find binding 'x'");
+        assert!(names.contains(&"y"), "Should find binding 'y'");
+        assert!(names.contains(&"z"), "Should find binding 'z'");
+    }
+
+    #[test]
+    fn test_get_source_range() {
+        let mut parser = NixParser::new();
+        let config = parser.parse(r#"{ greeting = "hello world"; }"#).unwrap();
+
+        // Find string expressions
+        let strings = config.find_nodes("string_expression");
+        assert!(!strings.is_empty(), "Should find string expression");
+
+        let source = config.get_source_range(&strings[0]);
+        assert!(source.contains("hello world"), "Should extract string content");
+    }
+
+    #[test]
+    fn test_tree_and_source_accessors() {
+        let mut parser = NixParser::new();
+        let source_text = "{ x = 42; }";
+        let config = parser.parse(source_text).unwrap();
+
+        // Tree should be available
+        assert!(config.tree().is_some(), "Tree should be present");
+
+        // Source should match input
+        assert_eq!(config.source(), source_text, "Source should match input");
+    }
+
+    #[test]
+    fn test_node_at_position() {
+        let mut parser = NixParser::new();
+        // Line 1: { x = 42; }
+        //          ^
+        //          col 3 is 'x'
+        let config = parser.parse("{ x = 42; }").unwrap();
+
+        // Position at 'x' (line 1, col 3)
+        let node = config.node_at_position(1, 3);
+        assert!(node.is_some(), "Should find node at position");
+
+        let node = node.unwrap();
+        // Should be an identifier or attrpath
+        assert!(
+            node.kind() == "identifier" || node.kind() == "attrpath",
+            "Node at x position should be identifier or attrpath, got: {}",
+            node.kind()
+        );
+    }
+
+    #[test]
+    fn test_traverse_complex_nix() {
+        let mut parser = NixParser::new();
+        let config = parser.parse(r#"
+            { config, pkgs, lib, ... }:
+
+            let
+              myPkg = pkgs.hello;
+              enabled = true;
+            in
+            {
+              services.nginx = {
+                enable = enabled;
+                virtualHosts."example.com" = {
+                  root = "/var/www";
+                };
+              };
+
+              environment.systemPackages = with pkgs; [
+                vim
+                git
+                myPkg
+              ];
+            }
+        "#).unwrap();
+
+        // Should be able to traverse without panic
+        let node_count = config.traverse_ast().count();
+        assert!(node_count > 10, "Complex Nix should have many nodes, got {}", node_count);
+
+        // Should find let expression
+        let let_exprs = config.find_nodes("let_expression");
+        assert!(!let_exprs.is_empty(), "Should find let expression");
+
+        // Should find with expression
+        let with_exprs = config.find_nodes("with_expression");
+        assert!(!with_exprs.is_empty(), "Should find with expression");
+
+        // Should find list expression
+        let lists = config.find_nodes("list_expression");
+        assert!(!lists.is_empty(), "Should find list expression");
+    }
+
+    #[test]
+    fn test_empty_config_traversal() {
+        let mut parser = NixParser::new();
+        let config = parser.parse("{}").unwrap();
+
+        // Should still traverse
+        let nodes: Vec<_> = config.traverse_ast().collect();
+        assert!(!nodes.is_empty(), "Even empty config should have nodes");
+
+        // Find nodes should return empty for non-existent types
+        let nonexistent = config.find_nodes("nonexistent_node_type");
+        assert!(nonexistent.is_empty(), "Should find no nonexistent nodes");
     }
 }

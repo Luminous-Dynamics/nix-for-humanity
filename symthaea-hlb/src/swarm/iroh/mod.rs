@@ -161,6 +161,31 @@ impl IrohNode {
         self.connections.read().get(peer_id).cloned()
     }
 
+    /// Get the ticket manager for external access
+    pub fn ticket_manager(&self) -> &TicketManager {
+        &self.ticket_manager
+    }
+
+    /// Get known peers from ticket cache
+    pub fn known_peer_ids(&self) -> Vec<String> {
+        self.ticket_manager.known_peers()
+    }
+
+    /// Cleanup expired tickets (call periodically or before operations)
+    pub fn cleanup_tickets(&self) {
+        self.ticket_manager.cleanup_expired();
+    }
+
+    /// Get a cached ticket for a known peer (if available)
+    pub fn get_cached_ticket(&self, peer_id: &str) -> Option<crate::swarm::ConnectionTicket> {
+        self.ticket_manager.get_incoming(peer_id)
+    }
+
+    /// Get ticket statistics (outgoing_count, incoming_count)
+    pub fn ticket_stats(&self) -> (usize, usize) {
+        self.ticket_manager.ticket_count()
+    }
+
     /// Disconnect from a peer
     pub fn disconnect(&self, peer_id: &str) {
         if let Some(channel) = self.connections.write().remove(peer_id) {
@@ -181,8 +206,12 @@ impl IrohNode {
     ///
     /// In Iroh 0.95, we get our EndpointAddr via .addr() and serialize it as a ticket
     /// EndpointAddr implements Serialize, so we use JSON encoding
+    ///
+    /// The ticket is stored in the TicketManager for tracking and expiration.
     #[cfg(feature = "swarm")]
     pub fn create_ticket(&self) -> SwarmResult<String> {
+        use crate::swarm::ConnectionTicket;
+
         let endpoint = self.endpoint.as_ref()
             .ok_or(SwarmError::NotInitialized)?;
 
@@ -191,8 +220,16 @@ impl IrohNode {
         let endpoint_addr = endpoint.addr();
 
         // Serialize as JSON string (EndpointAddr implements Serialize)
-        serde_json::to_string(&endpoint_addr)
-            .map_err(|e| SwarmError::Internal(format!("Failed to serialize ticket: {}", e)))
+        let ticket_str = serde_json::to_string(&endpoint_addr)
+            .map_err(|e| SwarmError::Internal(format!("Failed to serialize ticket: {}", e)))?;
+
+        // Store in ticket manager for tracking
+        let connection_ticket = ConnectionTicket::new(&ticket_str, &self.node_id);
+        self.ticket_manager.store_outgoing(connection_ticket);
+
+        tracing::debug!("Created and stored outgoing ticket for node {}", &self.node_id[..16.min(self.node_id.len())]);
+
+        Ok(ticket_str)
     }
 
     /// Connect to a peer (stub returns error without feature)
@@ -207,11 +244,17 @@ impl IrohNode {
     ///
     /// Iroh 0.95 connect API:
     /// - Deserialize EndpointAddr from ticket JSON string
+    /// - Validate and store ticket via TicketManager
     /// - Call endpoint.connect(endpoint_addr, alpn)
     #[cfg(feature = "swarm")]
     pub async fn connect(&self, ticket: &str) -> SwarmResult<IrohChannel> {
+        use crate::swarm::ConnectionTicket;
+
         let endpoint = self.endpoint.as_ref()
             .ok_or(SwarmError::NotInitialized)?;
+
+        // Cleanup expired tickets before processing
+        self.ticket_manager.cleanup_expired();
 
         // Deserialize the ticket as EndpointAddr (JSON format)
         let endpoint_addr: iroh::EndpointAddr = serde_json::from_str(ticket)
@@ -221,6 +264,13 @@ impl IrohNode {
 
         // Get peer ID from the endpoint address (use .id field directly)
         let peer_id = endpoint_addr.id.to_string();
+
+        // Create and validate a ConnectionTicket
+        let connection_ticket = ConnectionTicket::new(ticket, &peer_id);
+        self.ticket_manager.validate(&connection_ticket)?;
+
+        // Store incoming ticket for tracking
+        self.ticket_manager.store_incoming(connection_ticket);
 
         // Check max peers
         let current_count = self.connections.read().len();
@@ -245,7 +295,10 @@ impl IrohNode {
         // Store connection
         self.connections.write().insert(peer_id.clone(), channel.clone());
 
-        tracing::info!("Connected to peer: {}", peer_id);
+        // Mark ticket as used
+        self.ticket_manager.mark_used(&peer_id);
+
+        tracing::info!("Connected to peer: {} (ticket validated and stored)", peer_id);
 
         Ok(channel)
     }

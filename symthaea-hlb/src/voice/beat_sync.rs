@@ -528,4 +528,583 @@ mod tests {
 
         assert!(swung > straight); // Swing delays off-beats
     }
+
+    // ============================================================
+    // BeatPosition::next_subdivision() tests
+    // ============================================================
+
+    #[test]
+    fn test_beat_position_next_subdivision_within_beat() {
+        // Test advancing within the same beat
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 0,
+            subdivision: 0,
+            time: 0.0,
+        };
+        let next = pos.next_subdivision(4);
+        assert_eq!(next.bar, 0);
+        assert_eq!(next.beat, 0);
+        assert_eq!(next.subdivision, 1);
+    }
+
+    #[test]
+    fn test_beat_position_next_subdivision_beat_boundary() {
+        // Test advancing from subdivision 3 to next beat
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 1,
+            subdivision: 3,
+            time: 0.0,
+        };
+        let next = pos.next_subdivision(4);
+        assert_eq!(next.bar, 0);
+        assert_eq!(next.beat, 2);
+        assert_eq!(next.subdivision, 0);
+    }
+
+    #[test]
+    fn test_beat_position_next_subdivision_bar_boundary() {
+        // Test advancing from last subdivision of last beat to next bar
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 3,
+            subdivision: 3,
+            time: 0.0,
+        };
+        let next = pos.next_subdivision(4);
+        assert_eq!(next.bar, 1);
+        assert_eq!(next.beat, 0);
+        assert_eq!(next.subdivision, 0);
+    }
+
+    #[test]
+    fn test_beat_position_next_subdivision_3_4_time() {
+        // Test with 3/4 time signature (3 beats per bar)
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 2,
+            subdivision: 3,
+            time: 0.0,
+        };
+        let next = pos.next_subdivision(3);
+        assert_eq!(next.bar, 1);
+        assert_eq!(next.beat, 0);
+        assert_eq!(next.subdivision, 0);
+    }
+
+    #[test]
+    fn test_beat_position_next_subdivision_chain() {
+        // Test chaining multiple next_subdivision calls
+        let mut pos = BeatPosition {
+            bar: 0,
+            beat: 0,
+            subdivision: 0,
+            time: 0.0,
+        };
+
+        // Advance through an entire bar (4 beats * 4 subdivisions = 16 advances)
+        for _ in 0..16 {
+            pos = pos.next_subdivision(4);
+        }
+
+        assert_eq!(pos.bar, 1);
+        assert_eq!(pos.beat, 0);
+        assert_eq!(pos.subdivision, 0);
+    }
+
+    // ============================================================
+    // BeatPosition::is_strong_beat() and is_on_beat() tests
+    // ============================================================
+
+    #[test]
+    fn test_beat_position_is_strong_beat_beat_one() {
+        // Beat 1 (beat 0) is a strong beat
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 0,
+            subdivision: 0,
+            time: 0.0,
+        };
+        assert!(pos.is_strong_beat());
+        assert!(pos.is_on_beat());
+    }
+
+    #[test]
+    fn test_beat_position_is_strong_beat_beat_three() {
+        // Beat 3 (beat 2) is a strong beat in 4/4
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 2,
+            subdivision: 0,
+            time: 0.0,
+        };
+        assert!(pos.is_strong_beat());
+        assert!(pos.is_on_beat());
+    }
+
+    #[test]
+    fn test_beat_position_weak_beats() {
+        // Beats 2 and 4 (beats 1 and 3) are weak beats
+        let pos_beat2 = BeatPosition {
+            bar: 0,
+            beat: 1,
+            subdivision: 0,
+            time: 0.0,
+        };
+        let pos_beat4 = BeatPosition {
+            bar: 0,
+            beat: 3,
+            subdivision: 0,
+            time: 0.0,
+        };
+
+        assert!(!pos_beat2.is_strong_beat());
+        assert!(pos_beat2.is_on_beat());
+        assert!(!pos_beat4.is_strong_beat());
+        assert!(pos_beat4.is_on_beat());
+    }
+
+    #[test]
+    fn test_beat_position_is_on_beat_subdivisions() {
+        // Subdivisions are not on the beat
+        for sub in 1..4 {
+            let pos = BeatPosition {
+                bar: 0,
+                beat: 0,
+                subdivision: sub,
+                time: 0.0,
+            };
+            assert!(!pos.is_on_beat());
+            assert!(!pos.is_strong_beat());
+        }
+    }
+
+    #[test]
+    fn test_beat_position_strong_beat_with_subdivision() {
+        // Strong beat position but with subdivision != 0 is not strong
+        let pos = BeatPosition {
+            bar: 0,
+            beat: 0,
+            subdivision: 2,
+            time: 0.0,
+        };
+        assert!(!pos.is_strong_beat());
+    }
+
+    // ============================================================
+    // FlowPattern variant tests
+    // ============================================================
+
+    #[test]
+    fn test_flow_pattern_boom_bap_structure() {
+        let pattern = FlowPattern::boom_bap();
+
+        // Boom bap has 8 positions (8th notes)
+        assert_eq!(pattern.positions.len(), 8);
+        assert_eq!(pattern.stresses.len(), 8);
+        assert_eq!(pattern.durations.len(), 8);
+
+        // Positions should be evenly spaced 8th notes
+        for (i, &pos) in pattern.positions.iter().enumerate() {
+            let expected = i as f32 * 0.125;
+            assert!((pos - expected).abs() < 0.001, "Position {} mismatch", i);
+        }
+
+        // First beat (0.0) should have highest stress
+        assert_eq!(pattern.stresses[0], 1.0);
+        // Downbeat of beat 3 should have high stress
+        assert_eq!(pattern.stresses[4], 0.9);
+    }
+
+    #[test]
+    fn test_flow_pattern_triplet_flow_structure() {
+        let pattern = FlowPattern::triplet_flow();
+
+        // Triplet flow: 4 beats * 3 triplets = 12 positions
+        assert_eq!(pattern.positions.len(), 12);
+        assert_eq!(pattern.stresses.len(), 12);
+        assert_eq!(pattern.durations.len(), 12);
+
+        // First note of each beat triplet should have stress 1.0
+        for beat in 0..4 {
+            let idx = beat * 3;
+            assert_eq!(pattern.stresses[idx], 1.0, "Beat {} first triplet stress", beat);
+        }
+
+        // Other triplet notes should have stress 0.5
+        for beat in 0..4 {
+            assert_eq!(pattern.stresses[beat * 3 + 1], 0.5);
+            assert_eq!(pattern.stresses[beat * 3 + 2], 0.5);
+        }
+    }
+
+    #[test]
+    fn test_flow_pattern_triplet_flow_positions() {
+        let pattern = FlowPattern::triplet_flow();
+
+        // Check triplet timing math
+        // Each beat is 0.25 of a bar, triplets divide that into 3
+        let tolerance = 0.001;
+
+        // First beat triplets: 0.0, 1/12, 2/12
+        assert!((pattern.positions[0] - 0.0).abs() < tolerance);
+        assert!((pattern.positions[1] - 1.0/12.0).abs() < tolerance);
+        assert!((pattern.positions[2] - 2.0/12.0).abs() < tolerance);
+
+        // Second beat starts at 0.25
+        assert!((pattern.positions[3] - 0.25).abs() < tolerance);
+    }
+
+    #[test]
+    fn test_flow_pattern_double_time_structure() {
+        let pattern = FlowPattern::double_time();
+
+        // Double time has 32 positions (32nd notes)
+        assert_eq!(pattern.positions.len(), 32);
+        assert_eq!(pattern.stresses.len(), 32);
+        assert_eq!(pattern.durations.len(), 32);
+
+        // All durations should be 0.8 (shorter for faster delivery)
+        for &dur in &pattern.durations {
+            assert!((dur - 0.8).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_flow_pattern_double_time_stress_hierarchy() {
+        let pattern = FlowPattern::double_time();
+
+        // Every 8th position (downbeats) should have stress 1.0
+        assert_eq!(pattern.stresses[0], 1.0);
+        assert_eq!(pattern.stresses[8], 1.0);
+        assert_eq!(pattern.stresses[16], 1.0);
+        assert_eq!(pattern.stresses[24], 1.0);
+
+        // Every 4th position (but not 8th) should have stress 0.7
+        assert_eq!(pattern.stresses[4], 0.7);
+        assert_eq!(pattern.stresses[12], 0.7);
+
+        // Every 2nd position (but not 4th) should have stress 0.5
+        assert_eq!(pattern.stresses[2], 0.5);
+        assert_eq!(pattern.stresses[6], 0.5);
+
+        // Odd positions should have stress 0.3
+        assert_eq!(pattern.stresses[1], 0.3);
+        assert_eq!(pattern.stresses[3], 0.3);
+    }
+
+    #[test]
+    fn test_flow_pattern_laid_back_behind_beat() {
+        let pattern = FlowPattern::laid_back();
+
+        // Laid back has 4 positions, all slightly behind the grid
+        assert_eq!(pattern.positions.len(), 4);
+
+        // Position 0 should be slightly after 0.0
+        assert!(pattern.positions[0] > 0.0);
+        assert!(pattern.positions[0] < 0.125);
+
+        // Position 1 should be slightly after 0.25
+        assert!(pattern.positions[1] > 0.25);
+        assert!(pattern.positions[1] < 0.375);
+
+        // Position 2 should be slightly after 0.5
+        assert!(pattern.positions[2] > 0.5);
+        assert!(pattern.positions[2] < 0.625);
+
+        // Position 3 should be slightly after 0.75
+        assert!(pattern.positions[3] > 0.75);
+        assert!(pattern.positions[3] < 0.875);
+    }
+
+    #[test]
+    fn test_flow_pattern_laid_back_durations() {
+        let pattern = FlowPattern::laid_back();
+
+        // Laid back has longer durations for a lazy feel
+        assert!(pattern.durations[0] > 1.0); // 1.2
+        assert!(pattern.durations[2] > 1.0); // 1.2
+    }
+
+    #[test]
+    fn test_flow_pattern_sixteenth_notes() {
+        let pattern = FlowPattern::sixteenth_notes();
+
+        // 16th notes pattern has 16 positions
+        assert_eq!(pattern.positions.len(), 16);
+
+        // Positions should be evenly spaced
+        for (i, &pos) in pattern.positions.iter().enumerate() {
+            let expected = i as f32 / 16.0;
+            assert!((pos - expected).abs() < 0.001);
+        }
+    }
+
+    // ============================================================
+    // SwingConfig tests
+    // ============================================================
+
+    #[test]
+    fn test_swing_config_zero_swing() {
+        let sync = BeatSync::new(120.0);
+        // Default swing is 0.0
+
+        // With zero swing, times should be unchanged
+        let times = [0.0, 0.125, 0.25, 0.375, 0.5];
+        for &time in &times {
+            let swung = sync.apply_swing(time);
+            assert!((swung - time).abs() < 0.001, "Time {} should be unchanged with zero swing", time);
+        }
+    }
+
+    #[test]
+    fn test_swing_config_full_triplet_swing() {
+        let mut sync = BeatSync::new(120.0);
+        sync.swing = SwingConfig {
+            amount: 0.5, // Full triplet swing
+            swing_odd: true,
+        };
+
+        // At 120 BPM, 16th note = 0.125s
+        // Swing delay = 0.125 * 0.5 = 0.0625s
+
+        // Off-beat (subdivision 1) should be delayed
+        let off_beat_time = 0.125; // Second 16th note
+        let swung = sync.apply_swing(off_beat_time);
+        let expected_delay = 0.125 * 0.5;
+        assert!((swung - (off_beat_time + expected_delay)).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_swing_config_only_affects_odd_subdivisions() {
+        let mut sync = BeatSync::new(120.0);
+        sync.swing = SwingConfig::hip_hop();
+
+        // Even subdivisions (on-beats) should not be swung
+        let on_beat_times = [0.0, 0.25, 0.5, 0.75]; // Subdivisions 0 and 2
+        for &time in &on_beat_times {
+            let swung = sync.apply_swing(time);
+            assert!((swung - time).abs() < 0.001, "On-beat time {} should not be swung", time);
+        }
+    }
+
+    #[test]
+    fn test_swing_config_hip_hop_preset() {
+        let config = SwingConfig::hip_hop();
+        assert!((config.amount - 0.15).abs() < 0.001);
+        assert!(config.swing_odd);
+    }
+
+    #[test]
+    fn test_swing_config_triplet_preset() {
+        let config = SwingConfig::triplet();
+        assert!((config.amount - 0.33).abs() < 0.001);
+        assert!(config.swing_odd);
+    }
+
+    #[test]
+    fn test_swing_interaction_with_flow_pattern() {
+        let mut sync = BeatSync::new(120.0);
+        sync.swing = SwingConfig::hip_hop();
+
+        let pattern = FlowPattern::boom_bap();
+        let syllables: Vec<String> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        let timings = sync.map_syllables(&syllables, &pattern, 0);
+
+        // Off-beat syllables (positions 1, 3, 5, 7) should be delayed
+        // On-beat syllables (positions 0, 2, 4, 6) should not be delayed
+        // The difference between consecutive syllables should account for swing
+        assert!(timings[1].start_time > timings[0].start_time);
+
+        // With swing, odd positions should be slightly later than straight timing
+        // Bar duration at 120 BPM = 2.0s
+        let bar_duration = 2.0;
+        let straight_pos_1 = pattern.positions[1] * bar_duration;
+        assert!(timings[1].start_time > straight_pos_1);
+    }
+
+    // ============================================================
+    // BeatSync timing tests
+    // ============================================================
+
+    #[test]
+    fn test_beat_sync_tempo_accuracy_120bpm() {
+        let sync = BeatSync::new(120.0);
+
+        // At 120 BPM: beat = 0.5s, bar = 2.0s, 16th = 0.125s
+        assert!((sync.beat_duration() - 0.5).abs() < 0.001);
+        assert!((sync.bar_duration() - 2.0).abs() < 0.001);
+        assert!((sync.sixteenth_duration() - 0.125).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_beat_sync_tempo_accuracy_90bpm() {
+        let sync = BeatSync::new(90.0);
+
+        // At 90 BPM: beat = 0.667s, bar = 2.667s, 16th = 0.167s
+        let expected_beat = 60.0 / 90.0;
+        assert!((sync.beat_duration() - expected_beat).abs() < 0.001);
+        assert!((sync.bar_duration() - expected_beat * 4.0).abs() < 0.001);
+        assert!((sync.sixteenth_duration() - expected_beat / 4.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_beat_sync_tempo_accuracy_140bpm() {
+        let sync = BeatSync::new(140.0);
+
+        // At 140 BPM: beat = 0.4286s
+        let expected_beat = 60.0 / 140.0;
+        assert!((sync.beat_duration() - expected_beat).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_beat_sync_seek_and_position() {
+        let mut sync = BeatSync::new(120.0);
+
+        // Seek to 2.5 seconds
+        sync.seek(2.5);
+        let pos = sync.position();
+
+        // At 120 BPM, 2.5s = 1 bar + 1 beat
+        assert_eq!(pos.bar, 1);
+        assert_eq!(pos.beat, 1);
+        assert!((pos.time - 2.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_beat_sync_advance() {
+        let mut sync = BeatSync::new(120.0);
+
+        // Advance by one beat (0.5s at 120 BPM)
+        sync.advance(0.5);
+        let pos = sync.position();
+
+        assert_eq!(pos.bar, 0);
+        assert_eq!(pos.beat, 1);
+        assert!((pos.time - 0.5).abs() < 0.001);
+
+        // Advance again
+        sync.advance(0.5);
+        let pos = sync.position();
+        assert_eq!(pos.beat, 2);
+    }
+
+    #[test]
+    fn test_beat_sync_quantize_8th_notes() {
+        let sync = BeatSync::new(120.0);
+
+        // 8th note at 120 BPM = 0.25s
+        let quantized = sync.quantize_8th(0.13);
+        assert!((quantized - 0.0).abs() < 0.001); // Rounds down to 0
+
+        let quantized = sync.quantize_8th(0.2);
+        assert!((quantized - 0.25).abs() < 0.001); // Rounds up to 0.25
+    }
+
+    #[test]
+    fn test_beat_sync_hip_hop_preset() {
+        let sync = BeatSync::hip_hop();
+
+        assert!((sync.bpm - 90.0).abs() < 0.001);
+        assert_eq!(sync.beats_per_bar, 4);
+        assert!((sync.swing.amount - 0.15).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_beat_sync_trap_preset() {
+        let sync = BeatSync::trap();
+
+        assert!((sync.bpm - 140.0).abs() < 0.001);
+        assert_eq!(sync.beats_per_bar, 4);
+        assert!((sync.swing.amount - 0.0).abs() < 0.001); // No swing in trap
+    }
+
+    #[test]
+    fn test_beat_sync_default() {
+        let sync = BeatSync::default();
+
+        assert!((sync.bpm - 120.0).abs() < 0.001);
+        assert_eq!(sync.beats_per_bar, 4);
+    }
+
+    #[test]
+    fn test_syllable_mapping_across_bars() {
+        let sync = BeatSync::new(120.0);
+        let pattern = FlowPattern::laid_back(); // 4 syllables per bar
+
+        // 8 syllables should span 2 bars
+        let syllables: Vec<String> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        let timings = sync.map_syllables(&syllables, &pattern, 0);
+
+        // Syllables 5-8 should be in bar 1
+        assert_eq!(timings[4].beat_position.bar, 1);
+        assert_eq!(timings[5].beat_position.bar, 1);
+        assert_eq!(timings[6].beat_position.bar, 1);
+        assert_eq!(timings[7].beat_position.bar, 1);
+    }
+
+    #[test]
+    fn test_syllable_mapping_minimum_duration() {
+        let sync = BeatSync::new(120.0);
+        let pattern = FlowPattern::double_time(); // Fast pattern with short durations
+
+        let syllables: Vec<String> = vec!["a", "b"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        let timings = sync.map_syllables(&syllables, &pattern, 0);
+
+        // All durations should be at least 0.05s
+        for timing in &timings {
+            assert!(timing.duration >= 0.05, "Duration {} is below minimum", timing.duration);
+        }
+    }
+
+    // ============================================================
+    // BreathMarker and PauseType tests
+    // ============================================================
+
+    #[test]
+    fn test_breath_marker_breath() {
+        let marker = BreathMarker::breath(1.5);
+
+        assert!((marker.time - 1.5).abs() < 0.001);
+        assert!((marker.duration - 0.15).abs() < 0.001);
+        assert_eq!(marker.pause_type, PauseType::Breath);
+    }
+
+    #[test]
+    fn test_breath_marker_dramatic() {
+        let marker = BreathMarker::dramatic(2.0);
+
+        assert!((marker.time - 2.0).abs() < 0.001);
+        assert!((marker.duration - 0.4).abs() < 0.001);
+        assert_eq!(marker.pause_type, PauseType::Dramatic);
+    }
+
+    #[test]
+    fn test_breath_marker_bar_end() {
+        let marker = BreathMarker::bar_end(4.0);
+
+        assert!((marker.time - 4.0).abs() < 0.001);
+        assert!((marker.duration - 0.25).abs() < 0.001);
+        assert_eq!(marker.pause_type, PauseType::BarEnd);
+    }
+
+    #[test]
+    fn test_pause_type_equality() {
+        assert_eq!(PauseType::Breath, PauseType::Breath);
+        assert_ne!(PauseType::Breath, PauseType::Dramatic);
+        assert_ne!(PauseType::BarEnd, PauseType::VerseEnd);
+    }
 }

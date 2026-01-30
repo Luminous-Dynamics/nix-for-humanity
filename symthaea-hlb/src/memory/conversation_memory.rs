@@ -165,20 +165,20 @@ impl ConversationMemory {
 
     /// Start a new conversation session
     ///
-    /// Returns the new conversation ID
-    pub fn start_session(&mut self) -> String {
+    /// Returns the new conversation ID, or an error if the session could not be created
+    pub fn start_session(&mut self) -> Result<String> {
         let id = Uuid::new_v4().to_string();
 
         self.conn
             .execute("INSERT INTO conversations (id) VALUES (?1)", params![&id])
-            .expect("Failed to create conversation");
+            .map_err(|e| anyhow!("Failed to create conversation: {}", e))?;
 
         self.current_conversation_id = Some(id.clone());
         self.turn_count = 0;
 
         tracing::info!(conversation_id = %id, "Started new conversation session");
 
-        id
+        Ok(id)
     }
 
     /// Resume an existing conversation session
@@ -551,11 +551,11 @@ mod tests {
 
     #[test]
     fn test_conversation_lifecycle() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test");
         let mut memory = ConversationMemory::new(temp_file.path()).unwrap();
 
         // Start session
-        let session_id = memory.start_session();
+        let session_id = memory.start_session().unwrap();
         assert!(!session_id.is_empty());
         assert_eq!(memory.turn_count(), 0);
 
@@ -572,13 +572,13 @@ mod tests {
 
     #[test]
     fn test_session_resume() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test");
         let session_id;
 
         // First session
         {
             let mut memory = ConversationMemory::new(temp_file.path()).unwrap();
-            session_id = memory.start_session();
+            session_id = memory.start_session().unwrap();
             memory.add_turn("user", "Test message", 0.5, None).unwrap();
         }
 
@@ -596,10 +596,10 @@ mod tests {
 
     #[test]
     fn test_causal_learning() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test");
         let mut memory = ConversationMemory::new(temp_file.path()).unwrap();
 
-        memory.start_session();
+        memory.start_session().unwrap();
 
         // Record positive learning
         memory.record_causal_learning(
@@ -616,10 +616,10 @@ mod tests {
 
     #[test]
     fn test_similarity_search() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test");
         let mut memory = ConversationMemory::new(temp_file.path()).unwrap();
 
-        let session_id = memory.start_session();
+        let session_id = memory.start_session().unwrap();
 
         // Set conversation embedding
         let embedding = RealHV::random(HDC_DIMENSION, 42);
@@ -634,10 +634,10 @@ mod tests {
 
     #[test]
     fn test_stats() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file for test");
         let mut memory = ConversationMemory::new(temp_file.path()).unwrap();
 
-        memory.start_session();
+        memory.start_session().unwrap();
         memory.add_turn("user", "Test 1", 0.4, None).unwrap();
         memory.add_turn("assistant", "Response 1", 0.5, None).unwrap();
 

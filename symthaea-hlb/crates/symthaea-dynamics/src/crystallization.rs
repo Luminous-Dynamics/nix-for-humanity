@@ -607,9 +607,27 @@ impl UnifiedLearningMind {
     }
 }
 
-impl Default for UnifiedLearningMind {
-    fn default() -> Self {
-        Self::new().expect("Failed to create UnifiedLearningMind")
+/// Error type for UnifiedLearningMind creation failures
+#[derive(Debug)]
+pub struct UnifiedLearningMindError(anyhow::Error);
+
+impl std::fmt::Display for UnifiedLearningMindError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Failed to create UnifiedLearningMind: {}", self.0)
+    }
+}
+
+impl std::error::Error for UnifiedLearningMindError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.0.source()
+    }
+}
+
+impl UnifiedLearningMind {
+    /// Try to create a new UnifiedLearningMind with default configuration.
+    /// Returns Err if creation fails (e.g., insufficient memory, invalid config).
+    pub fn try_default() -> Result<Self> {
+        Self::new()
     }
 }
 

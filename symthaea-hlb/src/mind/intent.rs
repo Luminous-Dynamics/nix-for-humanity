@@ -20,6 +20,7 @@
 
 use symthaea_core::hdc::RealHV;
 use super::structured_thought::{SemanticIntent, EpistemicStatus, ResponseType};
+use super::utils::is_nonzero_f32;
 
 /// HDC-based intent classifier using prototype vectors.
 ///
@@ -550,7 +551,7 @@ impl IntentClassifier {
 
         // Normalize
         let magnitude: f32 = combined.iter().map(|v| v * v).sum::<f32>().sqrt();
-        if magnitude > 0.0 {
+        if is_nonzero_f32(magnitude) {
             for v in combined.iter_mut() {
                 *v /= magnitude;
             }
@@ -571,7 +572,7 @@ impl IntentClassifier {
 
         // Normalize
         let magnitude: f32 = values.iter().map(|v| v * v).sum::<f32>().sqrt();
-        if magnitude > 0.0 {
+        if is_nonzero_f32(magnitude) {
             for v in values.iter_mut() {
                 *v /= magnitude;
             }

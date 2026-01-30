@@ -1443,10 +1443,12 @@ mod tests {
 
         // At least some parameter should have changed
         // (with mutation rate 1.0, all parameters mutate)
+        // Use epsilon-based comparison for floating-point values
+        const EPSILON: f64 = 1e-9;
         assert!(
-            genome.connection_density != original_density ||
+            (genome.connection_density - original_density).abs() > EPSILON ||
             genome.num_nodes != 16 ||
-            genome.modularity != 0.5
+            (genome.modularity - 0.5).abs() > EPSILON
         );
     }
 

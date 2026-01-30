@@ -467,8 +467,17 @@ fn main() {
         n_mels,
     };
 
-    let data = bincode::serialize(&serialized).expect("Failed to serialize");
-    std::fs::write(&cli.output, data).expect("Failed to write file");
+    let data = match bincode::serialize(&serialized) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("{} Failed to serialize classifier: {}", style("ERROR:").red().bold(), e);
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = std::fs::write(&cli.output, &data) {
+        eprintln!("{} Failed to write file {:?}: {}", style("ERROR:").red().bold(), cli.output, e);
+        std::process::exit(1);
+    }
 
     println!("  ✓ Saved Crystal Classifier");
 

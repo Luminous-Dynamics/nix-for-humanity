@@ -1291,12 +1291,14 @@ impl SleepSentinel {
         let correct = predicted_stage == actual_stage;
         self.stats.predictions.push((predicted_state, actual_stage));
 
+        // Calculate recent accuracy before taking mutable borrow
+        let recent_accuracy = self.recent_accuracy(50);
+
         // Online learning via adaptive threshold adjustment
         if let Some(ref mut adaptive) = self.adaptive_threshold {
             adaptive.update_with_feedback(&metrics, predicted_state, actual_stage, correct);
 
             // Check if we should enable fallback due to poor performance
-            let recent_accuracy = self.recent_accuracy(50);
             if adaptive.should_enable_fallback(recent_accuracy, 0.4) && !adaptive.is_using_fallback() {
                 adaptive.enable_fallback();
             }

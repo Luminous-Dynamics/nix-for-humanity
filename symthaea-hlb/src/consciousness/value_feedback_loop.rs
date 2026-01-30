@@ -389,8 +389,8 @@ mod tests {
         loop_.register_pattern("state2", RealHV::random(512, 42));
 
         let td_error = loop_.temporal_difference_update("state1", "state2", 1.0);
-        // TD error should be non-zero
-        assert!(td_error.abs() > 0.0 || td_error == 0.0);
+        // TD error is always a valid float (assertion always passes but kept for documentation)
+        assert!(td_error.is_finite());
     }
 
     #[test]

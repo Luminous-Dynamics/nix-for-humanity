@@ -13,6 +13,7 @@ mod tick;
 mod utils;
 
 pub use config::*;
+pub use utils::{EPSILON, EPSILON_F32, float_eq, float_eq_f32, is_zero, is_zero_f32, is_nonzero, is_nonzero_f32};
 pub use intent::{IntentClassifier, IntentClassification, EpistemicAssessment, IntentScores, ConceptLabel, ConceptPrototype};
 pub use knowledge::{DomainKnowledge, KnowledgeEntry, SeedingResult};
 pub use structured_thought::*;
@@ -265,7 +266,7 @@ impl ContinuousMind {
 
         // Normalize
         let magnitude: f32 = values.iter().map(|v| v * v).sum::<f32>().sqrt();
-        if magnitude > 0.0 {
+        if is_nonzero_f32(magnitude) {
             for v in values.iter_mut() {
                 *v /= magnitude;
             }
