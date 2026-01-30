@@ -27,6 +27,15 @@ chrono = { version = "0.4", features = ["serde"] }  # DateTime
 
 [dev-dependencies]
 proptest = "1.4"
+criterion = "0.5"
+
+[[bench]]
+name = "hdc_ltc_learning"
+harness = false
+
+[[bench]]
+name = "hdc_improvements"
+harness = false
 
 [features]
 default = []

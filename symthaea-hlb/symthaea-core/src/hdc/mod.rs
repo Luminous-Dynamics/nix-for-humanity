@@ -246,6 +246,10 @@ pub mod morphogenetic;
 pub mod hebbian;
 pub mod hdc_ltc_neuron;  // HDC-LTC neuron integration with Hebbian learning
 pub mod hdc_ltc_unified;  // Revolutionary unified HDC-LTC: state AS hypervector with closed-form solution
+#[cfg(test)]
+mod hdc_ltc_learning_tests;  // Comprehensive learning dynamics tests for HdcLtcUnifiedNeuron
+pub mod hdc_ltc_unified_validation;  // Numerical validation of closed-form solution accuracy
+pub mod unified_network_phi;  // Phi measurement and validation for HdcLtcUnifiedNetwork
 pub mod cincinnati_ltc;  // Cincinnati Algorithm + LTC integration (differential engine, lateral binding, predictive budding)
 pub mod cincinnati_network;  // Cincinnati-enhanced HdcLtcNetwork with lateral binding and budding
 pub mod cycle_detector;  // Cycle detection for periodic patterns - autocorrelation-based period detection with HDC phase encoding
@@ -532,6 +536,16 @@ pub use hdc_ltc_unified::{
     HdcLtcUnifiedNeuron, HdcLtcUnifiedNetwork,
     UnifiedConfig, UnifiedNetworkConfig,
     UnifiedActivation, UnifiedNeuronStats, UnifiedNetworkStats,
+};
+
+// Re-export unified network Phi measurement types
+pub use unified_network_phi::{
+    UnifiedNetworkPhiMeasurer, UnifiedPhiConfig, PhiCalculationMethod,
+    PhiMeasurement, PhiEvolutionTracker, PhiEvolutionSummary,
+    PhiComparator, PhiComparison, PhiValidator, ValidationResult,
+    NetworkStateExtractor, demo_phi_evolution,
+    // Diagnostic types
+    PhiDiagnostic, PhiDiagnosticAnalyzer,
 };
 
 // Sleep and altered states

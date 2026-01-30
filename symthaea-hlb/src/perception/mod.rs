@@ -44,6 +44,34 @@ pub mod layer_extractor;
 #[cfg(feature = "neural-bridge")]
 pub use layer_extractor::{LayerExtractor, LayerActivation, AllLayerActivations, PoolingMethod};
 
+// BERT-specific layer extraction (using candle-transformers native BERT)
+#[cfg(feature = "neural-bridge")]
+pub mod bert_layer_extractor;
+
+#[cfg(feature = "neural-bridge")]
+pub use bert_layer_extractor::{
+    BertLayerExtractor, BertPreset, BertExtractorConfig,
+    bert_extraction_status, BertExtractionStatus, print_bert_status,
+};
+
+// Phenomenal Content Detector - Detect phenomenal vs functional content
+#[cfg(feature = "neural-bridge")]
+pub mod phenomenal_detector;
+
+#[cfg(feature = "neural-bridge")]
+pub use phenomenal_detector::{
+    PhenomenalDetector, DetectorConfig, DetectionMethod,
+    PhenomenalClassification, PhenomenalAnalysis, ClassLabel,
+    ComparisonResult, DocumentAnalysis, CalibrationResult,
+};
+
+// Multi-Model Extractor Framework - Cross-architecture support
+pub mod multi_model_extractor;
+pub use multi_model_extractor::{
+    ModelPreset, ModelConfig, ModelArchitecture, PoolingStrategy,
+    ValidationStatus, all_validation_status, print_support_summary,
+};
+
 // Epistemic Semantic Vectors - HDC with uncertainty metadata
 pub mod epistemic_vector;
 pub use epistemic_vector::{EpistemicSemanticVector, UncertaintySource};

@@ -68,6 +68,36 @@ use crate::consciousness::consciousness_unification::{
     EmotionalPattern,
 };
 
+use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEMPORAL BACKEND SELECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Temporal backend selection for the cognitive loop
+///
+/// The cognitive loop can use either CfC (Closed-form Continuous-time) or
+/// HdcLtcUnified (Unified HDC-LTC) networks for temporal prediction.
+///
+/// ## CfC (Default)
+/// - Traditional approach using ndarray-based weights
+/// - Matrix multiplication for state transitions
+/// - Well-tested and stable
+///
+/// ## HdcLtcUnified
+/// - Novel approach using hypervector states
+/// - HDC binding/bundling instead of matrix multiplication
+/// - O(1) temporal jumps via closed-form solution
+/// - State IS memory (holographic representation)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TemporalBackend {
+    /// Original Closed-form Continuous-time network
+    #[default]
+    CfC,
+    /// New Unified HDC-LTC network with hypervector states
+    HdcLtcUnified,
+}
+
 /// Configuration for CfC in the cognitive loop
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfCConfig {
@@ -109,6 +139,12 @@ pub struct CognitiveLoopConfig {
     /// CfC configuration (replaces LTC for O(1) temporal prediction)
     pub cfc_config: CfCConfig,
 
+    /// HDC-LTC Unified configuration (alternative to CfC)
+    pub hdc_ltc_config: HdcLtcBridgeConfig,
+
+    /// Which temporal backend to use
+    pub temporal_backend: TemporalBackend,
+
     /// Minimum prediction error to trigger learning
     pub learning_threshold: f32,
 
@@ -130,11 +166,49 @@ impl Default for CognitiveLoopConfig {
         Self {
             encoder_config: PredictiveEncoderConfig::default(),
             cfc_config: CfCConfig::default(),
+            hdc_ltc_config: HdcLtcBridgeConfig::default(),
+            temporal_backend: TemporalBackend::default(),
             learning_threshold: 0.05,
             buffer_size: 1000,
             enable_consolidation: true,
             target_frequency: 50.0, // 50 Hz
             max_cycles_before_reset: 100000,
+        }
+    }
+}
+
+impl CognitiveLoopConfig {
+    /// Create configuration with CfC backend (default)
+    pub fn with_cfc() -> Self {
+        Self {
+            temporal_backend: TemporalBackend::CfC,
+            ..Default::default()
+        }
+    }
+
+    /// Create configuration with HdcLtcUnified backend
+    pub fn with_hdc_ltc_unified() -> Self {
+        Self {
+            temporal_backend: TemporalBackend::HdcLtcUnified,
+            ..Default::default()
+        }
+    }
+
+    /// Create configuration with HdcLtcUnified backend optimized for speed
+    pub fn with_hdc_ltc_fast() -> Self {
+        Self {
+            temporal_backend: TemporalBackend::HdcLtcUnified,
+            hdc_ltc_config: HdcLtcBridgeConfig::fast(),
+            ..Default::default()
+        }
+    }
+
+    /// Create configuration with HdcLtcUnified backend optimized for accuracy
+    pub fn with_hdc_ltc_accurate() -> Self {
+        Self {
+            temporal_backend: TemporalBackend::HdcLtcUnified,
+            hdc_ltc_config: HdcLtcBridgeConfig::accurate(),
+            ..Default::default()
         }
     }
 }
@@ -2956,10 +3030,135 @@ pub struct LoopStats {
     pub active_goals_count: usize,
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEMPORAL NETWORK WRAPPER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Wrapper enum for temporal network backends
+///
+/// This allows the CognitiveLoopService to use either CfC or HdcLtcUnified
+/// as the temporal prediction backend, selected at runtime.
+#[allow(dead_code)]  // Some methods are provided for API completeness
+enum TemporalNetwork {
+    /// CfC (Closed-form Continuous-time) network
+    CfC(CfCNetwork),
+    /// HdcLtcUnified network via bridge
+    HdcLtc(HdcLtcBridge),
+}
+
+impl TemporalNetwork {
+    /// Step the network forward
+    fn step(&mut self, input: &Array1<f32>, dt: f32) -> Result<()> {
+        match self {
+            Self::CfC(cfc) => cfc.step(input, dt),
+            Self::HdcLtc(bridge) => bridge.step(input, dt),
+        }
+    }
+
+    /// Read the current state
+    fn read_state(&self) -> Result<Array1<f32>> {
+        match self {
+            Self::CfC(cfc) => cfc.read_state(),
+            Self::HdcLtc(bridge) => bridge.read_state(),
+        }
+    }
+
+    /// Forward pass and return output
+    fn forward(&mut self, input: &Array1<f32>, dt: f32) -> Array1<f32> {
+        match self {
+            Self::CfC(cfc) => cfc.forward(input, dt),
+            Self::HdcLtc(bridge) => bridge.forward(input, dt),
+        }
+    }
+
+    /// Train step
+    fn train_step(
+        &mut self,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+        learning_rate: f32,
+    ) -> Result<f32> {
+        match self {
+            Self::CfC(cfc) => cfc.train_step(input, target, dt, learning_rate),
+            Self::HdcLtc(bridge) => bridge.train_step(input, target, dt, learning_rate),
+        }
+    }
+
+    /// Predict forward at a specific time horizon
+    fn predict_forward(&mut self, input: &Array1<f32>, horizon: f32) -> Result<Array1<f32>> {
+        match self {
+            Self::CfC(cfc) => cfc.predict_forward(input, horizon),
+            Self::HdcLtc(bridge) => bridge.predict_forward(input, horizon),
+        }
+    }
+
+    /// Inject state
+    fn inject(&mut self, state: &Array1<f32>) -> Result<()> {
+        match self {
+            Self::CfC(cfc) => cfc.inject(state),
+            Self::HdcLtc(bridge) => bridge.inject(state),
+        }
+    }
+
+    /// Reset the network
+    fn reset(&mut self) {
+        match self {
+            Self::CfC(cfc) => cfc.reset(),
+            Self::HdcLtc(bridge) => bridge.reset(),
+        }
+    }
+
+    /// Get state diversity metric
+    fn state_diversity(&self) -> f32 {
+        match self {
+            Self::CfC(cfc) => cfc.state_diversity(),
+            Self::HdcLtc(bridge) => bridge.state_diversity(),
+        }
+    }
+
+    /// Get all tau values for coherence tracking
+    fn all_tau(&self) -> Vec<&Array1<f32>> {
+        match self {
+            Self::CfC(cfc) => cfc.all_tau(),
+            Self::HdcLtc(_) => vec![], // HdcLtc returns owned, handled separately
+        }
+    }
+
+    /// Get all tau values (owned version for HdcLtc compatibility)
+    fn all_tau_owned(&self) -> Vec<Array1<f32>> {
+        match self {
+            Self::CfC(cfc) => cfc.all_tau().into_iter().cloned().collect(),
+            Self::HdcLtc(bridge) => bridge.all_tau(),
+        }
+    }
+
+    /// Get flattened tau values
+    fn flattened_tau(&self) -> Vec<f32> {
+        match self {
+            Self::CfC(cfc) => cfc.flattened_tau(),
+            Self::HdcLtc(bridge) => bridge.flattened_tau(),
+        }
+    }
+
+    /// Check if using HdcLtc backend
+    fn is_hdc_ltc(&self) -> bool {
+        matches!(self, Self::HdcLtc(_))
+    }
+
+    /// Get backend type
+    fn backend_type(&self) -> TemporalBackend {
+        match self {
+            Self::CfC(_) => TemporalBackend::CfC,
+            Self::HdcLtc(_) => TemporalBackend::HdcLtcUnified,
+        }
+    }
+}
+
 /// The Cognitive Loop Service
 ///
 /// Orchestrates the bidirectional HDC↔CfC loop for emergent cognition.
-/// Uses Closed-form Continuous-time (CfC) networks for O(1) temporal prediction.
+/// Supports both CfC and HdcLtcUnified networks for O(1) temporal prediction.
 pub struct CognitiveLoopService {
     /// Configuration
     config: CognitiveLoopConfig,
@@ -2967,8 +3166,8 @@ pub struct CognitiveLoopService {
     /// Predictive HDC encoder
     encoder: PredictiveHdcEncoder,
 
-    /// CfC temporal predictor (replaces LTC for O(1) predictions)
-    cfc: CfCNetwork,
+    /// Temporal network (CfC or HdcLtcUnified)
+    temporal_network: TemporalNetwork,
 
     /// Experience buffer for replay
     buffer: VecDeque<Experience>,
@@ -3063,11 +3262,26 @@ impl CognitiveLoopService {
     pub fn new(config: CognitiveLoopConfig) -> Result<Self> {
         let encoder = PredictiveHdcEncoder::new(config.encoder_config.clone());
 
-        // Create CfC network with input_dim and num_neurons
-        let cfc = CfCNetwork::new_with_input(
-            config.cfc_config.input_dim,
-            config.cfc_config.num_neurons
-        );
+        // Create temporal network based on selected backend
+        let temporal_network = match config.temporal_backend {
+            TemporalBackend::CfC => {
+                // Create CfC network with input_dim and num_neurons
+                let cfc = CfCNetwork::new_with_input(
+                    config.cfc_config.input_dim,
+                    config.cfc_config.num_neurons
+                );
+                TemporalNetwork::CfC(cfc)
+            }
+            TemporalBackend::HdcLtcUnified => {
+                // Create HdcLtcBridge with appropriate config
+                let mut bridge_config = config.hdc_ltc_config.clone();
+                // Ensure dimensions match CfC config for compatibility
+                bridge_config.input_dim = config.cfc_config.input_dim;
+                bridge_config.output_dim = config.cfc_config.num_neurons;
+                let bridge = HdcLtcBridge::new(bridge_config);
+                TemporalNetwork::HdcLtc(bridge)
+            }
+        };
 
         // Initialize coherence bridge with learning rate from config
         let coherence_config = CoherenceConfig {
@@ -3088,7 +3302,7 @@ impl CognitiveLoopService {
         Ok(Self {
             config,
             encoder,
-            cfc,
+            temporal_network,
             buffer: VecDeque::with_capacity(1000),
             stats: LoopStats::default(),
             error_history: VecDeque::with_capacity(100),
@@ -3116,6 +3330,11 @@ impl CognitiveLoopService {
             goal_system: GoalSystemBridge::new(),
             world_model: WorldModelBridge::default(),
         })
+    }
+
+    /// Get the current temporal backend type
+    pub fn temporal_backend(&self) -> TemporalBackend {
+        self.temporal_network.backend_type()
     }
 
     /// Run one cognitive cycle (the core loop)
@@ -3241,14 +3460,14 @@ impl CognitiveLoopService {
 
         // 4. Step CfC forward with current input
         let delta_t = self.config.cfc_config.delta_t;
-        let _ = self.cfc.step(&input_array, delta_t);
+        let _ = self.temporal_network.step(&input_array, delta_t);
 
         // 5. Get multi-scale predictions using CfC's O(1) predict_forward
         // This is the key advantage: instant prediction at any future time
         let prediction = self.get_multi_scale_prediction(&input_array);
 
         // 6. Get current CfC state as output
-        let output = self.cfc.read_state()
+        let output = self.temporal_network.read_state()
             .map(|arr| arr.to_vec())
             .unwrap_or_else(|_| vec![0.0; self.config.cfc_config.num_neurons]);
 
@@ -3268,13 +3487,14 @@ impl CognitiveLoopService {
         self.create_experience(&compressed_state, &prediction, prediction_error);
 
         // 10. Update coherence bridge with current tau values
-        let tau_refs: Vec<&ndarray::Array1<f32>> = self.cfc.all_tau();
-        let tau_refs_slice: Vec<&ndarray::Array1<f32>> = tau_refs.iter().map(|t| *t).collect();
-        self.coherence_bridge.update(&tau_refs_slice);
+        // Note: We use all_tau_owned() for backend compatibility (HdcLtc returns owned values)
+        let tau_owned: Vec<ndarray::Array1<f32>> = self.temporal_network.all_tau_owned();
+        let tau_refs: Vec<&ndarray::Array1<f32>> = tau_owned.iter().collect();
+        self.coherence_bridge.update(&tau_refs);
 
         // 10b. Update temporal signature encoder with tau values
         // Record mean tau for consciousness pattern detection
-        let flattened_tau = self.cfc.flattened_tau();
+        let flattened_tau = self.temporal_network.flattened_tau();
         self.temporal_signature_encoder.record_batch(&flattened_tau);
 
         // 10c. Update adaptive behavior based on consciousness state
@@ -3367,7 +3587,7 @@ impl CognitiveLoopService {
             let result = if let Some(ref prev) = previous_state {
                 let prev_array = Array1::from_vec(prev.clone());
                 let target_array = Array1::from_vec(compressed_state.clone());
-                self.cfc.train_step(
+                self.temporal_network.train_step(
                     &prev_array,
                     &target_array,
                     delta_t,
@@ -3376,7 +3596,7 @@ impl CognitiveLoopService {
             } else {
                 // First cycle: bootstrap with self-prediction
                 let current_array = Array1::from_vec(compressed_state.clone());
-                self.cfc.train_step(
+                self.temporal_network.train_step(
                     &current_array,
                     &current_array,
                     delta_t,
@@ -3399,7 +3619,7 @@ impl CognitiveLoopService {
         self.update_stats(prediction_error, cycle_start.elapsed());
 
         // Update state diversity from CfC
-        self.stats.ltc_consciousness = self.cfc.state_diversity();
+        self.stats.ltc_consciousness = self.temporal_network.state_diversity();
 
         // Update coherence metrics in stats
         self.stats.temporal_coherence = self.coherence_bridge.smoothed_coherence();
@@ -3472,7 +3692,7 @@ impl CognitiveLoopService {
 
         if horizons.is_empty() {
             // Fallback: single-step prediction
-            return self.cfc.predict_forward(input, self.config.cfc_config.delta_t)
+            return self.temporal_network.predict_forward(input, self.config.cfc_config.delta_t)
                 .map(|arr| arr.to_vec())
                 .unwrap_or_else(|_| vec![0.0; self.config.cfc_config.input_dim]);
         }
@@ -3481,7 +3701,7 @@ impl CognitiveLoopService {
         let mut predictions: Vec<Array1<f32>> = Vec::with_capacity(horizons.len());
 
         for &horizon in horizons {
-            if let Ok(pred) = self.cfc.predict_forward(input, horizon) {
+            if let Ok(pred) = self.temporal_network.predict_forward(input, horizon) {
                 predictions.push(pred);
             }
         }
@@ -3531,12 +3751,12 @@ impl CognitiveLoopService {
             if let Some(ref next_state) = exp.next_state {
                 // Reset CfC state for clean replay by injecting zeros
                 let zeros = Array1::from_vec(vec![0.0f32; self.config.cfc_config.input_dim]);
-                let _ = self.cfc.inject(&zeros);
+                let _ = self.temporal_network.inject(&zeros);
 
                 // Train using CfC's analytical gradient
                 let prev_array = Array1::from_vec(exp.state.clone());
                 let target_array = Array1::from_vec(next_state.clone());
-                if let Ok(loss) = self.cfc.train_step(&prev_array, &target_array, delta_t, lr) {
+                if let Ok(loss) = self.temporal_network.train_step(&prev_array, &target_array, delta_t, lr) {
                     total_loss += loss;
                 }
             }
@@ -3559,7 +3779,7 @@ impl CognitiveLoopService {
 
     /// Get CfC state diversity (activation variance across cells)
     pub fn cfc_state_diversity(&self) -> f32 {
-        self.cfc.state_diversity()
+        self.temporal_network.state_diversity()
     }
 
     /// Get CfC state dimension
@@ -4263,7 +4483,7 @@ impl CognitiveLoopService {
         self.encoder.reset_attention();
         // Reset CfC state by injecting zeros
         let zeros = Array1::from_vec(vec![0.0f32; self.config.cfc_config.input_dim]);
-        let _ = self.cfc.inject(&zeros);
+        let _ = self.temporal_network.inject(&zeros);
         self.buffer.clear();
         self.error_history.clear();
         self.last_state = None;
@@ -4354,7 +4574,7 @@ impl CognitiveLoopService {
         }
 
         // CfC state diversity (already updated in cycle(), but ensure consistency)
-        self.stats.ltc_consciousness = self.cfc.state_diversity();
+        self.stats.ltc_consciousness = self.temporal_network.state_diversity();
 
         // Voice feedback stats
         let voice_summary = self.voice_feedback_bridge.summary();

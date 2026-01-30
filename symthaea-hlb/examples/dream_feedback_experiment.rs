@@ -1,274 +1,228 @@
 //! Dream Feedback Loop Experiment
 //!
-//! Tests whether dream-informed predictions have better calibration than baseline.
+//! Tests whether closing the dream-to-behavior feedback loop improves
+//! prediction calibration compared to a control system.
 //!
-//! ## Experiment Design
+//! ## Hypothesis (H3 from research plan)
 //!
-//! 1. Simulate a series of prediction tasks
-//! 2. Some tasks receive dream feedback (learned priors from counterfactuals)
-//! 3. Compare Brier scores between dream-informed and baseline predictions
+//! Closing the dream-to-behavior feedback loop (connecting counterfactual
+//! insights to MAGI Loop priors) improves calibration and reduces
+//! prediction error compared to a control system.
 //!
-//! ## Hypothesis
+//! ## Experimental Design
 //!
-//! Dream feedback should improve calibration because:
-//! - Dreams identify contexts where our actions could be better
-//! - This creates priors that bias toward better predictions
-//! - Over time, dream-informed predictions should have lower Brier scores
+//! 1. Generate synthetic prediction tasks with known outcomes
+//! 2. Run predictions with and without dream feedback
+//! 3. Compare Brier scores between conditions
+//! 4. Statistical analysis (Mann-Whitney U test)
 //!
 //! ## Usage
 //!
 //! ```bash
-//! cargo run --example dream_feedback_experiment --features magi_loop --release
+//! cargo run --example dream_feedback_experiment --release
 //! ```
 
+use std::collections::HashMap;
 use anyhow::Result;
 
-#[cfg(feature = "magi_loop")]
-use symthaea::consciousness::recursive_improvement::{
-    DreamFeedbackBridge, DreamInsight, hash_context,
+// Import dream feedback types
+use symthaea::consciousness::recursive_improvement::dream_feedback::{
+    DreamFeedbackBridge, DreamInsight,
 };
 
 fn main() -> Result<()> {
-    #[cfg(not(feature = "magi_loop"))]
-    {
-        println!("This example requires the 'magi_loop' feature.");
-        println!("Run with: cargo run --example dream_feedback_experiment --features magi_loop --release");
-        return Ok(());
-    }
-
-    #[cfg(feature = "magi_loop")]
-    run_experiment()
-}
-
-#[cfg(feature = "magi_loop")]
-fn run_experiment() -> Result<()> {
     println!("\n");
-    println!("================================================================");
-    println!("   DREAM FEEDBACK LOOP EXPERIMENT");
-    println!("   Does counterfactual learning improve prediction calibration?");
-    println!("================================================================\n");
+    println!("╔══════════════════════════════════════════════════════════════╗");
+    println!("║   DREAM FEEDBACK LOOP EXPERIMENT                             ║");
+    println!("║   Testing H3: Dream Learning Improves Calibration            ║");
+    println!("╚══════════════════════════════════════════════════════════════╝\n");
 
-    // Initialize the dream feedback bridge
-    let mut bridge = DreamFeedbackBridge::new();
+    // Configuration
+    let n_contexts = 50;
+    let n_cycles = 500;
+    let dream_frequency = 0.3;
+    let true_prior_strength = 0.15;
 
-    // Simulate dream insights from counterfactual exploration
-    println!("Phase 1: Generating dream insights from counterfactual simulation...\n");
+    println!("Configuration:");
+    println!("  Contexts: {}", n_contexts);
+    println!("  Cycles: {}", n_cycles);
+    println!("  Dream frequency: {:.0}%", dream_frequency * 100.0);
+    println!();
 
-    // Create some contexts and discover better alternatives via "dreaming"
-    let contexts = generate_contexts(50);
-    let mut insights_created = 0;
+    // Run control condition
+    println!("════════════════════════════════════════════════════════════════");
+    println!("   CONDITION 1: CONTROL (No Dream Feedback)");
+    println!("════════════════════════════════════════════════════════════════\n");
 
-    for (i, context) in contexts.iter().enumerate() {
-        let context_hash = hash_context(context);
+    let control = run_simulation(n_contexts, n_cycles, 0.0, true_prior_strength, false);
+    println!("Control: Mean Brier = {:.4} ± {:.4}", control.mean_brier, control.brier_std);
 
-        // Simulate dreaming: discover that some alternative action would have been better
-        // (In real system, this comes from DreamEngine::dream())
-        let phi_improvement = simulate_dream_discovery(i);
+    // Run treatment condition
+    println!("\n════════════════════════════════════════════════════════════════");
+    println!("   CONDITION 2: TREATMENT (With Dream Feedback)");
+    println!("════════════════════════════════════════════════════════════════\n");
 
-        if phi_improvement > 0.05 {
-            let insight = DreamInsight::new(
-                context_hash,
-                context.clone(),                    // Original action
-                perturb_action(context, 0.2),       // Better alternative
-                phi_improvement,
-            );
+    let treatment = run_simulation(n_contexts, n_cycles, dream_frequency, true_prior_strength, true);
+    println!("Treatment: Mean Brier = {:.4} ± {:.4}", treatment.mean_brier, treatment.brier_std);
+    println!("Dreams: {}, Priors learned: {}", treatment.dreams_generated, treatment.priors_learned);
 
-            if bridge.process_insight(insight) {
-                insights_created += 1;
-            }
-        }
-    }
-
-    println!("  Generated {} dream insights", insights_created);
-    println!("  Active priors: {}\n", bridge.num_priors());
-
-    // Phase 2: Make predictions with and without dream priors
-    println!("Phase 2: Making predictions (500 trials)...\n");
-
-    let mut rng_seed: u64 = 12345;
-
-    for trial in 0..500 {
-        // Generate a new context
-        let context = generate_context(trial);
-        let context_hash = hash_context(&context);
-
-        // Base confidence from hypothetical model
-        let base_confidence = 0.6 + 0.2 * pseudo_random(&mut rng_seed);
-
-        // Adjust confidence based on dream feedback
-        let (adjusted_confidence, was_dream_informed) = bridge.adjust_confidence(base_confidence, context_hash);
-
-        // Simulate actual outcome (with some correlation to confidence)
-        let outcome = simulate_outcome(adjusted_confidence, &mut rng_seed);
-
-        // Calculate Brier score: (confidence - outcome)^2
-        let brier_score = if outcome {
-            (adjusted_confidence - 1.0).powi(2)
-        } else {
-            adjusted_confidence.powi(2)
-        };
-
-        // Record the outcome
-        bridge.record_outcome(context_hash, brier_score);
-
-        // Progress indicator
-        if (trial + 1) % 100 == 0 {
-            print!("  Trial {}/500\r", trial + 1);
-        }
-    }
-    println!("  Done                    \n");
-
-    // Phase 3: Analyze results
-    println!("================================================================");
+    // Statistical analysis
+    println!("\n════════════════════════════════════════════════════════════════");
     println!("   RESULTS");
-    println!("================================================================\n");
+    println!("════════════════════════════════════════════════════════════════\n");
 
-    let stats = bridge.stats();
+    let improvement = control.mean_brier - treatment.mean_brier;
+    let improvement_pct = (improvement / control.mean_brier) * 100.0;
 
-    println!("Prediction Counts:");
-    println!("  Dream-informed: {}", stats.dream_informed_predictions);
-    println!("  Baseline: {}\n", stats.baseline_predictions);
+    let pooled_std = ((control.brier_std.powi(2) + treatment.brier_std.powi(2)) / 2.0).sqrt();
+    let cohens_d = if pooled_std > 0.0 { improvement / pooled_std } else { 0.0 };
 
-    println!("Brier Scores (lower is better):");
-    if let Some(dream_brier) = stats.dream_informed_brier() {
-        println!("  Dream-informed: {:.4}", dream_brier);
-    }
-    if let Some(baseline_brier) = stats.baseline_brier() {
-        println!("  Baseline: {:.4}", baseline_brier);
-    }
+    let (_, p_value) = mann_whitney_u(&control.brier_scores, &treatment.brier_scores);
 
-    if let Some(improvement) = stats.brier_improvement() {
-        println!("\nImprovement: {:+.4}", -improvement);
+    println!("Brier Score Improvement: {:+.4} ({:+.1}%)", improvement, improvement_pct);
+    println!("Cohen's d: {:+.3}", cohens_d);
+    println!("p-value: {:.4} {}", p_value, if p_value < 0.05 { "*" } else { "" });
 
-        if improvement < 0.0 {
-            println!("  Dream feedback IMPROVED calibration by {:.1}%",
-                     (-improvement / stats.baseline_brier().unwrap_or(1.0)) * 100.0);
-        } else if improvement > 0.0 {
-            println!("  Dream feedback WORSENED calibration by {:.1}%",
-                     (improvement / stats.baseline_brier().unwrap_or(1.0)) * 100.0);
-        } else {
-            println!("  No difference detected");
-        }
-    }
-
-    // Statistical significance test
-    println!("\n================================================================");
-    println!("   STATISTICAL ANALYSIS");
-    println!("================================================================\n");
-
-    // Bootstrap confidence interval for the difference
-    let (ci_lower, ci_upper) = bootstrap_ci(stats);
-
-    println!("Bootstrap 95% CI for Brier improvement: [{:+.4}, {:+.4}]",
-             ci_lower, ci_upper);
-
-    if ci_upper < 0.0 {
-        println!("\n✓ DREAM FEEDBACK SIGNIFICANTLY IMPROVES CALIBRATION");
-        println!("  95% CI excludes zero in the positive direction");
-    } else if ci_lower > 0.0 {
-        println!("\n✗ DREAM FEEDBACK WORSENS CALIBRATION");
-        println!("  95% CI excludes zero in the negative direction");
+    println!("\n════════════════════════════════════════════════════════════════");
+    if improvement > 0.0 && p_value < 0.05 {
+        println!("✓ H3 SUPPORTED: Dream feedback improves calibration");
+    } else if improvement > 0.0 {
+        println!("◐ WEAK SUPPORT: Direction correct but not significant");
     } else {
-        println!("\n○ NO SIGNIFICANT DIFFERENCE");
-        println!("  95% CI includes zero");
+        println!("✗ H3 NOT SUPPORTED: No improvement from dream feedback");
     }
-
-    // Summary
-    println!("\n================================================================");
-    println!("   DREAM FEEDBACK BRIDGE REPORT");
-    println!("================================================================\n");
-
-    println!("{}", bridge.summary_report());
-
-    println!("================================================================");
-    println!("   EXPERIMENT COMPLETE");
-    println!("================================================================\n");
+    println!("════════════════════════════════════════════════════════════════\n");
 
     Ok(())
 }
 
-/// Generate a context vector
-#[cfg(feature = "magi_loop")]
-fn generate_context(seed: usize) -> Vec<f32> {
-    let mut context = Vec::with_capacity(64);
-    let mut s = seed as f32;
-    for _ in 0..64 {
-        s = (s * 1.5 + 0.7).sin() * 100.0;
-        context.push(s.fract());
+struct SimulationResults {
+    mean_brier: f64,
+    brier_std: f64,
+    brier_scores: Vec<f64>,
+    dreams_generated: usize,
+    priors_learned: usize,
+}
+
+fn run_simulation(
+    n_contexts: usize,
+    n_cycles: usize,
+    dream_frequency: f64,
+    true_prior_strength: f64,
+    apply_priors: bool,
+) -> SimulationResults {
+    let mut bridge = DreamFeedbackBridge::new();
+    let mut rng_seed: u64 = 12345;
+    let mut brier_scores = Vec::new();
+    let mut dreams_generated = 0;
+    let mut priors_learned = 0;
+
+    let mut context_difficulty: HashMap<u64, f64> = HashMap::new();
+    for i in 0..n_contexts {
+        context_difficulty.insert(i as u64, pseudo_random(&mut rng_seed) * 0.5 + 0.25);
     }
-    context
-}
 
-/// Generate multiple contexts
-#[cfg(feature = "magi_loop")]
-fn generate_contexts(n: usize) -> Vec<Vec<f32>> {
-    (0..n).map(generate_context).collect()
-}
+    for _ in 0..n_cycles {
+        let context_hash = (pseudo_random(&mut rng_seed) * n_contexts as f64) as u64;
+        let true_success_prob = context_difficulty.get(&context_hash).copied().unwrap_or(0.5);
 
-/// Simulate dream discovery (some contexts have better alternatives)
-#[cfg(feature = "magi_loop")]
-fn simulate_dream_discovery(context_idx: usize) -> f64 {
-    // Some contexts (roughly 40%) have discoverable improvements
-    let seed = (context_idx * 7 + 13) % 100;
-    if seed < 40 {
-        0.05 + (seed as f64 * 0.005) // 5-25% improvement
-    } else {
-        0.0 // No improvement found
+        let base_confidence = 0.5 + (pseudo_random(&mut rng_seed) - 0.5) * 0.3;
+
+        let (adjusted_confidence, was_dream_informed) = if apply_priors {
+            bridge.adjust_confidence(base_confidence, context_hash)
+        } else {
+            (base_confidence, false)
+        };
+
+        let final_confidence = if was_dream_informed {
+            if let Some(p) = bridge.get_prior(context_hash) {
+                (adjusted_confidence + p.strength * true_prior_strength).clamp(0.01, 0.99)
+            } else {
+                adjusted_confidence.clamp(0.01, 0.99)
+            }
+        } else {
+            adjusted_confidence.clamp(0.01, 0.99)
+        };
+
+        let outcome = pseudo_random(&mut rng_seed) < true_success_prob;
+        let brier = (final_confidence - if outcome { 1.0 } else { 0.0 }).powi(2);
+        brier_scores.push(brier);
+        bridge.record_outcome(context_hash, brier);
+
+        if pseudo_random(&mut rng_seed) < dream_frequency {
+            let phi_improvement = if outcome {
+                pseudo_random(&mut rng_seed) * 0.1
+            } else {
+                pseudo_random(&mut rng_seed) * 0.3
+            };
+
+            let insight = DreamInsight::new(
+                context_hash,
+                vec![0.0; 10],
+                vec![1.0; 10],
+                phi_improvement,
+            );
+
+            if bridge.process_insight(insight) {
+                dreams_generated += 1;
+                priors_learned += 1;
+            }
+        }
+    }
+
+    let mean_brier = brier_scores.iter().sum::<f64>() / brier_scores.len() as f64;
+    let variance = brier_scores.iter().map(|b| (b - mean_brier).powi(2)).sum::<f64>() / brier_scores.len() as f64;
+
+    SimulationResults {
+        mean_brier,
+        brier_std: variance.sqrt(),
+        brier_scores,
+        dreams_generated,
+        priors_learned,
     }
 }
 
-/// Perturb an action vector
-#[cfg(feature = "magi_loop")]
-fn perturb_action(action: &[f32], amount: f32) -> Vec<f32> {
-    action.iter()
-        .enumerate()
-        .map(|(i, &v)| v + amount * ((i as f32 * 0.1).sin()))
-        .collect()
-}
-
-/// Pseudo-random number generator (0-1)
-#[cfg(feature = "magi_loop")]
 fn pseudo_random(seed: &mut u64) -> f64 {
     *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
     (*seed as f64) / (u64::MAX as f64)
 }
 
-/// Simulate an outcome (success/failure)
-#[cfg(feature = "magi_loop")]
-fn simulate_outcome(confidence: f64, rng: &mut u64) -> bool {
-    // Outcome has some correlation with confidence
-    // Higher confidence = slightly higher success rate
-    let base_rate = 0.4 + confidence * 0.3; // 40-70% base success
-    pseudo_random(rng) < base_rate
-}
+fn mann_whitney_u(a: &[f64], b: &[f64]) -> (f64, f64) {
+    let n1 = a.len();
+    let n2 = b.len();
 
-/// Bootstrap confidence interval for Brier improvement
-#[cfg(feature = "magi_loop")]
-fn bootstrap_ci(stats: &symthaea::consciousness::recursive_improvement::DreamFeedbackStats) -> (f64, f64) {
-    // Simplified bootstrap (in production, would resample actual predictions)
-    // For now, use normal approximation
+    let mut combined: Vec<(f64, bool)> = a.iter().map(|&x| (x, true)).collect();
+    combined.extend(b.iter().map(|&x| (x, false)));
+    combined.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
-    let n_dream = stats.dream_informed_predictions as f64;
-    let n_base = stats.baseline_predictions as f64;
-
-    if n_dream < 2.0 || n_base < 2.0 {
-        return (-1.0, 1.0);
+    let mut ranks: Vec<(f64, bool)> = Vec::new();
+    let mut i = 0;
+    while i < combined.len() {
+        let mut j = i;
+        while j < combined.len() && combined[j].0 == combined[i].0 { j += 1; }
+        let avg_rank = (i + j + 1) as f64 / 2.0;
+        for k in i..j { ranks.push((avg_rank, combined[k].1)); }
+        i = j;
     }
 
-    let dream_mean = stats.dream_informed_brier().unwrap_or(0.5);
-    let base_mean = stats.baseline_brier().unwrap_or(0.5);
+    let r1: f64 = ranks.iter().filter(|(_, is_a)| *is_a).map(|(r, _)| r).sum();
+    let u1 = r1 - (n1 * (n1 + 1)) as f64 / 2.0;
+    let u = u1.min((n1 * n2) as f64 - u1);
 
-    // Estimate standard errors (assuming Brier scores ~ variance 0.25)
-    let se_dream = (0.25_f64 / n_dream).sqrt();
-    let se_base = (0.25_f64 / n_base).sqrt();
+    let mu = (n1 * n2) as f64 / 2.0;
+    let sigma = ((n1 * n2 * (n1 + n2 + 1)) as f64 / 12.0).sqrt();
+    let z = (u - mu) / sigma;
+    let p = 2.0 * (1.0 - normal_cdf(z.abs()));
 
-    // SE of difference
-    let se_diff = (se_dream.powi(2) + se_base.powi(2)).sqrt();
+    (u, p)
+}
 
-    // 95% CI
-    let diff = dream_mean - base_mean;
-    let ci_lower = diff - 1.96 * se_diff;
-    let ci_upper = diff + 1.96 * se_diff;
+fn normal_cdf(x: f64) -> f64 {
+    0.5 * (1.0 + erf(x / std::f64::consts::SQRT_2))
+}
 
-    (ci_lower, ci_upper)
+fn erf(x: f64) -> f64 {
+    let t = 1.0 / (1.0 + 0.3275911 * x.abs());
+    let y = 1.0 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * (-x * x).exp());
+    if x < 0.0 { -y } else { y }
 }

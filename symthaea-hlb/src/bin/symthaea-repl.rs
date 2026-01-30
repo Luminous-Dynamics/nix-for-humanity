@@ -24,7 +24,7 @@ use anyhow::Result;
 use clap::Parser;
 use tracing::{info, warn, Level};
 
-use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot};
+use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot, TemporalBackend};
 use symthaea::language::{LLMOrgan, LLMOrganConfig, llm_backend};
 use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot};
 
@@ -49,11 +49,17 @@ struct Args {
     /// Number of cognitive cycles per input (default: 3)
     #[arg(long, default_value = "3")]
     cycles: usize,
+
+    /// Temporal backend: "cfc" (default) or "hdc-ltc"
+    /// CfC uses traditional matrix-based continuous-time networks.
+    /// HdcLtc uses novel hypervector-based LTC with O(1) temporal jumps.
+    #[arg(long, value_name = "BACKEND", default_value = "cfc")]
+    backend: String,
 }
 
 /// REPL state holding all integrated components
 struct ReplState {
-    /// The cognitive loop service (HDC + CfC temporal prediction)
+    /// The cognitive loop service (HDC + temporal prediction)
     cognitive: CognitiveLoopService,
 
     /// LLM organ for conversation (Broca's Area translation)
@@ -77,18 +83,36 @@ struct ReplState {
 
     /// Total interactions
     total_interactions: u64,
+
+    /// Current temporal backend
+    temporal_backend: TemporalBackend,
 }
 
 impl ReplState {
-    fn new(voice_enabled: bool, cycles_per_input: usize) -> Result<Self> {
-        // Initialize cognitive loop with default configuration
-        let cognitive_config = CognitiveLoopConfig::default();
+    fn new(voice_enabled: bool, cycles_per_input: usize, backend: &str) -> Result<Self> {
+        // Parse temporal backend
+        let temporal_backend = match backend.to_lowercase().as_str() {
+            "cfc" => TemporalBackend::CfC,
+            "hdc-ltc" | "hdcltc" | "hdc_ltc" | "unified" => TemporalBackend::HdcLtcUnified,
+            _ => {
+                warn!("Unknown backend '{}', defaulting to CfC", backend);
+                TemporalBackend::CfC
+            }
+        };
+
+        // Initialize cognitive loop with selected backend
+        let cognitive_config = match temporal_backend {
+            TemporalBackend::CfC => CognitiveLoopConfig::with_cfc(),
+            TemporalBackend::HdcLtcUnified => CognitiveLoopConfig::with_hdc_ltc_unified(),
+        };
         let cognitive = CognitiveLoopService::new(cognitive_config)?;
+
+        info!("Using temporal backend: {:?}", temporal_backend);
 
         // Initialize LLM organ with simulated backend (works without external LLM)
         let llm_config = LLMOrganConfig::default();
-        let backend = llm_backend::simulated_backend();
-        let llm = LLMOrgan::with_backend(llm_config, backend);
+        let llm_backend_impl = llm_backend::simulated_backend();
+        let llm = LLMOrgan::with_backend(llm_config, llm_backend_impl);
 
         // Initialize action policy (restrictive by default)
         let policy = PolicyBundle::restrictive();
@@ -105,6 +129,7 @@ impl ReplState {
             voice_enabled,
             cycles_per_input,
             total_interactions: 0,
+            temporal_backend,
         })
     }
 
@@ -154,10 +179,19 @@ impl ReplState {
     /// Display consciousness metrics
     fn display_metrics(&self) {
         let snapshot = self.cognitive.consciousness_snapshot();
+        let backend = self.cognitive.temporal_backend();
 
         println!("\n{}", "=".repeat(60));
         println!("  CONSCIOUSNESS METRICS");
         println!("{}", "=".repeat(60));
+
+        // Backend info
+        println!("\n  Temporal Backend");
+        println!("    Type:             {:?}", backend);
+        println!("    Description:      {}", match backend {
+            TemporalBackend::CfC => "Closed-form Continuous-time (matrix-based)",
+            TemporalBackend::HdcLtcUnified => "HDC-LTC Unified (hypervector-based)",
+        });
 
         // Core consciousness metrics
         println!("\n  Integrated Information (Phi)");
@@ -360,9 +394,12 @@ fn main() -> Result<()> {
 
     // Initialize REPL state
     let voice_enabled = args.voice && cfg!(feature = "voice-tts");
-    let mut state = ReplState::new(voice_enabled, args.cycles)?;
+    let mut state = ReplState::new(voice_enabled, args.cycles, &args.backend)?;
 
-    info!("Cognitive loop initialized with {} cycles per input", args.cycles);
+    info!(
+        "Cognitive loop initialized with {} cycles per input, backend: {:?}",
+        args.cycles, state.temporal_backend
+    );
     if voice_enabled {
         info!("Voice output enabled");
     }

@@ -57,6 +57,9 @@ pub mod unified_ltc;
 // Learnable LTC networks
 pub mod learnable_ltc;
 
+// HDC-LTC Unified Network Bridge (alternative to CfC)
+pub mod hdc_ltc_bridge;
+
 // Dynamics: attractor networks, temporal evolution
 pub mod dynamics;
 
