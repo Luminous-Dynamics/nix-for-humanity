@@ -37,7 +37,747 @@
 
 use crate::unified_ltc::{UnifiedLTC, UnifiedLTCConfig, LearningAlgorithm};
 use super::SleepStage;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
+
+// ============================================================================
+// Adaptive Threshold System
+// ============================================================================
+
+/// Configuration for adaptive threshold learning
+#[derive(Debug, Clone)]
+pub struct AdaptiveThresholdConfig {
+    /// Initial learning rate for threshold adaptation (0.0 to 1.0)
+    pub initial_learning_rate: f32,
+    /// Minimum learning rate after decay
+    pub min_learning_rate: f32,
+    /// Learning rate decay factor per session (multiplied after each session)
+    pub learning_rate_decay: f32,
+    /// Number of epochs required for calibration
+    pub calibration_epochs: usize,
+    /// Smoothing factor for exponential moving average (0.0 to 1.0)
+    /// Higher values = more weight on recent observations
+    pub ema_alpha: f32,
+    /// Maximum standard deviations from population norm allowed
+    pub max_deviation_from_norm: f32,
+    /// Z-score threshold for anomaly detection
+    pub anomaly_z_threshold: f32,
+    /// Minimum samples before allowing adaptation
+    pub min_samples_for_adaptation: usize,
+}
+
+impl Default for AdaptiveThresholdConfig {
+    fn default() -> Self {
+        Self {
+            initial_learning_rate: 0.1,
+            min_learning_rate: 0.01,
+            learning_rate_decay: 0.95,
+            calibration_epochs: 10,
+            ema_alpha: 0.1,
+            max_deviation_from_norm: 2.5,
+            anomaly_z_threshold: 3.0,
+            min_samples_for_adaptation: 5,
+        }
+    }
+}
+
+/// Population norms for thresholds (conservative defaults)
+#[derive(Debug, Clone)]
+pub struct PopulationNorms {
+    /// Complexity threshold: mean and std across population
+    pub complexity: (f32, f32),
+    /// Synchrony threshold: mean and std across population
+    pub synchrony: (f32, f32),
+    /// Phi proxy threshold: mean and std
+    pub phi_proxy: (f32, f32),
+    /// Frequency boundaries: (low_freq_boundary, high_freq_boundary)
+    pub frequency_bounds: (f32, f32),
+}
+
+impl Default for PopulationNorms {
+    fn default() -> Self {
+        Self {
+            // (mean, std) for each threshold
+            complexity: (0.6, 0.15),
+            synchrony: (0.7, 0.12),
+            phi_proxy: (0.5, 0.1),
+            frequency_bounds: (8.0, 12.0), // Hz boundaries
+        }
+    }
+}
+
+/// Running statistics for a single metric
+#[derive(Debug, Clone)]
+pub struct RunningStats {
+    /// Number of samples observed
+    pub count: usize,
+    /// Running mean
+    pub mean: f32,
+    /// Running M2 for Welford's algorithm (variance = M2 / count)
+    pub m2: f32,
+    /// Exponential moving average
+    pub ema: f32,
+    /// Minimum observed value
+    pub min: f32,
+    /// Maximum observed value
+    pub max: f32,
+}
+
+impl Default for RunningStats {
+    fn default() -> Self {
+        Self {
+            count: 0,
+            mean: 0.0,
+            m2: 0.0,
+            ema: 0.0,
+            min: f32::MAX,
+            max: f32::MIN,
+        }
+    }
+}
+
+impl RunningStats {
+    /// Update with a new sample using Welford's online algorithm
+    pub fn update(&mut self, value: f32, ema_alpha: f32) {
+        self.count += 1;
+
+        // Welford's online algorithm for mean and variance
+        let delta = value - self.mean;
+        self.mean += delta / self.count as f32;
+        let delta2 = value - self.mean;
+        self.m2 += delta * delta2;
+
+        // Exponential moving average
+        if self.count == 1 {
+            self.ema = value;
+        } else {
+            self.ema = ema_alpha * value + (1.0 - ema_alpha) * self.ema;
+        }
+
+        // Track min/max
+        self.min = self.min.min(value);
+        self.max = self.max.max(value);
+    }
+
+    /// Get current variance
+    pub fn variance(&self) -> f32 {
+        if self.count < 2 {
+            0.0
+        } else {
+            self.m2 / (self.count - 1) as f32
+        }
+    }
+
+    /// Get current standard deviation
+    pub fn std(&self) -> f32 {
+        self.variance().sqrt()
+    }
+
+    /// Compute z-score for a value relative to baseline
+    pub fn z_score(&self, value: f32) -> f32 {
+        let std = self.std();
+        if std < 1e-6 {
+            0.0
+        } else {
+            (value - self.mean) / std
+        }
+    }
+
+    /// Check if a value is anomalous
+    pub fn is_anomaly(&self, value: f32, z_threshold: f32) -> bool {
+        self.z_score(value).abs() > z_threshold
+    }
+}
+
+/// Per-subject baseline statistics
+#[derive(Debug, Clone, Default)]
+pub struct SubjectBaseline {
+    /// Subject identifier
+    pub subject_id: String,
+    /// Statistics for complexity metric
+    pub complexity_stats: RunningStats,
+    /// Statistics for synchrony metric
+    pub synchrony_stats: RunningStats,
+    /// Statistics for phi proxy metric
+    pub phi_stats: RunningStats,
+    /// Statistics for dominant frequency
+    pub frequency_stats: RunningStats,
+    /// Per-stage complexity statistics
+    pub stage_complexity: HashMap<SleepStage, RunningStats>,
+    /// Per-stage synchrony statistics
+    pub stage_synchrony: HashMap<SleepStage, RunningStats>,
+    /// Total epochs observed
+    pub total_epochs: usize,
+    /// Correct predictions count
+    pub correct_predictions: usize,
+}
+
+impl SubjectBaseline {
+    pub fn new(subject_id: impl Into<String>) -> Self {
+        Self {
+            subject_id: subject_id.into(),
+            ..Default::default()
+        }
+    }
+
+    /// Update baseline with new observation
+    pub fn update(&mut self, metrics: &IntegrationMetrics, stage: Option<SleepStage>, ema_alpha: f32) {
+        self.complexity_stats.update(metrics.complexity, ema_alpha);
+        self.synchrony_stats.update(metrics.synchrony, ema_alpha);
+        self.phi_stats.update(metrics.phi_proxy, ema_alpha);
+        self.frequency_stats.update(metrics.dominant_freq_hz, ema_alpha);
+
+        if let Some(stage) = stage {
+            self.stage_complexity
+                .entry(stage)
+                .or_default()
+                .update(metrics.complexity, ema_alpha);
+            self.stage_synchrony
+                .entry(stage)
+                .or_default()
+                .update(metrics.synchrony, ema_alpha);
+        }
+
+        self.total_epochs += 1;
+    }
+}
+
+/// Calibration state
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CalibrationState {
+    /// Not yet calibrated
+    Uncalibrated,
+    /// Currently in calibration mode
+    Calibrating,
+    /// Calibration complete
+    Calibrated,
+}
+
+/// Adaptive threshold manager for individual subjects
+#[derive(Debug, Clone)]
+pub struct AdaptiveThreshold {
+    /// Configuration
+    config: AdaptiveThresholdConfig,
+    /// Population norms for bounds checking
+    population_norms: PopulationNorms,
+    /// Subject baseline statistics
+    baseline: SubjectBaseline,
+    /// Current calibration state
+    calibration_state: CalibrationState,
+    /// Epochs collected during calibration
+    calibration_epochs_collected: usize,
+    /// Current learning rate (decays over sessions)
+    current_learning_rate: f32,
+    /// Session counter for learning rate decay
+    session_count: usize,
+    /// Adapted complexity threshold
+    adapted_complexity_threshold: f32,
+    /// Adapted synchrony threshold
+    adapted_synchrony_threshold: f32,
+    /// Adapted phi threshold
+    adapted_phi_threshold: f32,
+    /// Adapted low frequency boundary
+    adapted_low_freq: f32,
+    /// Adapted high frequency boundary
+    adapted_high_freq: f32,
+    /// Number of times adaptation was blocked by safety bounds
+    bounds_violations: usize,
+    /// Number of anomalies detected
+    anomalies_detected: usize,
+    /// Whether to use fallback conservative defaults
+    using_fallback: bool,
+}
+
+impl AdaptiveThreshold {
+    /// Create new adaptive threshold manager
+    pub fn new(config: AdaptiveThresholdConfig, subject_id: impl Into<String>) -> Self {
+        let population_norms = PopulationNorms::default();
+        Self {
+            current_learning_rate: config.initial_learning_rate,
+            config,
+            adapted_complexity_threshold: population_norms.complexity.0,
+            adapted_synchrony_threshold: population_norms.synchrony.0,
+            adapted_phi_threshold: population_norms.phi_proxy.0,
+            adapted_low_freq: population_norms.frequency_bounds.0,
+            adapted_high_freq: population_norms.frequency_bounds.1,
+            population_norms,
+            baseline: SubjectBaseline::new(subject_id),
+            calibration_state: CalibrationState::Uncalibrated,
+            calibration_epochs_collected: 0,
+            session_count: 0,
+            bounds_violations: 0,
+            anomalies_detected: 0,
+            using_fallback: false,
+        }
+    }
+
+    /// Create with custom population norms
+    pub fn with_population_norms(
+        config: AdaptiveThresholdConfig,
+        subject_id: impl Into<String>,
+        norms: PopulationNorms,
+    ) -> Self {
+        let mut instance = Self::new(config, subject_id);
+        instance.adapted_complexity_threshold = norms.complexity.0;
+        instance.adapted_synchrony_threshold = norms.synchrony.0;
+        instance.adapted_phi_threshold = norms.phi_proxy.0;
+        instance.adapted_low_freq = norms.frequency_bounds.0;
+        instance.adapted_high_freq = norms.frequency_bounds.1;
+        instance.population_norms = norms;
+        instance
+    }
+
+    // ========================================================================
+    // Calibration Methods
+    // ========================================================================
+
+    /// Start calibration mode
+    pub fn start_calibration(&mut self) {
+        self.calibration_state = CalibrationState::Calibrating;
+        self.calibration_epochs_collected = 0;
+        // Reset baseline for fresh calibration
+        self.baseline = SubjectBaseline::new(self.baseline.subject_id.clone());
+    }
+
+    /// End calibration mode (can be called early or after sufficient epochs)
+    pub fn end_calibration(&mut self) -> bool {
+        if self.calibration_epochs_collected >= self.config.min_samples_for_adaptation {
+            self.calibration_state = CalibrationState::Calibrated;
+            // Initialize adapted thresholds from calibration data
+            self.initialize_from_calibration();
+            true
+        } else {
+            // Not enough data, stay uncalibrated
+            self.calibration_state = CalibrationState::Uncalibrated;
+            false
+        }
+    }
+
+    /// Check if calibrated
+    pub fn is_calibrated(&self) -> bool {
+        self.calibration_state == CalibrationState::Calibrated
+    }
+
+    /// Get calibration state
+    pub fn calibration_state(&self) -> CalibrationState {
+        self.calibration_state
+    }
+
+    /// Get calibration progress (0.0 to 1.0)
+    pub fn calibration_progress(&self) -> f32 {
+        if self.config.calibration_epochs == 0 {
+            1.0
+        } else {
+            (self.calibration_epochs_collected as f32 / self.config.calibration_epochs as f32).min(1.0)
+        }
+    }
+
+    /// Initialize adapted thresholds from calibration baseline
+    fn initialize_from_calibration(&mut self) {
+        let stats = &self.baseline;
+
+        // Use baseline mean + 0.5 std as initial threshold
+        // This captures the "typical" value plus some margin
+        if stats.complexity_stats.count >= self.config.min_samples_for_adaptation {
+            let candidate = stats.complexity_stats.mean + 0.5 * stats.complexity_stats.std();
+            self.adapted_complexity_threshold = self.apply_bounds(
+                candidate,
+                self.population_norms.complexity.0,
+                self.population_norms.complexity.1,
+            );
+        }
+
+        if stats.synchrony_stats.count >= self.config.min_samples_for_adaptation {
+            let candidate = stats.synchrony_stats.mean + 0.5 * stats.synchrony_stats.std();
+            self.adapted_synchrony_threshold = self.apply_bounds(
+                candidate,
+                self.population_norms.synchrony.0,
+                self.population_norms.synchrony.1,
+            );
+        }
+
+        if stats.phi_stats.count >= self.config.min_samples_for_adaptation {
+            let candidate = stats.phi_stats.mean;
+            self.adapted_phi_threshold = self.apply_bounds(
+                candidate,
+                self.population_norms.phi_proxy.0,
+                self.population_norms.phi_proxy.1,
+            );
+        }
+    }
+
+    // ========================================================================
+    // Online Learning
+    // ========================================================================
+
+    /// Update thresholds after a classification with feedback
+    ///
+    /// # Arguments
+    /// * `metrics` - The integration metrics from this epoch
+    /// * `predicted` - The predicted consciousness state
+    /// * `actual` - The actual sleep stage (ground truth)
+    /// * `was_correct` - Whether the prediction was correct
+    pub fn update_with_feedback(
+        &mut self,
+        metrics: &IntegrationMetrics,
+        predicted: ConsciousnessState,
+        actual: SleepStage,
+        was_correct: bool,
+    ) {
+        // Always update baseline statistics
+        self.baseline.update(metrics, Some(actual), self.config.ema_alpha);
+
+        if was_correct {
+            self.baseline.correct_predictions += 1;
+        }
+
+        // Handle calibration mode
+        if self.calibration_state == CalibrationState::Calibrating {
+            self.calibration_epochs_collected += 1;
+            if self.calibration_epochs_collected >= self.config.calibration_epochs {
+                self.end_calibration();
+            }
+            return;
+        }
+
+        // Skip adaptation if not calibrated or using fallback
+        if !self.is_calibrated() || self.using_fallback {
+            return;
+        }
+
+        // Check for anomalies
+        if self.is_anomalous_reading(metrics) {
+            self.anomalies_detected += 1;
+            // Don't adapt on anomalous readings
+            return;
+        }
+
+        // Apply reinforcement learning signal
+        // Correct classification: small adjustment toward current values
+        // Incorrect classification: larger adjustment away from current values
+        let reinforcement = if was_correct { 1.0 } else { -1.0 };
+        let lr = self.current_learning_rate;
+
+        // Adapt thresholds based on what went wrong
+        self.adapt_thresholds(metrics, predicted, actual, reinforcement, lr);
+    }
+
+    /// Adapt thresholds based on prediction error
+    fn adapt_thresholds(
+        &mut self,
+        metrics: &IntegrationMetrics,
+        predicted: ConsciousnessState,
+        actual: SleepStage,
+        reinforcement: f32,
+        lr: f32,
+    ) {
+        // Determine which thresholds need adjustment based on the error type
+        let actual_state = match actual {
+            SleepStage::Wake => ConsciousnessState::Awake,
+            SleepStage::N1 | SleepStage::N2 => ConsciousnessState::LightSleep,
+            SleepStage::N3 => ConsciousnessState::DeepSleep,
+            SleepStage::REM => ConsciousnessState::REM,
+            _ => return, // Don't adapt for unknown/movement
+        };
+
+        if predicted == actual_state {
+            // Correct prediction: reinforce current thresholds slightly
+            // Move thresholds toward values that would still classify correctly
+            return;
+        }
+
+        // Incorrect prediction: adjust thresholds to prevent this error
+        match (predicted, actual_state) {
+            // Predicted wake but was actually deep sleep
+            // -> Lower complexity threshold OR raise synchrony threshold
+            (ConsciousnessState::Awake, ConsciousnessState::DeepSleep) => {
+                let delta = lr * reinforcement * 0.05;
+                self.try_adjust_complexity_threshold(-delta);
+                self.try_adjust_synchrony_threshold(delta);
+            }
+            // Predicted deep sleep but was actually wake
+            // -> Raise complexity threshold OR lower synchrony threshold
+            (ConsciousnessState::DeepSleep, ConsciousnessState::Awake) => {
+                let delta = lr * reinforcement * 0.05;
+                self.try_adjust_complexity_threshold(delta);
+                self.try_adjust_synchrony_threshold(-delta);
+            }
+            // Predicted REM but was actually deep sleep
+            // -> Raise phi threshold (REM has low phi, deep sleep has high phi)
+            (ConsciousnessState::REM, ConsciousnessState::DeepSleep) => {
+                let delta = lr * reinforcement * 0.05;
+                self.try_adjust_phi_threshold(delta);
+            }
+            // Predicted deep sleep but was actually REM
+            // -> Lower phi threshold
+            (ConsciousnessState::DeepSleep, ConsciousnessState::REM) => {
+                let delta = lr * reinforcement * 0.05;
+                self.try_adjust_phi_threshold(-delta);
+            }
+            // Other cases: general adjustment based on metrics
+            _ => {
+                // Use the actual metric values to guide adjustment
+                let complexity_error = metrics.complexity - self.adapted_complexity_threshold;
+                let synchrony_error = metrics.synchrony - self.adapted_synchrony_threshold;
+
+                self.try_adjust_complexity_threshold(lr * reinforcement * complexity_error * 0.1);
+                self.try_adjust_synchrony_threshold(lr * reinforcement * synchrony_error * 0.1);
+            }
+        }
+    }
+
+    /// Try to adjust complexity threshold within bounds
+    fn try_adjust_complexity_threshold(&mut self, delta: f32) {
+        let candidate = self.adapted_complexity_threshold + delta;
+        let bounded = self.apply_bounds(
+            candidate,
+            self.population_norms.complexity.0,
+            self.population_norms.complexity.1,
+        );
+        if (bounded - candidate).abs() > 1e-6 {
+            self.bounds_violations += 1;
+        }
+        self.adapted_complexity_threshold = bounded;
+    }
+
+    /// Try to adjust synchrony threshold within bounds
+    fn try_adjust_synchrony_threshold(&mut self, delta: f32) {
+        let candidate = self.adapted_synchrony_threshold + delta;
+        let bounded = self.apply_bounds(
+            candidate,
+            self.population_norms.synchrony.0,
+            self.population_norms.synchrony.1,
+        );
+        if (bounded - candidate).abs() > 1e-6 {
+            self.bounds_violations += 1;
+        }
+        self.adapted_synchrony_threshold = bounded;
+    }
+
+    /// Try to adjust phi threshold within bounds
+    fn try_adjust_phi_threshold(&mut self, delta: f32) {
+        let candidate = self.adapted_phi_threshold + delta;
+        let bounded = self.apply_bounds(
+            candidate,
+            self.population_norms.phi_proxy.0,
+            self.population_norms.phi_proxy.1,
+        );
+        if (bounded - candidate).abs() > 1e-6 {
+            self.bounds_violations += 1;
+        }
+        self.adapted_phi_threshold = bounded;
+    }
+
+    /// Apply safety bounds to keep threshold within population norms
+    fn apply_bounds(&self, value: f32, norm_mean: f32, norm_std: f32) -> f32 {
+        let max_dev = self.config.max_deviation_from_norm;
+        let lower = norm_mean - max_dev * norm_std;
+        let upper = norm_mean + max_dev * norm_std;
+        value.clamp(lower.max(0.0), upper.min(1.0))
+    }
+
+    /// Check if a reading is anomalous
+    fn is_anomalous_reading(&self, metrics: &IntegrationMetrics) -> bool {
+        let z_thresh = self.config.anomaly_z_threshold;
+
+        // Check each metric against baseline
+        let complexity_anomaly = self.baseline.complexity_stats.count >= self.config.min_samples_for_adaptation
+            && self.baseline.complexity_stats.is_anomaly(metrics.complexity, z_thresh);
+        let synchrony_anomaly = self.baseline.synchrony_stats.count >= self.config.min_samples_for_adaptation
+            && self.baseline.synchrony_stats.is_anomaly(metrics.synchrony, z_thresh);
+        let phi_anomaly = self.baseline.phi_stats.count >= self.config.min_samples_for_adaptation
+            && self.baseline.phi_stats.is_anomaly(metrics.phi_proxy, z_thresh);
+
+        complexity_anomaly || synchrony_anomaly || phi_anomaly
+    }
+
+    // ========================================================================
+    // Session Management
+    // ========================================================================
+
+    /// Start a new session (e.g., new night of recording)
+    /// Applies learning rate decay
+    pub fn start_new_session(&mut self) {
+        self.session_count += 1;
+        self.current_learning_rate = (self.current_learning_rate * self.config.learning_rate_decay)
+            .max(self.config.min_learning_rate);
+    }
+
+    /// Get current learning rate
+    pub fn learning_rate(&self) -> f32 {
+        self.current_learning_rate
+    }
+
+    /// Get number of sessions
+    pub fn session_count(&self) -> usize {
+        self.session_count
+    }
+
+    // ========================================================================
+    // Fallback and Safety
+    // ========================================================================
+
+    /// Enable fallback to conservative defaults
+    /// Called when adaptation appears to be failing
+    pub fn enable_fallback(&mut self) {
+        self.using_fallback = true;
+        // Reset to population norms
+        self.adapted_complexity_threshold = self.population_norms.complexity.0;
+        self.adapted_synchrony_threshold = self.population_norms.synchrony.0;
+        self.adapted_phi_threshold = self.population_norms.phi_proxy.0;
+        self.adapted_low_freq = self.population_norms.frequency_bounds.0;
+        self.adapted_high_freq = self.population_norms.frequency_bounds.1;
+    }
+
+    /// Disable fallback mode
+    pub fn disable_fallback(&mut self) {
+        self.using_fallback = false;
+    }
+
+    /// Check if using fallback mode
+    pub fn is_using_fallback(&self) -> bool {
+        self.using_fallback
+    }
+
+    /// Check if adaptation should be disabled due to poor performance
+    /// Returns true if recent accuracy is too low
+    pub fn should_enable_fallback(&self, recent_accuracy: f32, threshold: f32) -> bool {
+        self.baseline.total_epochs >= 20 && recent_accuracy < threshold
+    }
+
+    // ========================================================================
+    // Threshold Access
+    // ========================================================================
+
+    /// Get current complexity threshold
+    pub fn complexity_threshold(&self) -> f32 {
+        self.adapted_complexity_threshold
+    }
+
+    /// Get current synchrony threshold
+    pub fn synchrony_threshold(&self) -> f32 {
+        self.adapted_synchrony_threshold
+    }
+
+    /// Get current phi threshold
+    pub fn phi_threshold(&self) -> f32 {
+        self.adapted_phi_threshold
+    }
+
+    /// Get frequency boundaries
+    pub fn frequency_bounds(&self) -> (f32, f32) {
+        (self.adapted_low_freq, self.adapted_high_freq)
+    }
+
+    /// Get z-score normalized metrics relative to subject baseline
+    pub fn normalize_metrics(&self, metrics: &IntegrationMetrics) -> IntegrationMetrics {
+        IntegrationMetrics {
+            complexity: self.baseline.complexity_stats.z_score(metrics.complexity),
+            synchrony: self.baseline.synchrony_stats.z_score(metrics.synchrony),
+            phi_proxy: self.baseline.phi_stats.z_score(metrics.phi_proxy),
+            dominant_freq_hz: self.baseline.frequency_stats.z_score(metrics.dominant_freq_hz),
+            // Keep causal influence as-is (relative measures)
+            frontal_to_occipital: metrics.frontal_to_occipital,
+            occipital_to_frontal: metrics.occipital_to_frontal,
+            trajectory_variance: metrics.trajectory_variance,
+        }
+    }
+
+    // ========================================================================
+    // Statistics and Persistence
+    // ========================================================================
+
+    /// Get baseline statistics
+    pub fn baseline(&self) -> &SubjectBaseline {
+        &self.baseline
+    }
+
+    /// Get number of bounds violations
+    pub fn bounds_violations(&self) -> usize {
+        self.bounds_violations
+    }
+
+    /// Get number of anomalies detected
+    pub fn anomalies_detected(&self) -> usize {
+        self.anomalies_detected
+    }
+
+    /// Get subject accuracy
+    pub fn subject_accuracy(&self) -> f32 {
+        if self.baseline.total_epochs == 0 {
+            0.0
+        } else {
+            self.baseline.correct_predictions as f32 / self.baseline.total_epochs as f32
+        }
+    }
+
+    /// Export calibration data for persistence
+    pub fn export_calibration(&self) -> CalibrationData {
+        CalibrationData {
+            subject_id: self.baseline.subject_id.clone(),
+            complexity_threshold: self.adapted_complexity_threshold,
+            synchrony_threshold: self.adapted_synchrony_threshold,
+            phi_threshold: self.adapted_phi_threshold,
+            low_freq: self.adapted_low_freq,
+            high_freq: self.adapted_high_freq,
+            baseline_complexity_mean: self.baseline.complexity_stats.mean,
+            baseline_complexity_std: self.baseline.complexity_stats.std(),
+            baseline_synchrony_mean: self.baseline.synchrony_stats.mean,
+            baseline_synchrony_std: self.baseline.synchrony_stats.std(),
+            baseline_phi_mean: self.baseline.phi_stats.mean,
+            baseline_phi_std: self.baseline.phi_stats.std(),
+            total_epochs: self.baseline.total_epochs,
+            session_count: self.session_count,
+            learning_rate: self.current_learning_rate,
+        }
+    }
+
+    /// Import calibration data from persistence
+    pub fn import_calibration(&mut self, data: CalibrationData) {
+        self.baseline.subject_id = data.subject_id;
+        self.adapted_complexity_threshold = data.complexity_threshold;
+        self.adapted_synchrony_threshold = data.synchrony_threshold;
+        self.adapted_phi_threshold = data.phi_threshold;
+        self.adapted_low_freq = data.low_freq;
+        self.adapted_high_freq = data.high_freq;
+
+        // Reconstruct baseline stats (approximate - we don't store full state)
+        self.baseline.complexity_stats.mean = data.baseline_complexity_mean;
+        self.baseline.complexity_stats.count = data.total_epochs;
+        self.baseline.synchrony_stats.mean = data.baseline_synchrony_mean;
+        self.baseline.synchrony_stats.count = data.total_epochs;
+        self.baseline.phi_stats.mean = data.baseline_phi_mean;
+        self.baseline.phi_stats.count = data.total_epochs;
+        self.baseline.total_epochs = data.total_epochs;
+
+        self.session_count = data.session_count;
+        self.current_learning_rate = data.learning_rate;
+        self.calibration_state = CalibrationState::Calibrated;
+    }
+}
+
+/// Serializable calibration data for persistence
+#[derive(Debug, Clone)]
+pub struct CalibrationData {
+    pub subject_id: String,
+    pub complexity_threshold: f32,
+    pub synchrony_threshold: f32,
+    pub phi_threshold: f32,
+    pub low_freq: f32,
+    pub high_freq: f32,
+    pub baseline_complexity_mean: f32,
+    pub baseline_complexity_std: f32,
+    pub baseline_synchrony_mean: f32,
+    pub baseline_synchrony_std: f32,
+    pub baseline_phi_mean: f32,
+    pub baseline_phi_std: f32,
+    pub total_epochs: usize,
+    pub session_count: usize,
+    pub learning_rate: f32,
+}
+
+// ============================================================================
+// Original Sleep Sentinel Code
+// ============================================================================
 
 /// Configuration for Sleep Sentinel
 #[derive(Debug, Clone)]
@@ -60,10 +800,14 @@ pub struct SleepSentinelConfig {
     pub learning_rate: f32,
     /// Number of steps per epoch
     pub steps_per_epoch: usize,
-    /// Complexity threshold for wake detection
+    /// Complexity threshold for wake detection (initial/fallback)
     pub complexity_threshold: f32,
-    /// Synchrony threshold for deep sleep detection
+    /// Synchrony threshold for deep sleep detection (initial/fallback)
     pub synchrony_threshold: f32,
+    /// Enable adaptive thresholds
+    pub enable_adaptive_thresholds: bool,
+    /// Configuration for adaptive threshold learning
+    pub adaptive_config: AdaptiveThresholdConfig,
 }
 
 impl Default for SleepSentinelConfig {
@@ -80,6 +824,8 @@ impl Default for SleepSentinelConfig {
             steps_per_epoch: 3000,  // 30 seconds at 100 Hz
             complexity_threshold: 0.6,
             synchrony_threshold: 0.7,
+            enable_adaptive_thresholds: true,
+            adaptive_config: AdaptiveThresholdConfig::default(),
         }
     }
 }
@@ -177,6 +923,8 @@ pub struct SleepSentinel {
     current_metrics: IntegrationMetrics,
     /// Running statistics
     stats: SleepSentinelStats,
+    /// Adaptive threshold manager (per-subject)
+    adaptive_threshold: Option<AdaptiveThreshold>,
 }
 
 /// Running statistics
@@ -222,6 +970,16 @@ impl SleepSentinel {
         let occipital_ltc = UnifiedLTC::new(occipital_config).expect("Failed to create occipital LTC");
         let integrator_ltc = UnifiedLTC::new(integrator_config).expect("Failed to create integrator LTC");
 
+        // Initialize adaptive threshold if enabled
+        let adaptive_threshold = if config.enable_adaptive_thresholds {
+            Some(AdaptiveThreshold::new(
+                config.adaptive_config.clone(),
+                "default_subject",
+            ))
+        } else {
+            None
+        };
+
         Self {
             config,
             frontal_ltc,
@@ -233,6 +991,31 @@ impl SleepSentinel {
             sample_count: 0,
             current_metrics: IntegrationMetrics::default(),
             stats: SleepSentinelStats::default(),
+            adaptive_threshold,
+        }
+    }
+
+    /// Create Sleep Sentinel for a specific subject with adaptive thresholds
+    pub fn new_for_subject(config: SleepSentinelConfig, subject_id: impl Into<String>) -> Self {
+        let mut sentinel = Self::new(config.clone());
+        if config.enable_adaptive_thresholds {
+            sentinel.adaptive_threshold = Some(AdaptiveThreshold::new(
+                config.adaptive_config,
+                subject_id,
+            ));
+        }
+        sentinel
+    }
+
+    /// Set subject ID for adaptive thresholds
+    pub fn set_subject(&mut self, subject_id: impl Into<String>) {
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.baseline.subject_id = subject_id.into();
+        } else if self.config.enable_adaptive_thresholds {
+            self.adaptive_threshold = Some(AdaptiveThreshold::new(
+                self.config.adaptive_config.clone(),
+                subject_id,
+            ));
         }
     }
 
@@ -401,6 +1184,33 @@ impl SleepSentinel {
     fn classify_state(&self) -> ConsciousnessState {
         let m = &self.current_metrics;
 
+        // Get thresholds - use adaptive if available, otherwise config defaults
+        let (complexity_thresh, synchrony_thresh, phi_thresh, freq_bounds) =
+            if let Some(ref adaptive) = self.adaptive_threshold {
+                if adaptive.is_calibrated() && !adaptive.is_using_fallback() {
+                    (
+                        adaptive.complexity_threshold(),
+                        adaptive.synchrony_threshold(),
+                        adaptive.phi_threshold(),
+                        adaptive.frequency_bounds(),
+                    )
+                } else {
+                    (
+                        self.config.complexity_threshold,
+                        self.config.synchrony_threshold,
+                        0.5,
+                        (8.0, 12.0),
+                    )
+                }
+            } else {
+                (
+                    self.config.complexity_threshold,
+                    self.config.synchrony_threshold,
+                    0.5,
+                    (8.0, 12.0),
+                )
+            };
+
         // Decision logic based on IIT-inspired principles:
         //
         // Wake: High complexity (desynchronized alpha/beta)
@@ -408,12 +1218,12 @@ impl SleepSentinel {
         // REM: High complexity but LOW integration (paradox!)
         // Light Sleep: In between
 
-        // Simple thresholding (can be trained/tuned)
-        let high_complexity = m.complexity > self.config.complexity_threshold;
-        let high_synchrony = m.synchrony > self.config.synchrony_threshold;
-        let high_phi = m.phi_proxy > 0.5;
-        let low_freq = m.dominant_freq_hz < 8.0;
-        let high_freq = m.dominant_freq_hz > 12.0;
+        // Thresholding with adaptive or default values
+        let high_complexity = m.complexity > complexity_thresh;
+        let high_synchrony = m.synchrony > synchrony_thresh;
+        let high_phi = m.phi_proxy > phi_thresh;
+        let low_freq = m.dominant_freq_hz < freq_bounds.0;
+        let high_freq = m.dominant_freq_hz > freq_bounds.1;
 
         // Classification rules
         if high_complexity && high_freq && !high_synchrony {
@@ -468,23 +1278,43 @@ impl SleepSentinel {
         (last_state, self.current_metrics.clone())
     }
 
-    /// Train on labeled epoch
+    /// Train on labeled epoch with online threshold adaptation
     pub fn train_epoch(
         &mut self,
         frontal_data: &[f64],
         occipital_data: &[f64],
         actual_stage: SleepStage,
     ) -> (ConsciousnessState, bool) {
-        let (predicted_state, _metrics) = self.process_epoch(frontal_data, occipital_data);
+        let (predicted_state, metrics) = self.process_epoch(frontal_data, occipital_data);
         let predicted_stage = predicted_state.to_sleep_stage();
 
         let correct = predicted_stage == actual_stage;
         self.stats.predictions.push((predicted_state, actual_stage));
 
-        // TODO: Online learning via threshold adjustment
-        // For now, just record for analysis
+        // Online learning via adaptive threshold adjustment
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.update_with_feedback(&metrics, predicted_state, actual_stage, correct);
+
+            // Check if we should enable fallback due to poor performance
+            let recent_accuracy = self.recent_accuracy(50);
+            if adaptive.should_enable_fallback(recent_accuracy, 0.4) && !adaptive.is_using_fallback() {
+                adaptive.enable_fallback();
+            }
+        }
 
         (predicted_state, correct)
+    }
+
+    /// Calculate accuracy over recent N predictions
+    fn recent_accuracy(&self, n: usize) -> f32 {
+        let recent: Vec<_> = self.stats.predictions.iter().rev().take(n).collect();
+        if recent.is_empty() {
+            return 0.0;
+        }
+        let correct = recent.iter()
+            .filter(|(pred, actual)| pred.to_sleep_stage() == *actual)
+            .count();
+        correct as f32 / recent.len() as f32
     }
 
     /// Get current integration metrics
@@ -495,6 +1325,105 @@ impl SleepSentinel {
     /// Get statistics
     pub fn stats(&self) -> &SleepSentinelStats {
         &self.stats
+    }
+
+    // ========================================================================
+    // Adaptive Threshold Management
+    // ========================================================================
+
+    /// Start calibration mode for a specific subject
+    pub fn start_calibration(&mut self, subject_id: Option<&str>) {
+        if let Some(id) = subject_id {
+            self.set_subject(id);
+        }
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.start_calibration();
+        }
+    }
+
+    /// End calibration mode
+    /// Returns true if calibration was successful (enough data collected)
+    pub fn end_calibration(&mut self) -> bool {
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.end_calibration()
+        } else {
+            false
+        }
+    }
+
+    /// Check if the sentinel is calibrated for the current subject
+    pub fn is_calibrated(&self) -> bool {
+        self.adaptive_threshold
+            .as_ref()
+            .map(|a| a.is_calibrated())
+            .unwrap_or(false)
+    }
+
+    /// Get calibration progress (0.0 to 1.0)
+    pub fn calibration_progress(&self) -> f32 {
+        self.adaptive_threshold
+            .as_ref()
+            .map(|a| a.calibration_progress())
+            .unwrap_or(0.0)
+    }
+
+    /// Start a new session (e.g., new night of recording)
+    /// Applies learning rate decay to the adaptive thresholds
+    pub fn start_new_session(&mut self) {
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.start_new_session();
+        }
+    }
+
+    /// Get the adaptive threshold manager
+    pub fn adaptive_threshold(&self) -> Option<&AdaptiveThreshold> {
+        self.adaptive_threshold.as_ref()
+    }
+
+    /// Get mutable reference to adaptive threshold manager
+    pub fn adaptive_threshold_mut(&mut self) -> Option<&mut AdaptiveThreshold> {
+        self.adaptive_threshold.as_mut()
+    }
+
+    /// Export calibration data for persistence
+    pub fn export_calibration(&self) -> Option<CalibrationData> {
+        self.adaptive_threshold.as_ref().map(|a| a.export_calibration())
+    }
+
+    /// Import calibration data from persistence
+    pub fn import_calibration(&mut self, data: CalibrationData) {
+        if let Some(ref mut adaptive) = self.adaptive_threshold {
+            adaptive.import_calibration(data);
+        } else if self.config.enable_adaptive_thresholds {
+            let mut adaptive = AdaptiveThreshold::new(
+                self.config.adaptive_config.clone(),
+                &data.subject_id,
+            );
+            adaptive.import_calibration(data);
+            self.adaptive_threshold = Some(adaptive);
+        }
+    }
+
+    /// Get current thresholds (adapted or default)
+    pub fn current_thresholds(&self) -> (f32, f32, f32) {
+        if let Some(ref adaptive) = self.adaptive_threshold {
+            if adaptive.is_calibrated() {
+                return (
+                    adaptive.complexity_threshold(),
+                    adaptive.synchrony_threshold(),
+                    adaptive.phi_threshold(),
+                );
+            }
+        }
+        (self.config.complexity_threshold, self.config.synchrony_threshold, 0.5)
+    }
+
+    /// Get z-score normalized metrics for current subject
+    pub fn normalized_metrics(&self) -> Option<IntegrationMetrics> {
+        self.adaptive_threshold
+            .as_ref()
+            .filter(|a| a.is_calibrated())
+            .map(|a| a.normalize_metrics(&self.current_metrics))
     }
 
     /// Calculate overall accuracy
@@ -539,7 +1468,7 @@ impl SleepSentinel {
         }).collect()
     }
 
-    /// Reset all state
+    /// Reset all state (preserves adaptive thresholds and calibration)
     pub fn reset(&mut self) {
         self.frontal_ltc.reset();
         self.occipital_ltc.reset();
@@ -549,23 +1478,68 @@ impl SleepSentinel {
         self.integrator_history.clear();
         self.sample_count = 0;
         self.current_metrics = IntegrationMetrics::default();
+        // Note: adaptive_threshold is preserved to maintain calibration
+    }
+
+    /// Full reset including adaptive thresholds
+    pub fn reset_all(&mut self) {
+        self.reset();
+        self.stats = SleepSentinelStats::default();
+        if self.config.enable_adaptive_thresholds {
+            self.adaptive_threshold = Some(AdaptiveThreshold::new(
+                self.config.adaptive_config.clone(),
+                "default_subject",
+            ));
+        } else {
+            self.adaptive_threshold = None;
+        }
     }
 
     /// Get summary string
     pub fn summary(&self) -> String {
+        let adaptive_info = if let Some(ref adaptive) = self.adaptive_threshold {
+            let (c, s, p) = (
+                adaptive.complexity_threshold(),
+                adaptive.synchrony_threshold(),
+                adaptive.phi_threshold(),
+            );
+            format!(
+                "\n\nAdaptive Thresholds:\n\
+                 Calibration: {:?}\n\
+                 Complexity: {:.3} (baseline mean: {:.3})\n\
+                 Synchrony: {:.3} (baseline mean: {:.3})\n\
+                 Phi: {:.3} (baseline mean: {:.3})\n\
+                 Learning rate: {:.4}\n\
+                 Sessions: {}\n\
+                 Bounds violations: {}\n\
+                 Anomalies detected: {}",
+                adaptive.calibration_state(),
+                c, adaptive.baseline().complexity_stats.mean,
+                s, adaptive.baseline().synchrony_stats.mean,
+                p, adaptive.baseline().phi_stats.mean,
+                adaptive.learning_rate(),
+                adaptive.session_count(),
+                adaptive.bounds_violations(),
+                adaptive.anomalies_detected(),
+            )
+        } else {
+            String::new()
+        };
+
         format!(
             "Sleep Sentinel Summary:\n\
              Epochs: {}\n\
              Samples: {}\n\
              Accuracy: {:.1}%\n\n\
-             Per-class:\n{}",
+             Per-class:\n{}{}",
             self.stats.epochs_processed,
             self.stats.samples_processed,
             self.accuracy() * 100.0,
             self.per_class_accuracy().iter()
                 .map(|(stage, acc, n)| format!("  {}: {:.1}% (n={})", stage.name(), acc * 100.0, n))
                 .collect::<Vec<_>>()
-                .join("\n")
+                .join("\n"),
+            adaptive_info
         )
     }
 }
@@ -718,5 +1692,464 @@ mod tests {
         let n3_sync = results.iter().find(|(s, _, _, _)| *s == SleepStage::N3).unwrap().2;
         let wake_sync = results.iter().find(|(s, _, _, _)| *s == SleepStage::Wake).unwrap().2;
         assert!(n3_sync > wake_sync, "Deep sleep should have higher synchrony than wake");
+    }
+
+    // ========================================================================
+    // Adaptive Threshold Tests
+    // ========================================================================
+
+    #[test]
+    fn test_running_stats_welford() {
+        let mut stats = RunningStats::default();
+        let values = [1.0, 2.0, 3.0, 4.0, 5.0];
+
+        for &v in &values {
+            stats.update(v, 0.1);
+        }
+
+        // Mean should be 3.0
+        assert!((stats.mean - 3.0).abs() < 0.01, "Mean should be 3.0, got {}", stats.mean);
+
+        // Variance should be 2.5 (sample variance)
+        assert!((stats.variance() - 2.5).abs() < 0.01, "Variance should be 2.5, got {}", stats.variance());
+
+        // Std should be sqrt(2.5) ≈ 1.58
+        assert!((stats.std() - 1.58).abs() < 0.1, "Std should be ~1.58, got {}", stats.std());
+
+        // Z-score of 5.0 should be (5-3)/1.58 ≈ 1.26
+        let z = stats.z_score(5.0);
+        assert!((z - 1.26).abs() < 0.1, "Z-score should be ~1.26, got {}", z);
+    }
+
+    #[test]
+    fn test_running_stats_anomaly_detection() {
+        let mut stats = RunningStats::default();
+
+        // Build up baseline with normal values
+        for i in 0..100 {
+            stats.update(50.0 + (i as f32 % 10.0) - 5.0, 0.1); // Values around 50 ± 5
+        }
+
+        // Normal value should not be anomalous
+        assert!(!stats.is_anomaly(52.0, 3.0), "52.0 should not be anomalous");
+
+        // Extreme value should be anomalous
+        assert!(stats.is_anomaly(100.0, 3.0), "100.0 should be anomalous");
+    }
+
+    #[test]
+    fn test_adaptive_threshold_creation() {
+        let config = AdaptiveThresholdConfig::default();
+        let adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        assert_eq!(adaptive.calibration_state(), CalibrationState::Uncalibrated);
+        assert!(!adaptive.is_calibrated());
+        assert_eq!(adaptive.baseline().subject_id, "subject_001");
+    }
+
+    #[test]
+    fn test_calibration_workflow() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 5;
+        config.min_samples_for_adaptation = 3;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        // Start calibration
+        adaptive.start_calibration();
+        assert_eq!(adaptive.calibration_state(), CalibrationState::Calibrating);
+        assert!(!adaptive.is_calibrated());
+
+        // Simulate calibration epochs
+        for i in 0..5 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.5 + (i as f32 * 0.02),
+                synchrony: 0.6 + (i as f32 * 0.01),
+                phi_proxy: 0.45,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(
+                &metrics,
+                ConsciousnessState::LightSleep,
+                SleepStage::N2,
+                true,
+            );
+        }
+
+        // Should auto-complete calibration
+        assert!(adaptive.is_calibrated(), "Should be calibrated after enough epochs");
+        assert_eq!(adaptive.calibration_state(), CalibrationState::Calibrated);
+
+        // Thresholds should have adapted from baseline
+        let baseline_complexity = adaptive.baseline().complexity_stats.mean;
+        assert!((baseline_complexity - 0.54).abs() < 0.1, "Baseline complexity should be ~0.54");
+    }
+
+    #[test]
+    fn test_early_calibration_end() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 10;
+        config.min_samples_for_adaptation = 3;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        adaptive.start_calibration();
+
+        // Add only 2 epochs (less than min_samples_for_adaptation)
+        for _ in 0..2 {
+            let metrics = IntegrationMetrics::default();
+            adaptive.update_with_feedback(
+                &metrics,
+                ConsciousnessState::LightSleep,
+                SleepStage::N2,
+                true,
+            );
+        }
+
+        // Try to end calibration early
+        let success = adaptive.end_calibration();
+        assert!(!success, "Calibration should fail with insufficient data");
+        assert!(!adaptive.is_calibrated());
+    }
+
+    #[test]
+    fn test_threshold_bounds_enforcement() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.max_deviation_from_norm = 1.0; // Tight bounds
+        config.calibration_epochs = 3;
+        config.min_samples_for_adaptation = 2;
+        config.initial_learning_rate = 0.5; // High learning rate for test
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        // Calibrate first
+        adaptive.start_calibration();
+        for _ in 0..3 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.6,
+                synchrony: 0.7,
+                phi_proxy: 0.5,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::LightSleep, SleepStage::N2, true);
+        }
+
+        let initial_complexity = adaptive.complexity_threshold();
+
+        // Try to push threshold way out of bounds with many incorrect predictions
+        for _ in 0..50 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.1, // Very different from threshold
+                synchrony: 0.9,
+                phi_proxy: 0.2,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(
+                &metrics,
+                ConsciousnessState::Awake,     // Predicted
+                SleepStage::N3,                // Actual (wrong)
+                false,
+            );
+        }
+
+        let final_complexity = adaptive.complexity_threshold();
+
+        // Threshold should have changed but stayed within bounds
+        // Population norm for complexity is (0.6, 0.15), so bounds are roughly 0.45 to 0.75
+        assert!(final_complexity >= 0.0, "Threshold should stay positive");
+        assert!(final_complexity <= 1.0, "Threshold should stay <= 1.0");
+
+        // Should have recorded bounds violations
+        assert!(adaptive.bounds_violations() > 0, "Should have bounds violations");
+
+        println!("Initial complexity threshold: {}", initial_complexity);
+        println!("Final complexity threshold: {}", final_complexity);
+        println!("Bounds violations: {}", adaptive.bounds_violations());
+    }
+
+    #[test]
+    fn test_threshold_convergence() {
+        // Test that thresholds converge toward subject-specific values
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 5;
+        config.min_samples_for_adaptation = 3;
+        config.initial_learning_rate = 0.1;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_high_complexity");
+
+        // Calibrate with high complexity baseline
+        adaptive.start_calibration();
+        for _ in 0..5 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.75, // Higher than population mean (0.6)
+                synchrony: 0.65,
+                phi_proxy: 0.5,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::Awake, SleepStage::Wake, true);
+        }
+
+        let threshold_after_calibration = adaptive.complexity_threshold();
+
+        // Threshold should have moved toward subject's higher baseline
+        // Initial is 0.6 (population mean), subject has 0.75 mean
+        assert!(
+            threshold_after_calibration > 0.6,
+            "Threshold should increase for high-complexity subject: {}",
+            threshold_after_calibration
+        );
+
+        println!("Threshold converged to: {} (from population mean 0.6)", threshold_after_calibration);
+    }
+
+    #[test]
+    fn test_learning_rate_decay() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.initial_learning_rate = 0.1;
+        config.learning_rate_decay = 0.9;
+        config.min_learning_rate = 0.01;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        assert!((adaptive.learning_rate() - 0.1).abs() < 0.001);
+
+        // Start sessions
+        adaptive.start_new_session();
+        assert!((adaptive.learning_rate() - 0.09).abs() < 0.001); // 0.1 * 0.9
+
+        adaptive.start_new_session();
+        assert!((adaptive.learning_rate() - 0.081).abs() < 0.001); // 0.09 * 0.9
+
+        // Keep decaying
+        for _ in 0..50 {
+            adaptive.start_new_session();
+        }
+
+        // Should not go below min
+        assert!(adaptive.learning_rate() >= 0.01, "Learning rate should not go below min");
+    }
+
+    #[test]
+    fn test_fallback_mode() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 3;
+        config.min_samples_for_adaptation = 2;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        // Calibrate
+        adaptive.start_calibration();
+        for _ in 0..3 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.8,
+                synchrony: 0.8,
+                phi_proxy: 0.6,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::DeepSleep, SleepStage::N3, true);
+        }
+
+        // Thresholds should be adapted
+        let adapted_complexity = adaptive.complexity_threshold();
+        assert!(adapted_complexity != 0.6, "Threshold should have adapted");
+
+        // Enable fallback
+        adaptive.enable_fallback();
+        assert!(adaptive.is_using_fallback());
+
+        // Thresholds should reset to population norms
+        assert!((adaptive.complexity_threshold() - 0.6).abs() < 0.01);
+        assert!((adaptive.synchrony_threshold() - 0.7).abs() < 0.01);
+
+        // Disable fallback
+        adaptive.disable_fallback();
+        assert!(!adaptive.is_using_fallback());
+    }
+
+    #[test]
+    fn test_calibration_persistence() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 3;
+        config.min_samples_for_adaptation = 2;
+
+        let mut adaptive = AdaptiveThreshold::new(config.clone(), "subject_001");
+
+        // Calibrate
+        adaptive.start_calibration();
+        for _ in 0..5 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.7,
+                synchrony: 0.65,
+                phi_proxy: 0.55,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::LightSleep, SleepStage::N2, true);
+        }
+
+        // Export calibration
+        let exported = adaptive.export_calibration();
+
+        // Create new instance and import
+        let mut new_adaptive = AdaptiveThreshold::new(config, "different_id");
+        new_adaptive.import_calibration(exported.clone());
+
+        // Verify imported data
+        assert_eq!(new_adaptive.baseline().subject_id, "subject_001");
+        assert!(new_adaptive.is_calibrated());
+        assert!((new_adaptive.complexity_threshold() - adaptive.complexity_threshold()).abs() < 0.001);
+        assert!((new_adaptive.synchrony_threshold() - adaptive.synchrony_threshold()).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_z_score_normalization() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 10;
+        config.min_samples_for_adaptation = 5;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        // Build baseline
+        adaptive.start_calibration();
+        for i in 0..10 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.5 + (i as f32 * 0.01),
+                synchrony: 0.6,
+                phi_proxy: 0.5,
+                dominant_freq_hz: 10.0,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::LightSleep, SleepStage::N2, true);
+        }
+
+        // Get normalized metrics for a value at the mean
+        let at_mean = IntegrationMetrics {
+            complexity: adaptive.baseline().complexity_stats.mean,
+            synchrony: adaptive.baseline().synchrony_stats.mean,
+            phi_proxy: adaptive.baseline().phi_stats.mean,
+            dominant_freq_hz: adaptive.baseline().frequency_stats.mean,
+            ..Default::default()
+        };
+
+        let normalized = adaptive.normalize_metrics(&at_mean);
+
+        // Z-scores at the mean should be close to 0
+        assert!(normalized.complexity.abs() < 0.1, "Z-score at mean should be ~0");
+        assert!(normalized.synchrony.abs() < 0.1, "Z-score at mean should be ~0");
+    }
+
+    #[test]
+    fn test_sentinel_with_adaptive_thresholds() {
+        let mut config = SleepSentinelConfig::default();
+        config.enable_adaptive_thresholds = true;
+        config.adaptive_config.calibration_epochs = 5;
+        config.adaptive_config.min_samples_for_adaptation = 3;
+
+        let mut sentinel = SleepSentinel::new_for_subject(config, "test_subject");
+
+        // Start calibration
+        sentinel.start_calibration(None);
+        assert!(!sentinel.is_calibrated());
+
+        // Run calibration epochs
+        for _ in 0..5 {
+            let (frontal, occipital) = generate_synthetic_eeg(SleepStage::N2, 100.0, 30.0);
+            sentinel.train_epoch(&frontal, &occipital, SleepStage::N2);
+        }
+
+        // Should be calibrated now
+        assert!(sentinel.is_calibrated(), "Sentinel should be calibrated");
+
+        // Get current thresholds
+        let (c, s, p) = sentinel.current_thresholds();
+        println!("Adapted thresholds: complexity={:.3}, synchrony={:.3}, phi={:.3}", c, s, p);
+
+        // Summary should include adaptive info
+        let summary = sentinel.summary();
+        assert!(summary.contains("Adaptive Thresholds"), "Summary should include adaptive info");
+        assert!(summary.contains("Calibrated"), "Summary should show calibrated state");
+    }
+
+    #[test]
+    fn test_sentinel_calibration_persistence() {
+        let mut config = SleepSentinelConfig::default();
+        config.enable_adaptive_thresholds = true;
+        config.adaptive_config.calibration_epochs = 3;
+        config.adaptive_config.min_samples_for_adaptation = 2;
+
+        let mut sentinel = SleepSentinel::new_for_subject(config.clone(), "original_subject");
+
+        // Calibrate
+        sentinel.start_calibration(None);
+        for _ in 0..5 {
+            let (frontal, occipital) = generate_synthetic_eeg(SleepStage::Wake, 100.0, 30.0);
+            sentinel.train_epoch(&frontal, &occipital, SleepStage::Wake);
+        }
+
+        // Export
+        let calibration_data = sentinel.export_calibration().expect("Should have calibration data");
+
+        // Create new sentinel and import
+        let mut new_sentinel = SleepSentinel::new(config);
+        new_sentinel.import_calibration(calibration_data);
+
+        assert!(new_sentinel.is_calibrated());
+        assert_eq!(
+            sentinel.current_thresholds(),
+            new_sentinel.current_thresholds()
+        );
+    }
+
+    #[test]
+    fn test_anomaly_detection_skips_adaptation() {
+        let mut config = AdaptiveThresholdConfig::default();
+        config.calibration_epochs = 5;
+        config.min_samples_for_adaptation = 3;
+        config.anomaly_z_threshold = 2.0;
+        config.initial_learning_rate = 0.5;
+
+        let mut adaptive = AdaptiveThreshold::new(config, "subject_001");
+
+        // Calibrate with consistent values
+        adaptive.start_calibration();
+        for _ in 0..10 {
+            let metrics = IntegrationMetrics {
+                complexity: 0.5,
+                synchrony: 0.6,
+                phi_proxy: 0.5,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(&metrics, ConsciousnessState::LightSleep, SleepStage::N2, true);
+        }
+
+        let threshold_before = adaptive.complexity_threshold();
+
+        // Send anomalous readings (should be detected and skipped)
+        for _ in 0..5 {
+            let anomalous_metrics = IntegrationMetrics {
+                complexity: 0.99, // Way outside normal range
+                synchrony: 0.01,
+                phi_proxy: 0.99,
+                ..Default::default()
+            };
+            adaptive.update_with_feedback(
+                &anomalous_metrics,
+                ConsciousnessState::Awake,
+                SleepStage::Wake,
+                false,
+            );
+        }
+
+        // Threshold should not have changed much (anomalies skipped)
+        let threshold_after = adaptive.complexity_threshold();
+        assert!(
+            (threshold_before - threshold_after).abs() < 0.05,
+            "Threshold should not change much on anomalies: before={}, after={}",
+            threshold_before,
+            threshold_after
+        );
+
+        // Should have detected anomalies
+        assert!(adaptive.anomalies_detected() > 0, "Should have detected anomalies");
+        println!("Anomalies detected: {}", adaptive.anomalies_detected());
     }
 }

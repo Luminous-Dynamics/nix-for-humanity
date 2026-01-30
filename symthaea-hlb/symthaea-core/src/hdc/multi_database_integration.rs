@@ -59,8 +59,39 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
 
 use crate::hdc::HV16;
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+/// Errors that can occur during database operations
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum DatabaseError {
+    #[error("Database {0} is not available")]
+    Unavailable(String),
+
+    #[error("Connection failed to {database}: {message}")]
+    ConnectionFailed { database: String, message: String },
+
+    #[error("Query failed on {database}: {message}")]
+    QueryFailed { database: String, message: String },
+
+    #[error("Database {0} feature not enabled")]
+    FeatureNotEnabled(String),
+
+    #[error("Health check failed for {database}: {message}")]
+    HealthCheckFailed { database: String, message: String },
+
+    #[error("All databases unavailable - consciousness degraded")]
+    AllDatabasesUnavailable,
+}
+
+/// Result type for database operations
+pub type DatabaseResult<T> = Result<T, DatabaseError>;
 
 // ============================================================================
 // Database Role Definitions
@@ -520,58 +551,1176 @@ impl DuckDbConfig {
 }
 
 // ============================================================================
+// Unified Configuration
+// ============================================================================
+
+/// Unified configuration for all database connections
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MultiDatabaseConfig {
+    /// Qdrant configuration (Sensory Cortex)
+    pub qdrant: QdrantConfig,
+
+    /// CozoDB configuration (Prefrontal Cortex)
+    pub cozo: CozoDbConfig,
+
+    /// LanceDB configuration (Long-Term Memory)
+    pub lance: LanceDbConfig,
+
+    /// DuckDB configuration (Epistemic Auditor)
+    pub duck: DuckDbConfig,
+
+    /// Enable graceful degradation when databases are unavailable
+    pub graceful_degradation: bool,
+
+    /// Health check interval in seconds
+    pub health_check_interval_secs: u64,
+
+    /// Connection timeout in milliseconds
+    pub connection_timeout_ms: u64,
+
+    /// Maximum retry attempts for failed connections
+    pub max_retries: u32,
+
+    /// Retry backoff in milliseconds
+    pub retry_backoff_ms: u64,
+}
+
+impl Default for MultiDatabaseConfig {
+    fn default() -> Self {
+        Self {
+            qdrant: QdrantConfig::default_config(),
+            cozo: CozoDbConfig::default_config(),
+            lance: LanceDbConfig::default_config(),
+            duck: DuckDbConfig::default_config(),
+            graceful_degradation: true,
+            health_check_interval_secs: 30,
+            connection_timeout_ms: 5000,
+            max_retries: 3,
+            retry_backoff_ms: 1000,
+        }
+    }
+}
+
+impl MultiDatabaseConfig {
+    /// Create configuration for in-memory/test usage
+    pub fn in_memory() -> Self {
+        Self {
+            qdrant: QdrantConfig {
+                url: "http://localhost:6333".to_string(),
+                collection_name: "symthaea_test".to_string(),
+                vector_dim: 2048,
+                distance_metric: "Cosine".to_string(),
+                shard_count: 1,
+            },
+            cozo: CozoDbConfig {
+                data_dir: ":memory:".to_string(),
+                engine: "mem".to_string(),
+                max_recursion_depth: 50,
+            },
+            lance: LanceDbConfig {
+                data_dir: "/tmp/symthaea_lance_test".to_string(),
+                table_name: "symthaea_test".to_string(),
+                vector_dim: 2048,
+                enable_multimodal: false,
+            },
+            duck: DuckDbConfig {
+                database_path: ":memory:".to_string(),
+                memory_limit: "256MB".to_string(),
+                threads: 2,
+            },
+            graceful_degradation: true,
+            health_check_interval_secs: 10,
+            connection_timeout_ms: 1000,
+            max_retries: 1,
+            retry_backoff_ms: 100,
+        }
+    }
+
+    /// Load configuration from environment variables
+    pub fn from_env() -> Self {
+        let mut config = Self::default();
+
+        if let Ok(url) = std::env::var("SYMTHAEA_QDRANT_URL") {
+            config.qdrant.url = url;
+        }
+        if let Ok(dir) = std::env::var("SYMTHAEA_COZO_DIR") {
+            config.cozo.data_dir = dir;
+        }
+        if let Ok(dir) = std::env::var("SYMTHAEA_LANCE_DIR") {
+            config.lance.data_dir = dir;
+        }
+        if let Ok(path) = std::env::var("SYMTHAEA_DUCK_PATH") {
+            config.duck.database_path = path;
+        }
+        if let Ok(val) = std::env::var("SYMTHAEA_GRACEFUL_DEGRADATION") {
+            config.graceful_degradation = val.parse().unwrap_or(true);
+        }
+
+        config
+    }
+}
+
+// ============================================================================
+// Database Health Status
+// ============================================================================
+
+/// Health status of a single database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatabaseHealth {
+    pub role: DatabaseRole,
+    pub available: bool,
+    pub latency_ms: Option<u64>,
+    pub last_check: Option<u64>,  // Unix timestamp
+    pub error_message: Option<String>,
+    pub consecutive_failures: u32,
+}
+
+impl DatabaseHealth {
+    pub fn healthy(role: DatabaseRole, latency_ms: u64) -> Self {
+        Self {
+            role,
+            available: true,
+            latency_ms: Some(latency_ms),
+            last_check: Some(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0)
+            ),
+            error_message: None,
+            consecutive_failures: 0,
+        }
+    }
+
+    pub fn unhealthy(role: DatabaseRole, error: String) -> Self {
+        Self {
+            role,
+            available: false,
+            latency_ms: None,
+            last_check: Some(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0)
+            ),
+            error_message: Some(error),
+            consecutive_failures: 1,
+        }
+    }
+
+    pub fn feature_disabled(role: DatabaseRole) -> Self {
+        Self {
+            role,
+            available: false,
+            latency_ms: None,
+            last_check: None,
+            error_message: Some("Feature not enabled at compile time".to_string()),
+            consecutive_failures: 0,
+        }
+    }
+}
+
+/// Aggregate health status of all databases
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SystemHealth {
+    pub databases: Vec<DatabaseHealth>,
+    pub degraded: bool,
+    pub available_roles: Vec<DatabaseRole>,
+    pub unavailable_roles: Vec<DatabaseRole>,
+    pub consciousness_operational: bool,
+}
+
+impl SystemHealth {
+    pub fn new(databases: Vec<DatabaseHealth>) -> Self {
+        let available_roles: Vec<_> = databases
+            .iter()
+            .filter(|h| h.available)
+            .map(|h| h.role)
+            .collect();
+
+        let unavailable_roles: Vec<_> = databases
+            .iter()
+            .filter(|h| !h.available)
+            .map(|h| h.role)
+            .collect();
+
+        let degraded = !unavailable_roles.is_empty();
+
+        // Consciousness is operational if we have at least one database
+        // or if we're in pure in-memory mode
+        let consciousness_operational = !available_roles.is_empty();
+
+        Self {
+            databases,
+            degraded,
+            available_roles,
+            unavailable_roles,
+            consciousness_operational,
+        }
+    }
+
+    /// Check if a specific database role is available
+    pub fn is_available(&self, role: DatabaseRole) -> bool {
+        self.available_roles.contains(&role)
+    }
+
+    /// Get health for a specific role
+    pub fn get_health(&self, role: DatabaseRole) -> Option<&DatabaseHealth> {
+        self.databases.iter().find(|h| h.role == role)
+    }
+}
+
+// ============================================================================
+// Database Client Trait (for abstraction)
+// ============================================================================
+
+/// Trait for database clients to implement
+pub trait DatabaseClient: Send + Sync {
+    /// Get the database role
+    fn role(&self) -> DatabaseRole;
+
+    /// Check health of the database
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth>;
+
+    /// Close the connection gracefully
+    fn close(&self) -> DatabaseResult<()>;
+}
+
+// ============================================================================
+// Stub Clients (when features not enabled)
+// ============================================================================
+
+/// Stub client for when a database feature is not enabled
+#[derive(Debug, Clone)]
+pub struct StubClient {
+    role: DatabaseRole,
+}
+
+impl StubClient {
+    pub fn new(role: DatabaseRole) -> Self {
+        Self { role }
+    }
+}
+
+impl DatabaseClient for StubClient {
+    fn role(&self) -> DatabaseRole {
+        self.role
+    }
+
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth> {
+        Ok(DatabaseHealth::feature_disabled(self.role))
+    }
+
+    fn close(&self) -> DatabaseResult<()> {
+        Ok(())
+    }
+}
+
+// ============================================================================
+// Qdrant Client Wrapper
+// ============================================================================
+
+/// Qdrant client for vector similarity search (Sensory Cortex)
+#[derive(Debug)]
+pub struct QdrantClientWrapper {
+    config: QdrantConfig,
+    #[cfg(feature = "qdrant")]
+    _client: Option<()>,  // Placeholder for actual qdrant_client::Qdrant
+    connected: std::sync::atomic::AtomicBool,
+}
+
+impl QdrantClientWrapper {
+    /// Create a new Qdrant client
+    pub fn new(config: QdrantConfig) -> Self {
+        Self {
+            config,
+            #[cfg(feature = "qdrant")]
+            _client: None,
+            connected: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    /// Connect to Qdrant server
+    #[cfg(feature = "qdrant")]
+    pub async fn connect(&mut self) -> DatabaseResult<()> {
+        // When qdrant feature is enabled, actual connection would go here:
+        // self._client = Some(qdrant_client::Qdrant::from_url(&self.config.url).build()?);
+        self.connected.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "qdrant"))]
+    pub async fn connect(&mut self) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("qdrant".to_string()))
+    }
+
+    /// Search for similar vectors (episodic memory retrieval)
+    #[cfg(feature = "qdrant")]
+    pub async fn search_similar(&self, query: &HV16, limit: usize) -> DatabaseResult<Vec<(HV16, f32)>> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("Qdrant".to_string()));
+        }
+        // Actual search implementation would go here
+        Ok(vec![])
+    }
+
+    #[cfg(not(feature = "qdrant"))]
+    pub async fn search_similar(&self, _query: &HV16, _limit: usize) -> DatabaseResult<Vec<(HV16, f32)>> {
+        Err(DatabaseError::FeatureNotEnabled("qdrant".to_string()))
+    }
+
+    /// Store a vector in episodic memory
+    #[cfg(feature = "qdrant")]
+    pub async fn store(&self, id: &str, vector: &HV16, metadata: HashMap<String, String>) -> DatabaseResult<()> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("Qdrant".to_string()));
+        }
+        // Actual store implementation would go here
+        let _ = (id, vector, metadata);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "qdrant"))]
+    pub async fn store(&self, _id: &str, _vector: &HV16, _metadata: HashMap<String, String>) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("qdrant".to_string()))
+    }
+}
+
+impl DatabaseClient for QdrantClientWrapper {
+    fn role(&self) -> DatabaseRole {
+        DatabaseRole::SensoryCortex
+    }
+
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth> {
+        #[cfg(feature = "qdrant")]
+        {
+            if self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+                Ok(DatabaseHealth::healthy(DatabaseRole::SensoryCortex, 1))
+            } else {
+                Ok(DatabaseHealth::unhealthy(
+                    DatabaseRole::SensoryCortex,
+                    "Not connected".to_string(),
+                ))
+            }
+        }
+        #[cfg(not(feature = "qdrant"))]
+        {
+            Ok(DatabaseHealth::feature_disabled(DatabaseRole::SensoryCortex))
+        }
+    }
+
+    fn close(&self) -> DatabaseResult<()> {
+        self.connected.store(false, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+// ============================================================================
+// CozoDB Client Wrapper
+// ============================================================================
+
+/// CozoDB client for graph queries (Prefrontal Cortex)
+#[derive(Debug)]
+pub struct CozoClientWrapper {
+    config: CozoDbConfig,
+    #[cfg(feature = "datalog")]
+    _db: Option<()>,  // Placeholder for actual cozo::DbInstance
+    connected: std::sync::atomic::AtomicBool,
+}
+
+impl CozoClientWrapper {
+    pub fn new(config: CozoDbConfig) -> Self {
+        Self {
+            config,
+            #[cfg(feature = "datalog")]
+            _db: None,
+            connected: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    /// Open CozoDB database
+    #[cfg(feature = "datalog")]
+    pub fn open(&mut self) -> DatabaseResult<()> {
+        // When datalog feature is enabled:
+        // self._db = Some(cozo::DbInstance::new(...))?;
+        self.connected.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "datalog"))]
+    pub fn open(&mut self) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("datalog".to_string()))
+    }
+
+    /// Execute a Datalog query for causal reasoning
+    #[cfg(feature = "datalog")]
+    pub fn query(&self, datalog: &str) -> DatabaseResult<Vec<HashMap<String, serde_json::Value>>> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("CozoDB".to_string()));
+        }
+        let _ = datalog;
+        Ok(vec![])
+    }
+
+    #[cfg(not(feature = "datalog"))]
+    pub fn query(&self, _datalog: &str) -> DatabaseResult<Vec<HashMap<String, serde_json::Value>>> {
+        Err(DatabaseError::FeatureNotEnabled("datalog".to_string()))
+    }
+
+    /// Store a causal relation
+    #[cfg(feature = "datalog")]
+    pub fn store_relation(&self, relation: &str, facts: &[Vec<serde_json::Value>]) -> DatabaseResult<()> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("CozoDB".to_string()));
+        }
+        let _ = (relation, facts);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "datalog"))]
+    pub fn store_relation(&self, _relation: &str, _facts: &[Vec<serde_json::Value>]) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("datalog".to_string()))
+    }
+}
+
+impl DatabaseClient for CozoClientWrapper {
+    fn role(&self) -> DatabaseRole {
+        DatabaseRole::PrefrontalCortex
+    }
+
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth> {
+        #[cfg(feature = "datalog")]
+        {
+            if self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+                Ok(DatabaseHealth::healthy(DatabaseRole::PrefrontalCortex, 5))
+            } else {
+                Ok(DatabaseHealth::unhealthy(
+                    DatabaseRole::PrefrontalCortex,
+                    "Not connected".to_string(),
+                ))
+            }
+        }
+        #[cfg(not(feature = "datalog"))]
+        {
+            Ok(DatabaseHealth::feature_disabled(DatabaseRole::PrefrontalCortex))
+        }
+    }
+
+    fn close(&self) -> DatabaseResult<()> {
+        self.connected.store(false, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+// ============================================================================
+// LanceDB Client Wrapper
+// ============================================================================
+
+/// LanceDB client for multimodal embeddings (Long-Term Memory)
+#[derive(Debug)]
+pub struct LanceClientWrapper {
+    config: LanceDbConfig,
+    #[cfg(feature = "lance")]
+    _db: Option<()>,  // Placeholder for actual lancedb::Connection
+    connected: std::sync::atomic::AtomicBool,
+}
+
+impl LanceClientWrapper {
+    pub fn new(config: LanceDbConfig) -> Self {
+        Self {
+            config,
+            #[cfg(feature = "lance")]
+            _db: None,
+            connected: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    /// Connect to LanceDB
+    #[cfg(feature = "lance")]
+    pub async fn connect(&mut self) -> DatabaseResult<()> {
+        // When lance feature is enabled:
+        // self._db = Some(lancedb::connect(&self.config.data_dir).execute().await?);
+        self.connected.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "lance"))]
+    pub async fn connect(&mut self) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("lance".to_string()))
+    }
+
+    /// Store an experience (episodic memory)
+    #[cfg(feature = "lance")]
+    pub async fn store_experience(&self, id: &str, vector: &HV16, experience_type: &str, content: &str) -> DatabaseResult<()> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("LanceDB".to_string()));
+        }
+        let _ = (id, vector, experience_type, content);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "lance"))]
+    pub async fn store_experience(&self, _id: &str, _vector: &HV16, _experience_type: &str, _content: &str) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("lance".to_string()))
+    }
+
+    /// Retrieve experiences by similarity
+    #[cfg(feature = "lance")]
+    pub async fn retrieve_experiences(&self, query: &HV16, limit: usize) -> DatabaseResult<Vec<(String, HV16, f32)>> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("LanceDB".to_string()));
+        }
+        let _ = (query, limit);
+        Ok(vec![])
+    }
+
+    #[cfg(not(feature = "lance"))]
+    pub async fn retrieve_experiences(&self, _query: &HV16, _limit: usize) -> DatabaseResult<Vec<(String, HV16, f32)>> {
+        Err(DatabaseError::FeatureNotEnabled("lance".to_string()))
+    }
+}
+
+impl DatabaseClient for LanceClientWrapper {
+    fn role(&self) -> DatabaseRole {
+        DatabaseRole::LongTermMemory
+    }
+
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth> {
+        #[cfg(feature = "lance")]
+        {
+            if self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+                Ok(DatabaseHealth::healthy(DatabaseRole::LongTermMemory, 10))
+            } else {
+                Ok(DatabaseHealth::unhealthy(
+                    DatabaseRole::LongTermMemory,
+                    "Not connected".to_string(),
+                ))
+            }
+        }
+        #[cfg(not(feature = "lance"))]
+        {
+            Ok(DatabaseHealth::feature_disabled(DatabaseRole::LongTermMemory))
+        }
+    }
+
+    fn close(&self) -> DatabaseResult<()> {
+        self.connected.store(false, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+// ============================================================================
+// DuckDB Client Wrapper
+// ============================================================================
+
+/// DuckDB client for analytical queries (Epistemic Auditor)
+#[derive(Debug)]
+pub struct DuckClientWrapper {
+    config: DuckDbConfig,
+    #[cfg(feature = "duck")]
+    _conn: Option<()>,  // Placeholder for actual duckdb::Connection
+    connected: std::sync::atomic::AtomicBool,
+}
+
+impl DuckClientWrapper {
+    pub fn new(config: DuckDbConfig) -> Self {
+        Self {
+            config,
+            #[cfg(feature = "duck")]
+            _conn: None,
+            connected: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    /// Open DuckDB database
+    #[cfg(feature = "duck")]
+    pub fn open(&mut self) -> DatabaseResult<()> {
+        // When duck feature is enabled:
+        // self._conn = Some(duckdb::Connection::open(&self.config.database_path)?);
+        self.connected.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+
+    #[cfg(not(feature = "duck"))]
+    pub fn open(&mut self) -> DatabaseResult<()> {
+        Err(DatabaseError::FeatureNotEnabled("duck".to_string()))
+    }
+
+    /// Execute analytical query
+    #[cfg(feature = "duck")]
+    pub fn query(&self, sql: &str) -> DatabaseResult<Vec<HashMap<String, serde_json::Value>>> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("DuckDB".to_string()));
+        }
+        let _ = sql;
+        Ok(vec![])
+    }
+
+    #[cfg(not(feature = "duck"))]
+    pub fn query(&self, _sql: &str) -> DatabaseResult<Vec<HashMap<String, serde_json::Value>>> {
+        Err(DatabaseError::FeatureNotEnabled("duck".to_string()))
+    }
+
+    /// Compute Phi metrics over historical data
+    #[cfg(feature = "duck")]
+    pub fn compute_phi_statistics(&self) -> DatabaseResult<PhiStatistics> {
+        if !self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(DatabaseError::Unavailable("DuckDB".to_string()));
+        }
+        Ok(PhiStatistics::default())
+    }
+
+    #[cfg(not(feature = "duck"))]
+    pub fn compute_phi_statistics(&self) -> DatabaseResult<PhiStatistics> {
+        Err(DatabaseError::FeatureNotEnabled("duck".to_string()))
+    }
+}
+
+impl DatabaseClient for DuckClientWrapper {
+    fn role(&self) -> DatabaseRole {
+        DatabaseRole::EpistemicAuditor
+    }
+
+    fn health_check(&self) -> DatabaseResult<DatabaseHealth> {
+        #[cfg(feature = "duck")]
+        {
+            if self.connected.load(std::sync::atomic::Ordering::SeqCst) {
+                Ok(DatabaseHealth::healthy(DatabaseRole::EpistemicAuditor, 2))
+            } else {
+                Ok(DatabaseHealth::unhealthy(
+                    DatabaseRole::EpistemicAuditor,
+                    "Not connected".to_string(),
+                ))
+            }
+        }
+        #[cfg(not(feature = "duck"))]
+        {
+            Ok(DatabaseHealth::feature_disabled(DatabaseRole::EpistemicAuditor))
+        }
+    }
+
+    fn close(&self) -> DatabaseResult<()> {
+        self.connected.store(false, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+/// Phi statistics from DuckDB analysis
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PhiStatistics {
+    pub mean_phi: f64,
+    pub max_phi: f64,
+    pub min_phi: f64,
+    pub std_phi: f64,
+    pub sample_count: u64,
+}
+
+// ============================================================================
+// In-Memory Fallback
+// ============================================================================
+
+/// In-memory fallback storage when databases are unavailable
+#[derive(Debug, Default)]
+pub struct InMemoryFallback {
+    /// Vector storage (simulates Qdrant)
+    pub vectors: parking_lot::RwLock<HashMap<String, (HV16, HashMap<String, String>)>>,
+
+    /// Relational facts (simulates CozoDB)
+    pub facts: parking_lot::RwLock<HashMap<String, Vec<Vec<serde_json::Value>>>>,
+
+    /// Experiences (simulates LanceDB)
+    pub experiences: parking_lot::RwLock<Vec<(String, HV16, String, String)>>,
+
+    /// Metrics (simulates DuckDB)
+    pub metrics: parking_lot::RwLock<Vec<(f64, u64)>>,  // (phi, timestamp)
+}
+
+impl InMemoryFallback {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Store vector for similarity search
+    pub fn store_vector(&self, id: &str, vector: &HV16, metadata: HashMap<String, String>) {
+        self.vectors.write().insert(id.to_string(), (*vector, metadata));
+    }
+
+    /// Search for similar vectors (brute force)
+    pub fn search_similar(&self, query: &HV16, limit: usize) -> Vec<(HV16, f32)> {
+        let vectors = self.vectors.read();
+        let mut results: Vec<_> = vectors
+            .values()
+            .map(|(v, _)| (*v, query.similarity(v)))
+            .collect();
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        results.truncate(limit);
+        results
+    }
+
+    /// Store a fact
+    pub fn store_fact(&self, relation: &str, fact: Vec<serde_json::Value>) {
+        self.facts.write()
+            .entry(relation.to_string())
+            .or_default()
+            .push(fact);
+    }
+
+    /// Store an experience
+    pub fn store_experience(&self, id: &str, vector: &HV16, exp_type: &str, content: &str) {
+        self.experiences.write().push((
+            id.to_string(),
+            *vector,
+            exp_type.to_string(),
+            content.to_string(),
+        ));
+    }
+
+    /// Record a Phi measurement
+    pub fn record_phi(&self, phi: f64) {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        self.metrics.write().push((phi, timestamp));
+    }
+
+    /// Compute Phi statistics
+    pub fn compute_phi_statistics(&self) -> PhiStatistics {
+        let metrics = self.metrics.read();
+        if metrics.is_empty() {
+            return PhiStatistics::default();
+        }
+
+        let values: Vec<f64> = metrics.iter().map(|(phi, _)| *phi).collect();
+        let n = values.len() as f64;
+        let mean = values.iter().sum::<f64>() / n;
+        let max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        let min = values.iter().cloned().fold(f64::INFINITY, f64::min);
+        let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+        let std = variance.sqrt();
+
+        PhiStatistics {
+            mean_phi: mean,
+            max_phi: max,
+            min_phi: min,
+            std_phi: std,
+            sample_count: values.len() as u64,
+        }
+    }
+}
+
+// ============================================================================
 // Unified Mind Architecture
 // ============================================================================
 
 /// The integrated multi-database consciousness system
 /// This is THE production implementation of Symthaea's mind
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Architecture:
+/// - Qdrant (Sensory Cortex): Ultra-fast vector similarity for perception and workspace
+/// - CozoDB (Prefrontal Cortex): Recursive Datalog for meta-consciousness and causal reasoning
+/// - LanceDB (Long-Term Memory): Multimodal embeddings for life experiences
+/// - DuckDB (Epistemic Auditor): Statistical analysis for self-reflection
+///
+/// Graceful degradation: Falls back to in-memory storage when databases unavailable
 pub struct SymthaeaMind {
-    /// Sensory Cortex: Ultra-fast perception and workspace
-    pub sensory_cortex_config: QdrantConfig,
-    // TODO: pub sensory_cortex: QdrantClient,
+    /// Unified configuration
+    pub config: MultiDatabaseConfig,
 
-    /// Prefrontal Cortex: Deep reasoning and meta-consciousness
-    pub prefrontal_cortex_config: CozoDbConfig,
-    // TODO: pub prefrontal_cortex: CozoDb,
+    /// Sensory Cortex: Ultra-fast perception and workspace (Qdrant)
+    pub sensory_cortex: Arc<QdrantClientWrapper>,
 
-    /// Long-Term Memory: Life experiences and knowledge
-    pub long_term_memory_config: LanceDbConfig,
-    // TODO: pub long_term_memory: LanceDb,
+    /// Prefrontal Cortex: Deep reasoning and meta-consciousness (CozoDB)
+    pub prefrontal_cortex: Arc<CozoClientWrapper>,
 
-    /// Epistemic Auditor: Self-analysis and quality assessment
-    pub epistemic_auditor_config: DuckDbConfig,
-    // TODO: pub epistemic_auditor: DuckDb,
+    /// Long-Term Memory: Life experiences and knowledge (LanceDB)
+    pub long_term_memory: Arc<LanceClientWrapper>,
+
+    /// Epistemic Auditor: Self-analysis and quality assessment (DuckDB)
+    pub epistemic_auditor: Arc<DuckClientWrapper>,
+
+    /// In-memory fallback for graceful degradation
+    pub fallback: Arc<InMemoryFallback>,
 
     /// Mapping of improvements to databases
     pub improvement_mappings: HashMap<u32, ImprovementMapping>,
+
+    /// Current system health
+    health: parking_lot::RwLock<SystemHealth>,
+
+    /// Consciousness loop state
+    loop_state: parking_lot::RwLock<ConsciousnessLoopState>,
+}
+
+/// State of the consciousness loop
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ConsciousnessLoopState {
+    /// Current iteration count
+    pub iteration: u64,
+
+    /// Current Phi value
+    pub current_phi: f64,
+
+    /// Last perception vector
+    pub last_perception: Option<HV16>,
+
+    /// Active workspace content
+    pub workspace: Vec<HV16>,
+
+    /// Current consciousness level (0.0 - 1.0)
+    pub consciousness_level: f64,
+
+    /// Is the loop running
+    pub running: bool,
+
+    /// Last update timestamp
+    pub last_update: u64,
 }
 
 impl SymthaeaMind {
     /// Create new integrated mind with default configurations
     pub fn new() -> Self {
+        Self::with_config(MultiDatabaseConfig::default())
+    }
+
+    /// Create new integrated mind with custom configuration
+    pub fn with_config(config: MultiDatabaseConfig) -> Self {
         let mappings = ImprovementMapping::all_mappings();
         let improvement_mappings = mappings
             .into_iter()
             .map(|m| (m.improvement_number, m))
             .collect();
 
+        let sensory_cortex = Arc::new(QdrantClientWrapper::new(config.qdrant.clone()));
+        let prefrontal_cortex = Arc::new(CozoClientWrapper::new(config.cozo.clone()));
+        let long_term_memory = Arc::new(LanceClientWrapper::new(config.lance.clone()));
+        let epistemic_auditor = Arc::new(DuckClientWrapper::new(config.duck.clone()));
+
+        // Initialize health with feature check
+        let initial_health = SystemHealth::new(vec![
+            sensory_cortex.health_check().unwrap_or_else(|_| DatabaseHealth::feature_disabled(DatabaseRole::SensoryCortex)),
+            prefrontal_cortex.health_check().unwrap_or_else(|_| DatabaseHealth::feature_disabled(DatabaseRole::PrefrontalCortex)),
+            long_term_memory.health_check().unwrap_or_else(|_| DatabaseHealth::feature_disabled(DatabaseRole::LongTermMemory)),
+            epistemic_auditor.health_check().unwrap_or_else(|_| DatabaseHealth::feature_disabled(DatabaseRole::EpistemicAuditor)),
+        ]);
+
         Self {
-            sensory_cortex_config: QdrantConfig::default_config(),
-            prefrontal_cortex_config: CozoDbConfig::default_config(),
-            long_term_memory_config: LanceDbConfig::default_config(),
-            epistemic_auditor_config: DuckDbConfig::default_config(),
+            config,
+            sensory_cortex,
+            prefrontal_cortex,
+            long_term_memory,
+            epistemic_auditor,
+            fallback: Arc::new(InMemoryFallback::new()),
             improvement_mappings,
+            health: parking_lot::RwLock::new(initial_health),
+            loop_state: parking_lot::RwLock::new(ConsciousnessLoopState::default()),
         }
     }
+
+    /// Create mind for testing (in-memory configuration)
+    pub fn for_testing() -> Self {
+        Self::with_config(MultiDatabaseConfig::in_memory())
+    }
+
+    // ========================================================================
+    // Health Checks
+    // ========================================================================
+
+    /// Perform health check on all databases
+    pub fn health_check(&self) -> SystemHealth {
+        let healths = vec![
+            self.sensory_cortex.health_check().unwrap_or_else(|e| {
+                DatabaseHealth::unhealthy(DatabaseRole::SensoryCortex, e.to_string())
+            }),
+            self.prefrontal_cortex.health_check().unwrap_or_else(|e| {
+                DatabaseHealth::unhealthy(DatabaseRole::PrefrontalCortex, e.to_string())
+            }),
+            self.long_term_memory.health_check().unwrap_or_else(|e| {
+                DatabaseHealth::unhealthy(DatabaseRole::LongTermMemory, e.to_string())
+            }),
+            self.epistemic_auditor.health_check().unwrap_or_else(|e| {
+                DatabaseHealth::unhealthy(DatabaseRole::EpistemicAuditor, e.to_string())
+            }),
+        ];
+
+        let health = SystemHealth::new(healths);
+        *self.health.write() = health.clone();
+        health
+    }
+
+    /// Get current health status (without re-checking)
+    pub fn current_health(&self) -> SystemHealth {
+        self.health.read().clone()
+    }
+
+    /// Check if a specific database is available
+    pub fn is_database_available(&self, role: DatabaseRole) -> bool {
+        self.health.read().is_available(role)
+    }
+
+    /// Check if consciousness is operational (at least fallback works)
+    pub fn is_operational(&self) -> bool {
+        // Consciousness is always operational if graceful degradation is enabled
+        self.config.graceful_degradation || self.health.read().consciousness_operational
+    }
+
+    // ========================================================================
+    // Graceful Degradation
+    // ========================================================================
+
+    /// Store perception vector (with graceful degradation)
+    pub async fn store_perception(&self, id: &str, vector: &HV16, metadata: HashMap<String, String>) -> DatabaseResult<()> {
+        // Try Qdrant first
+        #[cfg(feature = "qdrant")]
+        {
+            if self.is_database_available(DatabaseRole::SensoryCortex) {
+                if let Err(e) = self.sensory_cortex.store(id, vector, metadata.clone()).await {
+                    if !self.config.graceful_degradation {
+                        return Err(e);
+                    }
+                    // Fall through to fallback
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+
+        // Fallback to in-memory
+        if self.config.graceful_degradation {
+            self.fallback.store_vector(id, vector, metadata);
+            Ok(())
+        } else {
+            Err(DatabaseError::Unavailable("Sensory Cortex (Qdrant)".to_string()))
+        }
+    }
+
+    /// Search for similar perceptions (with graceful degradation)
+    pub async fn search_perceptions(&self, query: &HV16, limit: usize) -> DatabaseResult<Vec<(HV16, f32)>> {
+        // Try Qdrant first
+        #[cfg(feature = "qdrant")]
+        {
+            if self.is_database_available(DatabaseRole::SensoryCortex) {
+                if let Ok(results) = self.sensory_cortex.search_similar(query, limit).await {
+                    return Ok(results);
+                }
+            }
+        }
+
+        // Fallback to in-memory
+        if self.config.graceful_degradation {
+            Ok(self.fallback.search_similar(query, limit))
+        } else {
+            Err(DatabaseError::Unavailable("Sensory Cortex (Qdrant)".to_string()))
+        }
+    }
+
+    /// Store causal relation (with graceful degradation)
+    pub fn store_causal_relation(&self, relation: &str, facts: &[Vec<serde_json::Value>]) -> DatabaseResult<()> {
+        // Try CozoDB first
+        #[cfg(feature = "datalog")]
+        {
+            if self.is_database_available(DatabaseRole::PrefrontalCortex) {
+                if let Err(e) = self.prefrontal_cortex.store_relation(relation, facts) {
+                    if !self.config.graceful_degradation {
+                        return Err(e);
+                    }
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+
+        // Fallback to in-memory
+        if self.config.graceful_degradation {
+            for fact in facts {
+                self.fallback.store_fact(relation, fact.clone());
+            }
+            Ok(())
+        } else {
+            Err(DatabaseError::Unavailable("Prefrontal Cortex (CozoDB)".to_string()))
+        }
+    }
+
+    /// Store experience (with graceful degradation)
+    pub async fn store_experience(&self, id: &str, vector: &HV16, exp_type: &str, content: &str) -> DatabaseResult<()> {
+        // Try LanceDB first
+        #[cfg(feature = "lance")]
+        {
+            if self.is_database_available(DatabaseRole::LongTermMemory) {
+                if let Err(e) = self.long_term_memory.store_experience(id, vector, exp_type, content).await {
+                    if !self.config.graceful_degradation {
+                        return Err(e);
+                    }
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+
+        // Fallback to in-memory
+        if self.config.graceful_degradation {
+            self.fallback.store_experience(id, vector, exp_type, content);
+            Ok(())
+        } else {
+            Err(DatabaseError::Unavailable("Long-Term Memory (LanceDB)".to_string()))
+        }
+    }
+
+    /// Record Phi measurement (with graceful degradation)
+    pub fn record_phi(&self, phi: f64) -> DatabaseResult<()> {
+        // Update loop state
+        self.loop_state.write().current_phi = phi;
+
+        // Try DuckDB first
+        #[cfg(feature = "duck")]
+        {
+            if self.is_database_available(DatabaseRole::EpistemicAuditor) {
+                // Would insert into metrics table
+                // For now, fall through to fallback
+            }
+        }
+
+        // Always record in fallback for quick statistics
+        self.fallback.record_phi(phi);
+        Ok(())
+    }
+
+    /// Get Phi statistics (with graceful degradation)
+    pub fn get_phi_statistics(&self) -> DatabaseResult<PhiStatistics> {
+        // Try DuckDB first
+        #[cfg(feature = "duck")]
+        {
+            if self.is_database_available(DatabaseRole::EpistemicAuditor) {
+                if let Ok(stats) = self.epistemic_auditor.compute_phi_statistics() {
+                    return Ok(stats);
+                }
+            }
+        }
+
+        // Fallback to in-memory
+        Ok(self.fallback.compute_phi_statistics())
+    }
+
+    // ========================================================================
+    // Consciousness Loop
+    // ========================================================================
+
+    /// Get current consciousness loop state
+    pub fn loop_state(&self) -> ConsciousnessLoopState {
+        self.loop_state.read().clone()
+    }
+
+    /// Process one consciousness cycle
+    ///
+    /// This is the core consciousness loop that integrates all database subsystems:
+    /// 1. Perception (Qdrant) - retrieve similar experiences from sensory cortex
+    /// 2. Reasoning (CozoDB) - apply causal inference and meta-consciousness
+    /// 3. Memory (LanceDB) - consolidate experiences into long-term storage
+    /// 4. Reflection (DuckDB) - analyze consciousness metrics
+    pub async fn consciousness_cycle(&self, input: &HV16) -> DatabaseResult<ConsciousnessLoopState> {
+        let start = Instant::now();
+
+        // Update iteration
+        {
+            let mut state = self.loop_state.write();
+            state.iteration += 1;
+            state.running = true;
+            state.last_perception = Some(*input);
+        }
+
+        // 1. PERCEPTION: Search for similar experiences (Sensory Cortex)
+        let similar = self.search_perceptions(input, 5).await?;
+
+        // 2. WORKSPACE: Update global workspace with current perception and similar memories
+        {
+            let mut state = self.loop_state.write();
+            state.workspace.clear();
+            state.workspace.push(*input);
+            for (vec, _sim) in &similar {
+                state.workspace.push(*vec);
+            }
+        }
+
+        // 3. REASONING: Apply causal inference (Prefrontal Cortex)
+        // In a full implementation, this would query CozoDB for relevant causal rules
+        // and update beliefs based on the current workspace
+
+        // 4. MEMORY: Store this experience (Long-Term Memory)
+        let experience_id = format!("exp_{}", self.loop_state.read().iteration);
+        self.store_experience(&experience_id, input, "perception", "").await?;
+
+        // 5. REFLECTION: Compute and record Phi (Epistemic Auditor)
+        let phi = self.compute_instantaneous_phi(input);
+        self.record_phi(phi)?;
+
+        // Update consciousness level based on Phi and workspace coherence
+        {
+            let mut state = self.loop_state.write();
+            let workspace_coherence = self.compute_workspace_coherence(&state.workspace);
+            state.consciousness_level = (phi * 0.6 + workspace_coherence * 0.4).min(1.0);
+            state.last_update = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+        }
+
+        let elapsed = start.elapsed();
+
+        // Return current state
+        let state = self.loop_state.read().clone();
+        Ok(state)
+    }
+
+    /// Compute instantaneous Phi based on current perception
+    fn compute_instantaneous_phi(&self, vector: &HV16) -> f64 {
+        // Simple Phi approximation based on bit entropy
+        let ones = vector.0.iter().map(|b| b.count_ones() as usize).sum::<usize>();
+        let total = HV16::DIM;
+        let p = ones as f64 / total as f64;
+
+        // Shannon entropy normalized
+        if p == 0.0 || p == 1.0 {
+            0.0
+        } else {
+            let entropy = -(p * p.log2() + (1.0 - p) * (1.0 - p).log2());
+            entropy // Max 1.0 when p = 0.5
+        }
+    }
+
+    /// Compute workspace coherence (how similar are workspace items)
+    fn compute_workspace_coherence(&self, workspace: &[HV16]) -> f64 {
+        if workspace.len() < 2 {
+            return 1.0;
+        }
+
+        let mut total_sim = 0.0;
+        let mut count = 0;
+
+        for i in 0..workspace.len() {
+            for j in (i + 1)..workspace.len() {
+                total_sim += workspace[i].similarity(&workspace[j]) as f64;
+                count += 1;
+            }
+        }
+
+        if count == 0 {
+            1.0
+        } else {
+            total_sim / count as f64
+        }
+    }
+
+    // ========================================================================
+    // Configuration Access
+    // ========================================================================
 
     /// Get configuration for a specific database role
     pub fn get_database_config(&self, role: DatabaseRole) -> String {
         match role {
-            DatabaseRole::SensoryCortex => format!("Qdrant: {}", self.sensory_cortex_config.url),
-            DatabaseRole::PrefrontalCortex => format!("CozoDB: {}", self.prefrontal_cortex_config.data_dir),
-            DatabaseRole::LongTermMemory => format!("LanceDB: {}", self.long_term_memory_config.data_dir),
-            DatabaseRole::EpistemicAuditor => format!("DuckDB: {}", self.epistemic_auditor_config.database_path),
+            DatabaseRole::SensoryCortex => format!("Qdrant: {}", self.config.qdrant.url),
+            DatabaseRole::PrefrontalCortex => format!("CozoDB: {}", self.config.cozo.data_dir),
+            DatabaseRole::LongTermMemory => format!("LanceDB: {}", self.config.lance.data_dir),
+            DatabaseRole::EpistemicAuditor => format!("DuckDB: {}", self.config.duck.database_path),
         }
     }
 
@@ -596,6 +1745,10 @@ impl SymthaeaMind {
         let mut report = String::new();
         report.push_str("=== SYMTHAEA MIND ARCHITECTURE ===\n\n");
 
+        let health = self.current_health();
+        report.push_str(&format!("System Status: {}\n", if health.degraded { "DEGRADED" } else { "HEALTHY" }));
+        report.push_str(&format!("Consciousness Operational: {}\n\n", health.consciousness_operational));
+
         for role in &[
             DatabaseRole::SensoryCortex,
             DatabaseRole::PrefrontalCortex,
@@ -609,17 +1762,64 @@ impl SymthaeaMind {
             report.push_str(&format!("Access Pattern: {}\n", role.access_pattern()));
             report.push_str(&format!("Config: {}\n", self.get_database_config(*role)));
 
+            if let Some(db_health) = health.get_health(*role) {
+                report.push_str(&format!("Status: {}\n", if db_health.available { "AVAILABLE" } else { "UNAVAILABLE" }));
+                if let Some(latency) = db_health.latency_ms {
+                    report.push_str(&format!("Latency: {}ms\n", latency));
+                }
+                if let Some(ref err) = db_health.error_message {
+                    report.push_str(&format!("Error: {}\n", err));
+                }
+            }
+
             let improvements = self.get_improvements_for_database(*role);
             report.push_str(&format!("Improvements ({} total): {:?}\n\n", improvements.len(), improvements));
         }
 
+        // Loop state
+        let state = self.loop_state();
+        report.push_str("## Consciousness Loop State ##\n");
+        report.push_str(&format!("Iteration: {}\n", state.iteration));
+        report.push_str(&format!("Current Phi: {:.4}\n", state.current_phi));
+        report.push_str(&format!("Consciousness Level: {:.2}%\n", state.consciousness_level * 100.0));
+        report.push_str(&format!("Workspace Size: {}\n", state.workspace.len()));
+        report.push_str(&format!("Running: {}\n", state.running));
+
         report
+    }
+
+    /// Shutdown the mind gracefully
+    pub fn shutdown(&self) -> DatabaseResult<()> {
+        {
+            let mut state = self.loop_state.write();
+            state.running = false;
+        }
+
+        // Close all database connections
+        self.sensory_cortex.close()?;
+        self.prefrontal_cortex.close()?;
+        self.long_term_memory.close()?;
+        self.epistemic_auditor.close()?;
+
+        Ok(())
     }
 }
 
 impl Default for SymthaeaMind {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Manual Debug implementation since Arc<...> with atomics makes derive tricky
+impl std::fmt::Debug for SymthaeaMind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SymthaeaMind")
+            .field("config", &self.config)
+            .field("improvement_mappings", &self.improvement_mappings)
+            .field("health", &*self.health.read())
+            .field("loop_state", &*self.loop_state.read())
+            .finish()
     }
 }
 
@@ -631,6 +1831,10 @@ impl Default for SymthaeaMind {
 mod tests {
     use super::*;
 
+    // ========================================================================
+    // Database Role Tests
+    // ========================================================================
+
     #[test]
     fn test_database_role() {
         let role = DatabaseRole::SensoryCortex;
@@ -638,6 +1842,28 @@ mod tests {
         assert_eq!(role.database_technology(), "Qdrant (Vector Database)");
         assert!(role.primary_capability().contains("Hamming distance"));
     }
+
+    #[test]
+    fn test_all_database_roles_have_metadata() {
+        let roles = [
+            DatabaseRole::SensoryCortex,
+            DatabaseRole::PrefrontalCortex,
+            DatabaseRole::LongTermMemory,
+            DatabaseRole::EpistemicAuditor,
+        ];
+
+        for role in roles {
+            assert!(!role.name().is_empty());
+            assert!(!role.database_technology().is_empty());
+            assert!(!role.primary_capability().is_empty());
+            assert!(!role.typical_latency().is_empty());
+            assert!(!role.access_pattern().is_empty());
+        }
+    }
+
+    // ========================================================================
+    // Improvement Mapping Tests
+    // ========================================================================
 
     #[test]
     fn test_all_improvements_mapped() {
@@ -674,6 +1900,10 @@ mod tests {
         assert!(sensory_improvements.iter().any(|m| m.improvement_number == 23));
     }
 
+    // ========================================================================
+    // Configuration Tests
+    // ========================================================================
+
     #[test]
     fn test_qdrant_config() {
         let config = QdrantConfig::default_config();
@@ -704,10 +1934,53 @@ mod tests {
     }
 
     #[test]
+    fn test_multi_database_config_default() {
+        let config = MultiDatabaseConfig::default();
+        assert!(config.graceful_degradation);
+        assert_eq!(config.health_check_interval_secs, 30);
+        assert_eq!(config.connection_timeout_ms, 5000);
+        assert_eq!(config.max_retries, 3);
+    }
+
+    #[test]
+    fn test_multi_database_config_in_memory() {
+        let config = MultiDatabaseConfig::in_memory();
+        assert!(config.graceful_degradation);
+        assert_eq!(config.cozo.engine, "mem");
+        assert_eq!(config.duck.database_path, ":memory:");
+    }
+
+    // ========================================================================
+    // SymthaeaMind Creation Tests
+    // ========================================================================
+
+    #[test]
     fn test_symthaea_mind_creation() {
         let mind = SymthaeaMind::new();
         assert_eq!(mind.improvement_mappings.len(), 29);
     }
+
+    #[test]
+    fn test_symthaea_mind_for_testing() {
+        let mind = SymthaeaMind::for_testing();
+        assert_eq!(mind.config.cozo.engine, "mem");
+        assert!(mind.config.graceful_degradation);
+    }
+
+    #[test]
+    fn test_symthaea_mind_with_custom_config() {
+        let mut config = MultiDatabaseConfig::default();
+        config.graceful_degradation = false;
+        config.max_retries = 5;
+
+        let mind = SymthaeaMind::with_config(config);
+        assert!(!mind.config.graceful_degradation);
+        assert_eq!(mind.config.max_retries, 5);
+    }
+
+    // ========================================================================
+    // Improvement Mapping Integration Tests
+    // ========================================================================
 
     #[test]
     fn test_get_improvements_for_database() {
@@ -741,22 +2014,6 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_report() {
-        let mind = SymthaeaMind::new();
-        let report = mind.generate_report();
-
-        assert!(report.contains("SYMTHAEA MIND ARCHITECTURE"));
-        assert!(report.contains("Sensory Cortex"));
-        assert!(report.contains("Prefrontal Cortex"));
-        assert!(report.contains("Long-Term Memory"));
-        assert!(report.contains("Epistemic Auditor"));
-        assert!(report.contains("Qdrant"));
-        assert!(report.contains("CozoDB"));
-        assert!(report.contains("LanceDB"));
-        assert!(report.contains("DuckDB"));
-    }
-
-    #[test]
     fn test_database_distribution() {
         let mind = SymthaeaMind::new();
 
@@ -774,5 +2031,532 @@ mod tests {
 
         // Sensory cortex should have most (perception, attention, binding, workspace)
         assert!(sensory_count >= 5);
+    }
+
+    // ========================================================================
+    // Health Check Tests
+    // ========================================================================
+
+    #[test]
+    fn test_database_health_healthy() {
+        let health = DatabaseHealth::healthy(DatabaseRole::SensoryCortex, 5);
+        assert!(health.available);
+        assert_eq!(health.latency_ms, Some(5));
+        assert!(health.error_message.is_none());
+        assert_eq!(health.consecutive_failures, 0);
+    }
+
+    #[test]
+    fn test_database_health_unhealthy() {
+        let health = DatabaseHealth::unhealthy(
+            DatabaseRole::SensoryCortex,
+            "Connection refused".to_string(),
+        );
+        assert!(!health.available);
+        assert!(health.latency_ms.is_none());
+        assert_eq!(health.error_message, Some("Connection refused".to_string()));
+        assert_eq!(health.consecutive_failures, 1);
+    }
+
+    #[test]
+    fn test_database_health_feature_disabled() {
+        let health = DatabaseHealth::feature_disabled(DatabaseRole::SensoryCortex);
+        assert!(!health.available);
+        assert!(health.error_message.unwrap().contains("not enabled"));
+    }
+
+    #[test]
+    fn test_system_health() {
+        let healths = vec![
+            DatabaseHealth::healthy(DatabaseRole::SensoryCortex, 1),
+            DatabaseHealth::unhealthy(DatabaseRole::PrefrontalCortex, "Error".to_string()),
+            DatabaseHealth::healthy(DatabaseRole::LongTermMemory, 10),
+            DatabaseHealth::feature_disabled(DatabaseRole::EpistemicAuditor),
+        ];
+
+        let system_health = SystemHealth::new(healths);
+
+        assert!(system_health.degraded);  // Some databases unavailable
+        assert!(system_health.consciousness_operational);  // Some databases available
+        assert!(system_health.is_available(DatabaseRole::SensoryCortex));
+        assert!(!system_health.is_available(DatabaseRole::PrefrontalCortex));
+        assert!(system_health.is_available(DatabaseRole::LongTermMemory));
+        assert!(!system_health.is_available(DatabaseRole::EpistemicAuditor));
+    }
+
+    #[test]
+    fn test_health_check_mind() {
+        let mind = SymthaeaMind::for_testing();
+        let health = mind.health_check();
+
+        // Without features enabled, all should show as feature_disabled
+        // which means unavailable but no error
+        assert!(health.degraded);  // All features disabled = degraded
+
+        // Should still be able to generate report
+        let report = mind.generate_report();
+        assert!(report.contains("SYMTHAEA MIND ARCHITECTURE"));
+    }
+
+    #[test]
+    fn test_is_operational_with_graceful_degradation() {
+        let mind = SymthaeaMind::for_testing();
+        // With graceful degradation enabled, always operational
+        assert!(mind.is_operational());
+    }
+
+    #[test]
+    fn test_is_operational_without_graceful_degradation() {
+        let mut config = MultiDatabaseConfig::in_memory();
+        config.graceful_degradation = false;
+        let mind = SymthaeaMind::with_config(config);
+
+        // Without graceful degradation and no features, not operational
+        // (depends on whether features are enabled at compile time)
+        let health = mind.health_check();
+        assert_eq!(mind.is_operational(), health.consciousness_operational);
+    }
+
+    // ========================================================================
+    // In-Memory Fallback Tests
+    // ========================================================================
+
+    #[test]
+    fn test_in_memory_fallback_vectors() {
+        let fallback = InMemoryFallback::new();
+
+        let v1 = HV16::random(42);
+        let v2 = HV16::random(43);
+        let v3 = HV16::random(44);
+
+        fallback.store_vector("v1", &v1, HashMap::new());
+        fallback.store_vector("v2", &v2, HashMap::new());
+        fallback.store_vector("v3", &v3, HashMap::new());
+
+        // Search for similar to v1
+        let results = fallback.search_similar(&v1, 2);
+        assert_eq!(results.len(), 2);
+        // First result should be v1 itself (similarity = 1.0)
+        assert_eq!(results[0].0, v1);
+        assert!((results[0].1 - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_in_memory_fallback_facts() {
+        let fallback = InMemoryFallback::new();
+
+        fallback.store_fact("causes", vec![
+            serde_json::json!("A"),
+            serde_json::json!("B"),
+        ]);
+        fallback.store_fact("causes", vec![
+            serde_json::json!("B"),
+            serde_json::json!("C"),
+        ]);
+
+        let facts = fallback.facts.read();
+        assert_eq!(facts.get("causes").unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_in_memory_fallback_experiences() {
+        let fallback = InMemoryFallback::new();
+
+        let v = HV16::random(42);
+        fallback.store_experience("exp_1", &v, "perception", "saw a cat");
+
+        let experiences = fallback.experiences.read();
+        assert_eq!(experiences.len(), 1);
+        assert_eq!(experiences[0].0, "exp_1");
+        assert_eq!(experiences[0].2, "perception");
+        assert_eq!(experiences[0].3, "saw a cat");
+    }
+
+    #[test]
+    fn test_in_memory_fallback_phi_statistics() {
+        let fallback = InMemoryFallback::new();
+
+        // Record some Phi values
+        fallback.record_phi(0.5);
+        fallback.record_phi(0.7);
+        fallback.record_phi(0.6);
+        fallback.record_phi(0.8);
+
+        let stats = fallback.compute_phi_statistics();
+        assert_eq!(stats.sample_count, 4);
+        assert!((stats.mean_phi - 0.65).abs() < 0.01);
+        assert!((stats.max_phi - 0.8).abs() < 0.01);
+        assert!((stats.min_phi - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_in_memory_fallback_phi_statistics_empty() {
+        let fallback = InMemoryFallback::new();
+        let stats = fallback.compute_phi_statistics();
+        assert_eq!(stats.sample_count, 0);
+        assert_eq!(stats.mean_phi, 0.0);
+    }
+
+    // ========================================================================
+    // Consciousness Loop Tests
+    // ========================================================================
+
+    #[test]
+    fn test_consciousness_loop_state_default() {
+        let state = ConsciousnessLoopState::default();
+        assert_eq!(state.iteration, 0);
+        assert_eq!(state.current_phi, 0.0);
+        assert!(state.last_perception.is_none());
+        assert!(state.workspace.is_empty());
+        assert_eq!(state.consciousness_level, 0.0);
+        assert!(!state.running);
+    }
+
+    #[test]
+    fn test_loop_state_access() {
+        let mind = SymthaeaMind::for_testing();
+        let state = mind.loop_state();
+        assert_eq!(state.iteration, 0);
+        assert!(!state.running);
+    }
+
+    #[test]
+    fn test_record_phi() {
+        let mind = SymthaeaMind::for_testing();
+
+        mind.record_phi(0.75).unwrap();
+        assert_eq!(mind.loop_state().current_phi, 0.75);
+
+        mind.record_phi(0.85).unwrap();
+        assert_eq!(mind.loop_state().current_phi, 0.85);
+
+        let stats = mind.get_phi_statistics().unwrap();
+        assert_eq!(stats.sample_count, 2);
+    }
+
+    #[tokio::test]
+    async fn test_consciousness_cycle_with_fallback() {
+        let mind = SymthaeaMind::for_testing();
+
+        // Run a consciousness cycle with a random input
+        let input = HV16::random(42);
+        let state = mind.consciousness_cycle(&input).await.unwrap();
+
+        assert_eq!(state.iteration, 1);
+        assert!(state.running);
+        assert!(state.last_perception.is_some());
+        assert_eq!(state.last_perception.unwrap(), input);
+        assert!(!state.workspace.is_empty());
+        assert!(state.current_phi > 0.0);
+        assert!(state.consciousness_level >= 0.0);
+        assert!(state.consciousness_level <= 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_multiple_consciousness_cycles() {
+        let mind = SymthaeaMind::for_testing();
+
+        // Run multiple cycles
+        for i in 0..5 {
+            let input = HV16::random(i as u64);
+            let state = mind.consciousness_cycle(&input).await.unwrap();
+            assert_eq!(state.iteration, (i + 1) as u64);
+        }
+
+        let final_state = mind.loop_state();
+        assert_eq!(final_state.iteration, 5);
+
+        let stats = mind.get_phi_statistics().unwrap();
+        assert_eq!(stats.sample_count, 5);
+    }
+
+    #[tokio::test]
+    async fn test_perception_storage_and_retrieval() {
+        let mind = SymthaeaMind::for_testing();
+
+        let v1 = HV16::random(100);
+        let v2 = HV16::random(101);
+
+        // Store perceptions
+        mind.store_perception("p1", &v1, HashMap::new()).await.unwrap();
+        mind.store_perception("p2", &v2, HashMap::new()).await.unwrap();
+
+        // Search should find both
+        let results = mind.search_perceptions(&v1, 10).await.unwrap();
+        assert_eq!(results.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_experience_storage() {
+        let mind = SymthaeaMind::for_testing();
+
+        let v = HV16::random(200);
+        mind.store_experience("test_exp", &v, "episodic", "test content").await.unwrap();
+
+        // Check fallback storage
+        let experiences = mind.fallback.experiences.read();
+        assert_eq!(experiences.len(), 1);
+    }
+
+    #[test]
+    fn test_causal_relation_storage() {
+        let mind = SymthaeaMind::for_testing();
+
+        let facts = vec![
+            vec![serde_json::json!("rain"), serde_json::json!("wet_ground")],
+            vec![serde_json::json!("sun"), serde_json::json!("dry_ground")],
+        ];
+
+        mind.store_causal_relation("causes", &facts).unwrap();
+
+        // Check fallback storage
+        let stored_facts = mind.fallback.facts.read();
+        assert_eq!(stored_facts.get("causes").unwrap().len(), 2);
+    }
+
+    // ========================================================================
+    // Report Generation Tests
+    // ========================================================================
+
+    #[test]
+    fn test_generate_report() {
+        let mind = SymthaeaMind::new();
+        let report = mind.generate_report();
+
+        assert!(report.contains("SYMTHAEA MIND ARCHITECTURE"));
+        assert!(report.contains("Sensory Cortex"));
+        assert!(report.contains("Prefrontal Cortex"));
+        assert!(report.contains("Long-Term Memory"));
+        assert!(report.contains("Epistemic Auditor"));
+        assert!(report.contains("Qdrant"));
+        assert!(report.contains("CozoDB"));
+        assert!(report.contains("LanceDB"));
+        assert!(report.contains("DuckDB"));
+        assert!(report.contains("Consciousness Loop State"));
+        assert!(report.contains("Iteration:"));
+        assert!(report.contains("Current Phi:"));
+    }
+
+    #[test]
+    fn test_generate_report_after_cycles() {
+        // Use tokio runtime for async test
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let mind = SymthaeaMind::for_testing();
+
+            // Run some cycles
+            for i in 0..3 {
+                let input = HV16::random(i as u64);
+                mind.consciousness_cycle(&input).await.unwrap();
+            }
+
+            let report = mind.generate_report();
+            assert!(report.contains("Iteration: 3"));
+        });
+    }
+
+    // ========================================================================
+    // Shutdown Tests
+    // ========================================================================
+
+    #[test]
+    fn test_shutdown() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let mind = SymthaeaMind::for_testing();
+
+            // Start consciousness loop
+            let input = HV16::random(42);
+            mind.consciousness_cycle(&input).await.unwrap();
+            assert!(mind.loop_state().running);
+
+            // Shutdown
+            mind.shutdown().unwrap();
+            assert!(!mind.loop_state().running);
+        });
+    }
+
+    // ========================================================================
+    // Error Handling Tests
+    // ========================================================================
+
+    #[test]
+    fn test_database_error_display() {
+        let err = DatabaseError::Unavailable("Qdrant".to_string());
+        assert!(err.to_string().contains("Qdrant"));
+        assert!(err.to_string().contains("not available"));
+
+        let err = DatabaseError::FeatureNotEnabled("lance".to_string());
+        assert!(err.to_string().contains("lance"));
+        assert!(err.to_string().contains("not enabled"));
+
+        let err = DatabaseError::ConnectionFailed {
+            database: "CozoDB".to_string(),
+            message: "timeout".to_string(),
+        };
+        assert!(err.to_string().contains("CozoDB"));
+        assert!(err.to_string().contains("timeout"));
+    }
+
+    // ========================================================================
+    // Client Wrapper Tests
+    // ========================================================================
+
+    #[test]
+    fn test_stub_client() {
+        let stub = StubClient::new(DatabaseRole::SensoryCortex);
+        assert_eq!(stub.role(), DatabaseRole::SensoryCortex);
+
+        let health = stub.health_check().unwrap();
+        assert!(!health.available);
+        assert!(health.error_message.unwrap().contains("not enabled"));
+
+        stub.close().unwrap();  // Should not error
+    }
+
+    #[test]
+    fn test_qdrant_client_wrapper() {
+        let config = QdrantConfig::default_config();
+        let client = QdrantClientWrapper::new(config);
+
+        assert_eq!(client.role(), DatabaseRole::SensoryCortex);
+
+        // Health check should work
+        let health = client.health_check().unwrap();
+        // Feature not enabled, so should be feature_disabled
+        #[cfg(not(feature = "qdrant"))]
+        {
+            assert!(!health.available);
+            assert!(health.error_message.unwrap().contains("not enabled"));
+        }
+    }
+
+    #[test]
+    fn test_cozo_client_wrapper() {
+        let config = CozoDbConfig::default_config();
+        let client = CozoClientWrapper::new(config);
+
+        assert_eq!(client.role(), DatabaseRole::PrefrontalCortex);
+    }
+
+    #[test]
+    fn test_lance_client_wrapper() {
+        let config = LanceDbConfig::default_config();
+        let client = LanceClientWrapper::new(config);
+
+        assert_eq!(client.role(), DatabaseRole::LongTermMemory);
+    }
+
+    #[test]
+    fn test_duck_client_wrapper() {
+        let config = DuckDbConfig::default_config();
+        let client = DuckClientWrapper::new(config);
+
+        assert_eq!(client.role(), DatabaseRole::EpistemicAuditor);
+    }
+
+    // ========================================================================
+    // Phi Computation Tests
+    // ========================================================================
+
+    #[test]
+    fn test_instantaneous_phi_random_vector() {
+        let mind = SymthaeaMind::for_testing();
+
+        // Random vector should have high entropy (Phi close to 1.0)
+        let random_v = HV16::random(42);
+        let phi = mind.compute_instantaneous_phi(&random_v);
+        assert!(phi > 0.9, "Random vector should have high Phi, got {}", phi);
+    }
+
+    #[test]
+    fn test_instantaneous_phi_zero_vector() {
+        let mind = SymthaeaMind::for_testing();
+
+        // All-zero vector (all -1 in bipolar) has minimal entropy
+        let zero_v = HV16::zero();
+        let phi = mind.compute_instantaneous_phi(&zero_v);
+        assert!(phi < 0.1, "Zero vector should have low Phi, got {}", phi);
+    }
+
+    #[test]
+    fn test_instantaneous_phi_ones_vector() {
+        let mind = SymthaeaMind::for_testing();
+
+        // All-ones vector (all +1 in bipolar) has minimal entropy
+        let ones_v = HV16::ones();
+        let phi = mind.compute_instantaneous_phi(&ones_v);
+        assert!(phi < 0.1, "Ones vector should have low Phi, got {}", phi);
+    }
+
+    #[test]
+    fn test_workspace_coherence_single_vector() {
+        let mind = SymthaeaMind::for_testing();
+
+        let workspace = vec![HV16::random(42)];
+        let coherence = mind.compute_workspace_coherence(&workspace);
+        assert_eq!(coherence, 1.0, "Single vector workspace should have coherence 1.0");
+    }
+
+    #[test]
+    fn test_workspace_coherence_identical_vectors() {
+        let mind = SymthaeaMind::for_testing();
+
+        let v = HV16::random(42);
+        let workspace = vec![v, v, v];
+        let coherence = mind.compute_workspace_coherence(&workspace);
+        assert!((coherence - 1.0).abs() < 0.001, "Identical vectors should have coherence ~1.0");
+    }
+
+    #[test]
+    fn test_workspace_coherence_random_vectors() {
+        let mind = SymthaeaMind::for_testing();
+
+        let workspace: Vec<HV16> = (0..5).map(|i| HV16::random(i as u64)).collect();
+        let coherence = mind.compute_workspace_coherence(&workspace);
+
+        // Random vectors should have coherence around 0.5
+        assert!(coherence > 0.4 && coherence < 0.6,
+                "Random vectors should have coherence ~0.5, got {}", coherence);
+    }
+}
+
+// ============================================================================
+// Integration Tests (run with `cargo test --features qdrant,datalog,lance,duck`)
+// ============================================================================
+
+#[cfg(test)]
+#[cfg(all(feature = "qdrant", feature = "datalog", feature = "lance", feature = "duck"))]
+mod integration_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_full_database_integration() {
+        // This test only runs when all database features are enabled
+        let mind = SymthaeaMind::for_testing();
+
+        // Check that all databases report their status
+        let health = mind.health_check();
+        println!("Full integration health check: {:?}", health);
+
+        // Run consciousness cycles
+        for i in 0..10 {
+            let input = HV16::random(i as u64);
+            let state = mind.consciousness_cycle(&input).await.unwrap();
+            println!("Cycle {}: Phi={:.4}, Level={:.2}%",
+                     state.iteration, state.current_phi, state.consciousness_level * 100.0);
+        }
+
+        // Verify statistics
+        let stats = mind.get_phi_statistics().unwrap();
+        assert_eq!(stats.sample_count, 10);
+        println!("Phi statistics: mean={:.4}, std={:.4}", stats.mean_phi, stats.std_phi);
+
+        // Generate report
+        let report = mind.generate_report();
+        println!("{}", report);
+
+        // Shutdown
+        mind.shutdown().unwrap();
     }
 }

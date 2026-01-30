@@ -457,6 +457,11 @@ required-features = ["magi_loop"]
 name = "dream_feedback_scaled"
 required-features = ["magi_loop"]
 
+# Modern embeddings demo (unified interface for BGE-M3/ModernBERT)
+[[example]]
+name = "modern_embeddings_demo"
+required-features = ["neural-bridge"]
+
 # Neuroscience validation examples (no required features)
 [[example]]
 name = "meditation_phi_analysis"

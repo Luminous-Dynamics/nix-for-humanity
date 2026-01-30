@@ -38,6 +38,19 @@ use crate::hdc::tiered_phi::{TieredPhi, ApproximationTier};
 use crate::hdc::spectral_connectivity::ConnectivityCalculator;  // ✨ NEW: Direct RealHV Φ calculation
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
+use thiserror::Error;
+
+// ============================================================================
+// ERROR TYPES
+// ============================================================================
+
+/// Errors that can occur during Phi topology validation
+#[derive(Debug, Error)]
+pub enum PhiValidationError {
+    /// Unknown topology type specified
+    #[error("Unknown topology type: '{0}'. Valid types are 'random' and 'star'")]
+    UnknownTopologyType(String),
+}
 
 // ============================================================================
 // REALHV ↔ HV16 CONVERSION
@@ -375,7 +388,12 @@ impl MinimalPhiValidation {
     /// # Returns
     ///
     /// `ValidationResult` containing all Φ values and statistical tests.
-    pub fn run(&mut self) -> ValidationResult {
+    ///
+    /// # Errors
+    ///
+    /// Returns `PhiValidationError::UnknownTopologyType` if an internal error occurs
+    /// (should not happen with valid internal state).
+    pub fn run(&mut self) -> Result<ValidationResult, PhiValidationError> {
         let start_time = Instant::now();
 
         println!("\n🔬 MINIMAL Φ VALIDATION: Random vs Star Topologies");
@@ -389,13 +407,13 @@ impl MinimalPhiValidation {
 
         // Step 1: Generate Random topologies and compute Φ
         println!("📊 Step 1: Generating {} Random topologies...", self.n_random_samples);
-        let phi_random_values = self.compute_phi_for_topology_type("random");
+        let phi_random_values = self.compute_phi_for_topology_type("random")?;
         println!("   Mean Φ (Random): {:.4}", mean(&phi_random_values));
         println!();
 
         // Step 2: Generate Star topologies and compute Φ
         println!("⭐ Step 2: Generating {} Star topologies...", self.n_star_samples);
-        let phi_star_values = self.compute_phi_for_topology_type("star");
+        let phi_star_values = self.compute_phi_for_topology_type("star")?;
         println!("   Mean Φ (Star): {:.4}", mean(&phi_star_values));
         println!();
 
@@ -407,7 +425,7 @@ impl MinimalPhiValidation {
         let total_calculations = (self.n_random_samples + self.n_star_samples) as f64;
         let avg_time_per_phi_ms = total_time_ms as f64 / total_calculations;
 
-        ValidationResult {
+        Ok(ValidationResult {
             n_random: self.n_random_samples,
             n_star: self.n_star_samples,
             mean_phi_random: stats.0,
@@ -422,18 +440,23 @@ impl MinimalPhiValidation {
             avg_time_per_phi_ms,
             phi_random_values,
             phi_star_values,
-        }
+        })
     }
 
     /// Run the validation using **ConnectivityCalculator** (no binarization)
     ///
-    /// ✨ NEW: This uses the RealPhi calculator directly on continuous data,
-    /// avoiding the lossy RealHV→HV16 conversion that can destroy structure.
+    /// This uses the RealPhi calculator directly on continuous data,
+    /// avoiding the lossy RealHV to HV16 conversion that can destroy structure.
     ///
     /// # Returns
     ///
-    /// `ValidationResult` containing all Φ values computed using cosine similarity
-    pub fn run_with_real_phi(&mut self) -> ValidationResult {
+    /// `ValidationResult` containing all Phi values computed using cosine similarity
+    ///
+    /// # Errors
+    ///
+    /// Returns `PhiValidationError::UnknownTopologyType` if an internal error occurs
+    /// (should not happen with valid internal state).
+    pub fn run_with_real_phi(&mut self) -> Result<ValidationResult, PhiValidationError> {
         let start_time = Instant::now();
 
         println!("\n🔬 REAL Φ VALIDATION: Random vs Star Topologies (No Binarization)");
@@ -447,13 +470,13 @@ impl MinimalPhiValidation {
 
         // Step 1: Generate Random topologies and compute Φ using RealPhi
         println!("📊 Step 1: Generating {} Random topologies...", self.n_random_samples);
-        let phi_random_values = self.compute_real_phi_for_topology_type("random");
+        let phi_random_values = self.compute_real_phi_for_topology_type("random")?;
         println!("   Mean Φ (Random): {:.4}", mean(&phi_random_values));
         println!();
 
         // Step 2: Generate Star topologies and compute Φ using RealPhi
         println!("⭐ Step 2: Generating {} Star topologies...", self.n_star_samples);
-        let phi_star_values = self.compute_real_phi_for_topology_type("star");
+        let phi_star_values = self.compute_real_phi_for_topology_type("star")?;
         println!("   Mean Φ (Star): {:.4}", mean(&phi_star_values));
         println!();
 
@@ -465,7 +488,7 @@ impl MinimalPhiValidation {
         let total_calculations = (self.n_random_samples + self.n_star_samples) as f64;
         let avg_time_per_phi_ms = total_time_ms as f64 / total_calculations;
 
-        ValidationResult {
+        Ok(ValidationResult {
             n_random: self.n_random_samples,
             n_star: self.n_star_samples,
             mean_phi_random: stats.0,
@@ -480,17 +503,21 @@ impl MinimalPhiValidation {
             avg_time_per_phi_ms,
             phi_random_values,
             phi_star_values,
-        }
+        })
     }
 
     /// Compute Φ using ConnectivityCalculator for multiple instances of a topology type
     ///
     /// ✨ This computes Φ directly on RealHV without converting to HV16
-    fn compute_real_phi_for_topology_type(&mut self, topology_type: &str) -> Vec<f64> {
+    ///
+    /// # Errors
+    ///
+    /// Returns `PhiValidationError::UnknownTopologyType` if topology_type is not "random" or "star"
+    fn compute_real_phi_for_topology_type(&mut self, topology_type: &str) -> Result<Vec<f64>, PhiValidationError> {
         let n_samples = match topology_type {
             "random" => self.n_random_samples,
             "star" => self.n_star_samples,
-            _ => panic!("Unknown topology type: {}", topology_type),
+            _ => return Err(PhiValidationError::UnknownTopologyType(topology_type.to_string())),
         };
 
         let mut phi_values = Vec::with_capacity(n_samples);
@@ -541,15 +568,19 @@ impl MinimalPhiValidation {
         }
 
         println!(); // New line after progress
-        phi_values
+        Ok(phi_values)
     }
 
     /// Compute Φ for multiple instances of a topology type
-    fn compute_phi_for_topology_type(&mut self, topology_type: &str) -> Vec<f64> {
+    ///
+    /// # Errors
+    ///
+    /// Returns `PhiValidationError::UnknownTopologyType` if topology_type is not "random" or "star"
+    fn compute_phi_for_topology_type(&mut self, topology_type: &str) -> Result<Vec<f64>, PhiValidationError> {
         let n_samples = match topology_type {
             "random" => self.n_random_samples,
             "star" => self.n_star_samples,
-            _ => panic!("Unknown topology type: {}", topology_type),
+            _ => return Err(PhiValidationError::UnknownTopologyType(topology_type.to_string())),
         };
 
         let mut phi_values = Vec::with_capacity(n_samples);
@@ -599,7 +630,7 @@ impl MinimalPhiValidation {
         }
 
         println!(); // New line after progress
-        phi_values
+        Ok(phi_values)
     }
 
     /// Compute statistical metrics
@@ -793,7 +824,7 @@ mod tests {
         println!("=================================================\n");
 
         let mut validation = MinimalPhiValidation::quick();
-        let result = validation.run();
+        let result = validation.run().expect("Validation should succeed");
 
         println!("\n📊 FINAL RESULTS:");
         println!("{}", result.summary());

@@ -150,6 +150,9 @@ pub mod phi;
 // Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling
 pub mod phenomenal_binding_study;
 
+// Binding Reversibility Study - H2 Revised: Testing binding via reversibility
+pub mod binding_reversibility_study;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCAL MODULES - Testing
 // ═══════════════════════════════════════════════════════════════════════════════

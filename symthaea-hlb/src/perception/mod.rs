@@ -63,6 +63,9 @@ pub use phenomenal_detector::{
     PhenomenalDetector, DetectorConfig, DetectionMethod,
     PhenomenalClassification, PhenomenalAnalysis, ClassLabel,
     ComparisonResult, DocumentAnalysis, CalibrationResult,
+    // Contrastive training types
+    ContrastiveExample, ContrastiveExamples, ContrastiveCalibrationResult,
+    ContrastiveEvaluation, ExampleEvaluation,
 };
 
 // Multi-Model Extractor Framework - Cross-architecture support
@@ -86,6 +89,29 @@ pub mod neural_bridge_v2;
 
 #[cfg(feature = "neural-bridge")]
 pub use neural_bridge_v2::{NeuralBridgeV2, NeuralBridgeV2Builder, NeuralBridgeV2Config};
+
+// Modern Embeddings - Unified interface for modern embedding models
+// Replaces problematic BERT layer extraction with models that properly support
+// intermediate layer access (BGE-M3 primary, ModernBERT secondary)
+#[cfg(feature = "neural-bridge")]
+pub mod modern_embeddings;
+
+#[cfg(feature = "neural-bridge")]
+pub use modern_embeddings::{
+    // Core trait and types
+    EmbeddingModel, LayerOutput,
+    // Configuration - note: PoolingMethod conflicts with layer_extractor, use modern_embeddings::PoolingMethod
+    EmbeddingConfig, ModelBackend,
+    // ModelArchitecture conflicts with multi_model_extractor, use modern_embeddings::ModelArchitecture
+    // Main interface
+    UnifiedEmbedder, EmbedderStats,
+    // H2 hypothesis testing
+    PhenomenalLayerAnalyzer, LayerAnalysisResult, LayerScore, PhenomenalCorridor,
+    // Model info
+    ModelInfo, ModelStatus, all_model_info, print_model_summary,
+    // HDC integration
+    project_to_hv16, activation_to_hv16,
+};
 
 // Multi-modal integration (conditionally compiled)
 #[cfg(feature = "full_perception")]

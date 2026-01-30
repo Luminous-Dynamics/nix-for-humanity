@@ -292,6 +292,9 @@ pub use fep_active_inference::{
     PrecisionEstimator, ExpectedFreeEnergyComputer, ExpectedFreeEnergyResult,
     Observation, HiddenState, PerceptionResult, ActionSelectionResult,
     ActiveInferenceSummary,
+    // Temporal Difference Learning types
+    TemporalDifferenceLearner, TemporalDifferenceLearningConfig, TemporalDifferenceLearningStats,
+    EligibilityTraces, ModelConfidenceTracker, StateTransition,
 };
 
 /// A node in the consciousness network

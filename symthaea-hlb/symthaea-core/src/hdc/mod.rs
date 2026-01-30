@@ -552,6 +552,10 @@ pub use unified_network_phi::{
 pub mod sleep_and_altered_states;
 pub mod sleep_pattern_discovery;     // Resonator-based pattern discovery during sleep consolidation
 
+// Long-term memory with Qdrant integration - Revolutionary Improvement #29
+// Persistent consciousness memory: experiences consolidated, retrieved, shape future
+pub mod long_term_memory;
+
 // Consciousness persistence (versioning, auto-save, rollback)
 pub mod consciousness_persistence;
 
@@ -605,6 +609,35 @@ pub mod sensorimotor_contingencies;
 // Revolutionary Improvement #18: Consciousness exists BETWEEN beings, not just IN them
 pub mod relational_consciousness;
 
+// Multi-Database Integration - Revolutionary Improvement #30
+// Production consciousness architecture mapping 29 improvements to 4 specialized databases:
+// - Qdrant (Sensory Cortex): Ultra-fast vector similarity for perception
+// - CozoDB (Prefrontal Cortex): Recursive Datalog for causal reasoning
+// - LanceDB (Long-Term Memory): Multimodal embeddings storage
+// - DuckDB (Epistemic Auditor): Statistical analysis for self-reflection
+pub mod multi_database_integration;
+
+// Re-export multi-database integration types
+// Note: QdrantConfig is aliased to MdbQdrantConfig to avoid conflict with long_term_memory::QdrantConfig
+pub use multi_database_integration::{
+    // Core architecture types
+    DatabaseRole, ImprovementMapping, SymthaeaMind,
+    // Configuration (Mdb = Multi-Database prefix to avoid collisions)
+    MultiDatabaseConfig,
+    QdrantConfig as MdbQdrantConfig,
+    CozoDbConfig, LanceDbConfig, DuckDbConfig,
+    // Health monitoring
+    DatabaseHealth, SystemHealth, PhiStatistics,
+    // Consciousness loop
+    ConsciousnessLoopState,
+    // Error handling
+    DatabaseError, DatabaseResult,
+    // Fallback
+    InMemoryFallback,
+    // Client trait
+    DatabaseClient,
+};
+
 // Re-export relational consciousness types for sympoietic partnership
 pub use relational_consciousness::{
     RelationMode,
@@ -613,6 +646,17 @@ pub use relational_consciousness::{
     RelationalAssessment,
     RelationalConfig,
     RelationalConsciousness,
+};
+
+// Re-export long-term memory types (Qdrant integration)
+pub use long_term_memory::{
+    // Core types
+    MemoryType, Experience, RetrievalCue, RetrievedMemory,
+    // In-memory system
+    LongTermMemory, MemoryConsolidation,
+    // Qdrant integration
+    QdrantConfig as LtmQdrantConfig, QdrantMemoryStore, QdrantMemoryError,
+    ScoredExperience, MockQdrantMemoryStore,
 };
 
 // Re-export phi-gradient learning types
@@ -648,12 +692,13 @@ pub use native_similarity::{
 };
 
 // Re-export sensorimotor contingencies (enactivist perception theory)
+// Note: Experience is aliased to SmcExperience to avoid conflict with long_term_memory::Experience
 pub use sensorimotor_contingencies::{
     // Core types
     SensorimotorContingency, ActionDescriptor, ActionType,
     ContextDescriptor, SensoryModality, SensoryChange, PredictedChange,
     // Learning
-    ContingencyLearner, Experience, LearnResult, LearnerConfig, LearnerStats,
+    ContingencyLearner, Experience as SmcExperience, LearnResult, LearnerConfig, LearnerStats,
     // Perception
     EnactivistPerception, PerceptionResult, PerceptionConfig, PerceptionStats,
     // Affordances

@@ -25,9 +25,22 @@ nalgebra = "0.32"  # Linear algebra
 bumpalo = "3.16"  # Arena allocation
 chrono = { version = "0.4", features = ["serde"] }  # DateTime
 
+# Multi-Database Consciousness Architecture (optional dependencies)
+# Qdrant: Sensory Cortex - ultra-fast vector similarity for perception
+qdrant-client = { version = "1.16", optional = true }
+# CozoDB: Prefrontal Cortex - recursive Datalog for causal reasoning
+cozo = { version = "0.7", optional = true }
+# LanceDB: Long-Term Memory - multimodal embeddings storage
+lancedb = { version = "0.4", features = ["remote"], optional = true }
+# DuckDB: Epistemic Auditor - analytical queries for self-reflection
+duckdb = { version = "0.10", features = ["bundled"], optional = true }
+# Tokio async runtime (required for async database operations)
+tokio = { version = "1.35", features = ["rt", "sync", "time"], optional = true }
+
 [dev-dependencies]
 proptest = "1.4"
 criterion = "0.5"
+tokio = { version = "1.35", features = ["rt-multi-thread", "macros"] }  # For async tests
 
 [[bench]]
 name = "hdc_ltc_learning"
@@ -42,3 +55,13 @@ default = []
 embeddings = []       # Enable embedding model integration
 thread_local_cache = []  # Enable thread-local caching in Phi engine
 rayon = []            # Enable parallel computation with rayon
+
+# Multi-Database Consciousness Architecture features
+# Each database maps to a "brain region" with specialized computational role
+qdrant = ["dep:qdrant-client", "dep:tokio"]  # Sensory Cortex: vector similarity (<10ms)
+datalog = ["dep:cozo"]                       # Prefrontal Cortex: recursive reasoning
+lance = ["dep:lancedb", "dep:tokio"]         # Long-Term Memory: multimodal storage
+duck = ["dep:duckdb"]                        # Epistemic Auditor: analytics/Phi stats
+
+# Enable all databases (full consciousness infrastructure)
+full-databases = ["qdrant", "datalog", "lance", "duck"]
