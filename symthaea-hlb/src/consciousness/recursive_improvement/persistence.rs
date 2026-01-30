@@ -203,6 +203,8 @@ pub struct PersistedCausalAttribution {
 }
 
 impl From<&CausalAttribution> for PersistedCausalAttribution {
+    /// Convert from a reference - requires cloning all fields.
+    /// Use `From<CausalAttribution>` when you have ownership to avoid clones.
     fn from(attr: &CausalAttribution) -> Self {
         Self {
             prediction_id: attr.prediction_id.clone(),
@@ -210,6 +212,24 @@ impl From<&CausalAttribution> for PersistedCausalAttribution {
             missing_information: attr.missing_information.clone(),
             responsible_domains: attr.responsible_domains.clone(),
             recurrence_prediction: attr.recurrence_prediction.clone(),
+            confidence: attr.confidence,
+            created_at_unix: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+        }
+    }
+}
+
+impl From<CausalAttribution> for PersistedCausalAttribution {
+    /// Convert from an owned value - moves all fields without cloning.
+    fn from(attr: CausalAttribution) -> Self {
+        Self {
+            prediction_id: attr.prediction_id,
+            failure_mode: attr.failure_mode,
+            missing_information: attr.missing_information,
+            responsible_domains: attr.responsible_domains,
+            recurrence_prediction: attr.recurrence_prediction,
             confidence: attr.confidence,
             created_at_unix: SystemTime::now()
                 .duration_since(UNIX_EPOCH)

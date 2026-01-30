@@ -449,6 +449,82 @@ impl AutopoieticConsciousness {
     pub fn generation(&self) -> u64 {
         self.generation
     }
+
+    // =========================================================================
+    // Neuro-Bridge Compatibility Methods
+    // =========================================================================
+
+    /// Create a new autopoietic consciousness with config (alias for new + initialize)
+    pub fn with_config(config: AutopoieticConfig) -> Self {
+        let mut system = Self::new(config);
+        system.initialize();
+        system
+    }
+
+    /// Get overall health score (0.0-1.0) based on system integrity and component health
+    ///
+    /// This is a composite metric combining:
+    /// - Component integrity (average health of all components)
+    /// - Operational closure (how well-connected the system is)
+    /// - Boundary strength (system's ability to maintain identity)
+    pub fn health_score(&self) -> f64 {
+        // Component health contribution
+        let component_health = if self.components.is_empty() {
+            0.0
+        } else {
+            let total: f32 = self.components.values().map(|c| c.health).sum();
+            total / self.components.len() as f32
+        };
+
+        // Combine with state metrics (weighted average)
+        let score = 0.4 * component_health
+            + 0.2 * self.state.integrity
+            + 0.2 * self.state.closure
+            + 0.2 * self.state.boundary_strength;
+
+        score as f64
+    }
+
+    /// Update the autopoietic system based on external signals
+    ///
+    /// This is a high-level update method for neuro-bridge integration that:
+    /// 1. Incorporates phi/coherence signals as metabolic fuel
+    /// 2. Applies perturbation stress
+    /// 3. Runs maintenance cycle
+    ///
+    /// # Arguments
+    /// * `phi` - Integrated information from neural processing (0.0-1.0)
+    /// * `coherence` - Neural coherence level (0.0-1.0)
+    /// * `perturbation_stress` - External stress factor (0.0-1.0)
+    pub fn update(&mut self, phi: f64, coherence: f64, perturbation_stress: f64) {
+        // 1. Neural coherence fuels component health (upward causation)
+        let fuel = ((phi + coherence) / 2.0) as f32;
+        for component in self.components.values_mut() {
+            // High coherence regenerates health
+            component.health = (component.health + fuel * 0.05).min(1.0);
+        }
+
+        // 2. Apply perturbation stress as boundary challenge
+        if perturbation_stress > 0.1 {
+            // Create a stress perturbation
+            let stress_perturbation = Perturbation::new(
+                self.generation,
+                "neural_stress",
+                perturbation_stress as f32,
+                self.boundary.perturb(perturbation_stress as f32),
+            );
+            self.process_perturbation(&stress_perturbation);
+        }
+
+        // 3. Run maintenance cycle
+        self.maintain();
+
+        // 4. Update adaptation based on phi (higher phi = better adaptation)
+        self.state.adaptation = (self.state.adaptation + phi as f32 * 0.1).clamp(0.0, 1.0);
+
+        // 5. Perform self-observation to update metrics
+        self.self_observe();
+    }
 }
 
 impl Default for AutopoieticConsciousness {

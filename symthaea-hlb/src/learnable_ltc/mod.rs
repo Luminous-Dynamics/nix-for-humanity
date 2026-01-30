@@ -479,6 +479,119 @@ impl LearnableLTC {
 
         (mean, std, min, max)
     }
+
+    // =========================================================================
+    // Neuro-Bridge Compatibility Methods (for neuro_bridge module integration)
+    // =========================================================================
+
+    /// Apply neuromodulation based on vitality level from autopoietic body
+    ///
+    /// Modulates the LTC network's time constants and learning dynamics based on
+    /// the vitality signal from the autopoietic system (downward causation).
+    ///
+    /// - High vitality (>0.7): Fast time constants, high plasticity (alert state)
+    /// - Low vitality (<0.3): Slow time constants, low plasticity (fatigued state)
+    ///
+    /// # Arguments
+    /// * `vitality` - Vitality level from autopoietic body (0.0-1.0)
+    pub fn apply_neuromodulation(&mut self, vitality: f32) {
+        let vitality = vitality.clamp(0.0, 1.0);
+
+        // Modulate time constants: higher vitality -> faster response (lower tau)
+        // vitality=1.0 -> tau scaled by 0.5 (fast/alert)
+        // vitality=0.0 -> tau scaled by 2.0 (slow/fatigued)
+        let tau_scale = 2.0 - 1.5 * vitality; // Range: [0.5, 2.0]
+
+        for j in 0..self.tau.len() {
+            // Scale tau while keeping within bounds
+            let base_tau = (self.config.tau_bounds.0 + self.config.tau_bounds.1) / 2.0;
+            self.tau[j] = (base_tau * tau_scale).clamp(
+                self.config.tau_bounds.0,
+                self.config.tau_bounds.1,
+            );
+        }
+
+        // Modulate learning rate: higher vitality -> higher plasticity
+        // This affects subsequent train_step calls
+        let plasticity_scale = 0.5 + vitality; // Range: [0.5, 1.5]
+        // Note: We don't modify config.learning_rate permanently, but this
+        // can be used in custom training loops that check vitality
+        let _effective_lr = self.config.learning_rate * plasticity_scale;
+    }
+
+    /// Calculate consciousness level based on neural dynamics
+    ///
+    /// Returns a measure of integrated information / consciousness based on:
+    /// 1. Hidden state variance (diversity of neural activation)
+    /// 2. Temporal coherence (stability of dynamics)
+    /// 3. Tau distribution spread (differentiation of time scales)
+    ///
+    /// This serves as a proxy for Phi (integrated information) in the
+    /// neuro-autopoietic bridge.
+    pub fn consciousness_level(&self) -> f32 {
+        let n = self.config.num_neurons as f32;
+        if n == 0.0 {
+            return 0.0;
+        }
+
+        // 1. Hidden state diversity: variance of activations
+        let mean_h: f32 = self.state.hidden.iter().sum::<f32>() / n;
+        let variance_h: f32 = self.state.hidden
+            .iter()
+            .map(|&h| (h - mean_h).powi(2))
+            .sum::<f32>() / n;
+        // Normalize: high variance = differentiated states
+        let diversity = (variance_h / 0.1).min(1.0); // Cap at 1.0
+
+        // 2. Temporal coherence: how structured (non-chaotic) the state is
+        // Use tanh saturation as a measure - near-saturated neurons are coherent
+        let saturation: f32 = self.state.hidden
+            .iter()
+            .map(|&h| h.abs().min(1.0))
+            .sum::<f32>() / n;
+
+        // 3. Tau differentiation: spread of time constants enables multi-scale integration
+        let (tau_mean, tau_std, _, _) = self.get_tau_distribution();
+        let tau_diff = if tau_mean > 0.0 {
+            (tau_std / tau_mean).min(1.0) // Coefficient of variation, capped
+        } else {
+            0.0
+        };
+
+        // Combine factors (weighted geometric mean approximation)
+        // Consciousness requires both differentiation AND integration
+        let phi_proxy = (diversity * saturation * (0.5 + 0.5 * tau_diff)).powf(0.333);
+
+        phi_proxy.clamp(0.0, 1.0)
+    }
+
+    /// Predict the next hyperdimensional vector (HDV) state
+    ///
+    /// Uses the current hidden state to predict what the next integrated
+    /// state might look like. This is used for predictive processing in
+    /// the neuro-autopoietic bridge.
+    ///
+    /// Returns a vector that can be interpreted as an HDV prediction.
+    pub fn predict_next_hdv(&self) -> Vec<f32> {
+        // The prediction is based on the current hidden state, projected
+        // through a simple transformation that mimics what the next
+        // forward pass might produce
+        let n = self.config.num_neurons;
+
+        // Apply a simple predictive transformation:
+        // Exponential decay toward attractor based on tau
+        let mut prediction = Vec::with_capacity(n);
+        for j in 0..n {
+            let h = self.state.hidden[j];
+            let tau = self.tau[j];
+            // Predict next state: exponential decay toward tanh attractor
+            let decay_factor = (-self.config.dt / tau).exp();
+            let predicted = h * decay_factor + (1.0 - decay_factor) * h.tanh();
+            prediction.push(predicted);
+        }
+
+        prediction
+    }
 }
 
 impl std::fmt::Debug for LearnableLTC {

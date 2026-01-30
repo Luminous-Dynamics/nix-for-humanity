@@ -39,9 +39,62 @@
 use symthaea_core::hdc::unified_hv::ContinuousHV;
 use symthaea_core::hdc::cincinnati_ltc::{CincinnatiLtcEngine, PoGMetrics, BuddingEvent};
 use symthaea_core::hdc::HDC_DIMENSION;
-use crate::consciousness::ConsciousNode;
 
 use serde::{Serialize, Deserialize};
+
+/// A conscious node representation for Cincinnati-Consciousness integration
+///
+/// This type is specifically designed for the Cincinnati bridge and contains
+/// semantic and dynamic components that can be mapped to HDC hypervectors.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CincinnatiConsciousNode {
+    /// Semantic component (first half of HDC representation)
+    pub semantic: Vec<f32>,
+
+    /// Dynamic component (second half of HDC representation)
+    pub dynamic: Vec<f32>,
+
+    /// Consciousness level (0.0-1.0)
+    pub consciousness: f32,
+
+    /// Timestamp of this node's creation/update
+    pub timestamp: f64,
+
+    /// Importance weight for this node
+    pub importance: f32,
+}
+
+impl CincinnatiConsciousNode {
+    /// Create a new conscious node with default values
+    pub fn new(semantic_dim: usize, dynamic_dim: usize) -> Self {
+        Self {
+            semantic: vec![0.0; semantic_dim],
+            dynamic: vec![0.0; dynamic_dim],
+            consciousness: 0.5,
+            timestamp: 0.0,
+            importance: 1.0,
+        }
+    }
+
+    /// Create from a hypervector, splitting into semantic and dynamic halves
+    pub fn from_hypervector(hv: &ContinuousHV, consciousness: f32, timestamp: f64, importance: f32) -> Self {
+        let half = hv.dim() / 2;
+        Self {
+            semantic: hv.values[..half].to_vec(),
+            dynamic: hv.values[half..].to_vec(),
+            consciousness,
+            timestamp,
+            importance,
+        }
+    }
+
+    /// Convert to a hypervector by concatenating semantic and dynamic components
+    pub fn to_hypervector(&self) -> ContinuousHV {
+        let mut values = self.semantic.clone();
+        values.extend_from_slice(&self.dynamic);
+        ContinuousHV::from_values(values)
+    }
+}
 
 /// Configuration for Cincinnati-Consciousness integration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -264,7 +317,7 @@ impl CincinnatiConsciousnessBridge {
     }
 
     /// Convert conscious node to Cincinnati input
-    pub fn conscious_node_to_input(&self, node: &ConsciousNode) -> ContinuousHV {
+    pub fn conscious_node_to_input(&self, node: &CincinnatiConsciousNode) -> ContinuousHV {
         // Combine semantic and dynamic components
         let mut values = vec![0.0f32; HDC_DIMENSION];
 
@@ -291,10 +344,10 @@ impl CincinnatiConsciousnessBridge {
         &self,
         output: &ContinuousHV,
         timestamp: f64,
-    ) -> ConsciousNode {
+    ) -> CincinnatiConsciousNode {
         let half = output.dim() / 2;
 
-        ConsciousNode {
+        CincinnatiConsciousNode {
             semantic: output.values[..half].to_vec(),
             dynamic: output.values[half..].to_vec(),
             consciousness: self.consciousness_level,
@@ -595,7 +648,7 @@ mod tests {
         let config = CincinnatiConsciousnessConfig::default();
         let bridge = CincinnatiConsciousnessBridge::new(config);
 
-        let node = ConsciousNode {
+        let node = CincinnatiConsciousNode {
             semantic: vec![0.5; 100],
             dynamic: vec![0.3; 100],
             consciousness: 0.7,
@@ -611,5 +664,31 @@ mod tests {
 
         assert_eq!(result_node.timestamp, 2.0);
         assert_eq!(result_node.semantic.len(), HDC_DIMENSION / 2);
+    }
+
+    #[test]
+    fn test_cincinnati_conscious_node_creation() {
+        // Test new() constructor
+        let node = CincinnatiConsciousNode::new(512, 512);
+        assert_eq!(node.semantic.len(), 512);
+        assert_eq!(node.dynamic.len(), 512);
+        assert_eq!(node.consciousness, 0.5);
+        assert_eq!(node.importance, 1.0);
+    }
+
+    #[test]
+    fn test_cincinnati_conscious_node_from_hypervector() {
+        let hv = ContinuousHV::random_default(42);
+        let node = CincinnatiConsciousNode::from_hypervector(&hv, 0.8, 100.0, 0.9);
+
+        assert_eq!(node.semantic.len(), HDC_DIMENSION / 2);
+        assert_eq!(node.dynamic.len(), HDC_DIMENSION / 2);
+        assert_eq!(node.consciousness, 0.8);
+        assert_eq!(node.timestamp, 100.0);
+        assert_eq!(node.importance, 0.9);
+
+        // Convert back to hypervector
+        let hv_back = node.to_hypervector();
+        assert_eq!(hv_back.dim(), HDC_DIMENSION);
     }
 }

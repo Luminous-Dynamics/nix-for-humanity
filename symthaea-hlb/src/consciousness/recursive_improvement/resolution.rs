@@ -619,19 +619,20 @@ impl ResolutionExecutor {
                 test_pattern,
                 pass_threshold,
             } => {
-                let resolver = TestSuiteResolver::cargo_test(Some(test_pattern.clone()))
+                // Use as_ref() to avoid cloning the Option's inner String
+                let resolver = TestSuiteResolver::cargo_test(test_pattern.as_ref().map(String::as_str).map(str::to_owned))
                     .with_pass_threshold(*pass_threshold);
                 resolver.execute(timeout)
             }
 
             ResolutionAuthority::ExitCode { success_codes } => {
-                // Extract command from action context
+                // Extract command from action context - use reference to avoid cloning
+                let default_cmd = "echo 'no command specified'".to_string();
                 let command = prediction
                     .action_context
                     .metadata
                     .get("command")
-                    .cloned()
-                    .unwrap_or_else(|| "echo 'no command specified'".to_string());
+                    .unwrap_or(&default_cmd);
 
                 // Parse command (simplified - real impl would use shell parsing)
                 let parts: Vec<&str> = command.split_whitespace().collect();
@@ -639,14 +640,16 @@ impl ResolutionExecutor {
                     return ResolutionResult::unclear("No command to execute");
                 }
 
+                // Clone success_codes only when needed - this is unavoidable
+                // since ExitCodeResolver takes ownership
                 let resolver = ExitCodeResolver::new(parts[0], success_codes.clone())
-                    .with_args(parts[1..].iter().map(|s| s.to_string()).collect());
+                    .with_args(parts[1..].iter().map(|s| (*s).to_string()).collect());
                 resolver.execute(timeout)
             }
 
             ResolutionAuthority::DiffVerifier {
                 expected_path,
-                tolerance,
+                tolerance: _,
             } => {
                 // For now, just check if expected file exists
                 // Full implementation would compare actual output to expected
@@ -656,8 +659,8 @@ impl ResolutionExecutor {
 
             ResolutionAuthority::ExternalAPI {
                 endpoint,
-                expected_status,
-                expected_body_contains,
+                expected_status: _,
+                expected_body_contains: _,
             } => {
                 // Would need HTTP client - return unclear for now
                 ResolutionResult::unclear(format!(
@@ -667,11 +670,9 @@ impl ResolutionExecutor {
             }
 
             ResolutionAuthority::HumanConfirmation { prompt, timeout: _ } => {
-                let mut resolver = HumanConfirmationResolver::new(prompt.clone());
-                if let Some(ref callback) = self.human_callback {
-                    // Clone the callback for use - this is a simplification
-                    // In real impl, would use Arc<dyn Fn>
-                }
+                // Use as_str() and to_owned() instead of clone() for clarity
+                let resolver = HumanConfirmationResolver::new(prompt.as_str());
+                // Note: callback handling would need Arc<dyn Fn> for proper sharing
                 resolver.execute(timeout)
             }
 
@@ -679,27 +680,20 @@ impl ResolutionExecutor {
                 path,
                 expected_state,
             } => {
+                // expected_state.clone() is unavoidable as ResourceStateResolver takes ownership
                 let resolver =
                     ResourceStateResolver::new(path.to_string_lossy(), expected_state.clone());
                 resolver.execute()
             }
 
             ResolutionAuthority::Composite { authorities, quorum } => {
-                // Recursively resolve each authority
-                let results: Vec<ResolutionResult> = authorities
+                // Resolve each authority using a helper to avoid cloning the entire prediction
+                let successes = authorities
                     .iter()
-                    .map(|auth| {
-                        // Create a temporary prediction with this authority
-                        let mut temp = prediction.clone();
-                        temp.resolution_contract.resolver = (**auth).clone();
-                        self.resolve(&temp)
+                    .filter(|auth| {
+                        self.resolve_single_authority(prediction, auth, timeout)
+                            .outcome == OutcomeCategory::Success
                     })
-                    .collect();
-
-                // Count successes
-                let successes = results
-                    .iter()
-                    .filter(|r| r.outcome == OutcomeCategory::Success)
                     .count();
 
                 if successes >= *quorum {
@@ -719,6 +713,64 @@ impl ResolutionExecutor {
                             quorum
                         ),
                     )
+                }
+            }
+        }
+    }
+
+    /// Helper to resolve a single authority without cloning the entire prediction
+    fn resolve_single_authority(
+        &self,
+        prediction: &WorldPrediction,
+        authority: &ResolutionAuthority,
+        timeout: Duration,
+    ) -> ResolutionResult {
+        // Directly match on the authority instead of cloning the prediction
+        match authority {
+            ResolutionAuthority::TestSuite { test_pattern, pass_threshold } => {
+                let resolver = TestSuiteResolver::cargo_test(test_pattern.clone())
+                    .with_pass_threshold(*pass_threshold);
+                resolver.execute(timeout)
+            }
+            ResolutionAuthority::ExitCode { success_codes } => {
+                let default_cmd = "echo 'no command specified'".to_string();
+                let command = prediction
+                    .action_context
+                    .metadata
+                    .get("command")
+                    .unwrap_or(&default_cmd);
+                let parts: Vec<&str> = command.split_whitespace().collect();
+                if parts.is_empty() {
+                    return ResolutionResult::unclear("No command to execute");
+                }
+                let resolver = ExitCodeResolver::new(parts[0], success_codes.clone())
+                    .with_args(parts[1..].iter().map(|s| (*s).to_string()).collect());
+                resolver.execute(timeout)
+            }
+            ResolutionAuthority::DiffVerifier { expected_path, tolerance: _ } => {
+                ResourceStateResolver::exists(expected_path.to_string_lossy()).execute()
+            }
+            ResolutionAuthority::ExternalAPI { endpoint, .. } => {
+                ResolutionResult::unclear(format!("External API resolution not implemented: {}", endpoint))
+            }
+            ResolutionAuthority::HumanConfirmation { prompt, .. } => {
+                HumanConfirmationResolver::new(prompt.as_str()).execute(timeout)
+            }
+            ResolutionAuthority::ResourceState { path, expected_state } => {
+                ResourceStateResolver::new(path.to_string_lossy(), expected_state.clone()).execute()
+            }
+            ResolutionAuthority::Composite { authorities, quorum } => {
+                // Recursive case - count successes
+                let successes = authorities
+                    .iter()
+                    .filter(|auth| {
+                        self.resolve_single_authority(prediction, auth, timeout).outcome == OutcomeCategory::Success
+                    })
+                    .count();
+                if successes >= *quorum {
+                    ResolutionResult::success(format!("Composite: {}/{} agreed", successes, authorities.len()))
+                } else {
+                    ResolutionResult::failure(OutcomeCategory::SafeFailure, format!("Composite failed: {}/{}", successes, authorities.len()))
                 }
             }
         }

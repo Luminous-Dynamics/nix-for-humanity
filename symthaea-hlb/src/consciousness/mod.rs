@@ -34,12 +34,14 @@ pub mod semantic_value_embedder;
 pub mod seven_harmonies;
 pub mod value_feedback_loop;
 
-// Modules with internal API mismatches (need type updates)
-#[cfg(feature = "full_consciousness")]
+// Cincinnati-Consciousness integration (now uses its own CincinnatiConsciousNode type)
 pub mod cincinnati_consciousness;
-#[cfg(feature = "full_consciousness")]
+
+// Counterfactual Dream Engine - self-contained, no external dependencies
 pub mod dream;
-#[cfg(feature = "full_consciousness")]
+
+// Neuro-Autopoietic Bridge: Connects HDC consciousness with LTC neural dynamics
+// Provides bidirectional causation between body (autopoiesis) and brain (LTC)
 pub mod neuro_bridge;
 
 // ============================================================================
@@ -296,6 +298,16 @@ pub use fep_active_inference::{
     TemporalDifferenceLearner, TemporalDifferenceLearningConfig, TemporalDifferenceLearningStats,
     EligibilityTraces, ModelConfidenceTracker, StateTransition,
 };
+pub use cincinnati_consciousness::{
+    CincinnatiConsciousnessConfig, CincinnatiConsciousnessBridge,
+    CincinnatiConsciousNode, ConsciousnessProcessResult, EthicalLearningStats,
+    HarmonyFeedback, ConsciousnessBuddingEvent, BuddingReason,
+};
+pub use dream::{
+    DreamEngine, DreamEngineConfig, DreamEngineStats,
+    DreamEvent, DreamResult, Wisdom,
+};
+pub use neuro_bridge::{NeuroAutopoieticBridge, BridgeState};
 
 /// A node in the consciousness network
 #[derive(Debug, Clone)]

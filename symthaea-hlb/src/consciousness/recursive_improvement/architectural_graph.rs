@@ -328,6 +328,11 @@ impl ArchitecturalCausalGraph {
     /// Analyze bottleneck using causal reasoning
     ///
     /// **Revolutionary**: Traces causal chain from symptom (bottleneck) to root cause!
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the causal chain is empty (should not happen in practice
+    /// since we always start with the bottleneck component).
     pub fn analyze_bottleneck(&mut self, bottleneck: &Bottleneck) -> Result<CausalChain> {
         let mut chain = vec![bottleneck.component];
         let mut current = bottleneck.component;
@@ -346,10 +351,16 @@ impl ArchitecturalCausalGraph {
                 break; // Reached root cause
             }
 
-            // Find strongest incoming edge
-            let strongest = incoming.iter()
-                .max_by(|a, b| a.strength.partial_cmp(&b.strength).unwrap())
-                .unwrap();
+            // Find strongest incoming edge, handling NaN values gracefully
+            let Some(strongest) = incoming.iter()
+                .max_by(|a, b| {
+                    a.strength
+                        .partial_cmp(&b.strength)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            else {
+                break; // No valid edges found (shouldn't happen if incoming is non-empty)
+            };
 
             // Add to chain
             chain.push(strongest.from);
@@ -381,19 +392,24 @@ impl ArchitecturalCausalGraph {
             }
         }
 
-        let root_cause = *chain.last().unwrap();
+        // Safe extraction of root cause - chain always has at least one element (bottleneck.component)
+        let root_cause = chain
+            .last()
+            .copied()
+            .ok_or_else(|| anyhow::anyhow!("Causal chain unexpectedly empty"))?;
         let confidence = 0.7 + (chain.len() as f64 * 0.05).min(0.25); // Higher confidence for shorter chains
 
         let causal_chain = CausalChain {
             id: format!("chain_{}_{}", bottleneck.id, Instant::now().elapsed().as_millis()),
             symptom: bottleneck.clone(),
-            chain: chain.clone(),
+            chain,  // Move instead of clone - we don't need chain after this
             root_cause,
             explanation: explanation_parts.join("\n"),
             confidence,
             discovered_at: Instant::now(),
         };
 
+        // Store a clone since we need to return the original
         self.causal_chains.push(causal_chain.clone());
         self.stats.causal_chains_discovered += 1;
 
