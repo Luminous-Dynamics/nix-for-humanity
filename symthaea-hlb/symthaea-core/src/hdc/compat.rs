@@ -173,7 +173,7 @@ fn compress_to_dimension(hv: &HV16, target_dim: usize) -> ContinuousHV {
 
         // Map to continuous value
         let count = (end - start) as f32;
-        let avg = sum / count;
+        let avg = if count == 0.0 { 0.0 } else { sum / count };
         values.push(avg);
     }
 

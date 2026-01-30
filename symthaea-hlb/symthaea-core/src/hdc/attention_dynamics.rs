@@ -357,7 +357,7 @@ impl AttentionDynamics {
     fn check_attention_capture(&mut self) {
         // Find highest salience target
         if let Some(max_salience_target) = self.targets.iter()
-            .max_by(|a, b| a.salience.partial_cmp(&b.salience).unwrap())
+            .max_by(|a, b| a.salience.partial_cmp(&b.salience).unwrap_or(std::cmp::Ordering::Equal))
         {
             // If a target has very high salience but low attention, capture
             if max_salience_target.salience > 0.8 && max_salience_target.attention < 0.3 {

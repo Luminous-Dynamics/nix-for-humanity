@@ -507,7 +507,7 @@ impl Cantor4D_HV {
             }
         }
 
-        total_sim / count as f32
+        if count == 0 { 0.0 } else { total_sim / count as f32 }
     }
 }
 

@@ -4,8 +4,9 @@
 //! (vision, audio, text, etc.) into unified conscious representations.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use symthaea_core::hdc::RealHV;
+use symthaea_core::hdc::binary_hv::HV16;
 
 /// Types of sensory modalities
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -14,18 +15,300 @@ pub enum Modality {
     Visual,
     /// Auditory information
     Auditory,
-    /// Textual/linguistic information
+    /// Textual/linguistic information (alias: Linguistic)
     Textual,
+    /// Linguistic information (alias for Textual)
+    Linguistic,
     /// Proprioceptive (body sense)
     Proprioceptive,
+    /// Somatosensory (touch, pressure, temperature)
+    Somatosensory,
+    /// Motor control and action
+    Motor,
     /// Temporal/sequential
     Temporal,
     /// Spatial
     Spatial,
     /// Emotional/affective
     Affective,
+    /// Emotional (alias for Affective)
+    Emotional,
+    /// Interoceptive (internal body state)
+    Interoceptive,
     /// Abstract/conceptual
     Abstract,
+}
+
+impl Modality {
+    /// Get all modality variants
+    pub fn all() -> Vec<Modality> {
+        vec![
+            Modality::Visual,
+            Modality::Auditory,
+            Modality::Linguistic,
+            Modality::Somatosensory,
+            Modality::Motor,
+            Modality::Emotional,
+            Modality::Interoceptive,
+        ]
+    }
+
+    /// Get sensory modalities (excluding motor and interoceptive)
+    pub fn sensory() -> Vec<Modality> {
+        vec![
+            Modality::Visual,
+            Modality::Auditory,
+            Modality::Linguistic,
+            Modality::Somatosensory,
+        ]
+    }
+}
+
+// =============================================================================
+// MODALITY CHANNEL - For multi-modal integration
+// =============================================================================
+
+/// A channel for processing a specific modality
+#[derive(Debug, Clone)]
+pub struct ModalityChannel {
+    /// The modality this channel processes
+    pub modality: Modality,
+    /// Current feature representation
+    pub features: HV16,
+    /// Attention weight for this channel (0.0-1.0)
+    pub attention: f64,
+    /// Temporal buffer for coherence computation
+    pub temporal_buffer: VecDeque<HV16>,
+    /// Maximum buffer size
+    buffer_capacity: usize,
+}
+
+impl ModalityChannel {
+    /// Create a new modality channel
+    pub fn new(modality: Modality) -> Self {
+        Self {
+            modality,
+            features: HV16::zero(),
+            attention: 0.5,
+            temporal_buffer: VecDeque::with_capacity(8),
+            buffer_capacity: 8,
+        }
+    }
+
+    /// Update channel with new features
+    pub fn update(&mut self, features: HV16) {
+        // Add to temporal buffer
+        if self.temporal_buffer.len() >= self.buffer_capacity {
+            self.temporal_buffer.pop_front();
+        }
+        self.temporal_buffer.push_back(features.clone());
+        self.features = features;
+    }
+
+    /// Get attended representation (features scaled by attention)
+    pub fn attended(&self) -> HV16 {
+        // For binary HV, attention modulates by probabilistic bit flipping
+        // Higher attention = less noise, lower = more noise
+        if self.attention >= 0.99 {
+            return self.features.clone();
+        }
+        // Add noise inversely proportional to attention
+        let noise_level = (1.0 - self.attention) as f32 * 0.3;
+        self.features.add_noise(noise_level, self.modality as u64)
+    }
+
+    /// Compute temporal coherence (similarity between recent representations)
+    pub fn temporal_coherence(&self) -> f64 {
+        if self.temporal_buffer.len() < 2 {
+            return 1.0;
+        }
+
+        let mut total_sim = 0.0;
+        let mut count = 0;
+
+        for i in 0..self.temporal_buffer.len() - 1 {
+            let sim = self.temporal_buffer[i].similarity(&self.temporal_buffer[i + 1]);
+            total_sim += sim as f64;
+            count += 1;
+        }
+
+        if count > 0 {
+            total_sim / count as f64
+        } else {
+            1.0
+        }
+    }
+}
+
+// =============================================================================
+// CONVERGENCE ZONE - Hierarchical multi-modal binding
+// =============================================================================
+
+/// Level of convergence in the hierarchy
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ConvergenceLevel {
+    /// Primary: single modality
+    Primary,
+    /// Secondary: two modalities
+    Secondary,
+    /// Tertiary: three modalities
+    Tertiary,
+    /// Amodal: all sensory modalities
+    Amodal,
+}
+
+/// A convergence zone that integrates multiple modalities
+#[derive(Debug, Clone)]
+pub struct ConvergenceZone {
+    /// Unique identifier
+    pub id: usize,
+    /// Source modalities
+    pub source_modalities: Vec<Modality>,
+    /// Current integrated representation
+    pub integrated: HV16,
+    /// Binding strength (0.0-1.0)
+    pub binding_strength: f64,
+    /// Activation level (0.0-1.0)
+    pub activation: f64,
+    /// Level in hierarchy
+    pub level: ConvergenceLevel,
+}
+
+impl ConvergenceZone {
+    /// Create a new convergence zone
+    pub fn new(id: usize, source_modalities: Vec<Modality>) -> Self {
+        let level = match source_modalities.len() {
+            1 => ConvergenceLevel::Primary,
+            2 => ConvergenceLevel::Secondary,
+            3 => ConvergenceLevel::Tertiary,
+            _ => ConvergenceLevel::Amodal,
+        };
+
+        Self {
+            id,
+            source_modalities,
+            integrated: HV16::zero(),
+            binding_strength: 0.0,
+            activation: 0.0,
+            level,
+        }
+    }
+
+    /// Integrate inputs from source modalities
+    pub fn integrate(&mut self, inputs: &HashMap<Modality, HV16>) {
+        let mut vectors = Vec::new();
+        let mut found_count = 0;
+
+        for modality in &self.source_modalities {
+            if let Some(hv) = inputs.get(modality) {
+                vectors.push(hv.clone());
+                found_count += 1;
+            }
+        }
+
+        if vectors.is_empty() {
+            self.activation = 0.0;
+            return;
+        }
+
+        // Integrate via bundling
+        self.integrated = HV16::bundle(&vectors);
+
+        // Compute binding strength (average pairwise similarity)
+        self.binding_strength = self.compute_binding_strength(&vectors);
+
+        // Activation based on how many modalities are present
+        self.activation = found_count as f64 / self.source_modalities.len() as f64;
+    }
+
+    /// Compute binding strength from input vectors
+    fn compute_binding_strength(&self, vectors: &[HV16]) -> f64 {
+        if vectors.len() < 2 {
+            return 1.0;
+        }
+
+        let mut total_sim = 0.0;
+        let mut count = 0;
+
+        for i in 0..vectors.len() {
+            for j in (i + 1)..vectors.len() {
+                let sim = vectors[i].similarity(&vectors[j]);
+                total_sim += sim as f64;
+                count += 1;
+            }
+        }
+
+        if count > 0 {
+            total_sim / count as f64
+        } else {
+            1.0
+        }
+    }
+}
+
+// =============================================================================
+// EPISODIC BUFFER - Short-term multi-modal memory
+// =============================================================================
+
+/// Episodic buffer for short-term multi-modal memory
+#[derive(Debug, Clone)]
+pub struct EpisodicBuffer {
+    /// Buffer capacity (Miller's number ~7)
+    capacity: usize,
+    /// Stored chunks (most recent at back)
+    chunks: VecDeque<HV16>,
+}
+
+impl EpisodicBuffer {
+    /// Create a new episodic buffer
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            capacity,
+            chunks: VecDeque::with_capacity(capacity),
+        }
+    }
+
+    /// Add a chunk to the buffer
+    pub fn add_chunk(&mut self, chunk: HV16) {
+        if self.chunks.len() >= self.capacity {
+            self.chunks.pop_front();
+        }
+        self.chunks.push_back(chunk);
+    }
+
+    /// Get all chunks
+    pub fn chunks(&self) -> &VecDeque<HV16> {
+        &self.chunks
+    }
+
+    /// Get the most recent chunk
+    pub fn most_recent(&self) -> Option<&HV16> {
+        self.chunks.back()
+    }
+
+    /// Compute a bundled representation of buffer contents
+    pub fn bundled(&self) -> HV16 {
+        if self.chunks.is_empty() {
+            return HV16::zero();
+        }
+        let vec: Vec<HV16> = self.chunks.iter().cloned().collect();
+        HV16::bundle(&vec)
+    }
+
+    /// Check if buffer is empty
+    pub fn is_empty(&self) -> bool {
+        self.chunks.is_empty()
+    }
+
+    /// Get buffer length
+    pub fn len(&self) -> usize {
+        self.chunks.len()
+    }
+
+    /// Clear the buffer
+    pub fn clear(&mut self) {
+        self.chunks.clear();
+    }
 }
 
 /// Configuration for cross-modal binding
@@ -201,8 +484,8 @@ impl CrossModalBinder {
         let bound_hv = if weighted_hvs.len() == 1 {
             weighted_hvs[0].0.clone()
         } else {
-            let hvs: Vec<RealHV> = weighted_hvs.iter().map(|(hv, _)| hv.clone()).collect();
-            RealHV::bundle(&hvs)
+            let hvs: Vec<&RealHV> = weighted_hvs.iter().map(|(hv, _)| hv).collect();
+            RealHV::bundle_refs(&hvs)
         };
 
         // Calculate binding strength (average pairwise similarity)
@@ -376,5 +659,157 @@ mod tests {
         let binding = result.unwrap();
         assert_eq!(binding.modalities.len(), 2);
         assert!(binding.strength >= 0.0 && binding.strength <= 1.0);
+    }
+
+    // ==========================================================================
+    // Tests for new types added for multi_modal_integration support
+    // ==========================================================================
+
+    #[test]
+    fn test_modality_all() {
+        let all = Modality::all();
+        assert!(!all.is_empty());
+        assert!(all.contains(&Modality::Visual));
+        assert!(all.contains(&Modality::Auditory));
+        assert!(all.contains(&Modality::Linguistic));
+    }
+
+    #[test]
+    fn test_modality_sensory() {
+        let sensory = Modality::sensory();
+        assert!(sensory.contains(&Modality::Visual));
+        assert!(sensory.contains(&Modality::Auditory));
+        // Motor should not be in sensory
+        assert!(!sensory.contains(&Modality::Motor));
+    }
+
+    #[test]
+    fn test_modality_channel_creation() {
+        let channel = ModalityChannel::new(Modality::Visual);
+        assert_eq!(channel.modality, Modality::Visual);
+        assert_eq!(channel.attention, 0.5);
+        assert!(channel.temporal_buffer.is_empty());
+    }
+
+    #[test]
+    fn test_modality_channel_update() {
+        let mut channel = ModalityChannel::new(Modality::Auditory);
+        let features = HV16::random(42);
+
+        channel.update(features.clone());
+
+        assert_eq!(channel.temporal_buffer.len(), 1);
+        assert_eq!(channel.features, features);
+    }
+
+    #[test]
+    fn test_modality_channel_temporal_coherence() {
+        let mut channel = ModalityChannel::new(Modality::Visual);
+
+        // Single item should have coherence 1.0
+        channel.update(HV16::random(1));
+        assert_eq!(channel.temporal_coherence(), 1.0);
+
+        // Add more items
+        channel.update(HV16::random(2));
+        channel.update(HV16::random(3));
+
+        // Should have valid coherence
+        let coherence = channel.temporal_coherence();
+        assert!(coherence >= 0.0 && coherence <= 1.0);
+    }
+
+    #[test]
+    fn test_convergence_level() {
+        let primary = ConvergenceZone::new(0, vec![Modality::Visual]);
+        assert_eq!(primary.level, ConvergenceLevel::Primary);
+
+        let secondary = ConvergenceZone::new(1, vec![Modality::Visual, Modality::Auditory]);
+        assert_eq!(secondary.level, ConvergenceLevel::Secondary);
+
+        let tertiary = ConvergenceZone::new(2, vec![Modality::Visual, Modality::Auditory, Modality::Linguistic]);
+        assert_eq!(tertiary.level, ConvergenceLevel::Tertiary);
+
+        let amodal = ConvergenceZone::new(3, Modality::sensory());
+        assert_eq!(amodal.level, ConvergenceLevel::Amodal);
+    }
+
+    #[test]
+    fn test_convergence_zone_integrate() {
+        let mut zone = ConvergenceZone::new(0, vec![Modality::Visual, Modality::Auditory]);
+
+        let mut inputs = HashMap::new();
+        inputs.insert(Modality::Visual, HV16::random(1));
+        inputs.insert(Modality::Auditory, HV16::random(2));
+
+        zone.integrate(&inputs);
+
+        assert!(zone.activation > 0.0);
+        assert!(zone.binding_strength >= 0.0 && zone.binding_strength <= 1.0);
+    }
+
+    #[test]
+    fn test_convergence_zone_partial_input() {
+        let mut zone = ConvergenceZone::new(0, vec![Modality::Visual, Modality::Auditory]);
+
+        let mut inputs = HashMap::new();
+        inputs.insert(Modality::Visual, HV16::random(1));
+        // Only one modality provided
+
+        zone.integrate(&inputs);
+
+        // Activation should be 0.5 (1 of 2 modalities)
+        assert_eq!(zone.activation, 0.5);
+    }
+
+    #[test]
+    fn test_episodic_buffer_creation() {
+        let buffer = EpisodicBuffer::new(7);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+    }
+
+    #[test]
+    fn test_episodic_buffer_add_chunk() {
+        let mut buffer = EpisodicBuffer::new(3);
+
+        buffer.add_chunk(HV16::random(1));
+        assert_eq!(buffer.len(), 1);
+
+        buffer.add_chunk(HV16::random(2));
+        buffer.add_chunk(HV16::random(3));
+        assert_eq!(buffer.len(), 3);
+
+        // Should evict oldest when over capacity
+        buffer.add_chunk(HV16::random(4));
+        assert_eq!(buffer.len(), 3);
+    }
+
+    #[test]
+    fn test_episodic_buffer_bundled() {
+        let mut buffer = EpisodicBuffer::new(5);
+
+        buffer.add_chunk(HV16::random(1));
+        buffer.add_chunk(HV16::random(2));
+        buffer.add_chunk(HV16::random(3));
+
+        let bundled = buffer.bundled();
+        // Bundled should be similar to all inputs
+        for chunk in buffer.chunks() {
+            let sim = bundled.similarity(chunk);
+            assert!(sim > 0.4, "Bundled should be similar to components");
+        }
+    }
+
+    #[test]
+    fn test_episodic_buffer_clear() {
+        let mut buffer = EpisodicBuffer::new(5);
+        buffer.add_chunk(HV16::random(1));
+        buffer.add_chunk(HV16::random(2));
+
+        buffer.clear();
+
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
     }
 }

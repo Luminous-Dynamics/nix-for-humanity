@@ -39,6 +39,65 @@ pub enum NTier { N0, N1, N2, N3 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum MTier { M0, M1, M2, M3 }
 
+/// Harmonic axis: coherence/alignment with higher purpose
+///
+/// H0 (discordant) → H4 (transcendent)
+/// Derived from phi (integrated information) and coherence scores.
+///
+/// This is LUCID's extension to the Mycelix Epistemic Charter to capture
+/// consciousness-level metrics that are unique to Symthaea's analysis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+pub enum HTier {
+    /// H0: Discordant - potentially harmful or very low coherence
+    H0,
+    /// H1: Neutral - no particular alignment (default)
+    #[default]
+    H1,
+    /// H2: Resonant - moderate coherence
+    H2,
+    /// H3: Harmonic - high coherence
+    H3,
+    /// H4: Transcendent - maximum coherence, serves universal flourishing
+    H4,
+}
+
+impl HTier {
+    /// Derive HTier from phi (consciousness) and coherence scores
+    pub fn from_phi_coherence(phi: f64, coherence: f64) -> Self {
+        let combined = (phi + coherence) / 2.0;
+        match combined {
+            v if v < 0.125 => HTier::H0,
+            v if v < 0.375 => HTier::H1,
+            v if v < 0.625 => HTier::H2,
+            v if v < 0.875 => HTier::H3,
+            _ => HTier::H4,
+        }
+    }
+
+    /// Convert to normalized f64 value
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            HTier::H0 => 0.0,
+            HTier::H1 => 0.25,
+            HTier::H2 => 0.5,
+            HTier::H3 => 0.75,
+            HTier::H4 => 1.0,
+        }
+    }
+}
+
+impl fmt::Display for HTier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::H0 => write!(f, "H0"),
+            Self::H1 => write!(f, "H1"),
+            Self::H2 => write!(f, "H2"),
+            Self::H3 => write!(f, "H3"),
+            Self::H4 => write!(f, "H4"),
+        }
+    }
+}
+
 impl fmt::Display for ETier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -73,22 +132,52 @@ impl fmt::Display for MTier {
     }
 }
 
-/// 3D epistemic classification from the Mycelix Epistemic Charter v2.0.
+/// 3D/4D epistemic classification from the Mycelix Epistemic Charter v2.0.
 ///
-/// Every claim is located in a cube with three axes:
+/// Every claim is located in a cube with three core axes:
 /// - **E-Axis (Empirical)**: E0 (opinion) → E4 (publicly reproducible)
 /// - **N-Axis (Normative)**: N0 (personal) → N3 (axiomatic)
 /// - **M-Axis (Materiality)**: M0 (ephemeral) → M3 (foundational)
 ///
-/// Example: "2 + 2 = 4" is **(E4, N3, M3)** — the highest form of truth.
+/// LUCID extends this with an optional fourth axis:
+/// - **H-Axis (Harmonic)**: H0 (discordant) → H4 (transcendent)
+///
+/// The H axis captures consciousness-level metrics (phi, coherence) that
+/// are unique to Symthaea's analysis and may not be present in external systems.
+///
+/// Example: "2 + 2 = 4" is **(E4, N3, M3, H4)** — the highest form of truth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EpistemicCube {
     pub e: ETier,
     pub n: NTier,
     pub m: MTier,
+    /// Optional harmonic level (LUCID extension)
+    /// Derived from phi and coherence, not present in original Mycelix Charter
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub h: Option<HTier>,
 }
 
 impl EpistemicCube {
+    /// Create a cube with just E/N/M (original Mycelix format)
+    pub fn new(e: ETier, n: NTier, m: MTier) -> Self {
+        Self { e, n, m, h: None }
+    }
+
+    /// Create a cube with E/N/M/H (LUCID extended format)
+    pub fn with_harmonic(e: ETier, n: NTier, m: MTier, h: HTier) -> Self {
+        Self { e, n, m, h: Some(h) }
+    }
+
+    /// Create a cube with H derived from phi and coherence
+    pub fn with_phi_coherence(e: ETier, n: NTier, m: MTier, phi: f64, coherence: f64) -> Self {
+        Self {
+            e,
+            n,
+            m,
+            h: Some(HTier::from_phi_coherence(phi, coherence)),
+        }
+    }
+
     /// Human-readable rationale string for the cube classification.
     pub fn display_rationale(&self) -> &'static str {
         match (self.e, self.n, self.m) {
@@ -101,11 +190,20 @@ impl EpistemicCube {
             (ETier::E0, _, _) => "opinion or unverified",
         }
     }
+
+    /// Get the harmonic level, deriving from default if not set
+    pub fn harmonic(&self) -> HTier {
+        self.h.unwrap_or(HTier::H1)
+    }
 }
 
 impl fmt::Display for EpistemicCube {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {}, {})", self.e, self.n, self.m)
+        if let Some(h) = self.h {
+            write!(f, "({}, {}, {}, {})", self.e, self.n, self.m, h)
+        } else {
+            write!(f, "({}, {}, {})", self.e, self.n, self.m)
+        }
     }
 }
 
@@ -641,6 +739,7 @@ mod tests {
                 e: ETier::E4,
                 n: NTier::N3,
                 m: MTier::M3,
+                h: None,
             }),
             phi: Some(0.95),
         });
@@ -656,6 +755,7 @@ mod tests {
             e: ETier::E4,
             n: NTier::N3,
             m: MTier::M3,
+            h: None,
         };
         assert_eq!(format!("{}", cube), "(E4, N3, M3)");
         assert_eq!(cube.display_rationale(), "publicly reproducible, axiomatic, foundational");

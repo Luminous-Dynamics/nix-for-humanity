@@ -48,7 +48,9 @@
 //! ```
 
 use super::binary_hv::HV16;
-use std::collections::HashSet;
+use ordered_float::OrderedFloat;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
 
 // =============================================================================
 // Configuration
@@ -333,8 +335,8 @@ impl LshIndex {
     /// # Algorithm
     ///
     /// 1. Query all hash tables to get candidate set
-    /// 2. Compute exact similarity for all candidates
-    /// 3. Sort by similarity and return top-k
+    /// 2. Use heap-based top-k selection O(n log k) to find highest similarities
+    ///    (avoids O(n log n) full sort when k << n)
     pub fn query_approximate(
         &self,
         query: &HV16,
@@ -350,29 +352,40 @@ impl LshIndex {
             }
         }
 
-        // If fewer candidates than k, just return all
+        // If fewer candidates than k, just return all (sorted by similarity descending)
         if candidates.len() <= k {
             let mut results: Vec<(usize, f32)> = candidates
                 .iter()
                 .map(|&id| (id, query.similarity(&vectors[id])))
                 .collect();
 
-            results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+            results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
             return results;
         }
 
-        // Step 2: Compute exact similarities for candidates
-        let mut results: Vec<(usize, f32)> = candidates
-            .iter()
-            .map(|&id| {
-                let similarity = query.similarity(&vectors[id]);
-                (id, similarity)
-            })
-            .collect();
+        // Step 2 & 3: Use heap-based top-k selection O(n log k) instead of full sort O(n log n)
+        // We use a min-heap via Reverse to keep only the k largest similarities.
+        // When heap exceeds k items, we pop the smallest, leaving us with top-k.
+        let mut heap: BinaryHeap<Reverse<(OrderedFloat<f32>, usize)>> =
+            BinaryHeap::with_capacity(k + 1);
 
-        // Step 3: Sort by similarity (descending) and return top-k
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        results.truncate(k);
+        for &id in &candidates {
+            let similarity = query.similarity(&vectors[id]);
+            heap.push(Reverse((OrderedFloat(similarity), id)));
+            if heap.len() > k {
+                heap.pop(); // Remove the smallest (lowest similarity)
+            }
+        }
+
+        // Extract results in descending order (highest similarity first)
+        // into_sorted_vec() on a BinaryHeap<Reverse<T>> returns elements from
+        // smallest-in-heap to largest-in-heap. Since Reverse inverts ordering,
+        // smallest-in-heap = largest score, so we get descending order directly.
+        let results: Vec<(usize, f32)> = heap
+            .into_sorted_vec()
+            .into_iter()
+            .map(|Reverse((score, id))| (id, score.into_inner()))
+            .collect();
         results
     }
 
@@ -411,20 +424,35 @@ impl LshIndex {
     }
 
     /// Brute force search (for comparison or fallback)
+    ///
+    /// Uses heap-based top-k selection for O(n log k) complexity instead of O(n log n) full sort.
     pub fn query_brute_force(
         &self,
         query: &HV16,
         k: usize,
         vectors: &[HV16],
     ) -> Vec<(usize, f32)> {
-        let mut results: Vec<(usize, f32)> = vectors
-            .iter()
-            .enumerate()
-            .map(|(id, v)| (id, query.similarity(v)))
-            .collect();
+        // Use min-heap to keep only top-k results during iteration
+        let mut heap: BinaryHeap<Reverse<(OrderedFloat<f32>, usize)>> =
+            BinaryHeap::with_capacity(k + 1);
 
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        results.truncate(k);
+        for (id, v) in vectors.iter().enumerate() {
+            let similarity = query.similarity(v);
+            heap.push(Reverse((OrderedFloat(similarity), id)));
+            if heap.len() > k {
+                heap.pop(); // Remove the smallest (lowest similarity)
+            }
+        }
+
+        // Extract results in descending order (highest similarity first)
+        // into_sorted_vec() on a BinaryHeap<Reverse<T>> returns elements from
+        // smallest-in-heap to largest-in-heap. Since Reverse inverts ordering,
+        // smallest-in-heap = largest score, so we get descending order directly.
+        let results: Vec<(usize, f32)> = heap
+            .into_sorted_vec()
+            .into_iter()
+            .map(|Reverse((score, id))| (id, score.into_inner()))
+            .collect();
         results
     }
 
@@ -584,5 +612,90 @@ mod tests {
             lsh_top_sim,
             brute_top_sim
         );
+    }
+
+    /// Verify that heap-based top-k produces correct results for various k values.
+    /// The heap optimization should maintain the same ordering guarantees.
+    #[test]
+    fn test_heap_topk_correctness() {
+        let config = LshConfig::balanced();
+        let mut index = LshIndex::new(config);
+
+        let vectors: Vec<HV16> = (0..1000)
+            .map(|i| HV16::random(i as u64))
+            .collect();
+
+        index.insert_batch(&vectors);
+
+        let query = HV16::random(99999);
+
+        // Test with various k values
+        for k in [1, 5, 10, 50, 100] {
+            let results = index.query_brute_force(&query, k, &vectors);
+
+            // Verify we got at most k results
+            assert!(results.len() <= k, "Should return at most k={} results", k);
+
+            // Verify results are sorted by similarity (descending)
+            for i in 0..results.len().saturating_sub(1) {
+                assert!(
+                    results[i].1 >= results[i + 1].1,
+                    "Results should be sorted descending at k={}, positions {} and {}",
+                    k, i, i + 1
+                );
+            }
+
+            // Verify these are actually the top-k by checking no other vector has higher similarity
+            if !results.is_empty() {
+                let min_returned_sim = results.last().unwrap().1;
+                let returned_ids: std::collections::HashSet<_> = results.iter().map(|(id, _)| *id).collect();
+
+                for (id, vec) in vectors.iter().enumerate() {
+                    if !returned_ids.contains(&id) {
+                        let sim = query.similarity(vec);
+                        assert!(
+                            sim <= min_returned_sim || results.len() < k,
+                            "Vector {} with sim {:.4} should be in top-{} (min returned: {:.4})",
+                            id, sim, k, min_returned_sim
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// Test that heap optimization handles edge cases correctly.
+    #[test]
+    fn test_heap_edge_cases() {
+        let config = LshConfig::fast();
+        let mut index = LshIndex::new(config);
+
+        let vectors: Vec<HV16> = (0..100)
+            .map(|i| HV16::random(i as u64))
+            .collect();
+
+        index.insert_batch(&vectors);
+
+        let query = HV16::random(99999);
+
+        // k larger than dataset
+        let results = index.query_brute_force(&query, 1000, &vectors);
+        assert_eq!(results.len(), 100, "Should return all 100 vectors when k > n");
+
+        // Verify still sorted
+        for i in 0..results.len().saturating_sub(1) {
+            assert!(
+                results[i].1 >= results[i + 1].1,
+                "Results should be sorted even when k > n"
+            );
+        }
+
+        // k = 0
+        let results = index.query_brute_force(&query, 0, &vectors);
+        assert!(results.is_empty(), "k=0 should return empty");
+
+        // k = 1
+        let results = index.query_brute_force(&query, 1, &vectors);
+        assert_eq!(results.len(), 1, "k=1 should return exactly 1");
     }
 }

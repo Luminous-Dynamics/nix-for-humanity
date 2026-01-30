@@ -59,8 +59,9 @@
 //! let info = ws.app_info("symthaea-trust".into()).await?;
 //! ```
 
+use lru::LruCache;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::num::NonZeroUsize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // ============================================================================
@@ -309,8 +310,8 @@ pub struct HolochainCortex {
     /// Local agent key (our identity)
     local_agent: Option<AgentPubKey>,
 
-    /// Cached agent info (mock mode)
-    agent_cache: HashMap<AgentPubKey, AgentInfo>,
+    /// Cached agent info (mock mode) - LRU cache with bounded capacity
+    agent_cache: LruCache<AgentPubKey, AgentInfo>,
 
     /// Connection state
     connected: bool,
@@ -336,15 +337,47 @@ pub struct CortexStats {
 
     /// Cache hits
     pub cache_hits: u64,
+
+    /// Cache misses
+    pub cache_misses: u64,
+
+    /// Cache evictions (entries removed due to capacity limit)
+    pub cache_evictions: u64,
 }
 
+/// Cache statistics snapshot
+#[derive(Debug, Clone)]
+pub struct CacheStats {
+    /// Number of cache hits
+    pub hits: u64,
+    /// Number of cache misses
+    pub misses: u64,
+    /// Number of evictions
+    pub evictions: u64,
+    /// Current cache size
+    pub current_size: usize,
+    /// Maximum cache capacity
+    pub capacity: usize,
+    /// Hit rate (hits / (hits + misses))
+    pub hit_rate: f64,
+}
+
+/// Default capacity for the agent cache
+const DEFAULT_CACHE_CAPACITY: usize = 1000;
+
 impl HolochainCortex {
-    /// Create a new Holochain Cortex client
+    /// Create a new Holochain Cortex client with default cache capacity (1000 agents)
     pub fn new(config: HolochainConfig) -> Self {
+        Self::with_cache_capacity(config, DEFAULT_CACHE_CAPACITY)
+    }
+
+    /// Create a new Holochain Cortex client with custom cache capacity
+    pub fn with_cache_capacity(config: HolochainConfig, cache_capacity: usize) -> Self {
+        let capacity = NonZeroUsize::new(cache_capacity).unwrap_or(NonZeroUsize::new(1).unwrap());
         Self {
             config,
             local_agent: None,
-            agent_cache: HashMap::new(),
+            agent_cache: LruCache::new(capacity),
             connected: false,
             stats: CortexStats::default(),
         }
@@ -377,9 +410,9 @@ impl HolochainCortex {
     pub fn set_local_agent(&mut self, agent_key: AgentPubKey) {
         self.local_agent = Some(agent_key.clone());
 
-        // Create local agent info if not exists
-        if !self.agent_cache.contains_key(&agent_key) {
-            self.agent_cache.insert(agent_key.clone(), AgentInfo::new(agent_key));
+        // Create local agent info if not exists (use contains to check without marking as used)
+        if !self.agent_cache.contains(&agent_key) {
+            self.put_agent_info(agent_key.clone(), AgentInfo::new(agent_key));
         }
     }
 
@@ -433,10 +466,24 @@ impl HolochainCortex {
             return info.clone();
         }
 
+        self.stats.cache_misses += 1;
         self.stats.dht_queries += 1;
         let info = AgentInfo::new(agent_key.clone());
-        self.agent_cache.insert(agent_key.clone(), info.clone());
+        self.put_agent_info(agent_key.clone(), info.clone());
         info
+    }
+
+    /// Insert agent info into cache, tracking evictions
+    fn put_agent_info(&mut self, agent_key: AgentPubKey, info: AgentInfo) {
+        // Check if we're at capacity and this is a new key
+        let was_at_capacity = self.agent_cache.len() == self.agent_cache.cap().get();
+        let is_new_key = !self.agent_cache.contains(&agent_key);
+
+        if was_at_capacity && is_new_key {
+            self.stats.cache_evictions += 1;
+        }
+
+        self.agent_cache.put(agent_key, info);
     }
 
     /// Query agent info from DHT
@@ -465,6 +512,25 @@ impl HolochainCortex {
         }
     }
 
+    /// Get cache statistics
+    pub fn cache_stats(&self) -> CacheStats {
+        let total_accesses = self.stats.cache_hits + self.stats.cache_misses;
+        let hit_rate = if total_accesses > 0 {
+            self.stats.cache_hits as f64 / total_accesses as f64
+        } else {
+            0.0
+        };
+
+        CacheStats {
+            hits: self.stats.cache_hits,
+            misses: self.stats.cache_misses,
+            evictions: self.stats.cache_evictions,
+            current_size: self.agent_cache.len(),
+            capacity: self.agent_cache.cap().get(),
+            hit_rate,
+        }
+    }
+
     /// Record a violation by an agent
     pub fn record_violation(&mut self, agent_key: &AgentPubKey, reason: &str) {
         if let Some(info) = self.agent_cache.get_mut(agent_key) {
@@ -478,14 +544,20 @@ impl HolochainCortex {
         }
     }
 
+    /// Peek at agent info without marking as recently used
+    pub fn peek_agent(&self, agent_key: &AgentPubKey) -> Option<&AgentInfo> {
+        self.agent_cache.peek(agent_key)
+    }
+
     /// Vouch for another agent
     pub fn vouch_for(&mut self, agent_key: &AgentPubKey) -> Result<(), CortexError> {
         let local = self.local_agent.as_ref()
-            .ok_or_else(|| CortexError::NoLocalAgent)?;
+            .ok_or_else(|| CortexError::NoLocalAgent)?
+            .clone();
 
         if let Some(info) = self.agent_cache.get_mut(agent_key) {
-            if !info.vouched_by.contains(local) {
-                info.vouched_by.push(local.clone());
+            if !info.vouched_by.contains(&local) {
+                info.vouched_by.push(local);
                 info.update_reputation();
             }
             Ok(())
@@ -494,7 +566,7 @@ impl HolochainCortex {
         }
     }
 
-    /// Record Φ for an agent
+    /// Record Phi for an agent
     pub fn record_phi(&mut self, agent_key: &AgentPubKey, phi: f64) {
         if let Some(info) = self.agent_cache.get_mut(agent_key) {
             info.record_phi(phi);
@@ -665,7 +737,7 @@ mod tests {
         let peer_key = AgentPubKey::test_key(2);
 
         cortex.set_local_agent(local_key.clone());
-        cortex.agent_cache.insert(peer_key.clone(), AgentInfo::new(peer_key.clone()));
+        cortex.agent_cache.put(peer_key.clone(), AgentInfo::new(peer_key.clone()));
 
         let initial_rep = cortex.agent_cache.get(&peer_key).unwrap().reputation_score;
         cortex.vouch_for(&peer_key).unwrap();
@@ -679,13 +751,61 @@ mod tests {
         let mut cortex = HolochainCortex::default();
 
         let key = AgentPubKey::test_key(1);
-        cortex.agent_cache.insert(key.clone(), AgentInfo::new(key.clone()));
+        cortex.agent_cache.put(key.clone(), AgentInfo::new(key.clone()));
 
         let initial_rep = cortex.agent_cache.get(&key).unwrap().reputation_score;
         cortex.record_violation(&key, "test violation");
 
         let new_rep = cortex.agent_cache.get(&key).unwrap().reputation_score;
         assert!(new_rep < initial_rep);
+    }
+
+    #[test]
+    fn test_lru_cache_eviction() {
+        // Create cortex with small cache capacity for testing
+        let cortex_config = HolochainConfig::default();
+        let mut cortex = HolochainCortex::with_cache_capacity(cortex_config, 3);
+
+        // Add 3 agents (fills cache)
+        for i in 0..3 {
+            let key = AgentPubKey::test_key(i);
+            cortex.agent_cache.put(key, AgentInfo::new(AgentPubKey::test_key(i)));
+        }
+        assert_eq!(cortex.agent_cache.len(), 3);
+
+        // Add a 4th agent - should evict the LRU entry
+        let key4 = AgentPubKey::test_key(100);
+        cortex.put_agent_info(key4.clone(), AgentInfo::new(key4));
+
+        assert_eq!(cortex.agent_cache.len(), 3);
+        assert_eq!(cortex.stats.cache_evictions, 1);
+
+        // First agent (key 0) should have been evicted
+        assert!(cortex.agent_cache.peek(&AgentPubKey::test_key(0)).is_none());
+    }
+
+    #[test]
+    fn test_cache_stats() {
+        let mut cortex = HolochainCortex::default();
+
+        // Generate some cache activity
+        let key1 = AgentPubKey::test_key(1);
+        let key2 = AgentPubKey::test_key(2);
+
+        // Miss (creates new entry)
+        cortex.get_or_create_agent_info(&key1);
+
+        // Hit
+        cortex.get_or_create_agent_info(&key1);
+
+        // Miss (creates new entry)
+        cortex.get_or_create_agent_info(&key2);
+
+        let stats = cortex.cache_stats();
+        assert_eq!(stats.hits, 1);
+        assert_eq!(stats.misses, 2);
+        assert_eq!(stats.current_size, 2);
+        assert!((stats.hit_rate - 0.333).abs() < 0.01);
     }
 
     #[test]

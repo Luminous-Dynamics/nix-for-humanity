@@ -1239,7 +1239,7 @@ impl FrameInduction {
                 }
 
                 // Create or update frame
-                let examples: Vec<_> = patterns.iter().map(|p| p.verb.clone()).collect();
+                let examples: Vec<_> = patterns.iter().map(|p| &p.verb).cloned().collect();
                 let support = patterns.iter().map(|p| p.frequency).sum();
                 let confidence = (support as f64 / 10.0).min(1.0);
 

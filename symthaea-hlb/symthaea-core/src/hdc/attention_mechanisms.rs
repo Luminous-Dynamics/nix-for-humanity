@@ -314,7 +314,7 @@ impl AttentionSystem {
                 } else {
                     let max_similarity = self.goals.iter()
                         .map(|goal| goal.similarity(representation) as f64)
-                        .max_by(|a, b| a.partial_cmp(b).unwrap())
+                        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                         .unwrap_or(0.5);
                     max_similarity
                 }
@@ -327,7 +327,7 @@ impl AttentionSystem {
                 } else {
                     self.goals.iter()
                         .map(|goal| goal.similarity(representation) as f64)
-                        .max_by(|a, b| a.partial_cmp(b).unwrap())
+                        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                         .unwrap_or(0.5)
                 };
                 0.4 * bottom_up + 0.6 * top_down
@@ -343,7 +343,7 @@ impl AttentionSystem {
 
         // Sort candidates by priority (descending)
         self.state.candidates.sort_by(|a, b| {
-            b.priority.partial_cmp(&a.priority).unwrap()
+            b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Select winner(s) based on capacity

@@ -526,7 +526,7 @@ impl PrimitiveDiscoveryService {
         let mut discoveries = Vec::new();
 
         // Get random pairs of existing primitives and compose them
-        let names: Vec<_> = system.all_primitives().map(|p| p.name.clone()).collect();
+        let names: Vec<&str> = system.all_primitives().map(|p| p.name.as_str()).collect();
         if names.len() < 2 {
             return discoveries;
         }
@@ -540,8 +540,8 @@ impl PrimitiveDiscoveryService {
             }
 
             if let (Some(prim_a), Some(prim_b)) = (
-                system.get(&names[idx_a]),
-                system.get(&names[idx_b]),
+                system.get(names[idx_a]),
+                system.get(names[idx_b]),
             ) {
                 // Compose via binding
                 let composed = prim_a.encoding.bind(&prim_b.encoding);
@@ -564,7 +564,7 @@ impl PrimitiveDiscoveryService {
                 );
 
                 discovery.composition_formula = Some(format!("{} ⊗ {}", names[idx_a], names[idx_b]));
-                discovery.parent_ids = vec![names[idx_a].clone(), names[idx_b].clone()];
+                discovery.parent_ids = vec![names[idx_a].to_owned(), names[idx_b].to_owned()];
 
                 discoveries.push(discovery);
             }

@@ -6,6 +6,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use symthaea_core::hdc::RealHV;
+use symthaea_core::hdc::primitive_system::PrimitiveTier;
+use anyhow::Result;
 
 /// Configuration for the primitive evolver
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -417,6 +419,236 @@ impl PrimitiveEvolver {
 impl Default for PrimitiveEvolver {
     fn default() -> Self {
         Self::new(EvolverConfig::default())
+    }
+}
+
+// =============================================================================
+// EVOLUTION BRIDGE COMPATIBLE TYPES
+// =============================================================================
+
+/// Configuration for tier-based primitive evolution (evolution_bridge compatible)
+#[derive(Debug, Clone)]
+pub struct EvolutionConfig {
+    /// Tier to evolve primitives for
+    pub tier: PrimitiveTier,
+
+    /// Population size
+    pub population_size: usize,
+
+    /// Number of generations to run
+    pub num_generations: usize,
+
+    /// Mutation rate (0.0 - 1.0)
+    pub mutation_rate: f64,
+
+    /// Crossover rate (0.0 - 1.0)
+    pub crossover_rate: f64,
+
+    /// Number of elite individuals to preserve
+    pub elitism_count: usize,
+
+    /// Task types to evaluate fitness on
+    pub fitness_tasks: Vec<String>,
+
+    /// Convergence threshold (stop if improvement < this)
+    pub convergence_threshold: f64,
+
+    /// Weight for Φ in fitness function
+    pub phi_weight: f64,
+
+    /// Weight for harmonic alignment in fitness
+    pub harmonic_weight: f64,
+
+    /// Weight for epistemic grounding in fitness
+    pub epistemic_weight: f64,
+}
+
+impl Default for EvolutionConfig {
+    fn default() -> Self {
+        Self {
+            tier: PrimitiveTier::Physical,
+            population_size: 20,
+            num_generations: 50,
+            mutation_rate: 0.1,
+            crossover_rate: 0.3,
+            elitism_count: 2,
+            fitness_tasks: Vec::new(),
+            convergence_threshold: 0.001,
+            phi_weight: 0.4,
+            harmonic_weight: 0.3,
+            epistemic_weight: 0.3,
+        }
+    }
+}
+
+/// A candidate primitive being evolved
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CandidatePrimitive {
+    /// Name of the primitive
+    pub name: String,
+
+    /// Tier this primitive belongs to
+    pub tier: PrimitiveTier,
+
+    /// Fitness score (Φ improvement)
+    pub fitness: f64,
+}
+
+/// Result of evolution (evolution_bridge compatible)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrimitiveEvolutionResult {
+    /// Final population of primitives
+    pub final_primitives: Vec<CandidatePrimitive>,
+
+    /// Φ improvement percentage
+    pub phi_improvement_percent: f64,
+
+    /// Final Φ value
+    pub final_phi: f64,
+
+    /// Baseline Φ (before evolution)
+    pub baseline_phi: f64,
+
+    /// Number of generations executed
+    pub generations_run: usize,
+
+    /// Whether convergence was achieved
+    pub converged: bool,
+}
+
+/// Tier-based primitive evolution system (evolution_bridge compatible)
+pub struct PrimitiveEvolution {
+    /// Configuration
+    config: EvolutionConfig,
+
+    /// Current population
+    population: Vec<CandidatePrimitive>,
+
+    /// Current generation
+    current_generation: usize,
+
+    /// Baseline Φ
+    baseline_phi: f64,
+}
+
+impl PrimitiveEvolution {
+    /// Create a new evolution system
+    pub fn new(config: EvolutionConfig) -> Result<Self> {
+        let mut system = Self {
+            config,
+            population: Vec::new(),
+            current_generation: 0,
+            baseline_phi: 0.5, // Default baseline
+        };
+        system.initialize_population();
+        Ok(system)
+    }
+
+    /// Initialize population with random candidates
+    fn initialize_population(&mut self) {
+        for i in 0..self.config.population_size {
+            self.population.push(CandidatePrimitive {
+                name: format!("evolved_{}_{}", self.config.tier as u8, i),
+                tier: self.config.tier,
+                fitness: 0.0,
+            });
+        }
+    }
+
+    /// Run evolution and return results
+    pub fn evolve(&mut self) -> Result<PrimitiveEvolutionResult> {
+        let mut prev_best_fitness = 0.0;
+        let mut stagnation_count = 0;
+
+        for gen in 0..self.config.num_generations {
+            self.current_generation = gen;
+
+            // Evaluate fitness for all candidates
+            for i in 0..self.population.len() {
+                // Simple fitness: use tier-based heuristic
+                let tier = self.population[i].tier;
+                self.population[i].fitness = Self::evaluate_tier_fitness(tier);
+            }
+
+            // Sort by fitness (descending)
+            self.population.sort_by(|a, b| {
+                b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            let best_fitness = self.population.first().map(|c| c.fitness).unwrap_or(0.0);
+
+            // Check convergence
+            if (best_fitness - prev_best_fitness).abs() < self.config.convergence_threshold {
+                stagnation_count += 1;
+                if stagnation_count >= 5 {
+                    break;
+                }
+            } else {
+                stagnation_count = 0;
+            }
+            prev_best_fitness = best_fitness;
+
+            // Selection, crossover, mutation
+            self.evolve_generation();
+        }
+
+        // Calculate final Φ
+        let final_phi = self.population.first().map(|c| c.fitness).unwrap_or(0.5);
+        let phi_improvement = if self.baseline_phi > 0.0 {
+            ((final_phi - self.baseline_phi) / self.baseline_phi) * 100.0
+        } else {
+            0.0
+        };
+
+        Ok(PrimitiveEvolutionResult {
+            final_primitives: self.population.clone(),
+            phi_improvement_percent: phi_improvement,
+            final_phi,
+            baseline_phi: self.baseline_phi,
+            generations_run: self.current_generation + 1,
+            converged: stagnation_count >= 5,
+        })
+    }
+
+    /// Evaluate fitness based on tier (static method to avoid borrow issues)
+    fn evaluate_tier_fitness(tier: PrimitiveTier) -> f64 {
+        // Stub: return tier-based baseline + small random variation
+        let tier_base = match tier {
+            PrimitiveTier::NSM => 0.5,
+            PrimitiveTier::Mathematical => 0.6,
+            PrimitiveTier::Physical => 0.55,
+            PrimitiveTier::Geometric => 0.58,
+            PrimitiveTier::Strategic => 0.52,
+            PrimitiveTier::MetaCognitive => 0.65,
+            PrimitiveTier::Temporal => 0.54,
+            PrimitiveTier::Compositional => 0.62,
+            PrimitiveTier::Consciousness => 0.7,
+        };
+        tier_base + (rand::random::<f64>() * 0.1)
+    }
+
+    /// Perform one generation of evolution
+    fn evolve_generation(&mut self) {
+        // Keep elite individuals
+        let mut new_population: Vec<CandidatePrimitive> = self.population
+            .iter()
+            .take(self.config.elitism_count)
+            .cloned()
+            .collect();
+
+        // Fill rest with crossover/mutation
+        while new_population.len() < self.config.population_size {
+            // Simple mutation: copy a random parent and mutate
+            if let Some(parent) = self.population.first() {
+                let mut child = parent.clone();
+                if rand::random::<f64>() < self.config.mutation_rate {
+                    child.fitness *= 1.0 + (rand::random::<f64>() - 0.5) * 0.2;
+                }
+                new_population.push(child);
+            }
+        }
+
+        self.population = new_population;
     }
 }
 

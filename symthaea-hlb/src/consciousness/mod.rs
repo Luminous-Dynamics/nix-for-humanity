@@ -48,20 +48,17 @@ pub mod neuro_bridge;
 // Modules with internal type dependencies (need more work)
 // ============================================================================
 
-// Needs unified_value_evaluator::ActionType
-#[cfg(feature = "full_consciousness")]
+// Contextual weights for harmony evaluation based on action type and domain.
+// Now defines its own ActionType locally to avoid circular dependency with unified_value_evaluator.
 pub mod contextual_weights;
 
-// Imports non-existent types from primitive_evolution/reasoning
-#[cfg(feature = "full_consciousness")]
+// Evolution bridge - connects primitive evolution with recursive self-improvement
 pub mod evolution_bridge;
 
-// Imports non-existent types from cross_modal_binding
-#[cfg(feature = "full_consciousness")]
+// Multi-modal integration - now fully wired with cross_modal_binding types
 pub mod multi_modal_integration;
 
-// Imports many non-existent types
-#[cfg(feature = "full_consciousness")]
+// Primitive-Consciousness Bridge - connects HDC primitives to consciousness processing
 pub mod primitive_consciousness;
 
 // ============================================================================
@@ -308,6 +305,22 @@ pub use dream::{
     DreamEvent, DreamResult, Wisdom,
 };
 pub use neuro_bridge::{NeuroAutopoieticBridge, BridgeState};
+pub use contextual_weights::{
+    ActionType, ActionDomain, ContextualWeights, HarmonyWeightProfile, DomainClassifier,
+};
+pub use multi_modal_integration::{
+    MultiModalIntegrator, IntegrationConfig, IntegrationResult,
+    ModalInput, IntegrationEvent, IntegrationEventType,
+};
+pub use primitive_consciousness::{
+    PrimitiveConsciousnessState, ActivePrimitive, ActivationReason,
+    PrimitiveBinding, ConsciousnessPrimitiveProcessor, ProcessorStats,
+    ConsciousnessDecomposer, PrimitiveBindingEngine,
+};
+pub use primitive_reasoning::{
+    ReasoningChain, TransformationType, TaskType, TierAwareConfig,
+    AdaptivePrimitiveSelector, PrimitiveAffinityGraph, PrimitiveExecution,
+};
 
 /// A node in the consciousness network
 #[derive(Debug, Clone)]

@@ -32,8 +32,30 @@
 //! ```
 
 use super::seven_harmonies::Harmony;
-use super::unified_value_evaluator::ActionType;
 use std::collections::HashMap;
+
+/// Type of action being evaluated.
+///
+/// This enum is defined locally to avoid circular dependencies with
+/// `unified_value_evaluator`, which also defines an `ActionType`.
+/// The types are semantically equivalent and can be converted between each other.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ActionType {
+    /// Basic action (default threshold)
+    Basic,
+    /// Governance proposal (higher threshold)
+    Governance,
+    /// Voting on proposal (higher threshold)
+    Voting,
+    /// Constitutional change (highest threshold)
+    Constitutional,
+}
+
+impl Default for ActionType {
+    fn default() -> Self {
+        ActionType::Basic
+    }
+}
 
 /// Domain classification for actions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -668,5 +690,150 @@ mod tests {
             flourishing_weight,
             expected
         );
+    }
+
+    #[test]
+    fn test_action_type_default() {
+        let action_type = ActionType::default();
+        assert_eq!(action_type, ActionType::Basic);
+    }
+
+    #[test]
+    fn test_action_domain_default() {
+        let domain = ActionDomain::default();
+        assert_eq!(domain, ActionDomain::General);
+    }
+
+    #[test]
+    fn test_all_action_types_have_profiles() {
+        let mut weights = ContextualWeights::new();
+
+        // Verify all action types produce valid profiles
+        let action_types = [
+            ActionType::Basic,
+            ActionType::Governance,
+            ActionType::Voting,
+            ActionType::Constitutional,
+        ];
+
+        for action_type in action_types {
+            let profile = weights.get_combined_profile(action_type, ActionDomain::General);
+            // All profiles should have non-zero weights
+            for harmony in Harmony::all() {
+                let weight = profile.get_weight(&harmony);
+                assert!(weight > 0.0, "{:?} should have positive weight for {:?}", action_type, harmony);
+            }
+        }
+    }
+
+    #[test]
+    fn test_voting_emphasizes_truth_and_community() {
+        let mut weights = ContextualWeights::new();
+        let profile = weights.get_combined_profile(ActionType::Voting, ActionDomain::General);
+
+        // Voting should prioritize truth (IntegralWisdom) and community (UniversalInterconnectedness)
+        let wisdom = profile.get_weight(&Harmony::IntegralWisdom);
+        let interconnectedness = profile.get_weight(&Harmony::UniversalInterconnectedness);
+
+        assert!(wisdom > 1.0, "Voting should elevate wisdom: {}", wisdom);
+        assert!(interconnectedness > 1.0, "Voting should elevate interconnectedness: {}", interconnectedness);
+    }
+
+    #[test]
+    fn test_custom_domain_profile_registration() {
+        let mut weights = ContextualWeights::new();
+
+        // Create a custom profile for a hypothetical Gaming domain
+        let gaming_profile = HarmonyWeightProfile::new("Gaming", "Interactive entertainment")
+            .with_weight(Harmony::InfinitePlay, 2.0)
+            .with_weight(Harmony::ResonantCoherence, 1.5);
+
+        // Register as Environmental (just for testing registration mechanism)
+        weights.register_domain_profile(ActionDomain::Environmental, gaming_profile);
+
+        let profile = weights.get_combined_profile(ActionType::Basic, ActionDomain::Environmental);
+
+        // The custom profile should now be in effect
+        let play_weight = profile.get_weight(&Harmony::InfinitePlay);
+        // Basic has 1.0, custom has 2.0, geometric mean = sqrt(2.0) ≈ 1.414
+        let expected = (1.0_f32 * 2.0_f32).sqrt();
+        assert!(
+            (play_weight - expected).abs() < 0.1,
+            "Custom profile should affect weights: {} vs expected {}",
+            play_weight,
+            expected
+        );
+    }
+
+    #[test]
+    fn test_harmony_weight_profile_as_vec() {
+        let profile = HarmonyWeightProfile::new("Test", "Test profile")
+            .with_weight(Harmony::InfinitePlay, 1.5);
+
+        let weights_vec = profile.as_vec();
+        assert_eq!(weights_vec.len(), 7, "Should have 7 harmonies");
+
+        // Find InfinitePlay in the vector
+        let play_entry = weights_vec.iter()
+            .find(|(h, _)| *h == Harmony::InfinitePlay)
+            .expect("InfinitePlay should be in the vector");
+        assert!((play_entry.1 - 1.5).abs() < 0.01, "InfinitePlay should have weight 1.5");
+    }
+
+    #[test]
+    fn test_domain_classifier_educational() {
+        let classifier = DomainClassifier::new();
+
+        let domain = classifier.classify("I want to learn and understand this new concept");
+        assert_eq!(domain, ActionDomain::Educational);
+    }
+
+    #[test]
+    fn test_domain_classifier_social() {
+        let classifier = DomainClassifier::new();
+
+        let domain = classifier.classify("Let's collaborate with the team and share ideas together");
+        assert_eq!(domain, ActionDomain::Social);
+    }
+
+    #[test]
+    fn test_domain_classifier_environmental() {
+        let classifier = DomainClassifier::new();
+
+        let domain = classifier.classify("We need to focus on sustainable and renewable energy sources");
+        assert_eq!(domain, ActionDomain::Environmental);
+    }
+
+    #[test]
+    fn test_get_weight_method() {
+        let mut weights = ContextualWeights::new();
+
+        let weight = weights.get_weight(
+            &Harmony::IntegralWisdom,
+            ActionType::Governance,
+            ActionDomain::General
+        );
+
+        // Governance elevates wisdom to 1.4
+        assert!(weight > 1.0, "Governance wisdom weight should be elevated: {}", weight);
+    }
+
+    #[test]
+    fn test_get_all_weights_method() {
+        let mut weights = ContextualWeights::new();
+
+        let all_weights = weights.get_all_weights(ActionType::Basic, ActionDomain::General);
+
+        assert_eq!(all_weights.len(), 7, "Should return weights for all 7 harmonies");
+
+        // Basic/General should all be close to 1.0
+        for (harmony, weight) in all_weights {
+            assert!(
+                (weight - 1.0).abs() < 0.01,
+                "Basic/General {:?} weight should be 1.0, got {}",
+                harmony,
+                weight
+            );
+        }
     }
 }

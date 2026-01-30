@@ -359,7 +359,7 @@ impl ConsciousnessContinuity {
         // Keep only most important memories
         if self.identity.core_memories.len() > 100 {
             self.identity.core_memories.sort_by(|a, b| {
-                b.importance.partial_cmp(&a.importance).unwrap()
+                b.importance.partial_cmp(&a.importance).unwrap_or(std::cmp::Ordering::Equal)
             });
             self.identity.core_memories.truncate(100);
         }

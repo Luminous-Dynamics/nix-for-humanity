@@ -224,7 +224,7 @@ impl UndoAction {
 
     /// Create a composite action
     pub fn composite(description: impl Into<String>, actions: Vec<UndoAction>) -> Self {
-        let forward_data: Vec<ActionData> = actions.iter().map(|a| a.forward.clone()).collect();
+        let forward_data: Vec<ActionData> = actions.into_iter().map(|a| a.forward).collect();
         Self::new(
             description,
             ActionType::Composite,

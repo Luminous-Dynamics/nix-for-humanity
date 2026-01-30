@@ -651,7 +651,7 @@ impl SymthaeaGui {
                 self.module_browser.selected_category = None;
                 self.module_browser.filter();
             }
-            for cat in &self.module_browser.categories.clone() {
+            for cat in self.module_browser.categories.iter() {
                 let label = format!("{} {} ({})", cat.icon, cat.name, cat.option_count);
                 if ui.selectable_label(
                     self.module_browser.selected_category.as_ref() == Some(&cat.path_prefix),

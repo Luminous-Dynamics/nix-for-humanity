@@ -289,9 +289,9 @@ impl ConfigChangeDetector {
         self.watcher.watch_nixos_config()?;
 
         // Load initial content
-        for path in self.watcher.watched_paths().clone() {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                self.previous_content.insert(path, content);
+        for path in self.watcher.watched_paths() {
+            if let Ok(content) = std::fs::read_to_string(path) {
+                self.previous_content.insert(path.clone(), content);
             }
         }
 

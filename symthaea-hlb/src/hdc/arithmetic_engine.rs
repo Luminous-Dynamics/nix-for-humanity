@@ -273,13 +273,14 @@ impl Polynomial {
 
     /// Format as human-readable polynomial string (e.g., "2x + 3x^2").
     pub fn to_string_pretty(&self) -> String {
-        if self.coefficients.is_empty() || self.coefficients.iter().all(|&c| c == 0.0) {
+        const EPSILON: f64 = 1e-10;
+        if self.coefficients.is_empty() || self.coefficients.iter().all(|&c| c.abs() < EPSILON) {
             return "0".to_string();
         }
 
         let mut terms = Vec::new();
         for (i, &coeff) in self.coefficients.iter().enumerate() {
-            if coeff == 0.0 {
+            if coeff.abs() < EPSILON {
                 continue;
             }
             let term = match i {

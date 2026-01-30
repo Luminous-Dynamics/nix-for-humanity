@@ -6,6 +6,428 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use symthaea_core::hdc::RealHV;
+use symthaea_core::hdc::{HV16, Primitive, PrimitiveTier};
+use anyhow::Result;
+
+// =============================================================================
+// Types for Primitive-Consciousness Integration
+// =============================================================================
+
+/// Type of transformation applied during reasoning
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TransformationType {
+    /// Bind two vectors (XOR in binary HV)
+    Bind,
+    /// Bundle multiple vectors (majority vote)
+    Bundle,
+    /// Permute vector for sequence encoding
+    Permute,
+    /// Resonance - amplify similar patterns
+    Resonate,
+    /// Abstract to higher level
+    Abstract,
+    /// Ground to lower level details
+    Ground,
+}
+
+/// Type of task for primitive selection
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum TaskType {
+    /// Mathematical reasoning
+    Mathematical,
+    /// Physical simulation
+    Physical,
+    /// Geometric/spatial reasoning
+    Geometric,
+    /// Strategic planning
+    Strategic,
+    /// Meta-cognitive reflection
+    MetaCognitive,
+    /// Logical/mathematical reasoning (alias for evolution_bridge compatibility)
+    Logical,
+    /// Causal inference (alias for evolution_bridge compatibility)
+    Causal,
+    /// Spatial reasoning (alias for evolution_bridge compatibility)
+    Spatial,
+    /// Social/strategic reasoning (alias for evolution_bridge compatibility)
+    Social,
+    /// General/unknown task type
+    General,
+    /// Temporal reasoning
+    Temporal,
+    /// Generic/unknown task
+    Generic,
+}
+
+/// Configuration for tier-aware primitive selection
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TierAwareConfig {
+    /// Weight for NSM tier
+    pub nsm_weight: f64,
+    /// Weight for Mathematical tier
+    pub math_weight: f64,
+    /// Weight for Physical tier
+    pub physical_weight: f64,
+    /// Weight for Geometric tier
+    pub geometric_weight: f64,
+    /// Weight for Strategic tier
+    pub strategic_weight: f64,
+    /// Weight for MetaCognitive tier
+    pub metacognitive_weight: f64,
+    /// Weight for Temporal tier
+    pub temporal_weight: f64,
+    /// Weight for Compositional tier
+    pub compositional_weight: f64,
+    /// Weight for Consciousness tier
+    pub consciousness_weight: f64,
+}
+
+impl Default for TierAwareConfig {
+    fn default() -> Self {
+        Self {
+            nsm_weight: 1.0,
+            math_weight: 1.0,
+            physical_weight: 1.0,
+            geometric_weight: 1.0,
+            strategic_weight: 1.0,
+            metacognitive_weight: 1.0,
+            temporal_weight: 1.0,
+            compositional_weight: 1.0,
+            consciousness_weight: 1.0,
+        }
+    }
+}
+
+impl TierAwareConfig {
+    /// Get weight for a specific tier
+    pub fn weight_for_tier(&self, tier: PrimitiveTier) -> f64 {
+        match tier {
+            PrimitiveTier::NSM => self.nsm_weight,
+            PrimitiveTier::Mathematical => self.math_weight,
+            PrimitiveTier::Physical => self.physical_weight,
+            PrimitiveTier::Geometric => self.geometric_weight,
+            PrimitiveTier::Strategic => self.strategic_weight,
+            PrimitiveTier::MetaCognitive => self.metacognitive_weight,
+            PrimitiveTier::Temporal => self.temporal_weight,
+            PrimitiveTier::Compositional => self.compositional_weight,
+            PrimitiveTier::Consciousness => self.consciousness_weight,
+        }
+    }
+}
+
+/// A single execution step in a reasoning chain
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrimitiveExecution {
+    /// The primitive that was executed
+    pub primitive: Primitive,
+    /// Input vector
+    pub input: HV16,
+    /// Output vector
+    pub output: HV16,
+    /// Type of transformation
+    pub transformation: TransformationType,
+    /// Phi contribution from this step
+    pub phi_contribution: f64,
+    /// Timestamp
+    pub timestamp: f64,
+}
+
+/// A chain of reasoning steps
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReasoningChain {
+    /// Initial question/query vector
+    pub question: HV16,
+    /// Sequence of primitive executions
+    pub executions: Vec<PrimitiveExecution>,
+    /// Current state vector
+    pub current_state: HV16,
+    /// Total phi accumulated
+    pub total_phi: f64,
+    /// Chain metadata
+    pub metadata: HashMap<String, String>,
+}
+
+impl ReasoningChain {
+    /// Create a new reasoning chain starting from a question
+    pub fn new(question: HV16) -> Self {
+        Self {
+            question: question.clone(),
+            executions: Vec::new(),
+            current_state: question,
+            total_phi: 0.0,
+            metadata: HashMap::new(),
+        }
+    }
+
+    /// Execute a primitive on the current state
+    pub fn execute_primitive(
+        &mut self,
+        primitive: &Primitive,
+        transformation: TransformationType,
+    ) -> Result<()> {
+        let input = self.current_state.clone();
+
+        // Apply transformation
+        let output = match transformation {
+            TransformationType::Bind => input.bind(&primitive.encoding),
+            TransformationType::Bundle => HV16::bundle(&[input, primitive.encoding.clone()]),
+            TransformationType::Permute => input.permute(1),
+            TransformationType::Resonate => {
+                let combined = input.bind(&primitive.encoding);
+                HV16::bundle(&[combined, input.clone(), primitive.encoding.clone()])
+            }
+            TransformationType::Abstract => {
+                let elevated = input.permute(2);
+                elevated.bind(&primitive.encoding)
+            }
+            TransformationType::Ground => {
+                let grounded = input.permute(16383); // Wrap around
+                grounded.bind(&primitive.encoding)
+            }
+        };
+
+        // Estimate phi contribution (simplified)
+        let similarity = input.similarity(&output) as f64;
+        let phi_contribution = (1.0 - similarity.abs()) * 0.1;
+
+        let execution = PrimitiveExecution {
+            primitive: primitive.clone(),
+            input,
+            output: output.clone(),
+            transformation,
+            phi_contribution,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs_f64())
+                .unwrap_or(0.0),
+        };
+
+        self.executions.push(execution);
+        self.current_state = output;
+        self.total_phi += phi_contribution;
+
+        Ok(())
+    }
+
+    /// Get the final answer vector
+    pub fn answer(&self) -> &HV16 {
+        &self.current_state
+    }
+
+    /// Get number of steps
+    pub fn depth(&self) -> usize {
+        self.executions.len()
+    }
+}
+
+/// Statistics for a primitive-task combination
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PrimitiveTaskStats {
+    /// Number of times used
+    pub usage_count: usize,
+    /// Alias for use_count (evolution_bridge compatibility)
+    pub use_count: usize,
+    /// Total phi contribution
+    pub total_phi: f64,
+    /// Average phi contribution
+    pub avg_phi: f64,
+    /// Success rate
+    pub success_rate: f64,
+}
+
+impl PrimitiveTaskStats {
+    /// Get mean phi (alias for avg_phi, for evolution_bridge compatibility)
+    pub fn mean_phi(&self) -> f64 {
+        self.avg_phi
+    }
+}
+
+/// Adaptive primitive selector that learns from outcomes
+#[derive(Debug, Clone, Default)]
+pub struct AdaptivePrimitiveSelector {
+    /// Stats for each (primitive, task) pair
+    stats: HashMap<(String, TaskType), PrimitiveTaskStats>,
+    /// Learning rate
+    learning_rate: f64,
+}
+
+impl AdaptivePrimitiveSelector {
+    /// Create a new selector
+    pub fn new() -> Self {
+        Self {
+            stats: HashMap::new(),
+            learning_rate: 0.1,
+        }
+    }
+
+    /// Select primitives for a task with tier awareness
+    pub fn select_tier_aware<'a>(
+        &self,
+        task: TaskType,
+        primitives: &[&'a Primitive],
+        count: usize,
+        config: &TierAwareConfig,
+        affinity: Option<&PrimitiveAffinityGraph>,
+    ) -> Vec<&'a Primitive> {
+        // Score each primitive
+        let mut scored: Vec<(&'a Primitive, f64)> = primitives.iter().map(|p| {
+            let tier_weight = config.weight_for_tier(p.tier);
+            let task_score = self.stats
+                .get(&(p.name.clone(), task))
+                .map(|s| s.avg_phi)
+                .unwrap_or(0.5);
+            let affinity_score = affinity
+                .map(|g| g.get_tier_affinity(p.tier, p.tier))
+                .unwrap_or(0.5);
+
+            let score = tier_weight * task_score * affinity_score;
+            (*p, score)
+        }).collect();
+
+        // Sort by score descending
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Return top N
+        scored.into_iter().take(count).map(|(p, _)| p).collect()
+    }
+
+    /// Update from a completed reasoning chain
+    pub fn update_from_chain(&mut self, chain: &ReasoningChain, task: TaskType) {
+        for exec in &chain.executions {
+            let key = (exec.primitive.name.clone(), task);
+            let stats = self.stats.entry(key).or_insert_with(PrimitiveTaskStats::default);
+
+            stats.usage_count += 1;
+            stats.total_phi += exec.phi_contribution;
+            stats.avg_phi = stats.total_phi / stats.usage_count as f64;
+        }
+    }
+
+    /// Get all stats
+    pub fn all_stats(&self) -> &HashMap<(String, TaskType), PrimitiveTaskStats> {
+        &self.stats
+    }
+
+    /// Record a single observation for a primitive (evolution_bridge compatibility)
+    pub fn record_observation(&mut self, primitive_name: &str, task: TaskType, phi: f64) {
+        let key = (primitive_name.to_string(), task);
+        let stats = self.stats.entry(key).or_insert_with(PrimitiveTaskStats::default);
+        stats.usage_count += 1;
+        stats.total_phi += phi;
+        stats.avg_phi = stats.total_phi / stats.usage_count as f64;
+        if phi > 0.0 {
+            stats.success_rate = (stats.success_rate * (stats.usage_count - 1) as f64 + 1.0)
+                / stats.usage_count as f64;
+        } else {
+            stats.success_rate = (stats.success_rate * (stats.usage_count - 1) as f64)
+                / stats.usage_count as f64;
+        }
+    }
+}
+
+/// Statistics for affinity graph
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AffinityStats {
+    /// Total pairs tracked
+    pub total_pairs: usize,
+    /// Average affinity
+    pub avg_affinity: f64,
+}
+
+/// Graph of primitive affinities (how well they compose)
+#[derive(Debug, Clone, Default)]
+pub struct PrimitiveAffinityGraph {
+    /// Affinity scores between primitive pairs
+    affinities: HashMap<(String, String), f64>,
+    /// Tier-level affinities
+    tier_affinities: HashMap<(PrimitiveTier, PrimitiveTier), f64>,
+}
+
+impl PrimitiveAffinityGraph {
+    /// Create a new affinity graph
+    pub fn new() -> Self {
+        let mut graph = Self::default();
+
+        // Initialize default tier affinities
+        let tiers = [
+            PrimitiveTier::NSM,
+            PrimitiveTier::Mathematical,
+            PrimitiveTier::Physical,
+            PrimitiveTier::Geometric,
+            PrimitiveTier::Strategic,
+            PrimitiveTier::MetaCognitive,
+            PrimitiveTier::Temporal,
+            PrimitiveTier::Compositional,
+            PrimitiveTier::Consciousness,
+        ];
+
+        for &t1 in &tiers {
+            for &t2 in &tiers {
+                // Same tier has high affinity
+                let affinity = if t1 == t2 { 0.8 } else { 0.5 };
+                graph.tier_affinities.insert((t1, t2), affinity);
+            }
+        }
+
+        graph
+    }
+
+    /// Record a composition result
+    pub fn record_composition(&mut self, prim1: &str, prim2: &str, phi: f64) {
+        let key = (prim1.to_string(), prim2.to_string());
+        let current = self.affinities.get(&key).copied().unwrap_or(0.5);
+        let updated = current * 0.9 + phi * 0.1;
+        self.affinities.insert(key, updated);
+    }
+
+    /// Get affinity between two primitives
+    pub fn get_affinity(&self, prim1: &str, prim2: &str) -> f64 {
+        self.affinities
+            .get(&(prim1.to_string(), prim2.to_string()))
+            .copied()
+            .unwrap_or(0.5)
+    }
+
+    /// Get tier-level affinity
+    pub fn get_tier_affinity(&self, t1: PrimitiveTier, t2: PrimitiveTier) -> f64 {
+        self.tier_affinities.get(&(t1, t2)).copied().unwrap_or(0.5)
+    }
+
+    /// Get best partners for a primitive
+    pub fn best_partners(&self, primitive: &str, count: usize) -> Vec<(String, f64)> {
+        let mut partners: Vec<(String, f64)> = self.affinities
+            .iter()
+            .filter_map(|((p1, p2), score)| {
+                if p1 == primitive {
+                    Some((p2.clone(), *score))
+                } else if p2 == primitive {
+                    Some((p1.clone(), *score))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        partners.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        partners.truncate(count);
+        partners
+    }
+
+    /// Get statistics
+    pub fn stats(&self) -> AffinityStats {
+        let total_pairs = self.affinities.len();
+        let avg_affinity = if total_pairs > 0 {
+            self.affinities.values().sum::<f64>() / total_pairs as f64
+        } else {
+            0.5
+        };
+
+        AffinityStats {
+            total_pairs,
+            avg_affinity,
+        }
+    }
+}
 
 /// Configuration for the primitive reasoner
 #[derive(Debug, Clone, Serialize, Deserialize)]

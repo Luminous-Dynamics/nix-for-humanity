@@ -373,6 +373,32 @@ impl RealHV {
         Self { values }
     }
 
+    /// Bundle multiple vectors via averaging (reference version to avoid cloning)
+    ///
+    /// Same as `bundle` but takes references to avoid unnecessary cloning.
+    pub fn bundle_refs(vectors: &[&Self]) -> Self {
+        if vectors.is_empty() {
+            return Self::zero(Self::DEFAULT_DIM);
+        }
+
+        let dim = vectors[0].values.len();
+        let n = vectors.len() as f32;
+
+        let mut sum = vec![0.0f32; dim];
+
+        for vector in vectors {
+            assert_eq!(vector.values.len(), dim,
+                       "All vectors must have same dimension");
+            for (i, &val) in vector.values.iter().enumerate() {
+                sum[i] += val;
+            }
+        }
+
+        let values: Vec<f32> = sum.iter().map(|&s| s / n).collect();
+
+        Self { values }
+    }
+
     /// Compute cosine similarity with another vector
     ///
     /// Returns a value in [-1, 1] where:

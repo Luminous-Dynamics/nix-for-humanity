@@ -443,6 +443,7 @@ impl DomainPlugin for MathPlugin {
             e: ETier::E4,
             n: NTier::N3,
             m: MTier::M3,
+            h: None, // Harmonic level not computed for basic math operations
         };
 
         // Try arithmetic: look for (number, operator, number) pattern
@@ -666,7 +667,7 @@ mod tests {
         assert!(result.is_some(), "Should compute derivative of x^2");
         let cr = result.unwrap();
         assert!(cr.answer.contains("2x") || cr.answer.contains("2*x"), "Derivative of x^2 should be 2x, got: {}", cr.answer);
-        assert_eq!(cr.cube, EpistemicCube { e: ETier::E4, n: NTier::N3, m: MTier::M3 });
+        assert_eq!(cr.cube, EpistemicCube { e: ETier::E4, n: NTier::N3, m: MTier::M3, h: None });
     }
 
     #[test]
@@ -677,5 +678,462 @@ mod tests {
         ];
         let result = plugin.compute("Prove the fundamental theorem of algebra", &entities);
         assert!(result.is_none(), "Non-computable queries should return None");
+    }
+
+    // =========================================================================
+    // Entity Extraction Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_extract_negative_numbers() {
+        let plugin = MathPlugin::new();
+        let entities = plugin.extract_entities("Calculate -5 + 3");
+        let numbers: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "number")
+            .collect();
+        assert!(numbers.iter().any(|e| e.value == "-5" || e.value == "5"));
+        assert!(numbers.iter().any(|e| e.value == "3"));
+    }
+
+    #[test]
+    fn test_extract_decimal_numbers() {
+        let plugin = MathPlugin::new();
+        let entities = plugin.extract_entities("The value is 3.14159");
+        let numbers: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "number")
+            .collect();
+        assert!(numbers.iter().any(|e| e.value == "3.14159"));
+    }
+
+    #[test]
+    fn test_extract_multiple_operators() {
+        let plugin = MathPlugin::new();
+        let entities = plugin.extract_entities("2 + 3 * 4 - 1");
+        let operators: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "operator")
+            .collect();
+        // Should find +, *, and -
+        assert!(operators.len() >= 3);
+    }
+
+    #[test]
+    fn test_extract_empty_input() {
+        let plugin = MathPlugin::new();
+        let entities = plugin.extract_entities("");
+        // Empty input should return no entities
+        assert!(entities.is_empty());
+    }
+
+    #[test]
+    fn test_extract_no_math_content() {
+        let plugin = MathPlugin::new();
+        let entities = plugin.extract_entities("Hello world");
+        // Should return no number or math_term entities
+        let math_entities: Vec<&Entity> = entities.iter()
+            .filter(|e| e.entity_type == "number" || e.entity_type == "math_term")
+            .collect();
+        assert!(math_entities.is_empty());
+    }
+
+    // =========================================================================
+    // Intent Prototypes Tests
+    // =========================================================================
+
+    #[test]
+    fn test_intent_prototypes_command() {
+        let plugin = MathPlugin::new();
+        let prototypes = plugin.intent_prototypes();
+        assert!(!prototypes.command.is_empty());
+        assert!(prototypes.command.contains(&"calculate".to_string()));
+        assert!(prototypes.command.contains(&"solve".to_string()));
+    }
+
+    #[test]
+    fn test_intent_prototypes_question() {
+        let plugin = MathPlugin::new();
+        let prototypes = plugin.intent_prototypes();
+        assert!(!prototypes.question.is_empty());
+        assert!(prototypes.question.contains(&"what is".to_string()));
+    }
+
+    #[test]
+    fn test_intent_prototypes_custom() {
+        let plugin = MathPlugin::new();
+        let prototypes = plugin.intent_prototypes();
+        assert!(prototypes.custom.contains_key("calculation"));
+        assert!(prototypes.custom.contains_key("proof"));
+        assert!(prototypes.custom.contains_key("definition"));
+    }
+
+    // =========================================================================
+    // Prompts Tests
+    // =========================================================================
+
+    #[test]
+    fn test_prompts_system() {
+        let plugin = MathPlugin::new();
+        let prompts = plugin.prompts();
+        assert!(!prompts.system.is_empty());
+        assert!(prompts.system.contains("mathematical"));
+    }
+
+    #[test]
+    fn test_prompts_clarification() {
+        let plugin = MathPlugin::new();
+        let prompts = plugin.prompts();
+        assert!(prompts.clarification.contains("{}"));
+    }
+
+    // =========================================================================
+    // Error Diagnosis Tests
+    // =========================================================================
+
+    #[test]
+    fn test_diagnose_overflow_error() {
+        let plugin = MathPlugin::new();
+        let diag = plugin.diagnose_error("Error: numeric overflow occurred");
+        assert!(diag.is_some());
+        let d = diag.unwrap();
+        assert_eq!(d.error_type, "overflow");
+        assert_eq!(d.category, "arithmetic");
+    }
+
+    #[test]
+    fn test_diagnose_undefined_error() {
+        let plugin = MathPlugin::new();
+        let diag = plugin.diagnose_error("The result is undefined for this input");
+        assert!(diag.is_some());
+        assert_eq!(diag.unwrap().error_type, "undefined_result");
+    }
+
+    #[test]
+    fn test_diagnose_no_solution_error() {
+        let plugin = MathPlugin::new();
+        let diag = plugin.diagnose_error("The system has no solution");
+        assert!(diag.is_some());
+        assert_eq!(diag.unwrap().error_type, "no_solution");
+    }
+
+    #[test]
+    fn test_diagnose_unknown_error() {
+        let plugin = MathPlugin::new();
+        let diag = plugin.diagnose_error("Some random error message");
+        assert!(diag.is_none());
+    }
+
+    // =========================================================================
+    // Validation Tests
+    // =========================================================================
+
+    #[test]
+    fn test_validate_balanced_parentheses() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("((3 + 4) * 2)");
+        assert!(result.valid);
+    }
+
+    #[test]
+    fn test_validate_mismatched_parentheses_more_open() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("((3 + 4)");
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("parentheses")));
+    }
+
+    #[test]
+    fn test_validate_mismatched_parentheses_more_close() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("(3 + 4))");
+        assert!(!result.valid);
+    }
+
+    #[test]
+    fn test_validate_consecutive_operators_warning() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("3 ++ 4");
+        assert!(result.valid); // Still valid, just a warning
+        assert!(!result.warnings.is_empty());
+    }
+
+    #[test]
+    fn test_validate_trailing_operator_warning() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("3 + 4 +");
+        assert!(result.valid);
+        assert!(result.warnings.iter().any(|w| w.contains("ends with")));
+    }
+
+    #[test]
+    fn test_validate_empty_input() {
+        let plugin = MathPlugin::new();
+        let result = plugin.validate_input("");
+        assert!(result.valid);
+    }
+
+    // =========================================================================
+    // Domain Detection Tests
+    // =========================================================================
+
+    #[test]
+    fn test_is_in_domain_strong_indicators() {
+        let plugin = MathPlugin::new();
+        assert!(plugin.is_in_domain("Calculate the integral") > 0.8);
+        assert!(plugin.is_in_domain("Prove this theorem") > 0.8);
+        assert!(plugin.is_in_domain("Solve the equation") > 0.7);
+    }
+
+    #[test]
+    fn test_is_in_domain_weak_indicators() {
+        let plugin = MathPlugin::new();
+        let score = plugin.is_in_domain("2 + 2");
+        assert!(score > 0.3);
+    }
+
+    #[test]
+    fn test_is_in_domain_out_of_domain() {
+        let plugin = MathPlugin::new();
+        assert!(plugin.is_in_domain("Tell me a story") < 0.3);
+        assert!(plugin.is_in_domain("What is the capital of France") < 0.3);
+    }
+
+    // =========================================================================
+    // Vocabulary Tests
+    // =========================================================================
+
+    #[test]
+    fn test_vocabulary_not_empty() {
+        let plugin = MathPlugin::new();
+        let vocab = plugin.vocabulary();
+        assert!(!vocab.is_empty());
+        assert!(vocab.contains(&"calculate".to_string()));
+        assert!(vocab.contains(&"+".to_string()));
+    }
+
+    // =========================================================================
+    // Preprocess Tests
+    // =========================================================================
+
+    #[test]
+    fn test_preprocess_squared() {
+        let plugin = MathPlugin::new();
+        let result = plugin.preprocess("x squared");
+        assert!(result.contains("^2"));
+    }
+
+    #[test]
+    fn test_preprocess_cubed() {
+        let plugin = MathPlugin::new();
+        let result = plugin.preprocess("x cubed");
+        assert!(result.contains("^3"));
+    }
+
+    #[test]
+    fn test_preprocess_square_root() {
+        let plugin = MathPlugin::new();
+        let result = plugin.preprocess("square root of 16");
+        assert!(result.contains("sqrt"));
+    }
+
+    #[test]
+    fn test_preprocess_natural_language_operators() {
+        let plugin = MathPlugin::new();
+        let result = plugin.preprocess("3 times 4 plus 5 minus 2 divided by 1");
+        assert!(result.contains("*"));
+        assert!(result.contains("+"));
+        assert!(result.contains("-"));
+        assert!(result.contains("/"));
+    }
+
+    // =========================================================================
+    // Suggest Actions Tests
+    // =========================================================================
+
+    #[test]
+    fn test_suggest_actions_solve() {
+        let plugin = MathPlugin::new();
+        let actions = plugin.suggest_actions("solve this equation");
+        assert!(!actions.is_empty());
+        assert!(actions.iter().any(|a| a.contains("variable")));
+    }
+
+    #[test]
+    fn test_suggest_actions_prove() {
+        let plugin = MathPlugin::new();
+        let actions = plugin.suggest_actions("prove the theorem");
+        assert!(!actions.is_empty());
+        assert!(actions.iter().any(|a| a.contains("hypothesis") || a.contains("induction")));
+    }
+
+    #[test]
+    fn test_suggest_actions_calculate() {
+        let plugin = MathPlugin::new();
+        let actions = plugin.suggest_actions("calculate the result");
+        assert!(!actions.is_empty());
+    }
+
+    #[test]
+    fn test_suggest_actions_graph() {
+        let plugin = MathPlugin::new();
+        let actions = plugin.suggest_actions("plot this function");
+        assert!(!actions.is_empty());
+        assert!(actions.iter().any(|a| a.contains("domain") || a.contains("range")));
+    }
+
+    // =========================================================================
+    // Compute Derivative Tests
+    // =========================================================================
+
+    #[test]
+    fn test_compute_derivative_x_squared() {
+        let result = MathPlugin::compute_derivative_from_text("derivative of x^2");
+        assert!(result.is_some());
+        let (orig, deriv) = result.unwrap();
+        assert_eq!(orig, "x^2");
+        assert_eq!(deriv, "2x");
+    }
+
+    #[test]
+    fn test_compute_derivative_x_cubed() {
+        let result = MathPlugin::compute_derivative_from_text("derivative of x^3");
+        assert!(result.is_some());
+        let (orig, deriv) = result.unwrap();
+        assert_eq!(orig, "x^3");
+        assert_eq!(deriv, "3x^2");
+    }
+
+    #[test]
+    fn test_compute_derivative_x_to_the_1() {
+        let result = MathPlugin::compute_derivative_from_text("derivative of x^1");
+        assert!(result.is_some());
+        let (_, deriv) = result.unwrap();
+        assert_eq!(deriv, "1");
+    }
+
+    #[test]
+    fn test_compute_derivative_higher_power() {
+        let result = MathPlugin::compute_derivative_from_text("derivative of x^10");
+        assert!(result.is_some());
+        let (_, deriv) = result.unwrap();
+        assert_eq!(deriv, "10x^9");
+    }
+
+    #[test]
+    fn test_compute_derivative_no_pattern() {
+        let result = MathPlugin::compute_derivative_from_text("derivative of sin(x)");
+        assert!(result.is_none());
+    }
+
+    // =========================================================================
+    // Math Term Categorization Tests
+    // =========================================================================
+
+    #[test]
+    fn test_categorize_trigonometry() {
+        assert_eq!(categorize_math_term("sine"), "trigonometry");
+        assert_eq!(categorize_math_term("cosine"), "trigonometry");
+        assert_eq!(categorize_math_term("tangent"), "trigonometry");
+    }
+
+    #[test]
+    fn test_categorize_linear_algebra() {
+        assert_eq!(categorize_math_term("matrix"), "linear_algebra");
+        assert_eq!(categorize_math_term("vector"), "linear_algebra");
+        assert_eq!(categorize_math_term("eigenvalue"), "linear_algebra");
+    }
+
+    #[test]
+    fn test_categorize_calculus() {
+        assert_eq!(categorize_math_term("derivative"), "calculus");
+        assert_eq!(categorize_math_term("integral"), "calculus");
+        assert_eq!(categorize_math_term("limit"), "calculus");
+    }
+
+    #[test]
+    fn test_categorize_statistics() {
+        assert_eq!(categorize_math_term("probability"), "statistics");
+        assert_eq!(categorize_math_term("mean"), "statistics");
+        assert_eq!(categorize_math_term("variance"), "statistics");
+    }
+
+    #[test]
+    fn test_categorize_unknown() {
+        assert_eq!(categorize_math_term("unknown_term"), "general");
+    }
+
+    // =========================================================================
+    // Compute Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_compute_subtraction() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "10", 0, 2).with_confidence(0.95),
+            Entity::new("operator", "-", 3, 4).with_confidence(0.9),
+            Entity::new("number", "3", 5, 6).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 10 - 3?", &entities);
+        assert!(result.is_some());
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("7"));
+    }
+
+    #[test]
+    fn test_compute_division() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "20", 0, 2).with_confidence(0.95),
+            Entity::new("operator", "/", 3, 4).with_confidence(0.9),
+            Entity::new("number", "4", 5, 6).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 20 / 4?", &entities);
+        assert!(result.is_some());
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("5"));
+    }
+
+    #[test]
+    fn test_compute_modulo() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "17", 0, 2).with_confidence(0.95),
+            Entity::new("operator", "%", 3, 4).with_confidence(0.9),
+            Entity::new("number", "5", 5, 6).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 17 % 5?", &entities);
+        assert!(result.is_some());
+        let cr = result.unwrap();
+        assert!(cr.answer.contains("2"));
+    }
+
+    #[test]
+    fn test_compute_with_too_many_numbers() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "2", 0, 1).with_confidence(0.95),
+            Entity::new("operator", "+", 2, 3).with_confidence(0.9),
+            Entity::new("number", "3", 4, 5).with_confidence(0.95),
+            Entity::new("number", "4", 6, 7).with_confidence(0.95),
+        ];
+        // More than 2 numbers should not compute
+        let result = plugin.compute("What is 2 + 3 + 4?", &entities);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_compute_epistemic_cube() {
+        let plugin = MathPlugin::new();
+        let entities = vec![
+            Entity::new("number", "5", 0, 1).with_confidence(0.95),
+            Entity::new("operator", "+", 2, 3).with_confidence(0.9),
+            Entity::new("number", "5", 4, 5).with_confidence(0.95),
+        ];
+        let result = plugin.compute("What is 5 + 5?", &entities);
+        assert!(result.is_some());
+        let cr = result.unwrap();
+        // Math is axiomatic (E4), binding (N3), foundational (M3)
+        assert_eq!(cr.cube.e, ETier::E4);
+        assert_eq!(cr.cube.n, NTier::N3);
+        assert_eq!(cr.cube.m, MTier::M3);
     }
 }

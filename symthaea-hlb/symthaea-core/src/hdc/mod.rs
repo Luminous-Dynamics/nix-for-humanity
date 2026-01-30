@@ -297,6 +297,7 @@ pub mod incremental_hv;                    // O(k) incremental bundling (10-100x
 pub mod parallel_hv;                       // Rayon parallel batch operations (7x faster on 8 cores)
 pub mod lsh_simhash;                       // SimHash for binary vectors (Hamming distance)
 pub mod lsh_similarity;                    // Adaptive LSH-backed similarity search (Session 7C)
+pub mod lsh_index;                         // LSH index for fast approximate similarity search (heap-optimized)
 pub mod primitive_system;                  // Ontological primitives system with 7 semantic domains
 pub mod ucl_cross_domain_frames;           // UCL cross-domain semantic frames (TRADE, CONFLICT, FEEDBACK_LOOP, etc.)
 pub mod bootstrapping;                     // Cognitive bootstrapping - primitives to reasoning tasks

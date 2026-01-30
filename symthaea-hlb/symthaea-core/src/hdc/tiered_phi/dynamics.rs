@@ -871,7 +871,7 @@ impl PhiAttractor {
             }
         }
 
-        neighbors.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        neighbors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         neighbors.dedup();
 
         (basin_estimate, neighbors)
@@ -942,7 +942,7 @@ impl PhiAttractor {
             }
         }
 
-        attractors.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        attractors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         attractors
     }
 }

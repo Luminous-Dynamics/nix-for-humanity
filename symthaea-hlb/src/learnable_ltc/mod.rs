@@ -464,8 +464,9 @@ impl LearnableLTC {
 
     /// Get tau distribution statistics: (mean, std, min, max)
     pub fn get_tau_distribution(&self) -> (f32, f32, f32, f32) {
+        const EPSILON: f32 = 1e-10;
         let n = self.tau.len() as f32;
-        if n == 0.0 {
+        if n.abs() < EPSILON {
             return (0.0, 0.0, 0.0, 0.0);
         }
 
