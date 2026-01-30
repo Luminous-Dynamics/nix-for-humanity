@@ -247,6 +247,11 @@ fn main() {
     // Create accumulator with appropriate input dim
     let mut accumulator = DirectAccumulator::new(classifier_dim, phonemes.len());
 
+    // Batch buffers for cache-tiled dgemm accumulation
+    const BATCH_SIZE: usize = 256;
+    let mut batch_f64: Vec<f64> = Vec::with_capacity(BATCH_SIZE * classifier_dim);
+    let mut batch_targets: Vec<usize> = Vec::with_capacity(BATCH_SIZE);
+
     // Determine how many utterances to process
     let total = if cli.max_utterances > 0 {
         alignments.len().min(cli.max_utterances)
@@ -392,8 +397,14 @@ fn main() {
                         // No projection
                         frame_representations[frame_idx].clone()
                     };
-                    accumulator.add(&feature, target_idx);
+                    for &v in &feature { batch_f64.push(v as f64); }
+                    batch_targets.push(target_idx);
                     total_samples += 1;
+                    if batch_targets.len() >= BATCH_SIZE {
+                        accumulator.add_batch(&batch_f64, &batch_targets, batch_targets.len());
+                        batch_f64.clear();
+                        batch_targets.clear();
+                    }
                 }
             }
         }
@@ -403,6 +414,11 @@ fn main() {
         if i % 100 == 0 {
             pb.set_message(format!("{} samples", total_samples));
         }
+    }
+
+    // Flush remaining batch
+    if !batch_targets.is_empty() {
+        accumulator.add_batch(&batch_f64, &batch_targets, batch_targets.len());
     }
 
     pb.finish_with_message("done");

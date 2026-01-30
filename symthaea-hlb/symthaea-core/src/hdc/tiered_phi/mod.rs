@@ -51,14 +51,14 @@
 //! use symthaea::hdc::tiered_phi::{TieredPhi, ApproximationTier};
 //!
 //! // For testing: O(1) deterministic values
-//! let mut phi = TieredPhi::new(ApproximationTier::Mock);
+//! let mut phi = TieredPhi::new(ApproximationTier::RandomBaseline);
 //! assert!(phi.compute(&components) > 0.0);
 //!
 //! // For production: O(n) fast approximation
-//! let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+//! let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
 //!
 //! // For research: O(2^n) exact calculation
-//! let mut phi = TieredPhi::new(ApproximationTier::Exact);
+//! let mut phi = TieredPhi::new(ApproximationTier::ExhaustivePartition);
 //! ```
 
 // =============================================================================

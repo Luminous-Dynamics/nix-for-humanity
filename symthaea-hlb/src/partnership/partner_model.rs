@@ -125,3 +125,143 @@ pub struct InteractionEvent {
     pub mutuality: f32,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use symthaea_core::hdc::relational_consciousness::RelationshipStage;
+
+    fn make_event(depth: f32, safety: f32, mutuality: f32) -> InteractionEvent {
+        InteractionEvent {
+            timestamp: 1000.0,
+            depth,
+            emotional_safety: safety,
+            mutuality,
+        }
+    }
+
+    #[test]
+    fn test_new_partner_model_defaults() {
+        let model = HumanPartnerModel::new("alice");
+        assert_eq!(model.partner_id, "alice");
+        assert_eq!(model.trust, 0.0);
+        assert_eq!(model.vulnerability, 0.0);
+        assert_eq!(model.reciprocity, 0.0);
+        assert_eq!(model.interactions_count, 0);
+        assert!(model.last_interaction_ts.is_none());
+        assert_eq!(model.stage, RelationshipStage::NoRelation);
+    }
+
+    #[test]
+    fn test_update_increases_trust_and_reciprocity() {
+        let mut model = HumanPartnerModel::new("bob");
+        let event = make_event(0.8, 0.9, 0.7);
+        model.update_on_interaction(&event);
+
+        assert!(model.trust > 0.0, "Trust should increase after positive interaction");
+        assert!(model.vulnerability > 0.0, "Vulnerability should increase");
+        assert!(model.reciprocity > 0.0, "Reciprocity should increase");
+        assert_eq!(model.interactions_count, 1);
+        assert_eq!(model.last_interaction_ts, Some(1000.0));
+    }
+
+    #[test]
+    fn test_update_clamps_values_to_unit_range() {
+        let mut model = HumanPartnerModel::new("clamp_test");
+        // Apply many high-value interactions
+        for i in 0..100 {
+            model.update_on_interaction(&InteractionEvent {
+                timestamp: i as f64,
+                depth: 1.0,
+                emotional_safety: 1.0,
+                mutuality: 1.0,
+            });
+        }
+        assert!(model.trust <= 1.0, "Trust must be clamped to 1.0");
+        assert!(model.vulnerability <= 1.0, "Vulnerability must be clamped to 1.0");
+        assert!(model.reciprocity <= 1.0, "Reciprocity must be clamped to 1.0");
+    }
+
+    #[test]
+    fn test_update_clamps_negative_inputs() {
+        let mut model = HumanPartnerModel::new("neg_test");
+        let event = make_event(-5.0, -3.0, -2.0);
+        model.update_on_interaction(&event);
+        // With negative inputs clamped to 0, trust should remain 0
+        assert!(model.trust >= 0.0);
+        assert!(model.vulnerability >= 0.0);
+        assert!(model.reciprocity >= 0.0);
+    }
+
+    #[test]
+    fn test_zero_interaction_no_change() {
+        let mut model = HumanPartnerModel::new("zero_test");
+        let event = make_event(0.0, 0.0, 0.0);
+        model.update_on_interaction(&event);
+        assert_eq!(model.trust, 0.0);
+        assert_eq!(model.vulnerability, 0.0);
+        assert_eq!(model.reciprocity, 0.0);
+        assert_eq!(model.interactions_count, 1);
+    }
+
+    #[test]
+    fn test_stage_progression() {
+        let mut model = HumanPartnerModel::new("stage_test");
+
+        // Initially NoRelation
+        assert_eq!(model.stage, RelationshipStage::NoRelation);
+
+        // Small trust bump → Awareness
+        model.trust = 0.06;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, RelationshipStage::Awareness);
+
+        // Increase trust and reciprocity → Contact
+        model.trust = 0.25;
+        model.reciprocity = 0.15;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, RelationshipStage::Contact);
+
+        // Further increase → Attunement
+        model.trust = 0.45;
+        model.reciprocity = 0.35;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, RelationshipStage::Attunement);
+
+        // → Bonding
+        model.trust = 0.65;
+        model.reciprocity = 0.55;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, RelationshipStage::Bonding);
+
+        // → Unity (requires vulnerability too)
+        model.trust = 0.85;
+        model.reciprocity = 0.75;
+        model.vulnerability = 0.65;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, RelationshipStage::Unity);
+    }
+
+    #[test]
+    fn test_stage_does_not_regress() {
+        let mut model = HumanPartnerModel::new("regress_test");
+        model.trust = 0.5;
+        model.reciprocity = 0.4;
+        model.advance_stage_if_ready();
+        let stage_after = model.stage;
+
+        // Drop trust below threshold
+        model.trust = 0.0;
+        model.reciprocity = 0.0;
+        model.advance_stage_if_ready();
+        assert_eq!(model.stage, stage_after, "Stage should not regress");
+    }
+
+    #[test]
+    fn test_interactions_count_saturates() {
+        let mut model = HumanPartnerModel::new("sat_test");
+        model.interactions_count = u64::MAX;
+        let event = make_event(0.5, 0.5, 0.5);
+        model.update_on_interaction(&event);
+        assert_eq!(model.interactions_count, u64::MAX, "Count should saturate, not wrap");
+    }
+}

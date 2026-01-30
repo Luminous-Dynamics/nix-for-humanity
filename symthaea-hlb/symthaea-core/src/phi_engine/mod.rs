@@ -253,11 +253,11 @@ impl PhiEngine {
                 let factor = (n_nodes as f64 / 8.0) * ((n_nodes as f64).ln() / (8.0_f64).ln());
                 Duration::from_millis((80.0 * factor) as u64)
             }
-            PhiMethod::Tiered(ApproximationTier::Exact) => {
+            PhiMethod::Tiered(ApproximationTier::ExhaustivePartition) => {
                 // O(2^n) scaling: exponential
                 Duration::from_secs(2u64.pow(n_nodes as u32 - 8))
             }
-            PhiMethod::Tiered(ApproximationTier::Spectral) => {
+            PhiMethod::Tiered(ApproximationTier::SpectralConnectivity) => {
                 // Similar to SpectralConnectivity
                 let factor = (n_nodes as f64 / 8.0).powi(3);
                 Duration::from_micros((3000.0 * factor) as u64)
@@ -360,7 +360,7 @@ mod tests {
             .map(|i| ContinuousHV::random(dim, 100 + i as u64))
             .collect();
 
-        let engine = PhiEngine::new(PhiMethod::Tiered(ApproximationTier::Mock));
+        let engine = PhiEngine::new(PhiMethod::Tiered(ApproximationTier::RandomBaseline));
         let result = engine.compute(&hvs);
 
         assert_eq!(result.method, "Tiered");
@@ -373,7 +373,7 @@ mod tests {
             .collect();
         let components: Vec<HV16> = real_hvs.iter().map(|hv| real_hv_to_hv16(hv)).collect();
 
-        let mut calc = TieredPhi::new(ApproximationTier::Mock);
+        let mut calc = TieredPhi::new(ApproximationTier::RandomBaseline);
         let direct_phi = calc.compute(&components);
 
         assert!(

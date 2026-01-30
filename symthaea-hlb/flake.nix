@@ -20,12 +20,21 @@
           extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
         };
 
-        # Python for PyPhi integration (IIT 3.0 exact Φ calculation)
+        # Python for PyPhi integration, Neural Bridge training, and ML
         pythonEnv = pkgs.python311.withPackages (ps: with ps; [
           numpy
           scipy
           networkx
           # pyphi  # If available in nixpkgs, otherwise install via pip
+
+          # Neural Bridge: LLM activation extraction and probe training
+          torch
+          torchvision
+          transformers
+          safetensors
+          huggingface-hub
+          accelerate
+          sentencepiece  # For tokenizers
         ]);
 
         # Common build inputs

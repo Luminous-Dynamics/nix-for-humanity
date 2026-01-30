@@ -392,7 +392,7 @@ impl CognitivePrimitiveLearning {
                 // This is a weak proxy for accuracy in the one-way pipeline
                 let max_idx = output.iter()
                     .enumerate()
-                    .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+                    .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                     .map(|(i, _)| i)
                     .unwrap_or(0);
 

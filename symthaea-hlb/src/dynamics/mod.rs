@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod cfc;
+pub mod cfc_coherence;
+pub mod temporal_signatures;
 pub mod world_model;
 
 /// A crystallized concept - a stable, consolidated memory representation
@@ -191,4 +193,11 @@ pub enum DynamicsError {
 
 // Re-export key types
 pub use cfc::{CfCNetwork, CfCCell, CfCConfig};
+pub use cfc_coherence::{
+    CfCCoherenceBridge, CoherenceConfig, TemporalCoherenceMetrics, CoherenceSummary
+};
+pub use temporal_signatures::{
+    TemporalSignatureEncoder, SignatureConfig, ConsciousnessPattern,
+    TrajectoryFeatures, TemporalStateSummary
+};
 pub use world_model::{HierarchicalCfCWorldModel, WorldModelConfig, WorldModelLayer};

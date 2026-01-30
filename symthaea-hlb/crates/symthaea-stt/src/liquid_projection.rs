@@ -728,6 +728,39 @@ impl DirectAccumulator {
         self.n_samples += 1;
     }
 
+    /// Add a batch of samples using cache-tiled dgemm for X^TX accumulation.
+    /// features_f64: row-major [batch_size × input_dim] pre-cast to f64
+    /// targets: phoneme indices for each sample in the batch
+    pub fn add_batch(&mut self, features_f64: &[f64], targets: &[usize], batch_size: usize) {
+        let d = self.input_dim;
+        // X^TX += B^T * B via cache-tiled dgemm
+        // B is [batch_size × d] row-major
+        // B^T is [d × batch_size]: same data, row_stride=1, col_stride=d
+        // Result: [d × d] row-major
+        unsafe {
+            matrixmultiply::dgemm(
+                d, batch_size, d,
+                1.0,
+                features_f64.as_ptr(), 1, d as isize,       // B^T view
+                features_f64.as_ptr(), d as isize, 1,        // B row-major
+                1.0,
+                self.xtx.as_mut_ptr(), d as isize, 1,        // X^TX row-major
+            );
+        }
+        // X^TY per-sample (O(D) each, negligible vs O(D^2) dgemm)
+        for s in 0..batch_size {
+            let target = targets[s];
+            if target < self.n_classes {
+                let offset = s * d;
+                for i in 0..d {
+                    self.xty[i * self.n_classes + target] += features_f64[offset + i];
+                }
+                self.class_counts[target] += 1;
+            }
+        }
+        self.n_samples += batch_size;
+    }
+
     /// Solve W = (X^T X + λI)^{-1} X^T Y
     /// Standard Ridge Regression (no class balancing - use prior correction at inference)
     /// Returns [n_classes × input_dim] weight matrix

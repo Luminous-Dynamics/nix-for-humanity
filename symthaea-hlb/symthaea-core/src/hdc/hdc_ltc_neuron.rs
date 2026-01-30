@@ -291,8 +291,9 @@ impl HdcLtcNeuron {
         // Update running mean/var with exponential moving average
         let alpha = 0.01;
         let new_norm = self.state.norm();
+        let old_mean = self.running_mean;
         self.running_mean = (1.0 - alpha) * self.running_mean + alpha * new_norm;
-        self.running_var = (1.0 - alpha) * self.running_var + alpha * (new_norm - self.running_mean).powi(2);
+        self.running_var = (1.0 - alpha) * self.running_var + alpha * (new_norm - old_mean).powi(2);
     }
 
     /// Evolve with Runge-Kutta 4 integration (more accurate than Euler)
@@ -861,6 +862,28 @@ mod tests {
         // Weights should change but remain bounded
         // Allow small epsilon for floating point precision
         assert!(weight_after <= 2.1, "Weights should be approximately normalized (got {})", weight_after);
+    }
+
+    #[test]
+    fn test_running_variance_nonzero_for_varying_input() {
+        let mut neuron = HdcLtcNeuron::new_default(42);
+
+        // Feed alternating inputs to create genuine state norm variance
+        let input_a = ContinuousHV::random_default(100);
+        let input_b = ContinuousHV::random_default(200);
+
+        for i in 0..500 {
+            let input = if i % 2 == 0 { &input_a } else { &input_b };
+            neuron.evolve(0.01, input);
+        }
+
+        let stats = neuron.stats();
+        // With varying inputs the running variance should be non-zero
+        assert!(
+            stats.running_std > 0.0,
+            "Running std should be > 0 for varying inputs, got {}",
+            stats.running_std
+        );
     }
 
     #[test]

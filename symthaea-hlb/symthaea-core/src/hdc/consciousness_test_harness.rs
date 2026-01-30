@@ -140,9 +140,9 @@ impl TestHarness {
     /// Create harness with full configuration
     pub fn with_config(config: HarnessConfig) -> Self {
         let tier = match config.mode {
-            TestMode::Mock => ApproximationTier::Mock,
-            TestMode::Tiered => ApproximationTier::Heuristic,
-            TestMode::Exact => ApproximationTier::Exact,
+            TestMode::Mock => ApproximationTier::RandomBaseline,
+            TestMode::Tiered => ApproximationTier::SampledPartition,
+            TestMode::Exact => ApproximationTier::ExhaustivePartition,
         };
 
         Self {
@@ -178,7 +178,7 @@ impl TestHarness {
                 // Auto-downgrade if too many components
                 if components.len() > self.config.max_components_for_exact
                    && self.config.mode == TestMode::Exact {
-                    self.tiered_phi.config.tier = ApproximationTier::Spectral;
+                    self.tiered_phi.config.tier = ApproximationTier::SpectralConnectivity;
                 }
                 self.tiered_phi.compute(components)
             }

@@ -476,54 +476,29 @@ impl std::fmt::Display for AuthError {
 
 impl std::error::Error for AuthError {}
 
-// Simple token generation using system random
+/// Generate a cryptographically random authentication token.
+///
+/// Uses OS entropy via `OsRng` for unpredictable token values.
 fn generate_token() -> String {
-    use std::collections::hash_map::RandomState;
-    use std::hash::{BuildHasher, Hasher};
-
-    let state = RandomState::new();
-    let mut hasher = state.build_hasher();
-    hasher.write_u128(
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos()
-    );
-
-    let hash1 = hasher.finish();
-
-    let state2 = RandomState::new();
-    let mut hasher2 = state2.build_hasher();
-    hasher2.write_u64(hash1);
-    let hash2 = hasher2.finish();
-
-    format!("sym_{:016x}{:016x}", hash1, hash2)
+    use rand::RngCore;
+    let mut bytes = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut bytes);
+    let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    format!("sym_{}", hex)
 }
 
+/// Generate a cryptographically random token ID.
 fn generate_token_id() -> String {
-    use std::collections::hash_map::RandomState;
-    use std::hash::{BuildHasher, Hasher};
-
-    let state = RandomState::new();
-    let mut hasher = state.build_hasher();
-    hasher.write_u128(
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos()
-    );
-    format!("tok_{:016x}", hasher.finish())
+    use rand::RngCore;
+    let mut bytes = [0u8; 16];
+    rand::rngs::OsRng.fill_bytes(&mut bytes);
+    let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    format!("tok_{}", hex)
 }
 
+/// Hash a token using BLAKE3 for secure, non-reversible storage.
 fn hash_token(token: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    let mut hasher = DefaultHasher::new();
-    token.hash(&mut hasher);
-    // Add salt
-    "symthaea_auth_salt".hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
+    blake3::hash(token.as_bytes()).to_hex().to_string()
 }
 
 #[cfg(test)]
@@ -585,6 +560,23 @@ mod tests {
         assert!(provider.authenticate(&value).is_ok());
         assert!(provider.revoke(&token.id));
         assert!(provider.authenticate(&value).is_err());
+    }
+
+    #[test]
+    fn test_tokens_are_unique() {
+        let t1 = generate_token();
+        let t2 = generate_token();
+        assert_ne!(t1, t2, "Two generated tokens should be unique (OS entropy)");
+    }
+
+    #[test]
+    fn test_token_hash_uses_blake3() {
+        let token = "sym_test_token";
+        let hash = hash_token(token);
+        // BLAKE3 hex output is 64 characters
+        assert_eq!(hash.len(), 64, "BLAKE3 hash should be 64 hex chars");
+        // Same input should produce same hash
+        assert_eq!(hash, hash_token(token));
     }
 
     #[test]

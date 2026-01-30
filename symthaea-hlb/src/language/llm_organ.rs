@@ -278,6 +278,11 @@ impl LLMOrgan {
         }
     }
 
+    /// Create a new LLM organ with config (alias for new, for API compatibility).
+    pub fn with_config(config: LLMOrganConfig) -> Self {
+        Self::new(config)
+    }
+
     /// Create a new LLM organ with a backend for real generation.
     pub fn with_backend(config: LLMOrganConfig, backend: Box<dyn super::llm_backend::LLMBackend>) -> Self {
         Self {

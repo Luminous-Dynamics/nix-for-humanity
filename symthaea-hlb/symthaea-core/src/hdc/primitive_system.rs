@@ -77,7 +77,7 @@ static GLOBAL_PRIMITIVE_SYSTEM: Lazy<PrimitiveSystem> = Lazy::new(PrimitiveSyste
 
 /// Generate a deterministic seed from a string name
 /// This ensures primitives always get the same encoding across runs
-fn seed_from_name(name: &str) -> u64 {
+pub fn seed_from_name(name: &str) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     name.hash(&mut hasher);

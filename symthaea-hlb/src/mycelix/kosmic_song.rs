@@ -481,15 +481,13 @@ impl KosmicSong {
         KosmicSongBuilder::new()
     }
 
-    /// Generate unique agent ID
+    /// Generate unique agent ID using OS entropy via BLAKE3.
     fn generate_agent_id() -> AgentId {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        SystemTime::now().hash(&mut hasher);
-        std::process::id().hash(&mut hasher);
-        format!("kosmic_{:016x}", hasher.finish())
+        use rand::RngCore;
+        let mut bytes = [0u8; 16];
+        rand::rngs::OsRng.fill_bytes(&mut bytes);
+        let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+        format!("kosmic_{}", hex)
     }
 
     /// Synthesize all layers into coherent state

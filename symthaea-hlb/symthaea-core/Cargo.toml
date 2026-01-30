@@ -25,6 +25,9 @@ nalgebra = "0.32"  # Linear algebra
 bumpalo = "3.16"  # Arena allocation
 chrono = { version = "0.4", features = ["serde"] }  # DateTime
 
+[dev-dependencies]
+proptest = "1.4"
+
 [features]
 default = []
 embeddings = []       # Enable embedding model integration

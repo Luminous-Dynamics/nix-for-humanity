@@ -119,6 +119,9 @@ arrow = { version = "54.0", features = ["prettyprint"] }
 # Random number generation (for HDC)
 rand = "0.8"
 
+# Cache-tiled matrix multiply (AVX2 dgemm for batch accumulator)
+matrixmultiply = "0.3"
+
 [dev-dependencies]
 criterion = "0.5"
 tempfile = "3.10"

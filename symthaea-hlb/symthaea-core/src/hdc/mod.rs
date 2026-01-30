@@ -245,6 +245,7 @@ pub mod resonator;
 pub mod morphogenetic;
 pub mod hebbian;
 pub mod hdc_ltc_neuron;  // HDC-LTC neuron integration with Hebbian learning
+pub mod hdc_ltc_unified;  // Revolutionary unified HDC-LTC: state AS hypervector with closed-form solution
 pub mod cincinnati_ltc;  // Cincinnati Algorithm + LTC integration (differential engine, lateral binding, predictive budding)
 pub mod cincinnati_network;  // Cincinnati-enhanced HdcLtcNetwork with lateral binding and budding
 pub mod cycle_detector;  // Cycle detection for periodic patterns - autocorrelation-based period detection with HDC phase encoding
@@ -262,6 +263,9 @@ pub mod semantic_decoder;  // HV → Primitive sequence (generative direction) -
 // DISABLED: depends on hd_ltc_codec which is disabled
 // pub mod ltc_generative_core; // Autoregressive primitive prediction - THE VOICE
 pub mod unified_hv;     // Unified hypervector types (ContinuousHV)
+pub mod config;         // Centralized HDC configuration (runtime dimension management)
+pub mod projection;     // Learned projection layers for dimension conversion
+pub mod compat;         // Compatibility layer for HV16 ↔ ContinuousHV migration
 
 // Global Workspace Theory (conscious access, competition, broadcasting)
 pub mod global_workspace;                  // GWT implementation with competitive dynamics
@@ -290,6 +294,7 @@ pub mod parallel_hv;                       // Rayon parallel batch operations (7
 pub mod lsh_simhash;                       // SimHash for binary vectors (Hamming distance)
 pub mod lsh_similarity;                    // Adaptive LSH-backed similarity search (Session 7C)
 pub mod primitive_system;                  // Ontological primitives system with 7 semantic domains
+pub mod ucl_cross_domain_frames;           // UCL cross-domain semantic frames (TRADE, CONFLICT, FEEDBACK_LOOP, etc.)
 pub mod bootstrapping;                     // Cognitive bootstrapping - primitives to reasoning tasks
 pub mod primitive_dashboard;               // Real-time primitive usage monitoring
 pub mod arithmetic_engine;                   // Revolutionary: True mathematical cognition via HDC
@@ -334,8 +339,12 @@ pub mod predictive_encoder;                // Attention-modulated HDC encoding w
 
 // Novel Algorithm Modules (Dec 2025)
 pub mod differentiable_phi;                // Soft-partitioned differentiable Φ for gradient optimization
+pub mod autodiff_phi;                      // Reverse-mode autodiff for consciousness optimization (Jan 2026)
 pub mod cross_modal_binding;               // Cross-modal binding for multi-sensory integration
 pub mod metacognitive_monitor;             // Real-time consciousness monitoring with self-reflection
+
+// Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling for phenomenal unity
+pub mod phenomenal_binding_study;
 
 // Consciousness Infrastructure (required by advanced systems)
 pub mod consciousness_gradients;           // Gradient computation for consciousness optimization
@@ -364,6 +373,36 @@ pub mod deep_integration;                   // Deep integration bridge for Φ-gu
 // Re-export HV16 at module level for convenience (used by language/nix_* modules)
 pub use binary_hv::HV16;
 pub use real_hv::RealHV;
+
+// Re-export unified HV types
+pub use unified_hv::{ContinuousHV, BinaryHV, HV};
+
+// Re-export configuration types (dimension unification)
+pub use config::{
+    HdcConfig,
+    set_hdc_config,
+    try_set_hdc_config,
+    hdc_dim,
+    hdc_config,
+    is_hdc_configured,
+    DimensionMapping,
+    STT_DIMENSION,
+    stt_expansion_factor,
+};
+
+// Re-export projection layers
+pub use projection::{
+    LearnedProjection,
+    BidirectionalBridge,
+    RandomProjection,
+};
+
+// Re-export compatibility utilities
+pub use compat::{
+    HVCompat,
+    hv16_to_core,
+    core_to_hv16,
+};
 
 // Re-export key types for convenience
 pub use statistical_retrieval::{
@@ -443,7 +482,12 @@ pub use temporal_encoder::TemporalEncoder;
 pub use text_encoder::{TextEncoder, TextEncoderConfig, TextEncoderStats};
 
 // Re-export Primitive System types (9-tier ontological primitives)
-pub use primitive_system::{PrimitiveSystem, Primitive, PrimitiveTier};
+pub use primitive_system::{PrimitiveSystem, Primitive, PrimitiveTier, DomainManifold, seed_from_name};
+
+// Re-export UCL Cross-Domain Frame types (6 missing frames from gap analysis)
+pub use ucl_cross_domain_frames::{
+    UCLFrameSystem, CrossDomainFrame, FrameSlot, FrameInstance, concept_hv,
+};
 
 // Re-export Primitive Dashboard types (real-time monitoring)
 pub use primitive_dashboard::{PrimitiveDashboard, PrimitiveStats, VoicePrimitiveTracker};
@@ -483,8 +527,16 @@ pub use causal_mind::{CausalMind, CausalDirection, LearnedCausalDiscovery};
 // Re-export unified cognitive core
 pub use unified_cognitive_core::{UnifiedCognitiveCore, UnifiedCognitiveElement, CognitiveMarkers, QueryResult};
 
+// Re-export unified HDC-LTC types (revolutionary closed-form dynamics)
+pub use hdc_ltc_unified::{
+    HdcLtcUnifiedNeuron, HdcLtcUnifiedNetwork,
+    UnifiedConfig, UnifiedNetworkConfig,
+    UnifiedActivation, UnifiedNeuronStats, UnifiedNetworkStats,
+};
+
 // Sleep and altered states
 pub mod sleep_and_altered_states;
+pub mod sleep_pattern_discovery;     // Resonator-based pattern discovery during sleep consolidation
 
 // Consciousness persistence (versioning, auto-save, rollback)
 pub mod consciousness_persistence;
@@ -561,6 +613,13 @@ pub use spectral_connectivity::ConnectivityCalculator;
 #[deprecated(since = "0.5.0", note = "Use ConnectivityCalculator from spectral_connectivity - this measures λ₂, NOT IIT Φ")]
 pub use spectral_connectivity::RealPhiCalculator;  // Backward compatibility alias
 pub use tiered_phi::{TieredPhi, ApproximationTier};
+
+// Re-export autodiff Phi types (reverse-mode autodiff for consciousness optimization)
+pub use autodiff_phi::{
+    AutodiffPhiEngine, AutodiffConfig, PhiForwardResult,
+    DiffNode, DiffNetwork,
+    ConsciousnessOptimizer, OptimizerConfig, TrainingStep,
+};
 
 // Re-export process topology types
 pub use process_topology::ProcessTopologyOrganizer;

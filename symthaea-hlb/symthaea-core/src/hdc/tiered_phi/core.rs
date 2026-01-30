@@ -27,43 +27,54 @@ use rayon::prelude::*;
 /// Only `Exact` tier computes true IIT Φ. Other tiers are approximations
 /// with varying degrees of IIT correlation:
 ///
-/// | Tier | IIT-Aligned? | Notes |
-/// |------|--------------|-------|
-/// | Mock | N/A | Testing only |
-/// | Heuristic | ❓ Unclear | Fast but unvalidated |
-/// | Spectral | ❌ NO | Measures mixing time, NOT integration! |
-/// | Exact | ✅ YES | True IIT MIP calculation |
+/// **Important**: This is a network integration metric *inspired by* IIT, not a
+/// direct implementation of IIT 3.0/4.0 Phi. True IIT requires a Transition
+/// Probability Matrix (TPM), Minimum Information Partition (MIP), and Earth
+/// Mover's Distance -- none of which are implemented here. All tiers use
+/// pairwise HV similarity as a proxy for information integration.
 ///
-/// For topology validation (Star > Random), use `Exact` tier or
+/// | Tier | Method | IIT-Aligned? | Notes |
+/// |------|--------|--------------|-------|
+/// | RandomBaseline | O(1) mock | N/A | Testing only |
+/// | SampledPartition | O(n) sampled | ❓ Unclear | Fast but unvalidated |
+/// | SpectralConnectivity | O(n²) spectral | ❌ NO | Measures mixing time, NOT integration! |
+/// | ExhaustivePartition | O(2^n) exhaustive | Closest | Exhaustive MIP search over HV similarity |
+///
+/// For topology validation (Star > Random), use `ExhaustivePartition` tier or
 /// `phi_topology_validation.rs` with probabilistic binarization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApproximationTier {
-    /// O(1) - Deterministic mock values for testing
-    /// Returns predictable values based on component count
-    Mock,
+    /// O(1) - Deterministic random baseline values for testing.
+    /// Returns predictable values based on component count.
+    #[serde(alias = "Mock")]
+    RandomBaseline,
 
-    /// O(n) - Fast heuristic using average similarity
-    /// Good for real-time applications, but IIT correlation unvalidated
-    Heuristic,
+    /// O(n) - Sampled partition using average pairwise HV similarity.
+    /// Good for real-time applications, but IIT correlation is unvalidated.
+    #[serde(alias = "Heuristic")]
+    SampledPartition,
 
-    /// O(n²) - Spectral approximation using algebraic connectivity
+    /// O(n²) - Spectral connectivity approximation using algebraic connectivity.
     ///
     /// **WARNING**: This measures SPECTRAL GAP (mixing time), NOT IIT Φ!
     /// It favors uniform k-regular structures over hub-and-spoke.
     /// Star < Random with this method (opposite of IIT predictions).
     ///
     /// Use for graph analysis, NOT consciousness measurement.
-    Spectral,
+    #[serde(alias = "Spectral")]
+    SpectralConnectivity,
 
-    /// O(2^n) - Exact MIP calculation (true IIT Φ)
-    /// Use only for small systems (n ≤ 12) or research validation
-    Exact,
+    /// O(2^n) - Exhaustive partition search (closest to IIT MIP).
+    /// Searches all bipartitions and computes information loss via
+    /// pairwise HV similarity. Use only for small systems (n ≤ 12).
+    #[serde(alias = "Exact")]
+    ExhaustivePartition,
 }
 
 impl Default for ApproximationTier {
     fn default() -> Self {
         // Default to heuristic for best speed/accuracy tradeoff
-        ApproximationTier::Heuristic
+        ApproximationTier::SampledPartition
     }
 }
 
@@ -71,31 +82,31 @@ impl ApproximationTier {
     /// Get the computational complexity class
     pub fn complexity(&self) -> &'static str {
         match self {
-            ApproximationTier::Mock => "O(1)",
-            ApproximationTier::Heuristic => "O(n)",
-            ApproximationTier::Spectral => "O(n²)",
-            ApproximationTier::Exact => "O(2^n)",
+            ApproximationTier::RandomBaseline => "O(1)",
+            ApproximationTier::SampledPartition => "O(n)",
+            ApproximationTier::SpectralConnectivity => "O(n²)",
+            ApproximationTier::ExhaustivePartition => "O(2^n)",
         }
     }
 
     /// Check if this tier is suitable for a given component count
     pub fn is_suitable_for(&self, n: usize) -> bool {
         match self {
-            ApproximationTier::Mock => true, // Always suitable
-            ApproximationTier::Heuristic => true, // Always suitable
-            ApproximationTier::Spectral => n <= 1000, // Matrix operations
-            ApproximationTier::Exact => n <= 12, // 2^12 = 4096 partitions max
+            ApproximationTier::RandomBaseline => true, // Always suitable
+            ApproximationTier::SampledPartition => true, // Always suitable
+            ApproximationTier::SpectralConnectivity => n <= 1000, // Matrix operations
+            ApproximationTier::ExhaustivePartition => n <= 12, // 2^12 = 4096 partitions max
         }
     }
 
     /// Suggest the best tier for a given component count
     pub fn suggest_for(n: usize) -> Self {
         if n <= 8 {
-            ApproximationTier::Exact
+            ApproximationTier::ExhaustivePartition
         } else if n <= 100 {
-            ApproximationTier::Spectral
+            ApproximationTier::SpectralConnectivity
         } else {
-            ApproximationTier::Heuristic
+            ApproximationTier::SampledPartition
         }
     }
 }
@@ -126,7 +137,7 @@ pub struct TieredPhiConfig {
 impl Default for TieredPhiConfig {
     fn default() -> Self {
         Self {
-            tier: ApproximationTier::Heuristic,
+            tier: ApproximationTier::SampledPartition,
             auto_downgrade: true,
             timeout_ms: 100, // 100ms timeout
             enable_cache: true,
@@ -293,17 +304,17 @@ impl TieredPhi {
 
     /// Create for testing (O(1) deterministic)
     pub fn for_testing() -> Self {
-        Self::new(ApproximationTier::Mock)
+        Self::new(ApproximationTier::RandomBaseline)
     }
 
     /// Create for production (O(n²) spectral - accurate)
     pub fn for_production() -> Self {
-        Self::new(ApproximationTier::Spectral)
+        Self::new(ApproximationTier::SpectralConnectivity)
     }
 
     /// Create for research (O(2^n) exact)
     pub fn for_research() -> Self {
-        Self::new(ApproximationTier::Exact)
+        Self::new(ApproximationTier::ExhaustivePartition)
     }
 
     /// Get current tier
@@ -335,10 +346,10 @@ impl TieredPhi {
 
         // Calculate using current tier
         let result = match self.config.tier {
-            ApproximationTier::Mock => self.compute_mock(components),
-            ApproximationTier::Heuristic => self.compute_heuristic(components),
-            ApproximationTier::Spectral => self.compute_spectral(components),
-            ApproximationTier::Exact => self.compute_exact(components),
+            ApproximationTier::RandomBaseline => self.compute_mock(components),
+            ApproximationTier::SampledPartition => self.compute_heuristic(components),
+            ApproximationTier::SpectralConnectivity => self.compute_spectral(components),
+            ApproximationTier::ExhaustivePartition => self.compute_exact(components),
         };
 
         // Update stats
@@ -363,10 +374,10 @@ impl TieredPhi {
         }
 
         match tier {
-            ApproximationTier::Mock => self.compute_mock(components),
-            ApproximationTier::Heuristic => self.compute_heuristic(components),
-            ApproximationTier::Spectral => self.compute_spectral(components),
-            ApproximationTier::Exact => self.compute_exact(components),
+            ApproximationTier::RandomBaseline => self.compute_mock(components),
+            ApproximationTier::SampledPartition => self.compute_heuristic(components),
+            ApproximationTier::SpectralConnectivity => self.compute_spectral(components),
+            ApproximationTier::ExhaustivePartition => self.compute_exact(components),
         }
     }
 
@@ -429,7 +440,7 @@ impl TieredPhi {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let mut phi_calc = TieredPhi::new(ApproximationTier::Spectral);
+    /// let mut phi_calc = TieredPhi::new(ApproximationTier::SpectralConnectivity);
     ///
     /// // First call: full computation O(n²)
     /// let phi1 = phi_calc.compute_incremental(&components);
@@ -877,31 +888,25 @@ impl TieredPhi {
                 min_partition_info = min_partition_info.min(partition_info);
             }
         } else {
-            // Sample random bipartitions for large systems
-            use std::collections::HashSet;
-            let mut tested_partitions = HashSet::new();
-
+            // Sample random bipartitions for large systems (supports n > 64)
             for _ in 0..num_samples {
-                // Generate random bipartition
-                let partition_mask = self.random_bipartition_mask(n, &mut tested_partitions);
+                // Generate random bipartition using Vec<bool> (no 64-bit limit)
+                let partition_mask = self.random_bipartition_vec(n);
 
                 let mut part_a = Vec::new();
                 let mut part_b = Vec::new();
 
                 for i in 0..n {
-                    // Safe bit check: use wrapping operations for i >= 64
-                    let in_part_a = if i < 64 {
-                        (partition_mask & (1u64 << i)) != 0
-                    } else {
-                        // For i >= 64, use modular index
-                        (partition_mask & (1u64 << (i % 64))) != 0
-                    };
-
-                    if in_part_a {
+                    if partition_mask[i] {
                         part_a.push(i);
                     } else {
                         part_b.push(i);
                     }
+                }
+
+                // Skip trivial partitions
+                if part_a.is_empty() || part_b.is_empty() {
+                    continue;
                 }
 
                 // Compute information for this partition
@@ -948,43 +953,30 @@ impl TieredPhi {
         normalized_phi
     }
 
-    /// Generate random bipartition mask, avoiding duplicates
-    fn random_bipartition_mask(&self, n: usize, tested: &mut std::collections::HashSet<u64>) -> u64 {
+    /// Generate a random bipartition as Vec<bool>, supporting arbitrary n.
+    ///
+    /// Each element is independently assigned to partition A (true) or B (false)
+    /// with equal probability. Guarantees a non-trivial partition (both sides non-empty).
+    fn random_bipartition_vec(&self, n: usize) -> Vec<bool> {
         use std::collections::hash_map::RandomState;
         use std::hash::{BuildHasher, Hash, Hasher};
 
-        // Limit n to 63 to prevent shift overflow (u64 can't shift by 64+)
-        let safe_n = n.min(63);
+        for attempt in 0..100u64 {
+            let mask: Vec<bool> = (0..n).map(|i| {
+                let mut hasher = RandomState::new().build_hasher();
+                (self.stats.total_calculations, attempt, i).hash(&mut hasher);
+                hasher.finish() & 1 == 1
+            }).collect();
 
-        let mut attempts = 0;
-        loop {
-            // Simple PRNG using hash of attempt counter
-            let mut hasher = RandomState::new().build_hasher();
-            (self.stats.total_calculations + attempts).hash(&mut hasher);
-            let random_value = hasher.finish();
-
-            // Create bipartition mask (ensure non-trivial)
-            // For n >= 63, we use the full u64 range modulo the max value
-            let max_mask = if safe_n < 63 {
-                (1u64 << safe_n) - 2
-            } else {
-                u64::MAX - 2
-            };
-            let mask = (random_value % max_mask.max(1)) + 1;
-
-            // Check for duplicates
-            if !tested.contains(&mask) {
-                tested.insert(mask);
+            // Ensure non-trivial partition (both sides non-empty)
+            let count_true = mask.iter().filter(|&&b| b).count();
+            if count_true > 0 && count_true < n {
                 return mask;
             }
-
-            attempts += 1;
-            if attempts > 1000 {
-                // Fallback: balanced partition (half bits set)
-                let half_n = safe_n / 2;
-                return if half_n < 63 { (1u64 << half_n) - 1 } else { u64::MAX / 2 };
-            }
         }
+
+        // Fallback: balanced partition (first half in A, second half in B)
+        (0..n).map(|i| i < n / 2).collect()
     }
 
     /// Generate intelligent partitions based on component similarity
@@ -1148,31 +1140,108 @@ impl TieredPhi {
         matrix
     }
 
-    /// Estimate Fiedler value (second smallest eigenvalue of Laplacian)
-    /// using power iteration on (D - L) shifted to find second eigenvector
+    /// Compute Fiedler value (second-smallest eigenvalue of the graph Laplacian)
+    /// using power iteration with deflation.
+    ///
+    /// The Laplacian L = D - A where D is the degree matrix and A is the
+    /// similarity (adjacency) matrix. The smallest eigenvalue of L is always 0
+    /// (with eigenvector = all-ones for connected graphs). The Fiedler value λ₂
+    /// is the algebraic connectivity of the graph.
+    ///
+    /// Algorithm:
+    /// 1. Build Laplacian from similarity matrix and degrees
+    /// 2. Shift: M = λ_max*I - L (converts smallest eigenvalues to largest)
+    /// 3. Power iteration on M gives largest eigenvalue = λ_max - λ₁ = λ_max
+    /// 4. Deflate M by the found eigenvector (all-ones direction)
+    /// 5. Power iteration on deflated M gives λ_max - λ₂
+    /// 6. Therefore λ₂ = λ_max - (λ_max - λ₂) = result from step 5 subtracted
     fn estimate_fiedler_value(&self, similarity: &[Vec<f64>], degrees: &[f64]) -> f64 {
         let n = similarity.len();
         if n < 2 {
             return 0.0;
         }
 
-        // Simple approximation: use the minimum "cut" heuristic
-        // Find the component pair with minimum similarity
-        let mut min_sim = f64::MAX;
+        // Build Laplacian: L[i][j] = degree[i] if i==j, -similarity[i][j] otherwise
+        let mut laplacian = vec![vec![0.0f64; n]; n];
         for i in 0..n {
-            for j in (i + 1)..n {
-                min_sim = min_sim.min(similarity[i][j]);
+            laplacian[i][i] = degrees[i];
+            for j in 0..n {
+                if i != j {
+                    laplacian[i][j] = -similarity[i][j];
+                }
             }
         }
 
-        // Algebraic connectivity bounded by minimum edge weight
-        // For a connected graph: λ₂ ≥ min_edge_weight × n / (n-1)
-        let estimated_lambda2 = min_sim * n as f64 / (n - 1).max(1) as f64;
+        // Estimate λ_max of the Laplacian via Gershgorin bound (upper bound on largest eigenvalue)
+        let lambda_max_bound: f64 = degrees.iter().cloned().fold(0.0f64, f64::max) * 2.0;
+        if lambda_max_bound < 1e-10 {
+            return 0.0; // Degenerate graph with no edges
+        }
 
-        // Scale by average degree
-        let avg_degree = degrees.iter().sum::<f64>() / n as f64;
+        // Shift: M = λ_max_bound * I - L
+        // This makes the eigenvalues of M = λ_max_bound - λ_i(L)
+        // So the largest eigenvalue of M corresponds to the smallest eigenvalue of L (= 0)
+        // and the second-largest of M corresponds to λ₂
+        let mut shifted = vec![vec![0.0f64; n]; n];
+        for i in 0..n {
+            for j in 0..n {
+                shifted[i][j] = -laplacian[i][j];
+                if i == j {
+                    shifted[i][j] += lambda_max_bound;
+                }
+            }
+        }
 
-        estimated_lambda2 * avg_degree
+        // Power iteration helper: returns (eigenvalue, eigenvector)
+        let power_iter = |mat: &[Vec<f64>], max_iters: usize| -> (f64, Vec<f64>) {
+            let dim = mat.len();
+            // Initialize with non-degenerate vector
+            let mut v: Vec<f64> = (0..dim).map(|i| (i as f64 + 1.0).sin()).collect();
+            let norm: f64 = v.iter().map(|x| x * x).sum::<f64>().sqrt();
+            if norm > 0.0 {
+                v.iter_mut().for_each(|x| *x /= norm);
+            }
+
+            for _ in 0..max_iters {
+                // w = M * v
+                let w: Vec<f64> = (0..dim)
+                    .map(|i| mat[i].iter().zip(&v).map(|(a, b)| a * b).sum())
+                    .collect();
+
+                let w_norm: f64 = w.iter().map(|x| x * x).sum::<f64>().sqrt();
+                if w_norm < 1e-15 {
+                    break;
+                }
+                v = w.iter().map(|x| x / w_norm).collect();
+            }
+
+            // Rayleigh quotient: eigenvalue = v^T M v
+            let mv: Vec<f64> = (0..dim)
+                .map(|i| mat[i].iter().zip(&v).map(|(a, b)| a * b).sum())
+                .collect();
+            let eigenvalue: f64 = v.iter().zip(&mv).map(|(a, b)| a * b).sum();
+            (eigenvalue, v)
+        };
+
+        let max_iters = 100;
+
+        // Step 1: Find largest eigenvalue of M (corresponds to λ₁=0 of L)
+        let (mu_1, v_1) = power_iter(&shifted, max_iters);
+
+        // Step 2: Deflate M: M' = M - μ₁ * v₁ * v₁^T
+        let mut deflated = shifted.clone();
+        for i in 0..n {
+            for j in 0..n {
+                deflated[i][j] -= mu_1 * v_1[i] * v_1[j];
+            }
+        }
+
+        // Step 3: Find largest eigenvalue of deflated M (corresponds to λ₂ of L)
+        let (mu_2, _) = power_iter(&deflated, max_iters);
+
+        // λ₂ = λ_max_bound - μ₂
+        let fiedler = (lambda_max_bound - mu_2).max(0.0);
+        fiedler
     }
 
     // ========================================================================
@@ -1428,7 +1497,7 @@ impl TieredPhi {
     ///
     /// # Example
     /// ```rust,ignore
-    /// let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+    /// let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
     /// let components = create_conscious_system();
     /// let attr = phi.compute_attribution(&components);
     /// println!("Most critical component: {}", attr.importance_ranking[0]);
@@ -1720,7 +1789,7 @@ use once_cell::sync::Lazy;
 /// Global thread-safe Φ calculator for convenience functions
 /// Uses Spectral tier by default (good balance of speed and accuracy)
 static GLOBAL_PHI: Lazy<Mutex<TieredPhi>> = Lazy::new(|| {
-    Mutex::new(TieredPhi::new(ApproximationTier::Spectral))
+    Mutex::new(TieredPhi::new(ApproximationTier::SpectralConnectivity))
 });
 
 /// Compute Φ using the global calculator
@@ -1755,10 +1824,10 @@ pub fn auto_phi(components: &[HV16]) -> f64 {
 /// - n > 500: Mock (for testing/emergency, deterministic)
 pub fn auto_tier(n: usize) -> ApproximationTier {
     match n {
-        0..=8 => ApproximationTier::Exact,
-        9..=50 => ApproximationTier::Spectral,
-        51..=500 => ApproximationTier::Heuristic,
-        _ => ApproximationTier::Mock,
+        0..=8 => ApproximationTier::ExhaustivePartition,
+        9..=50 => ApproximationTier::SpectralConnectivity,
+        51..=500 => ApproximationTier::SampledPartition,
+        _ => ApproximationTier::RandomBaseline,
     }
 }
 
@@ -1771,4 +1840,3 @@ pub fn set_global_tier(tier: ApproximationTier) {
 pub fn global_phi_stats() -> TieredPhiStats {
     GLOBAL_PHI.lock().expect("lock poisoned").stats.clone()
 }
-

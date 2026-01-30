@@ -126,6 +126,9 @@ pub mod experience;
 // Wisdom (enabled - 0 errors)
 pub mod wisdom;
 
+// Markets: HDC-based financial pattern recognition (enabled - 0 errors)
+pub mod markets;
+
 // Mycelix (enabled - GIS, Kosmic Song, Dark Spot DHT)
 pub mod mycelix;
 
@@ -155,10 +158,15 @@ pub mod gui_bridge;
 #[cfg(feature = "api_module")]
 pub mod api;
 
-// Web Research: Epistemic verification and autonomous research (scaffolded)
-// Types-only scaffold so other modules can reference web research types.
-// Full implementation (~2,700 LOC) pending: researcher, verifier, extractor,
-// integrator, and meta_learning submodules.
+// Web Research: Epistemic verification and autonomous research
+//
+// This module provides three-level epistemic consciousness:
+// 1. Base Consciousness (Phi) - Already present in Symthaea
+// 2. Epistemic Consciousness - Knows what it knows via verification
+// 3. Meta-Epistemic Consciousness - Self-improving verification (Meta-Phi)
+//
+// Submodules: types, knowledge_graph, extractor, verifier, researcher,
+// integrator, meta_learning. See docs/developer/WEB_RESEARCH_INTEGRATION_GUIDE.md.
 #[cfg(feature = "web_research_module")]
 pub mod web_research;
 

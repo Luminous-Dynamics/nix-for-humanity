@@ -1,17 +1,18 @@
 //! Core types for the Web Research Integration module.
 //!
-//! These are scaffolded type definitions that allow other parts of the
-//! Symthaea codebase to reference web research types. Methods return
-//! reasonable defaults; real implementation will replace the stubs.
+//! This module contains the core type definitions used throughout
+//! the epistemic consciousness system. The actual implementations
+//! are in their respective modules (researcher, verifier, integrator, etc.).
 
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // Enums
 // ============================================================================
 
 /// Source type for research material
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum ResearchSource {
     /// General web sources
     #[default]
@@ -34,7 +35,7 @@ impl ResearchSource {
 }
 
 /// Status of a research operation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum ResearchStatus {
     /// Research completed successfully with results
     #[default]
@@ -63,7 +64,7 @@ impl ResearchStatus {
 ///
 /// Ranges from high confidence to known false, with gradations
 /// for uncertainty and insufficient evidence.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum EpistemicStatus {
     /// Claim is well-supported by multiple reliable sources
     HighConfidence,
@@ -104,6 +105,16 @@ impl EpistemicStatus {
             Self::False => "This appears to be incorrect;",
         }
     }
+
+    /// Whether this status indicates the claim is trustworthy
+    pub fn is_trustworthy(&self) -> bool {
+        matches!(self, Self::HighConfidence | Self::ModerateConfidence)
+    }
+
+    /// Whether this status indicates uncertainty
+    pub fn is_uncertain(&self) -> bool {
+        matches!(self, Self::LowConfidence | Self::InsufficientEvidence)
+    }
 }
 
 // ============================================================================
@@ -111,7 +122,7 @@ impl EpistemicStatus {
 // ============================================================================
 
 /// A query to perform web research
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WebResearchQuery {
     /// The natural-language query text
     pub query: String,
@@ -157,7 +168,7 @@ impl WebResearchQuery {
 }
 
 /// A single research result with source, content, and relevance
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WebResearchResult {
     /// Title of the source page or document
     pub title: String,
@@ -194,10 +205,15 @@ impl WebResearchResult {
     pub fn has_content(&self) -> bool {
         self.status.is_success() && !self.content.is_empty()
     }
+
+    /// Whether the result is epistemically trustworthy
+    pub fn is_trustworthy(&self) -> bool {
+        self.epistemic_status.is_trustworthy() && self.confidence > 0.5
+    }
 }
 
 /// A claim extracted from research, with epistemic verification
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VerifiedClaim {
     /// The claim text
     pub text: String,
@@ -225,10 +241,27 @@ impl VerifiedClaim {
             hedge: EpistemicStatus::InsufficientEvidence.hedge_phrase().to_string(),
         }
     }
+
+    /// Create a verified claim with high confidence
+    pub fn verified(text: impl Into<String>, sources: Vec<String>) -> Self {
+        Self {
+            text: text.into(),
+            status: EpistemicStatus::HighConfidence,
+            confidence: 0.9,
+            supporting_sources: sources,
+            contradicting_sources: Vec::new(),
+            hedge: EpistemicStatus::HighConfidence.hedge_phrase().to_string(),
+        }
+    }
+
+    /// Whether this claim is trustworthy
+    pub fn is_trustworthy(&self) -> bool {
+        self.status.is_trustworthy()
+    }
 }
 
 /// Configuration for the web research system
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebResearchConfig {
     /// Maximum concurrent requests
     pub max_concurrent_requests: usize,
@@ -274,10 +307,22 @@ impl WebResearchConfig {
         self.meta_learning_enabled = true;
         self
     }
+
+    /// Set request timeout
+    pub fn with_timeout(mut self, timeout_ms: u64) -> Self {
+        self.request_timeout_ms = timeout_ms;
+        self
+    }
+
+    /// Set confidence threshold
+    pub fn with_confidence_threshold(mut self, threshold: f32) -> Self {
+        self.confidence_threshold = threshold.clamp(0.0, 1.0);
+        self
+    }
 }
 
 /// Result of integrating research into the knowledge graph
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct IntegrationResult {
     /// Number of claims successfully integrated
     pub claims_integrated: usize,
@@ -298,10 +343,23 @@ impl IntegrationResult {
     pub fn improved_consciousness(&self) -> bool {
         self.phi_gain > 0.0
     }
+
+    /// Get a summary of the integration
+    pub fn summary(&self) -> String {
+        format!(
+            "Integrated {} claims, {} nodes, {} edges. Phi: {:.3} -> {:.3} (gain: {:.3})",
+            self.claims_integrated,
+            self.nodes_added,
+            self.edges_added,
+            self.phi_before,
+            self.phi_after,
+            self.phi_gain
+        )
+    }
 }
 
 /// Outcome of a verification for meta-learning tracking
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VerificationOutcome {
     /// The claim that was verified
     pub claim: String,
@@ -317,128 +375,91 @@ pub struct VerificationOutcome {
     pub domain: String,
 }
 
-// ============================================================================
-// Stub Structs for Orchestrators (future implementation)
-// ============================================================================
-
-/// Web researcher orchestrator (stub)
-///
-/// Coordinates the full research pipeline: query planning, fetching,
-/// extraction, verification, and integration.
-#[derive(Debug)]
-pub struct WebResearcher {
-    /// Configuration
-    #[allow(dead_code)]
-    config: WebResearchConfig,
-}
-
-impl WebResearcher {
-    /// Create a new web researcher with default configuration
-    pub fn new() -> anyhow::Result<Self> {
-        Ok(Self {
-            config: WebResearchConfig::default(),
-        })
-    }
-
-    /// Create a new web researcher with the given configuration
-    pub fn with_config(config: WebResearchConfig) -> Self {
-        Self { config }
-    }
-
-    /// Research and verify a query (stub - not yet implemented)
-    pub async fn research_and_verify(&self, _query: &str) -> anyhow::Result<WebResearchResult> {
-        unimplemented!(
-            "WebResearcher::research_and_verify is scaffolded; \
-             full implementation pending in src/web_research/researcher.rs"
-        )
-    }
-}
-
-impl Default for WebResearcher {
-    fn default() -> Self {
+impl VerificationOutcome {
+    /// Create a new verification outcome
+    pub fn new(
+        claim: impl Into<String>,
+        source_domain: impl Into<String>,
+        was_correct: bool,
+    ) -> Self {
         Self {
-            config: WebResearchConfig::default(),
+            claim: claim.into(),
+            source_domain: source_domain.into(),
+            source_type: ResearchSource::Web,
+            was_correct,
+            predicted_confidence: 0.5,
+            domain: String::new(),
         }
     }
-}
 
-/// Epistemic verifier (stub)
-///
-/// Verifies claims against multiple sources and assigns epistemic status.
-#[derive(Debug, Default)]
-pub struct EpistemicVerifier {
-    #[allow(dead_code)]
-    _private: (),
-}
-
-impl EpistemicVerifier {
-    /// Create a new epistemic verifier
-    pub fn new() -> Self {
-        Self::default()
+    /// Set the topic domain
+    pub fn with_domain(mut self, domain: impl Into<String>) -> Self {
+        self.domain = domain.into();
+        self
     }
 
-    /// Verify a claim (stub - not yet implemented)
-    pub fn verify_claim(
-        &self,
-        _claim: &str,
-        _sources: &[WebResearchResult],
-    ) -> VerifiedClaim {
-        unimplemented!(
-            "EpistemicVerifier::verify_claim is scaffolded; \
-             full implementation pending in src/web_research/verifier.rs"
-        )
+    /// Set the source type
+    pub fn with_source_type(mut self, source_type: ResearchSource) -> Self {
+        self.source_type = source_type;
+        self
+    }
+
+    /// Set the predicted confidence
+    pub fn with_confidence(mut self, confidence: f32) -> Self {
+        self.predicted_confidence = confidence.clamp(0.0, 1.0);
+        self
     }
 }
 
-/// Knowledge integrator (stub)
-///
-/// Integrates verified research results into the knowledge graph,
-/// measuring phi gain from the integration.
-#[derive(Debug, Default)]
-pub struct KnowledgeIntegrator {
-    #[allow(dead_code)]
-    _private: (),
-}
+// ============================================================================
+// Tests
+// ============================================================================
 
-impl KnowledgeIntegrator {
-    /// Create a new knowledge integrator
-    pub fn new() -> Self {
-        Self::default()
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_epistemic_status() {
+        assert_eq!(EpistemicStatus::HighConfidence.confidence_score(), 0.95);
+        assert!(EpistemicStatus::HighConfidence.is_trustworthy());
+        assert!(!EpistemicStatus::InsufficientEvidence.is_trustworthy());
+        assert!(EpistemicStatus::InsufficientEvidence.is_uncertain());
     }
 
-    /// Integrate a research result into the knowledge graph (stub)
-    pub async fn integrate(
-        &mut self,
-        _result: WebResearchResult,
-    ) -> anyhow::Result<IntegrationResult> {
-        unimplemented!(
-            "KnowledgeIntegrator::integrate is scaffolded; \
-             full implementation pending in src/web_research/integrator.rs"
-        )
-    }
-}
+    #[test]
+    fn test_research_query() {
+        let query = WebResearchQuery::new("What is Rust?")
+            .with_max_results(5)
+            .with_min_relevance(0.5);
 
-/// Epistemic learner for meta-learning (stub)
-///
-/// Tracks verification outcomes and learns source trustworthiness
-/// per domain, developing expertise over time.
-#[derive(Debug, Default)]
-pub struct EpistemicLearner {
-    #[allow(dead_code)]
-    _private: (),
-}
-
-impl EpistemicLearner {
-    /// Create a new epistemic learner
-    pub fn new() -> Self {
-        Self::default()
+        assert_eq!(query.max_results, 5);
+        assert_eq!(query.min_relevance, 0.5);
     }
 
-    /// Record a verification outcome for learning (stub)
-    pub fn record_outcome(&mut self, _outcome: VerificationOutcome) -> anyhow::Result<()> {
-        unimplemented!(
-            "EpistemicLearner::record_outcome is scaffolded; \
-             full implementation pending in src/web_research/meta_learning.rs"
-        )
+    #[test]
+    fn test_verified_claim() {
+        let claim = VerifiedClaim::verified(
+            "Rust is memory safe",
+            vec!["https://rust-lang.org".to_string()],
+        );
+
+        assert!(claim.is_trustworthy());
+        assert_eq!(claim.status, EpistemicStatus::HighConfidence);
+    }
+
+    #[test]
+    fn test_integration_result() {
+        let result = IntegrationResult {
+            claims_integrated: 5,
+            nodes_added: 6,
+            edges_added: 10,
+            phi_before: 0.3,
+            phi_after: 0.5,
+            phi_gain: 0.2,
+        };
+
+        assert!(result.improved_consciousness());
+        assert!(result.summary().contains("0.200"));
     }
 }

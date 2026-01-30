@@ -263,12 +263,20 @@ impl ContinuousHV {
     /// Inverse for unbinding operations
     ///
     /// For continuous hypervectors with binding as element-wise multiplication,
-    /// the inverse is self (approximately self-inverse property).
-    /// This is because for normalized random vectors: A⊗A ≈ 1
+    /// the inverse is the element-wise reciprocal: inv(a_i) = 1/a_i.
+    /// Near-zero elements are mapped to zero to avoid division by zero.
+    ///
+    /// Property: `A.bind(&A.inverse())` should yield a vector near the identity
+    /// (all ones) for non-zero elements.
     pub fn inverse(&self) -> Self {
-        // For HDC binding which is element-wise multiplication,
-        // the inverse is approximately self for normalized vectors
-        self.clone()
+        const EPSILON: f32 = 1e-7;
+        Self {
+            values: self.values.iter()
+                .map(|&v| {
+                    if v.abs() < EPSILON { 0.0 } else { 1.0 / v }
+                })
+                .collect()
+        }
     }
 
     /// Element-wise addition
@@ -493,12 +501,16 @@ impl BinaryHV {
     /// Bundling operation (majority vote)
     ///
     /// For each bit position, output 1 if majority of inputs have 1.
+    /// For even-length inputs where ties occur (count == threshold),
+    /// uses alternating tie-breaking based on bit position to avoid
+    /// systematic bias toward -1 (bipolar).
     pub fn bundle(hvs: &[Self]) -> Self {
         if hvs.is_empty() {
             return Self::zero();
         }
 
         let threshold = hvs.len() / 2;
+        let even_count = hvs.len() % 2 == 0;
         let mut bytes = vec![0u8; BINARY_BYTES];
 
         for byte_idx in 0..BINARY_BYTES {
@@ -507,7 +519,13 @@ impl BinaryHV {
                     .filter(|hv| hv.bytes[byte_idx] & (1 << bit_idx) != 0)
                     .count();
 
-                if count > threshold {
+                // Strict majority always wins.
+                // For ties (only possible with even-length input), alternate
+                // by bit position to avoid systematic bias.
+                let set_bit = count > threshold
+                    || (even_count && count == threshold && (byte_idx * 8 + bit_idx) % 2 == 0);
+
+                if set_bit {
                     bytes[byte_idx] |= 1 << bit_idx;
                 }
             }
@@ -779,6 +797,32 @@ mod tests {
 
         let sim = a.similarity(&restored);
         assert!((sim - 1.0).abs() < 0.001, "Permutation should be invertible");
+    }
+
+    #[test]
+    fn test_bind_inverse_is_near_identity() {
+        // For non-zero elements, A.bind(A.inverse()) should yield ~1.0
+        let a = ContinuousHV::random(HDC_DIMENSION, 42);
+        let inv = a.inverse();
+        let result = a.bind(&inv);
+
+        // Each element a_i * (1/a_i) should be ~1.0 for non-zero a_i
+        let near_one_count = result.values.iter()
+            .filter(|&&v| (v - 1.0).abs() < 0.01)
+            .count();
+
+        // Most elements should be near 1.0 (only near-zero inputs deviate)
+        assert!(
+            near_one_count > HDC_DIMENSION / 2,
+            "Expected most elements near 1.0, got {}/{}", near_one_count, HDC_DIMENSION
+        );
+    }
+
+    #[test]
+    fn test_inverse_of_zero_is_zero() {
+        let zero = ContinuousHV::zero(100);
+        let inv = zero.inverse();
+        assert!(inv.values.iter().all(|&v| v == 0.0), "Inverse of zero should be zero");
     }
 
     #[test]

@@ -53,6 +53,10 @@ pub enum ContextKind {
     Maintenance,
     /// Development and coding
     Development,
+    /// Development work (alias for Development)
+    DevWork,
+    /// System upgrade operations
+    Upgrade,
     /// Unknown context
     Unknown,
 }
@@ -132,6 +136,8 @@ impl ContextKind {
             ContextKind::Conversation => "Conversation",
             ContextKind::Maintenance => "Maintenance",
             ContextKind::Development => "Development",
+            ContextKind::DevWork => "Development Work",
+            ContextKind::Upgrade => "System Upgrade",
             ContextKind::Unknown => "Unknown",
         }
     }

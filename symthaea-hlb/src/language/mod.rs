@@ -325,7 +325,7 @@ pub enum ConsciousnessQuadrant {
     Somatic,
 }
 
-/// Execution strategy type for NixOS commands
+/// Execution strategy type for NixOS commands (simple enum for basic categorization)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ExecutionStrategyType {
     /// Direct execution
@@ -339,32 +339,117 @@ pub enum ExecutionStrategyType {
     Interactive,
     /// Batch execution
     Batch,
+    /// Confident quadrant
+    Confident,
+    /// Autopilot quadrant
+    Autopilot,
+    /// Curious quadrant
+    Curious,
+    /// Lost quadrant
+    Lost,
 }
 
-/// Execution strategy with parameters
-#[derive(Debug, Clone, Default)]
-pub struct ExecutionStrategy {
-    /// Strategy type
-    pub strategy_type: ExecutionStrategyType,
-    /// Risk level assessment
-    pub risk_level: FixRiskLevel,
-    /// Confidence in strategy
-    pub confidence: f32,
-    /// Required confirmations
-    pub confirmations_needed: usize,
-    /// Rollback plan available
-    pub has_rollback: bool,
+/// Execution strategy based on 2D consciousness quadrants (Φ × Confidence)
+///
+/// - Confident: High Φ + High Confidence → execute with full trust
+/// - Autopilot: Low Φ + High Confidence → pattern-matched routine, execute efficiently
+/// - Curious: High Φ + Low Confidence → exploring, dry-run first
+/// - Lost: Low Φ + Low Confidence → genuinely confused, request help
+#[derive(Debug, Clone)]
+pub enum ExecutionStrategy {
+    /// High Φ + High Confidence: Deep understanding, execute with full trust
+    Confident {
+        /// Execute the action immediately
+        execute_immediately: bool,
+        /// Validate the result after execution
+        validate_after: bool,
+        /// Provide reasoning with the response
+        explain_reasoning: bool,
+    },
+    /// Low Φ + High Confidence: Pattern-matched routine, execute efficiently
+    Autopilot {
+        /// Execute the action efficiently
+        execute_efficiently: bool,
+        /// Monitor for errors during execution
+        monitor_for_errors: bool,
+        /// Keep response minimal
+        minimal_response: bool,
+    },
+    /// High Φ + Low Confidence: Deep processing but uncertain, explore first
+    Curious {
+        /// Do a dry-run before executing
+        explore_first: bool,
+        /// Targeted questions to clarify
+        targeted_questions: Vec<ClarifyingQuestion>,
+        /// Share the reasoning process
+        share_reasoning: bool,
+    },
+    /// Low Φ + Low Confidence: Genuinely confused, don't execute
+    Lost {
+        /// Request help from user
+        request_help: bool,
+        /// Generic questions to gather context
+        generic_questions: Vec<ClarifyingQuestion>,
+        /// Admit confusion explicitly
+        admit_confusion: bool,
+    },
+}
+
+impl Default for ExecutionStrategy {
+    fn default() -> Self {
+        Self::Curious {
+            explore_first: true,
+            targeted_questions: Vec::new(),
+            share_reasoning: true,
+        }
+    }
 }
 
 impl ExecutionStrategy {
-    /// Create a safe default strategy
+    /// Create a safe default strategy (Curious with explore_first)
     pub fn safe_default() -> Self {
-        Self {
-            strategy_type: ExecutionStrategyType::DryRun,
-            risk_level: FixRiskLevel::Safe,
-            confidence: 0.95,
-            confirmations_needed: 0,
-            has_rollback: true,
+        Self::Curious {
+            explore_first: true,
+            targeted_questions: Vec::new(),
+            share_reasoning: true,
+        }
+    }
+
+    /// Create a confident strategy
+    pub fn confident() -> Self {
+        Self::Confident {
+            execute_immediately: true,
+            validate_after: true,
+            explain_reasoning: true,
+        }
+    }
+
+    /// Create an autopilot strategy
+    pub fn autopilot() -> Self {
+        Self::Autopilot {
+            execute_efficiently: true,
+            monitor_for_errors: true,
+            minimal_response: true,
+        }
+    }
+
+    /// Create a lost strategy
+    pub fn lost() -> Self {
+        Self::Lost {
+            request_help: true,
+            generic_questions: Vec::new(),
+            admit_confusion: true,
+        }
+    }
+}
+
+impl From<&ExecutionStrategy> for ExecutionStrategyType {
+    fn from(strategy: &ExecutionStrategy) -> Self {
+        match strategy {
+            ExecutionStrategy::Confident { .. } => ExecutionStrategyType::Confident,
+            ExecutionStrategy::Autopilot { .. } => ExecutionStrategyType::Autopilot,
+            ExecutionStrategy::Curious { .. } => ExecutionStrategyType::Curious,
+            ExecutionStrategy::Lost { .. } => ExecutionStrategyType::Lost,
         }
     }
 }
@@ -384,9 +469,67 @@ pub struct ClarifyingQuestion {
     pub default: Option<String>,
 }
 
-/// Understanding of NixOS-specific intent
+/// NixOS intent as an enum (for integration module compatibility)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NixOSIntent {
+    /// Install packages
+    Install,
+    /// Remove packages
+    Remove,
+    /// Search for packages
+    Search,
+    /// Upgrade system or packages
+    Upgrade,
+    /// Configure system options
+    Configure,
+    /// Garbage collect old generations
+    GarbageCollect,
+    /// Flake operations (init, update, etc.)
+    FlakeOp,
+    /// Rollback to previous generation
+    Rollback,
+    /// List installed packages or generations
+    List,
+    /// Get info about a package or option
+    Info,
+    /// Build a derivation
+    Build,
+    /// Switch to a new configuration
+    Switch,
+    /// Unknown intent
+    #[default]
+    Unknown,
+}
+
+impl NixOSIntent {
+    /// Whether this intent is a read-only query
+    pub fn is_query(&self) -> bool {
+        matches!(self, Self::Search | Self::List | Self::Info)
+    }
+
+    /// Get the action name as a string
+    pub fn action_name(&self) -> &'static str {
+        match self {
+            Self::Install => "install",
+            Self::Remove => "remove",
+            Self::Search => "search",
+            Self::Upgrade => "upgrade",
+            Self::Configure => "configure",
+            Self::GarbageCollect => "gc",
+            Self::FlakeOp => "flake",
+            Self::Rollback => "rollback",
+            Self::List => "list",
+            Self::Info => "info",
+            Self::Build => "build",
+            Self::Switch => "switch",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+/// Understanding of NixOS-specific intent (struct form for backwards compatibility)
 #[derive(Debug, Clone, Default)]
-pub struct NixOSIntent {
+pub struct NixOSIntentStruct {
     /// Primary action (install, remove, configure, etc.)
     pub action: String,
     /// Target packages or options
@@ -402,7 +545,7 @@ pub struct NixOSIntent {
 /// Understanding result for NixOS queries
 #[derive(Debug, Clone, Default)]
 pub struct NixOSUnderstanding {
-    /// Recognized intent
+    /// Recognized intent (enum form)
     pub intent: NixOSIntent,
     /// Extracted entities (packages, options, paths)
     pub entities: Vec<String>,
@@ -412,12 +555,39 @@ pub struct NixOSUnderstanding {
     pub ambiguities: Vec<String>,
     /// Suggested clarifications
     pub clarifications: Vec<ClarifyingQuestion>,
+    /// Parameters extracted from input (key-value pairs)
+    pub parameters: std::collections::HashMap<String, String>,
+    /// Human-readable description of the intent
+    pub description: String,
+    /// Confidence in understanding (0.0-1.0)
+    pub confidence: f32,
 }
 
-/// Feedback from action execution
+/// Feedback from action execution (expanded for integration module)
 #[derive(Debug, Clone)]
 pub struct ActionOutcomeFeedback {
+    /// Original user input that led to this action
+    pub original_input: String,
+    /// Which quadrant the decision was made in
+    pub decided_in_quadrant: ConsciousnessQuadrant,
+    /// Strategy type that was used
+    pub strategy_used: ExecutionStrategyType,
+    /// Φ level at decision time
+    pub phi_at_decision: f64,
+    /// Confidence at decision time
+    pub confidence_at_decision: f64,
     /// Whether the action succeeded
+    pub action_succeeded: bool,
+    /// Φ level after execution
+    pub phi_after: f64,
+    /// Error message if action failed
+    pub error_message: Option<String>,
+    /// Whether this was a dry-run
+    pub was_dry_run: bool,
+    /// User feedback (positive/negative) if provided
+    pub user_feedback: Option<bool>,
+    // Legacy fields for backwards compatibility
+    /// Whether the action succeeded (legacy alias)
     pub success: bool,
     /// Execution time in milliseconds
     pub execution_time_ms: u64,
@@ -432,6 +602,16 @@ pub struct ActionOutcomeFeedback {
 impl Default for ActionOutcomeFeedback {
     fn default() -> Self {
         Self {
+            original_input: String::new(),
+            decided_in_quadrant: ConsciousnessQuadrant::Analytical,
+            strategy_used: ExecutionStrategyType::Direct,
+            phi_at_decision: 0.5,
+            confidence_at_decision: 0.5,
+            action_succeeded: true,
+            phi_after: 0.5,
+            error_message: None,
+            was_dry_run: false,
+            user_feedback: None,
             success: true,
             execution_time_ms: 0,
             user_satisfaction: None,
@@ -444,32 +624,55 @@ impl Default for ActionOutcomeFeedback {
 /// Result from conscious understanding process
 #[derive(Debug, Clone)]
 pub struct ConsciousUnderstandingResult {
-    /// NixOS-specific understanding
+    /// NixOS-specific understanding (legacy field name)
     pub nixos: NixOSUnderstanding,
+    /// NixOS-specific understanding (alias for integration module)
+    pub nix_understanding: NixOSUnderstanding,
     /// Emotional context
     pub emotional_context: Option<EmotionalAnalysis>,
     /// Consciousness state during processing
     pub consciousness_state: ConsciousnessStateLevel,
     /// Active quadrants
     pub active_quadrants: Vec<ConsciousnessQuadrant>,
+    /// Current consciousness quadrant (2D space)
+    pub quadrant: ConsciousnessQuadrant,
     /// Embedding representation
     pub embedding: Option<RealHV>,
     /// Processing confidence
     pub confidence: f32,
-    /// Recommended strategy
+    /// Epistemic confidence (certainty about interpretation)
+    pub epistemic_confidence: f64,
+    /// Consciousness Φ (integration depth)
+    pub consciousness_phi: f64,
+    /// Unified free energy from active inference
+    pub unified_free_energy: f64,
+    /// Recommended execution strategy
+    pub execution_strategy: ExecutionStrategy,
+    /// Recommended strategy (legacy alias)
     pub recommended_strategy: ExecutionStrategy,
+    /// Clarifying questions if confidence is low
+    pub clarifying_questions: Vec<ClarifyingQuestion>,
 }
 
 impl Default for ConsciousUnderstandingResult {
     fn default() -> Self {
+        let nix_understanding = NixOSUnderstanding::default();
+        let strategy = ExecutionStrategy::safe_default();
         Self {
-            nixos: NixOSUnderstanding::default(),
+            nixos: nix_understanding.clone(),
+            nix_understanding,
             emotional_context: None,
             consciousness_state: ConsciousnessStateLevel::Active,
             active_quadrants: vec![ConsciousnessQuadrant::Analytical],
+            quadrant: ConsciousnessQuadrant::Analytical,
             embedding: None,
             confidence: 0.5,
-            recommended_strategy: ExecutionStrategy::safe_default(),
+            epistemic_confidence: 0.5,
+            consciousness_phi: 0.5,
+            unified_free_energy: 1.0,
+            execution_strategy: strategy.clone(),
+            recommended_strategy: strategy,
+            clarifying_questions: Vec::new(),
         }
     }
 }
@@ -515,6 +718,14 @@ pub struct ConsciousnessLanguageCore {
     state: ConsciousnessStateLevel,
     /// Error diagnoser
     diagnoser: NixErrorDiagnoser,
+    /// Current Φ level
+    current_phi: f64,
+    /// Current epistemic confidence
+    current_confidence: f64,
+    /// Last input processed (for feedback)
+    last_input: String,
+    /// Last quadrant (for feedback)
+    last_quadrant: ConsciousnessQuadrant,
 }
 
 impl ConsciousnessLanguageCore {
@@ -525,12 +736,29 @@ impl ConsciousnessLanguageCore {
             emotional: EmotionalCore::new(EmotionalCoreConfig::default()),
             state: ConsciousnessStateLevel::Active,
             diagnoser: NixErrorDiagnoser::new(),
+            current_phi: 0.5,
+            current_confidence: 0.5,
+            last_input: String::new(),
+            last_quadrant: ConsciousnessQuadrant::Analytical,
             config,
         }
     }
 
+    /// Create with config (alias for new, for API compatibility)
+    pub fn with_config(config: ConsciousnessLanguageConfig) -> Self {
+        Self::new(config)
+    }
+
+    /// Process input (alias for understand, for API compatibility)
+    pub fn process(&mut self, input: &str) -> ConsciousUnderstandingResult {
+        self.understand(input)
+    }
+
     /// Process input with consciousness awareness
     pub fn understand(&mut self, input: &str) -> ConsciousUnderstandingResult {
+        // Save input for feedback
+        self.last_input = input.to_string();
+
         // Basic understanding flow
         let emotional_context = if self.config.emotional_enabled {
             Some(self.emotional.analyze(input))
@@ -540,23 +768,107 @@ impl ConsciousnessLanguageCore {
 
         // Extract NixOS intent (simplified)
         let intent = self.extract_nixos_intent(input);
+        let entities = self.extract_entities(input);
 
-        let nixos = NixOSUnderstanding {
+        // Build parameters map
+        let mut parameters = std::collections::HashMap::new();
+        if let Some(first_entity) = entities.first() {
+            match intent {
+                NixOSIntent::Install | NixOSIntent::Remove => {
+                    parameters.insert("package".to_string(), first_entity.clone());
+                }
+                NixOSIntent::Search => {
+                    parameters.insert("query".to_string(), first_entity.clone());
+                }
+                _ => {}
+            }
+        }
+
+        // Determine confidence based on intent clarity
+        let confidence = match intent {
+            NixOSIntent::Unknown => 0.3,
+            _ => 0.7,
+        };
+
+        // Generate description
+        let description = match intent {
+            NixOSIntent::Install => format!("Install package: {:?}", entities),
+            NixOSIntent::Remove => format!("Remove package: {:?}", entities),
+            NixOSIntent::Search => format!("Search for: {:?}", entities),
+            NixOSIntent::Upgrade => "Upgrade system".to_string(),
+            NixOSIntent::Configure => "Configure system".to_string(),
+            NixOSIntent::List => "List packages".to_string(),
+            _ => format!("Process: {}", input),
+        };
+
+        let nix_understanding = NixOSUnderstanding {
             intent,
-            entities: self.extract_entities(input),
+            entities,
             context: input.to_string(),
             ambiguities: Vec::new(),
             clarifications: Vec::new(),
+            parameters,
+            description,
+            confidence,
+        };
+
+        // Determine consciousness quadrant based on Φ and confidence
+        let (quadrant, strategy) = self.determine_quadrant_and_strategy(
+            self.current_phi,
+            confidence as f64,
+        );
+
+        self.last_quadrant = quadrant;
+        self.current_confidence = confidence as f64;
+
+        // Generate clarifying questions if uncertain
+        let clarifying_questions = if confidence < self.config.confidence_threshold {
+            vec![ClarifyingQuestion {
+                question: format!("Could you clarify what you'd like to do with '{}'?", input),
+                rationale: "The intent wasn't clear from the input".to_string(),
+                options: vec!["Install".to_string(), "Remove".to_string(), "Search".to_string()],
+                priority: 1,
+                default: None,
+            }]
+        } else {
+            Vec::new()
         };
 
         ConsciousUnderstandingResult {
-            nixos,
+            nixos: nix_understanding.clone(),
+            nix_understanding,
             emotional_context,
             consciousness_state: self.state,
-            active_quadrants: vec![ConsciousnessQuadrant::Analytical],
+            active_quadrants: vec![quadrant],
+            quadrant,
             embedding: None,
-            confidence: 0.75,
-            recommended_strategy: ExecutionStrategy::safe_default(),
+            confidence,
+            epistemic_confidence: confidence as f64,
+            consciousness_phi: self.current_phi,
+            unified_free_energy: 1.0 - confidence as f64, // Higher certainty = lower free energy
+            execution_strategy: strategy.clone(),
+            recommended_strategy: strategy,
+            clarifying_questions,
+        }
+    }
+
+    /// Determine consciousness quadrant and execution strategy based on Φ and confidence
+    fn determine_quadrant_and_strategy(&self, phi: f64, confidence: f64) -> (ConsciousnessQuadrant, ExecutionStrategy) {
+        const PHI_THRESHOLD: f64 = 0.5;
+        const CONF_THRESHOLD: f64 = 0.5;
+
+        if phi >= PHI_THRESHOLD && confidence >= CONF_THRESHOLD {
+            // High Φ + High Confidence: Confident
+            (ConsciousnessQuadrant::Analytical, ExecutionStrategy::confident())
+        } else if phi < PHI_THRESHOLD && confidence >= CONF_THRESHOLD {
+            // Low Φ + High Confidence: Autopilot
+            (ConsciousnessQuadrant::Intuitive, ExecutionStrategy::autopilot())
+        } else if phi >= PHI_THRESHOLD && confidence < CONF_THRESHOLD {
+            // High Φ + Low Confidence: Curious
+            (ConsciousnessQuadrant::Emotional, ExecutionStrategy::safe_default())
+        } else {
+            // Low Φ + Low Confidence: Lost
+            (ConsciousnessQuadrant::Somatic, ExecutionStrategy::lost())
         }
     }
 
@@ -564,28 +876,32 @@ impl ConsciousnessLanguageCore {
     fn extract_nixos_intent(&self, text: &str) -> NixOSIntent {
         let lower = text.to_lowercase();
 
-        let (action, is_query) = if lower.contains("install") {
-            ("install".to_string(), false)
+        if lower.contains("install") {
+            NixOSIntent::Install
         } else if lower.contains("remove") || lower.contains("uninstall") {
-            ("remove".to_string(), false)
+            NixOSIntent::Remove
         } else if lower.contains("search") || lower.contains("find") {
-            ("search".to_string(), true)
+            NixOSIntent::Search
         } else if lower.contains("update") || lower.contains("upgrade") {
-            ("update".to_string(), false)
+            NixOSIntent::Upgrade
         } else if lower.contains("configure") || lower.contains("setup") {
-            ("configure".to_string(), false)
+            NixOSIntent::Configure
         } else if lower.contains("list") || lower.contains("show") {
-            ("list".to_string(), true)
+            NixOSIntent::List
+        } else if lower.contains("garbage") || lower.contains("gc") {
+            NixOSIntent::GarbageCollect
+        } else if lower.contains("rollback") {
+            NixOSIntent::Rollback
+        } else if lower.contains("flake") {
+            NixOSIntent::FlakeOp
+        } else if lower.contains("build") {
+            NixOSIntent::Build
+        } else if lower.contains("switch") {
+            NixOSIntent::Switch
+        } else if lower.contains("info") || lower.contains("about") {
+            NixOSIntent::Info
         } else {
-            ("unknown".to_string(), true)
-        };
-
-        NixOSIntent {
-            action,
-            targets: self.extract_entities(text),
-            scope: "system".to_string(),
-            is_query,
-            confidence: 0.7,
+            NixOSIntent::Unknown
         }
     }
 
@@ -613,10 +929,66 @@ impl ConsciousnessLanguageCore {
         self.state = state;
     }
 
-    /// Process feedback to improve
+    /// Process feedback to improve (legacy method)
     pub fn process_feedback(&mut self, _feedback: ActionOutcomeFeedback) {
         // Would update internal models based on feedback
         // Stub implementation
+    }
+
+    /// Receive action outcome feedback from the pipeline (integration module method)
+    pub fn receive_action_outcome(&mut self, feedback: ActionOutcomeFeedback) {
+        // Update Φ based on action success
+        if feedback.action_succeeded {
+            self.current_phi = (self.current_phi * 1.05).min(1.0);
+        } else {
+            self.current_phi = (self.current_phi * 0.95).max(0.1);
+        }
+
+        // Update confidence based on user feedback
+        if let Some(positive) = feedback.user_feedback {
+            if positive {
+                self.current_confidence = (self.current_confidence * 1.1).min(1.0);
+            } else {
+                self.current_confidence = (self.current_confidence * 0.9).max(0.1);
+            }
+        }
+    }
+
+    /// Create feedback from execution result (integration module method)
+    pub fn create_feedback_from_execution(
+        &self,
+        success: bool,
+        phi: f64,
+        error: Option<String>,
+        was_dry_run: bool,
+    ) -> Option<ActionOutcomeFeedback> {
+        Some(ActionOutcomeFeedback {
+            original_input: self.last_input.clone(),
+            decided_in_quadrant: self.last_quadrant,
+            strategy_used: ExecutionStrategyType::Direct,
+            phi_at_decision: self.current_phi,
+            confidence_at_decision: self.current_confidence,
+            action_succeeded: success,
+            phi_after: phi,
+            error_message: error.clone(),
+            was_dry_run,
+            user_feedback: None,
+            success,
+            execution_time_ms: 0,
+            user_satisfaction: None,
+            errors: error.into_iter().collect(),
+            lessons: Vec::new(),
+        })
+    }
+
+    /// Get current Φ level
+    pub fn phi(&self) -> f64 {
+        self.current_phi
+    }
+
+    /// Set Φ level (for calibration)
+    pub fn set_phi(&mut self, phi: f64) {
+        self.current_phi = phi.clamp(0.0, 1.0);
     }
 }
 

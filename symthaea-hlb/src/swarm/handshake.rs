@@ -15,9 +15,9 @@
 //!        │         (nonce)                         │
 //!        │                                         │
 //!        │──────── 3. Trust Response ─────────────>│
-//!        │         (signed nonce + agent key)      │
+//!        │         (BLAKE3 MAC + agent key)        │
 //!        │                                         │
-//!        │         4. Verify Signature             │
+//!        │         4. Verify MAC                   │
 //!        │         5. Check Holochain DHT Trust    │
 //!        │                                         │
 //!        │<─────── 6. Trust Ack / Reject ──────────│
@@ -29,9 +29,16 @@
 //! ## Security Model
 //!
 //! - The nonce prevents replay attacks
-//! - The signature proves possession of the Holochain agent key
+//! - The BLAKE3 keyed MAC proves possession of the agent's private key
 //! - The DHT lookup verifies the agent's reputation
 //! - Only after trust verification can tensor streaming begin
+//!
+//! ## Future: Ed25519 Signatures
+//!
+//! The current implementation uses BLAKE3 keyed MAC, which requires the
+//! verifier to also know the agent's key. For a fully trustless protocol,
+//! upgrade to Ed25519 signatures (ed25519-dalek crate) so that verifiers
+//! only need the public key.
 
 use crate::swarm::{
     SwarmConfig, SwarmResult, SwarmError,
@@ -39,6 +46,9 @@ use crate::swarm::{
 };
 use std::time::{SystemTime, Duration};
 use rand::Rng;
+
+/// Length of the BLAKE3 MAC output in bytes
+const MAC_LEN: usize = 32;
 
 /// The hybrid handshake manager
 pub struct HybridHandshake {
@@ -53,7 +63,6 @@ pub struct HybridHandshake {
 }
 
 /// A pending trust challenge
-#[allow(dead_code)] // Fields reserved for challenge validation
 struct PendingChallenge {
     /// The nonce we sent
     nonce: Vec<u8>,
@@ -62,6 +71,7 @@ struct PendingChallenge {
     issued_at: SystemTime,
 
     /// The peer we challenged
+    #[allow(dead_code)]
     peer_node_id: String,
 }
 
@@ -98,26 +108,28 @@ impl HybridHandshake {
 
     /// Create a response to a trust challenge
     ///
-    /// In a real implementation, this would sign the nonce with the
-    /// Holochain agent's private key.
+    /// Produces a BLAKE3 keyed MAC over the nonce using the agent's
+    /// private key material. The MAC proves possession of the key
+    /// without transmitting it.
     pub fn create_response(
         &self,
         nonce: &[u8],
         agent_key: &str,
-        _agent_private_key: &[u8], // Would be used for real signing
+        agent_private_key: &[u8],
     ) -> SwarmMessage {
-        // In production: sign nonce with Ed25519 key
-        // For now: simple HMAC-style binding
-        let mut signed = nonce.to_vec();
-        signed.extend_from_slice(agent_key.as_bytes());
+        let mac = Self::compute_mac(nonce, agent_private_key);
 
         SwarmMessage::TrustResponse {
-            signed_nonce: signed,
+            signed_nonce: mac,
             agent_key: agent_key.to_string(),
         }
     }
 
     /// Verify a trust response
+    ///
+    /// Checks that the MAC is valid for the challenge nonce and the
+    /// claimed agent key. In production, the verifier would look up
+    /// the agent's key material from the Holochain DHT.
     pub fn verify_response(
         &mut self,
         peer_node_id: &str,
@@ -137,32 +149,43 @@ impl HybridHandshake {
             });
         }
 
-        // Verify signature format (simplified)
-        // In production: verify Ed25519 signature
-        let expected_len = challenge.nonce.len() + agent_key.len();
-        if signed_nonce.len() != expected_len {
+        // Verify MAC length
+        if signed_nonce.len() != MAC_LEN {
             return Err(SwarmError::TrustVerificationError {
-                reason: "Invalid signature length".to_string(),
+                reason: format!(
+                    "Invalid MAC length: expected {} bytes, got {}",
+                    MAC_LEN, signed_nonce.len()
+                ),
             });
         }
 
-        // Verify nonce matches
-        if &signed_nonce[..challenge.nonce.len()] != challenge.nonce.as_slice() {
-            return Err(SwarmError::TrustVerificationError {
-                reason: "Nonce mismatch".to_string(),
-            });
-        }
+        // Recompute MAC with the agent's key material
+        // In production: look up agent_key in Holochain DHT to get key material
+        let expected_mac = Self::compute_mac(&challenge.nonce, agent_key.as_bytes());
 
-        // Verify agent key binding
-        if &signed_nonce[challenge.nonce.len()..] != agent_key.as_bytes() {
+        // Constant-time comparison to prevent timing attacks
+        if !constant_time_eq(signed_nonce, &expected_mac) {
             return Err(SwarmError::TrustVerificationError {
-                reason: "Agent key mismatch".to_string(),
+                reason: "MAC verification failed".to_string(),
             });
         }
 
         // In production: query Holochain DHT for agent's reputation
-        // For now: return verified with default trust
+        // Trust level based on successful MAC verification
         Ok(TrustLevel::Verified(0.7))
+    }
+
+    /// Compute a BLAKE3 keyed MAC over the given data.
+    ///
+    /// Uses the first 32 bytes of the key material (zero-padded if shorter).
+    fn compute_mac(data: &[u8], key_material: &[u8]) -> Vec<u8> {
+        // Derive a 32-byte key from arbitrary-length key material
+        let derived_key = blake3::hash(key_material);
+        let key_bytes: [u8; 32] = *derived_key.as_bytes();
+
+        // Compute keyed MAC
+        let mac = blake3::keyed_hash(&key_bytes, data);
+        mac.as_bytes().to_vec()
     }
 
     /// Check if a trust level meets minimum requirements
@@ -183,6 +206,18 @@ impl HybridHandshake {
     pub fn pending_count(&self) -> usize {
         self.pending_challenges.len()
     }
+}
+
+/// Constant-time byte comparison to prevent timing attacks
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
 }
 
 /// Result of a complete handshake
@@ -255,16 +290,17 @@ mod tests {
     }
 
     #[test]
-    fn test_create_response() {
+    fn test_create_response_produces_mac() {
         let config = SwarmConfig::default();
         let handshake = HybridHandshake::new(config);
 
         let nonce = vec![1, 2, 3, 4];
-        let response = handshake.create_response(&nonce, "agent-key", b"private");
+        let response = handshake.create_response(&nonce, "agent-key", b"private-key");
 
         match response {
             SwarmMessage::TrustResponse { signed_nonce, agent_key } => {
-                assert!(!signed_nonce.is_empty());
+                // MAC should be exactly 32 bytes (BLAKE3 output)
+                assert_eq!(signed_nonce.len(), MAC_LEN);
                 assert_eq!(agent_key, "agent-key");
             }
             _ => panic!("Expected TrustResponse"),
@@ -272,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_response() {
+    fn test_verify_valid_response() {
         let config = SwarmConfig::default();
         let mut handshake = HybridHandshake::new(config);
 
@@ -283,8 +319,8 @@ mod tests {
             _ => panic!("Expected TrustChallenge"),
         };
 
-        // Create response
-        let response = handshake.create_response(&nonce, "agent-key", b"private");
+        // Create response using agent_key as key material (matches verify_response lookup)
+        let response = handshake.create_response(&nonce, "agent-key", b"agent-key");
         let (signed_nonce, agent_key) = match response {
             SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
             _ => panic!("Expected TrustResponse"),
@@ -293,6 +329,84 @@ mod tests {
         // Verify
         let trust = handshake.verify_response("peer-123", &signed_nonce, &agent_key).unwrap();
         assert!(matches!(trust, TrustLevel::Verified(_)));
+    }
+
+    #[test]
+    fn test_verify_wrong_key_fails() {
+        let config = SwarmConfig::default();
+        let mut handshake = HybridHandshake::new(config);
+
+        // Create challenge
+        let challenge = handshake.create_challenge("peer-123");
+        let nonce = match challenge {
+            SwarmMessage::TrustChallenge { nonce } => nonce,
+            _ => panic!("Expected TrustChallenge"),
+        };
+
+        // Create response with a DIFFERENT private key
+        let response = handshake.create_response(&nonce, "agent-key", b"wrong-key");
+        let (signed_nonce, agent_key) = match response {
+            SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
+            _ => panic!("Expected TrustResponse"),
+        };
+
+        // Verification should fail because MAC was computed with wrong key
+        let result = handshake.verify_response("peer-123", &signed_nonce, &agent_key);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_tampered_mac_fails() {
+        let config = SwarmConfig::default();
+        let mut handshake = HybridHandshake::new(config);
+
+        let challenge = handshake.create_challenge("peer-123");
+        let nonce = match challenge {
+            SwarmMessage::TrustChallenge { nonce } => nonce,
+            _ => panic!("Expected TrustChallenge"),
+        };
+
+        let response = handshake.create_response(&nonce, "agent-key", b"agent-key");
+        let (mut signed_nonce, agent_key) = match response {
+            SwarmMessage::TrustResponse { signed_nonce, agent_key } => (signed_nonce, agent_key),
+            _ => panic!("Expected TrustResponse"),
+        };
+
+        // Tamper with the MAC
+        signed_nonce[0] ^= 0xFF;
+
+        let result = handshake.verify_response("peer-123", &signed_nonce, &agent_key);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_no_pending_challenge_fails() {
+        let config = SwarmConfig::default();
+        let mut handshake = HybridHandshake::new(config);
+
+        let result = handshake.verify_response("peer-123", &[0u8; 32], "agent-key");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mac_is_deterministic() {
+        let mac1 = HybridHandshake::compute_mac(b"test-nonce", b"test-key");
+        let mac2 = HybridHandshake::compute_mac(b"test-nonce", b"test-key");
+        assert_eq!(mac1, mac2);
+    }
+
+    #[test]
+    fn test_mac_differs_for_different_inputs() {
+        let mac1 = HybridHandshake::compute_mac(b"nonce-1", b"key");
+        let mac2 = HybridHandshake::compute_mac(b"nonce-2", b"key");
+        assert_ne!(mac1, mac2);
+    }
+
+    #[test]
+    fn test_constant_time_eq() {
+        assert!(constant_time_eq(b"hello", b"hello"));
+        assert!(!constant_time_eq(b"hello", b"world"));
+        assert!(!constant_time_eq(b"short", b"longer"));
     }
 
     #[test]

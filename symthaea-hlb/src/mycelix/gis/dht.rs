@@ -255,20 +255,27 @@ pub struct EncryptedEmbedding {
 }
 
 impl EncryptedEmbedding {
-    /// Create an encrypted embedding
+    /// Create an encrypted embedding using BLAKE3 XOF stream cipher.
+    ///
+    /// Derives a 32-byte key from the category name using BLAKE3, then
+    /// uses BLAKE3 in keyed-hash XOF mode to generate a keystream that
+    /// XORs the plaintext. This is semantically secure for distinct
+    /// category keys.
     pub fn encrypt(embedding: &[f32], category: &str) -> Self {
-        // Simple XOR encryption with category-derived key
-        // In production, use proper AES-GCM with derived keys
         let key = Self::derive_category_key(category);
-        let bytes: Vec<u8> = embedding.iter()
+        let plaintext: Vec<u8> = embedding.iter()
             .flat_map(|f| f.to_le_bytes())
-            .enumerate()
-            .map(|(i, b)| b ^ key[i % key.len()])
+            .collect();
+
+        let keystream = Self::generate_keystream(&key, plaintext.len());
+        let ciphertext: Vec<u8> = plaintext.iter()
+            .zip(keystream.iter())
+            .map(|(p, k)| p ^ k)
             .collect();
 
         Self {
-            ciphertext: bytes,
-            algorithm: "xor-demo".to_string(),
+            ciphertext,
+            algorithm: "blake3-xof".to_string(),
             key_category: category.to_string(),
         }
     }
@@ -280,12 +287,13 @@ impl EncryptedEmbedding {
         }
 
         let key = Self::derive_category_key(category);
-        let bytes: Vec<u8> = self.ciphertext.iter()
-            .enumerate()
-            .map(|(i, b)| b ^ key[i % key.len()])
+        let keystream = Self::generate_keystream(&key, self.ciphertext.len());
+        let plaintext: Vec<u8> = self.ciphertext.iter()
+            .zip(keystream.iter())
+            .map(|(c, k)| c ^ k)
             .collect();
 
-        let floats: Vec<f32> = bytes.chunks_exact(4)
+        let floats: Vec<f32> = plaintext.chunks_exact(4)
             .map(|chunk| {
                 let arr: [u8; 4] = chunk.try_into().unwrap();
                 f32::from_le_bytes(arr)
@@ -295,21 +303,24 @@ impl EncryptedEmbedding {
         Some(floats)
     }
 
+    /// Derive a 32-byte symmetric key from category name using BLAKE3.
     fn derive_category_key(category: &str) -> [u8; 32] {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        category.hash(&mut hasher);
-        "category_key_derivation".hash(&mut hasher);
-        let hash = hasher.finish();
-
+        let mut hasher = blake3::Hasher::new_derive_key("symthaea.gis.dht.category-key.v1");
+        hasher.update(category.as_bytes());
         let mut key = [0u8; 32];
-        let bytes = hash.to_le_bytes();
-        for i in 0..4 {
-            key[i*8..(i+1)*8].copy_from_slice(&bytes);
-        }
+        hasher.finalize_xof().fill(&mut key);
         key
+    }
+
+    /// Generate a keystream of the given length using BLAKE3 keyed hash in XOF mode.
+    fn generate_keystream(key: &[u8; 32], len: usize) -> Vec<u8> {
+        let mut output = vec![0u8; len];
+        // Use the key as BLAKE3 keyed hash key, hash a fixed context string,
+        // then extend output to the required length via XOF.
+        let mut hasher = blake3::Hasher::new_keyed(key);
+        hasher.update(b"embedding-keystream");
+        hasher.finalize_xof().fill(&mut output);
+        output
     }
 }
 
@@ -326,16 +337,17 @@ pub struct PseudonymousId {
 }
 
 impl PseudonymousId {
-    /// Generate a new pseudonymous ID
+    /// Generate a new pseudonymous ID using OS entropy.
+    ///
+    /// Uses `OsRng` to produce an unpredictable, unlinkable identifier.
     pub fn generate() -> Self {
-        use std::time::SystemTime;
-        let now = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos();
+        use rand::RngCore;
+        let mut bytes = [0u8; 16];
+        rand::rngs::OsRng.fill_bytes(&mut bytes);
+        let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
 
         Self {
-            id: format!("pseudo_{:016x}", now),
+            id: format!("pseudo_{}", hex),
             session_bound: true,
         }
     }

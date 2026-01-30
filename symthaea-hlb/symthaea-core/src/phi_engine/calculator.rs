@@ -14,6 +14,7 @@
 use crate::hdc::unified_hv::ContinuousHV;
 use super::result::{PhiResult, PhiUncertainty};
 use std::time::Instant;
+use rand::Rng;
 
 /// Computational complexity classification
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,11 +88,14 @@ pub trait PhiCalculator: Send + Sync {
     /// `PhiResult` containing the Φ value and metadata
     fn compute_from_hvs(&self, node_representations: &[ContinuousHV]) -> PhiResult;
 
-    /// Compute Φ with uncertainty estimate via resampling
+    /// Compute Φ with uncertainty estimate via bootstrap resampling
+    ///
+    /// Uses bootstrap resampling (sampling nodes with replacement) to generate
+    /// distinct subsets for each sample, producing meaningful variance estimates.
     ///
     /// # Arguments
     /// * `node_representations` - Vector of hypervectors representing network nodes
-    /// * `n_samples` - Number of bootstrap samples for uncertainty estimation
+    /// * `n_samples` - Number of bootstrap samples for uncertainty estimation (must be >= 2)
     ///
     /// # Returns
     /// Tuple of (PhiResult, PhiUncertainty) with statistical confidence
@@ -100,12 +104,18 @@ pub trait PhiCalculator: Send + Sync {
         node_representations: &[ContinuousHV],
         n_samples: usize,
     ) -> (PhiResult, PhiUncertainty) {
-        // Default implementation using simple resampling
+        let n_samples = n_samples.max(2); // Guard against division by zero
+        let n = node_representations.len();
+        let mut rng = rand::thread_rng();
         let mut phi_values = Vec::with_capacity(n_samples);
         let start = Instant::now();
 
         for _ in 0..n_samples {
-            let result = self.compute_from_hvs(node_representations);
+            // Bootstrap: sample nodes WITH replacement to get distinct subsets
+            let sample: Vec<ContinuousHV> = (0..n)
+                .map(|_| node_representations[rng.gen_range(0..n)].clone())
+                .collect();
+            let result = self.compute_from_hvs(&sample);
             phi_values.push(result.phi);
         }
 

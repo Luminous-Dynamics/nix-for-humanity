@@ -6,6 +6,7 @@
 //! - Router selection observability
 //! - Causal tracing with parent-child relationships
 //! - Performance metrics and statistics
+//! - Counterfactual reasoning with uncertainty propagation
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,8 +14,13 @@ use std::time::{Duration, SystemTime};
 use anyhow::Result;
 
 pub mod causal_observer;
+pub mod counterfactual_reasoning;
 
 pub use causal_observer::CausalTraceObserver;
+pub use counterfactual_reasoning::{
+    CounterfactualEngine, CounterfactualConfig, CounterfactualResult,
+    CounterfactualUncertainty, CausalNode, CausalLink,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // OBSERVER TRAIT AND CORE TYPES
@@ -553,6 +559,9 @@ pub type SharedObserver<O> = Arc<RwLock<O>>;
 pub fn no_op_observer() -> SharedObserver<NoOpObserver> {
     Arc::new(RwLock::new(NoOpObserver::new()))
 }
+
+/// Null observer (alias for NoOpObserver for API compatibility)
+pub type NullObserver = NoOpObserver;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHI COMPONENTS (for compatibility with symthaea-core)

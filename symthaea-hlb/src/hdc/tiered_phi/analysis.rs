@@ -37,7 +37,7 @@ impl Default for PhiPyramidConfig {
             max_scales: 8,
             scale_factor: 2, // Each level has 2x more components
             parallel_scales: true,
-            phi_tier: ApproximationTier::Spectral,
+            phi_tier: ApproximationTier::SpectralConnectivity,
         }
     }
 }
@@ -48,7 +48,7 @@ impl PhiPyramidConfig {
         Self {
             max_scales: 4,
             parallel_scales: true,
-            phi_tier: ApproximationTier::Heuristic,
+            phi_tier: ApproximationTier::SampledPartition,
             ..Default::default()
         }
     }
@@ -58,7 +58,7 @@ impl PhiPyramidConfig {
         Self {
             max_scales: 12,
             parallel_scales: true,
-            phi_tier: ApproximationTier::Spectral,
+            phi_tier: ApproximationTier::SpectralConnectivity,
             ..Default::default()
         }
     }
@@ -872,4 +872,3 @@ pub fn integrated_complexity(phi_values: &[f64], mean_phi: f64) -> f64 {
     let result = PhiEntropyAnalyzer::new().analyze(phi_values, Some(mean_phi));
     result.integrated_complexity
 }
-

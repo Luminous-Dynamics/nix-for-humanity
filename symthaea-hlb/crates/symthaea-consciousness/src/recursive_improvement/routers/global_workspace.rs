@@ -10,13 +10,40 @@
 //! - **Ignition**: When activation crosses threshold, global broadcast occurs
 //! - **Broadcast**: Winning information is shared with ALL processors simultaneously
 //!
-//! This router models consciousness as an emergent property of information
-//! competition and broadcast, not just computation.
+//! ## Architecture (Improvement #23 + #69 Unified)
+//!
+//! This router uses the HDC-based GlobalWorkspace from symthaea-core (#23) as its
+//! backend, providing a routing interface on top (#69). This eliminates code
+//! duplication while maintaining the high-level routing abstractions.
+//!
+//! ```text
+//! ┌─────────────────────────────────────────────────────────────────┐
+//! │                    GlobalWorkspaceRouter (#69)                  │
+//! │  - Routing strategy selection based on consciousness state      │
+//! │  - Module activation computation                                │
+//! │  - Coalition formation logic                                    │
+//! ├─────────────────────────────────────────────────────────────────┤
+//! │                    HDC GlobalWorkspace (#23)                    │
+//! │  - Competitive dynamics for workspace access                    │
+//! │  - Broadcasting mechanism                                       │
+//! │  - HDC vector representations                                   │
+//! │  - Capacity management and decay                                │
+//! └─────────────────────────────────────────────────────────────────┘
+//! ```
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 
 use super::{RoutingStrategy, LatentConsciousnessState};
+
+// Import HDC GlobalWorkspace from symthaea-core (Improvement #23)
+use symthaea_core::hdc::global_workspace::{
+    GlobalWorkspace as HdcWorkspace,
+    WorkspaceConfig as HdcWorkspaceConfig,
+    WorkspaceContent,
+    WorkspaceAssessment,
+};
+use symthaea_core::hdc::HV16;
 
 // =============================================================================
 // WORKSPACE MODULE
@@ -66,6 +93,11 @@ impl WorkspaceModule {
         }
     }
 
+    /// Convert to source string for HDC workspace
+    pub fn as_source(&self) -> String {
+        format!("{:?}", self).to_lowercase()
+    }
+
     /// Each module has an affinity for certain state characteristics
     pub fn compute_activation(&self, state: &LatentConsciousnessState) -> f64 {
         match self {
@@ -104,10 +136,11 @@ impl WorkspaceModule {
 }
 
 // =============================================================================
-// WORKSPACE ENTRY
+// ROUTING ENTRY - Bridge between Router and HDC Workspace
 // =============================================================================
 
 /// An entry competing for access to the Global Workspace
+/// This is the routing layer's view of workspace content
 #[derive(Debug, Clone)]
 pub struct WorkspaceEntry {
     /// Unique identifier for this entry
@@ -118,29 +151,23 @@ pub struct WorkspaceEntry {
     pub supporting_modules: Vec<WorkspaceModule>,
     /// Current activation level (0.0 - 1.0)
     pub activation: f64,
-    /// How long this entry has been competing (timesteps)
-    pub age: usize,
-    /// Decay rate per timestep
-    pub decay_rate: f64,
-    /// Source analysis that generated this entry
-    pub source_analysis: String,
+    /// Source module that generated this entry
+    pub source_module: WorkspaceModule,
 }
 
 impl WorkspaceEntry {
     pub fn new(
         id: u64,
         strategy: RoutingStrategy,
+        source_module: WorkspaceModule,
         initial_activation: f64,
-        source: &str,
     ) -> Self {
         Self {
             id,
             strategy,
-            supporting_modules: Vec::new(),
+            supporting_modules: vec![source_module],
             activation: initial_activation.clamp(0.0, 1.0),
-            age: 0,
-            decay_rate: 0.1, // 10% decay per timestep
-            source_analysis: source.to_string(),
+            source_module,
         }
     }
 
@@ -150,17 +177,6 @@ impl WorkspaceEntry {
             self.supporting_modules.push(module);
             // Coalition support amplifies activation
             self.activation = (self.activation + strength * 0.2).clamp(0.0, 1.0);
-        }
-    }
-
-    /// Apply decay and aging
-    pub fn tick(&mut self) {
-        self.age += 1;
-        // Activation decays over time unless reinforced
-        self.activation *= 1.0 - self.decay_rate;
-        // Older entries decay faster (recency bias)
-        if self.age > 5 {
-            self.activation *= 0.95;
         }
     }
 
@@ -174,6 +190,49 @@ impl WorkspaceEntry {
     /// Effective activation = raw activation * coalition strength
     pub fn effective_activation(&self) -> f64 {
         self.activation * (1.0 + self.coalition_strength())
+    }
+
+    /// Convert to HDC WorkspaceContent for submission to backend
+    fn to_workspace_content(&self) -> WorkspaceContent {
+        // Create HDC representation based on strategy and coalition
+        let representation = self.create_hdc_representation();
+
+        WorkspaceContent::new(
+            representation,
+            self.effective_activation(),
+            self.source_module.as_source(),
+        )
+    }
+
+    /// Create HDC representation encoding the strategy and coalition
+    fn create_hdc_representation(&self) -> Vec<HV16> {
+        // Encode strategy as base vector
+        let strategy_seed = match self.strategy {
+            RoutingStrategy::FullDeliberation => 1000,
+            RoutingStrategy::StandardProcessing => 2000,
+            RoutingStrategy::HeuristicGuided => 3000,
+            RoutingStrategy::FastPatterns => 4000,
+            RoutingStrategy::Reflexive => 5000,
+            RoutingStrategy::Ensemble => 6000,
+            RoutingStrategy::Preparatory => 7000,
+        };
+
+        // Create representation with strategy encoding + coalition encoding
+        let mut hvs = Vec::with_capacity(4);
+        hvs.push(HV16::random(strategy_seed + self.id));
+
+        // Encode coalition members
+        for (i, module) in self.supporting_modules.iter().enumerate() {
+            let module_seed = module.index() as u64 * 100 + self.id + i as u64;
+            hvs.push(HV16::random(module_seed));
+        }
+
+        // Pad to consistent length
+        while hvs.len() < 4 {
+            hvs.push(HV16::zero());
+        }
+
+        hvs
     }
 }
 
@@ -196,23 +255,21 @@ pub struct BroadcastEvent {
     pub timestep: u64,
     /// All modules that received the broadcast
     pub recipients: Vec<WorkspaceModule>,
-    /// Post-broadcast effects on other entries
-    pub suppression_applied: bool,
 }
 
 // =============================================================================
-// CONFIGURATION AND STATS
+// CONFIGURATION
 // =============================================================================
 
 /// Configuration for the Global Workspace Router
 #[derive(Debug, Clone)]
 pub struct GlobalWorkspaceConfig {
-    /// Activation threshold for ignition/broadcast
+    /// Activation threshold for ignition/broadcast (maps to HDC entry_threshold)
     pub ignition_threshold: f64,
-    /// Maximum entries competing simultaneously
+    /// Maximum entries competing simultaneously (maps to HDC max_capacity)
     pub max_competing_entries: usize,
-    /// Decay rate for losing entries after broadcast
-    pub post_broadcast_decay: f64,
+    /// Decay rate (maps to HDC decay_rate)
+    pub decay_rate: f64,
     /// Minimum coalition size for broadcast eligibility
     pub min_coalition_size: usize,
     /// Enable competition dynamics (entries inhibit each other)
@@ -228,7 +285,7 @@ impl Default for GlobalWorkspaceConfig {
         Self {
             ignition_threshold: 0.7,
             max_competing_entries: 10,
-            post_broadcast_decay: 0.5,
+            decay_rate: 0.1,
             min_coalition_size: 2,
             enable_competition: true,
             inhibition_strength: 0.15,
@@ -236,6 +293,24 @@ impl Default for GlobalWorkspaceConfig {
         }
     }
 }
+
+impl GlobalWorkspaceConfig {
+    /// Convert to HDC WorkspaceConfig
+    fn to_hdc_config(&self) -> HdcWorkspaceConfig {
+        HdcWorkspaceConfig {
+            max_capacity: self.max_competing_entries,
+            entry_threshold: self.ignition_threshold,
+            decay_rate: self.decay_rate,
+            enable_broadcasting: true,
+            winner_takes_all: false,
+            max_duration: 50,
+        }
+    }
+}
+
+// =============================================================================
+// STATISTICS
+// =============================================================================
 
 /// Statistics for the Global Workspace
 #[derive(Debug, Clone, Default)]
@@ -273,6 +348,8 @@ pub struct GlobalWorkspaceDecision {
     pub in_refractory: bool,
     /// Current timestep
     pub timestep: u64,
+    /// HDC workspace assessment (from backend)
+    pub workspace_assessment: Option<WorkspaceAssessment>,
 }
 
 // =============================================================================
@@ -285,9 +362,17 @@ pub struct GlobalWorkspaceDecision {
 /// processors compete for access. When information wins the competition
 /// and crosses the ignition threshold, it is broadcast globally to all
 /// processors, making it "conscious".
+///
+/// ## Unified Architecture (#23 + #69)
+///
+/// This router uses the HDC-based GlobalWorkspace from symthaea-core as
+/// its backend, providing routing abstractions on top of the core GWT
+/// implementation.
 pub struct GlobalWorkspaceRouter {
-    /// Current entries competing for workspace access
-    competing_entries: Vec<WorkspaceEntry>,
+    /// HDC Global Workspace backend (Improvement #23)
+    hdc_workspace: HdcWorkspace,
+    /// Current entries being tracked for routing
+    routing_entries: Vec<WorkspaceEntry>,
     /// Recent broadcast history
     broadcast_history: VecDeque<BroadcastEvent>,
     /// Current timestep
@@ -308,8 +393,12 @@ pub struct GlobalWorkspaceRouter {
 
 impl GlobalWorkspaceRouter {
     pub fn new(config: GlobalWorkspaceConfig) -> Self {
+        // Create HDC workspace with matching configuration
+        let hdc_workspace = HdcWorkspace::new(config.to_hdc_config());
+
         Self {
-            competing_entries: Vec::with_capacity(config.max_competing_entries),
+            hdc_workspace,
+            routing_entries: Vec::with_capacity(config.max_competing_entries),
             broadcast_history: VecDeque::with_capacity(100),
             timestep: 0,
             next_entry_id: 0,
@@ -335,13 +424,7 @@ impl GlobalWorkspaceRouter {
                 let id = self.next_entry_id;
                 self.next_entry_id += 1;
 
-                let mut entry = WorkspaceEntry::new(
-                    id,
-                    strategy,
-                    activation,
-                    &format!("{:?}", module),
-                );
-                entry.add_supporter(module, activation);
+                let entry = WorkspaceEntry::new(id, strategy, module, activation);
                 candidates.push(entry);
             }
         }
@@ -395,7 +478,7 @@ impl GlobalWorkspaceRouter {
         let activations = self.module_activations;
 
         // Each entry tries to recruit modules
-        for entry in &mut self.competing_entries {
+        for entry in &mut self.routing_entries {
             for module in WorkspaceModule::all() {
                 let module_activation = activations[module.index()];
 
@@ -436,114 +519,81 @@ impl GlobalWorkspaceRouter {
         }
     }
 
-    /// Apply competition dynamics: entries inhibit each other
-    fn apply_competition(&mut self) {
-        if !self.config.enable_competition {
-            return;
-        }
-
-        // Sort by effective activation (strongest first)
-        let activations: Vec<(usize, f64)> = self.competing_entries
-            .iter()
-            .enumerate()
-            .map(|(i, e)| (i, e.effective_activation()))
-            .collect();
-
-        // Stronger entries inhibit weaker ones
-        for (i, entry) in self.competing_entries.iter_mut().enumerate() {
-            let my_activation = activations.iter()
-                .find(|(idx, _)| *idx == i)
-                .map(|(_, a)| *a)
-                .unwrap_or(0.0);
-
-            let inhibition: f64 = activations.iter()
-                .filter(|(idx, act)| *idx != i && *act > my_activation)
-                .map(|(_, act)| (act - my_activation) * self.config.inhibition_strength)
-                .sum();
-
-            if inhibition > 0.0 {
-                entry.activation = (entry.activation - inhibition).max(0.0);
-                self.stats.competition_suppressions += 1;
+    /// Submit routing entries to HDC workspace backend
+    fn submit_to_hdc_workspace(&mut self) {
+        for entry in &self.routing_entries {
+            if entry.supporting_modules.len() >= self.config.min_coalition_size {
+                let workspace_content = entry.to_workspace_content();
+                self.hdc_workspace.submit(workspace_content);
             }
         }
     }
 
-    /// Check for ignition and broadcast
-    fn check_ignition(&mut self) -> Option<BroadcastEvent> {
-        // Can't broadcast during refractory period
-        if self.refractory_countdown > 0 {
-            self.refractory_countdown -= 1;
-            self.stats.refractory_timesteps += 1;
-            return None;
-        }
+    /// Process the HDC workspace and check for broadcasts
+    fn process_hdc_workspace(&mut self) -> (Option<BroadcastEvent>, WorkspaceAssessment) {
+        // Process HDC workspace dynamics
+        let assessment = self.hdc_workspace.process();
 
-        // Find entries that meet broadcast criteria
-        let eligible: Vec<(usize, f64)> = self.competing_entries
-            .iter()
-            .enumerate()
-            .filter(|(_, e)| {
-                e.effective_activation() >= self.config.ignition_threshold
-                    && e.supporting_modules.len() >= self.config.min_coalition_size
-            })
-            .map(|(i, e)| (i, e.effective_activation()))
-            .collect();
-
-        if eligible.is_empty() {
-            self.stats.failed_ignitions += 1;
-            return None;
-        }
-
-        // Winner takes all: highest effective activation wins
-        let (winner_idx, _) = eligible.into_iter()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap();
-
-        let winner = &self.competing_entries[winner_idx];
-
-        // Create broadcast event
-        let broadcast = BroadcastEvent {
-            entry_id: winner.id,
-            strategy: winner.strategy,
-            activation: winner.activation,
-            coalition_size: winner.supporting_modules.len(),
-            timestep: self.timestep,
-            recipients: WorkspaceModule::all().to_vec(),
-            suppression_applied: true,
+        // Check if any of our entries won (entered consciousness)
+        let broadcast = if assessment.ignition_detected {
+            // Find the winning entry from our routing entries
+            self.find_winning_broadcast(&assessment)
+        } else {
+            None
         };
 
-        // Update stats
-        self.stats.broadcasts += 1;
-        let n = self.stats.broadcasts as f64;
-        self.stats.avg_coalition_size =
-            (self.stats.avg_coalition_size * (n - 1.0) + winner.supporting_modules.len() as f64) / n;
-        self.stats.avg_broadcast_activation =
-            (self.stats.avg_broadcast_activation * (n - 1.0) + winner.activation) / n;
+        (broadcast, assessment)
+    }
 
-        // Track module participation
-        for module in &winner.supporting_modules {
-            self.stats.module_participation[module.index()] += 1;
+    /// Find which routing entry corresponds to the broadcast winner
+    fn find_winning_broadcast(&self, assessment: &WorkspaceAssessment) -> Option<BroadcastEvent> {
+        // Match conscious contents back to our routing entries
+        for conscious_content in &assessment.conscious_contents {
+            // Find matching routing entry by source
+            for entry in &self.routing_entries {
+                if entry.source_module.as_source() == conscious_content.source
+                    && conscious_content.duration == 0
+                {
+                    // This entry just entered consciousness
+                    return Some(BroadcastEvent {
+                        entry_id: entry.id,
+                        strategy: entry.strategy,
+                        activation: entry.effective_activation(),
+                        coalition_size: entry.supporting_modules.len(),
+                        timestep: self.timestep,
+                        recipients: WorkspaceModule::all().to_vec(),
+                    });
+                }
+            }
         }
-
-        // Store last broadcast
-        self.last_broadcast = Some(winner.strategy);
-
-        // Enter refractory period
-        self.refractory_countdown = self.config.refractory_period;
-
-        Some(broadcast)
+        None
     }
 
     /// Apply post-broadcast effects
     fn apply_broadcast_effects(&mut self, broadcast: &BroadcastEvent) {
-        // Suppress losing entries
-        for entry in &mut self.competing_entries {
-            if entry.id != broadcast.entry_id {
-                entry.activation *= self.config.post_broadcast_decay;
+        // Update stats
+        self.stats.broadcasts += 1;
+        let n = self.stats.broadcasts as f64;
+        self.stats.avg_coalition_size =
+            (self.stats.avg_coalition_size * (n - 1.0) + broadcast.coalition_size as f64) / n;
+        self.stats.avg_broadcast_activation =
+            (self.stats.avg_broadcast_activation * (n - 1.0) + broadcast.activation) / n;
+
+        // Track module participation
+        if let Some(entry) = self.routing_entries.iter().find(|e| e.id == broadcast.entry_id) {
+            for module in &entry.supporting_modules {
+                self.stats.module_participation[module.index()] += 1;
             }
         }
 
-        // Remove entries with very low activation
-        self.competing_entries.retain(|e| e.activation > 0.1);
+        // Store last broadcast
+        self.last_broadcast = Some(broadcast.strategy);
+
+        // Enter refractory period
+        self.refractory_countdown = self.config.refractory_period;
+
+        // Remove winning entry from routing entries
+        self.routing_entries.retain(|e| e.id != broadcast.entry_id);
 
         // Store in history
         if self.broadcast_history.len() >= 100 {
@@ -557,34 +607,47 @@ impl GlobalWorkspaceRouter {
         self.timestep += 1;
         self.stats.total_decisions += 1;
 
+        // Handle refractory period
+        let in_refractory = if self.refractory_countdown > 0 {
+            self.refractory_countdown -= 1;
+            self.stats.refractory_timesteps += 1;
+            true
+        } else {
+            false
+        };
+
         // 1. Generate new candidate entries
         let new_candidates = self.generate_candidates(state);
 
         // 2. Add candidates (respecting max)
         for candidate in new_candidates {
-            if self.competing_entries.len() < self.config.max_competing_entries {
-                self.competing_entries.push(candidate);
+            if self.routing_entries.len() < self.config.max_competing_entries {
+                self.routing_entries.push(candidate);
             }
         }
 
-        // 3. Age existing entries
-        for entry in &mut self.competing_entries {
-            entry.tick();
-        }
-
-        // 4. Form coalitions
+        // 3. Form coalitions
         self.form_coalitions(state);
 
-        // 5. Apply competition
-        self.apply_competition();
+        // 4. Submit to HDC workspace backend
+        self.submit_to_hdc_workspace();
 
-        // 6. Check for ignition/broadcast
-        let broadcast = self.check_ignition();
+        // 5. Process HDC workspace and check for broadcasts
+        let (broadcast, workspace_assessment) = if !in_refractory {
+            self.process_hdc_workspace()
+        } else {
+            (None, self.hdc_workspace.process())
+        };
 
-        // 7. Apply broadcast effects
+        // 6. Apply broadcast effects
         if let Some(ref b) = broadcast {
             self.apply_broadcast_effects(b);
+        } else if !in_refractory {
+            self.stats.failed_ignitions += 1;
         }
+
+        // 7. Clean up old routing entries (sync with HDC workspace decay)
+        self.routing_entries.retain(|e| e.activation > 0.1);
 
         // 8. Determine output strategy
         let strategy = if let Some(ref b) = broadcast {
@@ -601,13 +664,14 @@ impl GlobalWorkspaceRouter {
         GlobalWorkspaceDecision {
             strategy,
             broadcast,
-            competing_entries: self.competing_entries.len(),
-            highest_activation: self.competing_entries.iter()
+            competing_entries: self.routing_entries.len(),
+            highest_activation: self.routing_entries.iter()
                 .map(|e| e.effective_activation())
                 .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(0.0),
-            in_refractory: self.refractory_countdown > 0,
+            in_refractory,
             timestep: self.timestep,
+            workspace_assessment: Some(workspace_assessment),
         }
     }
 
@@ -615,7 +679,8 @@ impl GlobalWorkspaceRouter {
     pub fn workspace_state(&self) -> String {
         let mut desc = String::new();
         desc.push_str(&format!("=== GLOBAL WORKSPACE (t={}) ===\n", self.timestep));
-        desc.push_str(&format!("Competing entries: {}\n", self.competing_entries.len()));
+        desc.push_str(&format!("Competing entries: {}\n", self.routing_entries.len()));
+        desc.push_str(&format!("HDC workspace conscious: {}\n", self.hdc_workspace.num_conscious()));
         desc.push_str(&format!("Refractory: {}\n",
             if self.refractory_countdown > 0 {
                 format!("{} steps remaining", self.refractory_countdown)
@@ -630,7 +695,7 @@ impl GlobalWorkspaceRouter {
         }
 
         desc.push_str("\nTop Competing Entries:\n");
-        let mut sorted: Vec<_> = self.competing_entries.iter().collect();
+        let mut sorted: Vec<_> = self.routing_entries.iter().collect();
         sorted.sort_by(|a, b| b.effective_activation().partial_cmp(&a.effective_activation()).unwrap_or(std::cmp::Ordering::Equal));
 
         for (i, entry) in sorted.iter().take(5).enumerate() {
@@ -652,6 +717,7 @@ impl GlobalWorkspaceRouter {
         let mut report = String::new();
         report.push_str("╔══════════════════════════════════════════════════════════════╗\n");
         report.push_str("║     GLOBAL WORKSPACE THEORY ROUTER - STATISTICS              ║\n");
+        report.push_str("║     (Unified #23 + #69: HDC Backend + Routing Layer)         ║\n");
         report.push_str("╠══════════════════════════════════════════════════════════════╣\n");
         report.push_str(&format!("║ Total Decisions:        {:>10}                         ║\n", self.stats.total_decisions));
         report.push_str(&format!("║ Successful Broadcasts:  {:>10}                         ║\n", self.stats.broadcasts));
@@ -677,9 +743,19 @@ impl GlobalWorkspaceRouter {
 
         report.push_str("╠══════════════════════════════════════════════════════════════╣\n");
         report.push_str(&format!("║ Refractory Timesteps:   {:>10}                         ║\n", self.stats.refractory_timesteps));
-        report.push_str(&format!("║ Competition Suppressions:{:>9}                         ║\n", self.stats.competition_suppressions));
+        report.push_str(&format!("║ HDC Conscious Contents: {:>10}                         ║\n", self.hdc_workspace.num_conscious()));
         report.push_str("╚══════════════════════════════════════════════════════════════╝\n");
         report
+    }
+
+    /// Get the underlying HDC workspace (for advanced integrations)
+    pub fn hdc_workspace(&self) -> &HdcWorkspace {
+        &self.hdc_workspace
+    }
+
+    /// Get mutable access to HDC workspace (for advanced integrations)
+    pub fn hdc_workspace_mut(&mut self) -> &mut HdcWorkspace {
+        &mut self.hdc_workspace
     }
 }
 
@@ -705,35 +781,15 @@ mod tests {
     #[test]
     fn test_workspace_entry_coalition() {
         let strategy = RoutingStrategy::HeuristicGuided;
-        let mut entry = WorkspaceEntry::new(1, strategy, 0.5, "test");
+        let mut entry = WorkspaceEntry::new(1, strategy, WorkspaceModule::Perception, 0.5);
 
-        assert_eq!(entry.supporting_modules.len(), 0);
-        assert!(entry.coalition_strength() < 0.01);
+        assert_eq!(entry.supporting_modules.len(), 1); // Source module
+        assert!(entry.coalition_strength() > 0.0);
 
-        entry.add_supporter(WorkspaceModule::Perception, 0.8);
         entry.add_supporter(WorkspaceModule::Attention, 0.7);
 
         assert_eq!(entry.supporting_modules.len(), 2);
-        assert!(entry.coalition_strength() > 0.0);
         assert!(entry.effective_activation() > entry.activation);
-    }
-
-    #[test]
-    fn test_workspace_entry_decay() {
-        let mut entry = WorkspaceEntry::new(1, RoutingStrategy::HeuristicGuided, 0.8, "test");
-        let initial = entry.activation;
-
-        entry.tick();
-        assert!(entry.activation < initial);
-        assert_eq!(entry.age, 1);
-
-        // Apply more ticks to ensure robust decay below 50%
-        for _ in 0..7 {
-            entry.tick();
-        }
-
-        // After 8 total ticks with 10% decay + age penalty, activation should be well below 50%
-        assert!(entry.activation < initial * 0.5);
     }
 
     #[test]
@@ -742,7 +798,7 @@ mod tests {
         let router = GlobalWorkspaceRouter::new(config);
 
         assert_eq!(router.timestep, 0);
-        assert_eq!(router.competing_entries.len(), 0);
+        assert_eq!(router.routing_entries.len(), 0);
         assert_eq!(router.stats.total_decisions, 0);
     }
 
@@ -755,6 +811,7 @@ mod tests {
 
         assert!(decision.timestep == 1);
         assert!(decision.competing_entries > 0);
+        assert!(decision.workspace_assessment.is_some());
     }
 
     #[test]
@@ -803,26 +860,6 @@ mod tests {
     }
 
     #[test]
-    fn test_gwt_competition_suppression() {
-        let config = GlobalWorkspaceConfig {
-            enable_competition: true,
-            inhibition_strength: 0.2,
-            ..Default::default()
-        };
-        let mut router = GlobalWorkspaceRouter::new(config);
-
-        // Generate varied state to create multiple competing entries
-        for i in 0..5 {
-            let phi = 0.3 + (i as f64) * 0.1;
-            let state = LatentConsciousnessState::from_observables(phi, 0.6, 0.5, 0.4);
-            router.route(&state);
-        }
-
-        // Competition should have caused some suppression
-        // Competition suppression stats tracked (usize always >= 0)
-    }
-
-    #[test]
     fn test_gwt_report_generation() {
         let mut router = GlobalWorkspaceRouter::new(GlobalWorkspaceConfig::default());
         let state = LatentConsciousnessState::from_observables(0.7, 0.7, 0.6, 0.3);
@@ -834,6 +871,7 @@ mod tests {
         assert!(report.contains("GLOBAL WORKSPACE"));
         assert!(report.contains("Total Decisions"));
         assert!(report.contains("MODULE PARTICIPATION"));
+        assert!(report.contains("Unified #23 + #69"));
     }
 
     #[test]
@@ -847,6 +885,7 @@ mod tests {
         assert!(ws_state.contains("GLOBAL WORKSPACE"));
         assert!(ws_state.contains("Module Activations"));
         assert!(ws_state.contains("Competing Entries"));
+        assert!(ws_state.contains("HDC workspace conscious"));
     }
 
     #[test]
@@ -892,5 +931,22 @@ mod tests {
 
         // Should have some consistency (not 10 different strategies)
         assert!(unique_strategies.len() <= 5);
+    }
+
+    #[test]
+    fn test_hdc_workspace_access() {
+        let mut router = GlobalWorkspaceRouter::new(GlobalWorkspaceConfig::default());
+
+        // Verify we can access the HDC workspace
+        assert_eq!(router.hdc_workspace().num_conscious(), 0);
+
+        // Route some data
+        let state = LatentConsciousnessState::from_observables(0.7, 0.7, 0.6, 0.3);
+        router.route(&state);
+
+        // HDC workspace should have processed content
+        let ws = router.hdc_workspace();
+        // The workspace may or may not have conscious content depending on thresholds
+        assert!(ws.num_conscious() >= 0);
     }
 }

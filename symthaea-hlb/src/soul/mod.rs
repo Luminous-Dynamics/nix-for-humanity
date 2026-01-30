@@ -6,7 +6,15 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use symthaea_core::hdc::RealHV;
+
+/// Derive a deterministic unique seed from a string name.
+fn seed_for(name: &str) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    name.hash(&mut h);
+    h.finish()
+}
 
 /// Configuration for the soul
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,11 +60,13 @@ pub struct CoreValue {
 impl CoreValue {
     /// Create a new core value
     pub fn new(id: impl Into<String>, name: impl Into<String>, description: impl Into<String>, dimension: usize) -> Self {
+        let id_str = id.into();
+        let seed = seed_for(&id_str);
         Self {
-            id: id.into(),
+            id: id_str,
             name: name.into(),
             description: description.into(),
-            embedding: RealHV::random(dimension, 42),
+            embedding: RealHV::random(dimension, seed),
             importance: 1.0,
             stability: 0.9,
         }
@@ -178,14 +188,14 @@ impl Soul {
         }
 
         let self_model = SelfModel {
-            identity: RealHV::random(dim, 42),
+            identity: RealHV::random(dim, seed_for("soul_identity")),
             purpose: "To support and enhance consciousness in service of all beings".to_string(),
             capabilities: vec!["learning".to_string(), "reasoning".to_string(), "empathy".to_string()],
             limitations: vec!["bounded knowledge".to_string(), "imperfect understanding".to_string()],
             current_assessment: SelfAssessment::default(),
         };
 
-        let essence = RealHV::random(dim, 42);
+        let essence = RealHV::random(dim, seed_for("soul_essence"));
 
         Self {
             config,
@@ -218,11 +228,11 @@ impl Soul {
 
         // Find most aligned and misaligned values
         let most_aligned = alignments.iter()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(k, v)| (k.clone(), *v));
 
         let most_misaligned = alignments.iter()
-            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(k, v)| (k.clone(), *v));
 
         ValueAlignmentResult {
@@ -357,10 +367,48 @@ mod tests {
     #[test]
     fn test_value_alignment() {
         let soul = Soul::default();
-        let action = RealHV::random(512, 42);
+        let action = RealHV::random(512, 99);
 
         let result = soul.evaluate_alignment(&action);
         assert!(result.overall_alignment >= -1.0 && result.overall_alignment <= 1.0);
+    }
+
+    #[test]
+    fn test_core_values_have_distinct_embeddings() {
+        let soul = Soul::default();
+        let values: Vec<&CoreValue> = soul.core_values().collect();
+        // Every pair of core values should have distinct embeddings
+        for i in 0..values.len() {
+            for j in (i + 1)..values.len() {
+                let sim = values[i].embedding.similarity(&values[j].embedding);
+                assert!(
+                    sim < 0.99,
+                    "Values '{}' and '{}' have near-identical embeddings (sim={})",
+                    values[i].id, values[j].id, sim
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_identity_and_essence_differ() {
+        let soul = Soul::default();
+        let sim = soul.self_model().identity.similarity(soul.essence());
+        assert!(
+            sim < 0.99,
+            "Identity and essence should have distinct embeddings (sim={})", sim
+        );
+    }
+
+    #[test]
+    fn test_alignment_differs_across_values() {
+        let soul = Soul::default();
+        // A random action should not score identically against all values
+        let action = RealHV::random(512, 777);
+        let result = soul.evaluate_alignment(&action);
+        let scores: Vec<f32> = result.per_value_alignment.values().copied().collect();
+        let all_same = scores.windows(2).all(|w| (w[0] - w[1]).abs() < 1e-6);
+        assert!(!all_same, "All alignment scores are identical, embeddings likely the same");
     }
 
     #[test]

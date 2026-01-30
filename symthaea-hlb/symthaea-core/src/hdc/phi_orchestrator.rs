@@ -414,10 +414,10 @@ impl PhiOrchestrator {
                 }
             }
             CalculatorType::Tiered(tier) => match tier {
-                ApproximationTier::Exact => 0.99,
-                ApproximationTier::Spectral => 0.90,
-                ApproximationTier::Heuristic => 0.70,
-                ApproximationTier::Mock => 0.10,
+                ApproximationTier::ExhaustivePartition => 0.99,
+                ApproximationTier::SpectralConnectivity => 0.90,
+                ApproximationTier::SampledPartition => 0.70,
+                ApproximationTier::RandomBaseline => 0.10,
             }
         };
 

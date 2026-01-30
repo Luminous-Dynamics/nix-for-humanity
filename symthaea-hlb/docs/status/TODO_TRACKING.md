@@ -1,7 +1,7 @@
 # Symthaea TODO Tracking
 
-**Last Updated**: December 29, 2025
-**Total Items**: 46
+**Last Updated**: January 29, 2026
+**Total Items**: 42 (4 resolved)
 **Status**: Documented and categorized
 
 ---
@@ -12,7 +12,7 @@
 |----------|-------|----------|
 | Model Integration (ONNX/HuggingFace) | 12 | Medium - Deferred |
 | Database Integration | 7 | Medium - Deferred |
-| Algorithm Implementation | 10 | High - Core functionality |
+| Algorithm Implementation | 6 | High - Core functionality (4 RESOLVED) |
 | Test Calibration | 4 | Medium - Quality |
 | Feature Stubs | 8 | Low - Future work |
 | Minor Improvements | 5 | Low - Polish |
@@ -68,23 +68,36 @@ These TODOs relate to the multi-database consciousness architecture.
 These TODOs represent core algorithmic work that should be addressed.
 
 ### perception/multi_modal.rs (5 items)
-- **Line 30**: Replace HDC placeholder with proper implementation from hdc module
-  - *Action*: Use `RealHV` from `hdc::real_hv` module
+- ~~**Line 30**: Replace HDC placeholder with proper implementation from hdc module~~ **RESOLVED** (Jan 29, 2026)
+  - *Resolution*: Already implemented using `RealHV` from `hdc::real_hv` module
 - **Line 191**: Implement actual projection using learned mapping
 - **Line 228**: Implement Johnson-Lindenstrauss random projection
 - **Line 250**: Implement proper text encoding
 - **Line 273**: Implement AST-based code encoding
 
 ### hdc/collective_consciousness.rs (2 items)
-- **Line 487**: Implement full clustering coefficient calculation
-- **Line 496**: Implement full shortest path calculation
+- ~~**Line 487**: Implement full clustering coefficient calculation~~ **RESOLVED** (Jan 29, 2026)
+  - *Resolution*: Full triangle-counting clustering coefficient implemented (lines 486-536)
+- ~~**Line 496**: Implement full shortest path calculation~~ **RESOLVED** (Jan 29, 2026)
+  - *Resolution*: BFS-based shortest path algorithm implemented (lines 538-582)
 
-### observability/counterfactual_reasoning.rs (1 item)
-- **Line 216**: Implement proper uncertainty propagation
+### observability/counterfactual_reasoning.rs (NEW MODULE)
+- ~~**Line 216**: Implement proper uncertainty propagation~~ **RESOLVED** (Jan 29, 2026)
+  - *Resolution*: Created new `counterfactual_reasoning.rs` module with full implementation:
+    - `CounterfactualUncertainty` with epistemic/aleatoric/structural decomposition
+    - `propagate()` method for proper uncertainty propagation through causal chains
+    - `combine()` method for multi-source uncertainty aggregation
+    - `CounterfactualEngine` for causal graph reasoning
+    - Tests: 5 comprehensive unit tests
 
-### sleep_cycles.rs (1 item)
-- **Line 246**: Use resonator networks to find recurring patterns
-  - *Note*: `phi_resonant.rs` now provides this capability
+### sleep_pattern_discovery.rs (NEW MODULE)
+- ~~**Line 246**: Use resonator networks to find recurring patterns~~ **RESOLVED** (Jan 29, 2026)
+  - *Resolution*: Created new `sleep_pattern_discovery.rs` module:
+    - `PatternDiscoveryEngine` using `ResonatorNetwork` from `phi_resonant.rs`
+    - Memory clustering by similarity
+    - Resonator-based pattern attractor discovery
+    - Automatic consolidation of discovered patterns
+    - Tests: 7 comprehensive unit tests
 
 ### physiology/proprioception.rs (1 item)
 - **Line 435**: Implement actual disk reading with nix crate
@@ -148,11 +161,13 @@ Small enhancements and tracking improvements.
 ## Resolution Strategy
 
 ### Immediate (This Sprint)
-1. Fix `perception/multi_modal.rs` HDC integration (use existing `RealHV`)
-2. Enable resonator network usage in `sleep_cycles.rs`
+1. ~~Fix `perception/multi_modal.rs` HDC integration~~ **DONE** (already using RealHV)
+2. ~~Enable resonator network usage in `sleep_cycles.rs`~~ **DONE** (new sleep_pattern_discovery.rs)
+3. ~~Implement uncertainty propagation~~ **DONE** (new counterfactual_reasoning.rs)
+4. ~~Implement clustering & shortest path~~ **DONE** (already in collective_consciousness.rs)
 
 ### Short-term (Next Month)
-1. Address algorithm implementations in Category 3
+1. Remaining algorithm implementations in Category 3 (projection, encoding)
 2. Calibrate phi_tier_tests
 
 ### Medium-term (Next Quarter)
@@ -176,7 +191,11 @@ When resolving a TODO:
 
 | Date | File | Line | Resolution | Commit |
 |------|------|------|------------|--------|
-| *None yet* | | | | |
+| Jan 29, 2026 | perception/multi_modal.rs | 30 | Already implemented with RealHV | - |
+| Jan 29, 2026 | collective_consciousness.rs | 487 | Full clustering coefficient (triangle-counting) | - |
+| Jan 29, 2026 | collective_consciousness.rs | 496 | BFS-based shortest path algorithm | - |
+| Jan 29, 2026 | observability/counterfactual_reasoning.rs | NEW | Full uncertainty propagation implementation | - |
+| Jan 29, 2026 | hdc/sleep_pattern_discovery.rs | NEW | Resonator-based pattern discovery | - |
 
 ---
 

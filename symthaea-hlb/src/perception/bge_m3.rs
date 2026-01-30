@@ -261,7 +261,7 @@ impl XlmRobertaOutput {
 
 /// Complete transformer layer
 #[cfg(feature = "neural-bridge")]
-struct XlmRobertaLayer {
+pub(crate) struct XlmRobertaLayer {
     attention: XlmRobertaAttention,
     intermediate: XlmRobertaIntermediate,
     output: XlmRobertaOutput,
@@ -269,7 +269,7 @@ struct XlmRobertaLayer {
 
 #[cfg(feature = "neural-bridge")]
 impl XlmRobertaLayer {
-    fn new(config: &XlmRobertaConfig, vb: VarBuilder) -> Result<Self> {
+    pub(crate) fn new(config: &XlmRobertaConfig, vb: VarBuilder) -> Result<Self> {
         Ok(Self {
             attention: XlmRobertaAttention::new(config, vb.pp("attention"))?,
             intermediate: XlmRobertaIntermediate::new(config, vb.pp("intermediate"))?,
@@ -277,7 +277,7 @@ impl XlmRobertaLayer {
         })
     }
 
-    fn forward(&self, hidden_states: &Tensor, attention_mask: Option<&Tensor>) -> Result<Tensor> {
+    pub(crate) fn forward(&self, hidden_states: &Tensor, attention_mask: Option<&Tensor>) -> Result<Tensor> {
         let attention_output = self.attention.forward(hidden_states, attention_mask)?;
         let intermediate_output = self.intermediate.forward(&attention_output)?;
         self.output.forward(&intermediate_output, &attention_output)
@@ -311,7 +311,7 @@ impl XlmRobertaEncoder {
 
 /// XLM-RoBERTa embeddings (token + position)
 #[cfg(feature = "neural-bridge")]
-struct XlmRobertaEmbeddings {
+pub(crate) struct XlmRobertaEmbeddings {
     word_embeddings: Embedding,
     position_embeddings: Embedding,
     layer_norm: LayerNorm,
@@ -320,7 +320,7 @@ struct XlmRobertaEmbeddings {
 
 #[cfg(feature = "neural-bridge")]
 impl XlmRobertaEmbeddings {
-    fn new(config: &XlmRobertaConfig, vb: VarBuilder) -> Result<Self> {
+    pub(crate) fn new(config: &XlmRobertaConfig, vb: VarBuilder) -> Result<Self> {
         Ok(Self {
             word_embeddings: embedding(
                 config.vocab_size,
@@ -337,7 +337,7 @@ impl XlmRobertaEmbeddings {
         })
     }
 
-    fn forward(&self, input_ids: &Tensor) -> Result<Tensor> {
+    pub(crate) fn forward(&self, input_ids: &Tensor) -> Result<Tensor> {
         let (_batch_size, seq_len) = input_ids.dims2()?;
 
         // Get word embeddings

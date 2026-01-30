@@ -27,6 +27,23 @@ pub use semantic_encoder::{SemanticEncoder, JLProjector, NGramEncoder};
 pub mod neural_bridge;
 pub use neural_bridge::NeuralBridge;
 
+// Neural Bridge Consciousness Probe - Topological analysis of LLM representations
+pub mod neural_bridge_consciousness_probe;
+pub use neural_bridge_consciousness_probe::{
+    ConsciousnessProbe, ConceptCorpus, Concept, ConceptProbeResult,
+    ClassComparisonResult, ClassStatistics, ProbeConfig,
+};
+
+#[cfg(feature = "neural-bridge")]
+pub use neural_bridge_consciousness_probe::ConsciousnessProbeV2;
+
+// Layer-wise activation extraction for transformer models
+#[cfg(feature = "neural-bridge")]
+pub mod layer_extractor;
+
+#[cfg(feature = "neural-bridge")]
+pub use layer_extractor::{LayerExtractor, LayerActivation, AllLayerActivations, PoolingMethod};
+
 // Epistemic Semantic Vectors - HDC with uncertainty metadata
 pub mod epistemic_vector;
 pub use epistemic_vector::{EpistemicSemanticVector, UncertaintySource};

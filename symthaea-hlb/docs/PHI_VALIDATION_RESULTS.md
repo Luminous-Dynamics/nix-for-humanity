@@ -143,7 +143,7 @@ This is a **topology generator issue**, not a Φ calculation issue. The MIP form
 let phi = TieredPhi::for_research().compute(&components);  // Uses Exact
 
 // For fast approximation (validated against Exact)
-let phi = TieredPhi::new(ApproximationTier::Heuristic).compute(&components);
+let phi = TieredPhi::new(ApproximationTier::SampledPartition).compute(&components);
 
 // For graph connectivity ONLY (NOT consciousness)
 let lambda2 = ConnectivityCalculator::new().algebraic_connectivity(&topology);

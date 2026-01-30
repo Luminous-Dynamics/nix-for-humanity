@@ -6,6 +6,7 @@ pub mod cognitive_loop_validation;
 pub mod prediction_gate;
 pub mod primitive_learning_cognitive;
 pub mod primitive_learning;
+pub mod unified_architecture;
 pub mod unified_causal_understanding;
 
 // Re-exports for benchmark modules - use types from hdc (which re-exports from symthaea_core)

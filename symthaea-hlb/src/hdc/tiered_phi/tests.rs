@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_spectral_tier() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         let components = create_test_components(20);
         let result = phi.compute(&components);
@@ -169,9 +169,9 @@ mod tests {
 
     #[test]
     fn test_tier_suggestions() {
-        assert_eq!(ApproximationTier::suggest_for(4), ApproximationTier::Exact);
-        assert_eq!(ApproximationTier::suggest_for(50), ApproximationTier::Spectral);
-        assert_eq!(ApproximationTier::suggest_for(500), ApproximationTier::Heuristic);
+        assert_eq!(ApproximationTier::suggest_for(4), ApproximationTier::ExhaustivePartition);
+        assert_eq!(ApproximationTier::suggest_for(50), ApproximationTier::SpectralConnectivity);
+        assert_eq!(ApproximationTier::suggest_for(500), ApproximationTier::SampledPartition);
     }
 
     #[test]
@@ -214,20 +214,20 @@ mod tests {
 
     #[test]
     fn test_tier_complexity() {
-        assert_eq!(ApproximationTier::Mock.complexity(), "O(1)");
-        assert_eq!(ApproximationTier::Heuristic.complexity(), "O(n)");
-        assert_eq!(ApproximationTier::Spectral.complexity(), "O(n²)");
-        assert_eq!(ApproximationTier::Exact.complexity(), "O(2^n)");
+        assert_eq!(ApproximationTier::RandomBaseline.complexity(), "O(1)");
+        assert_eq!(ApproximationTier::SampledPartition.complexity(), "O(n)");
+        assert_eq!(ApproximationTier::SpectralConnectivity.complexity(), "O(n²)");
+        assert_eq!(ApproximationTier::ExhaustivePartition.complexity(), "O(2^n)");
     }
 
     #[test]
     fn test_tier_suitability() {
-        assert!(ApproximationTier::Mock.is_suitable_for(1000));
-        assert!(ApproximationTier::Heuristic.is_suitable_for(1000));
-        assert!(ApproximationTier::Spectral.is_suitable_for(500));
-        assert!(!ApproximationTier::Spectral.is_suitable_for(5000));
-        assert!(ApproximationTier::Exact.is_suitable_for(8));
-        assert!(!ApproximationTier::Exact.is_suitable_for(20));
+        assert!(ApproximationTier::RandomBaseline.is_suitable_for(1000));
+        assert!(ApproximationTier::SampledPartition.is_suitable_for(1000));
+        assert!(ApproximationTier::SpectralConnectivity.is_suitable_for(500));
+        assert!(!ApproximationTier::SpectralConnectivity.is_suitable_for(5000));
+        assert!(ApproximationTier::ExhaustivePartition.is_suitable_for(8));
+        assert!(!ApproximationTier::ExhaustivePartition.is_suitable_for(20));
     }
 
     // ========================================================================
@@ -237,26 +237,26 @@ mod tests {
     #[test]
     fn test_auto_tier_selection() {
         // Small systems: Exact
-        assert_eq!(auto_tier(5), ApproximationTier::Exact);
-        assert_eq!(auto_tier(8), ApproximationTier::Exact);
+        assert_eq!(auto_tier(5), ApproximationTier::ExhaustivePartition);
+        assert_eq!(auto_tier(8), ApproximationTier::ExhaustivePartition);
 
         // Medium systems: Spectral
-        assert_eq!(auto_tier(9), ApproximationTier::Spectral);
-        assert_eq!(auto_tier(50), ApproximationTier::Spectral);
+        assert_eq!(auto_tier(9), ApproximationTier::SpectralConnectivity);
+        assert_eq!(auto_tier(50), ApproximationTier::SpectralConnectivity);
 
         // Large systems: Heuristic
-        assert_eq!(auto_tier(51), ApproximationTier::Heuristic);
-        assert_eq!(auto_tier(500), ApproximationTier::Heuristic);
+        assert_eq!(auto_tier(51), ApproximationTier::SampledPartition);
+        assert_eq!(auto_tier(500), ApproximationTier::SampledPartition);
 
         // Huge systems: Mock
-        assert_eq!(auto_tier(501), ApproximationTier::Mock);
-        assert_eq!(auto_tier(10000), ApproximationTier::Mock);
+        assert_eq!(auto_tier(501), ApproximationTier::RandomBaseline);
+        assert_eq!(auto_tier(10000), ApproximationTier::RandomBaseline);
     }
 
     #[test]
     fn test_global_phi() {
         // Reset to known state
-        set_global_tier(ApproximationTier::Spectral);
+        set_global_tier(ApproximationTier::SpectralConnectivity);
 
         let components = create_test_components(5);
         let phi = global_phi(&components);
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn test_global_phi_stats() {
         // Reset to known state with fresh instance
-        set_global_tier(ApproximationTier::Spectral);
+        set_global_tier(ApproximationTier::SpectralConnectivity);
 
         // After reset, stats should be 0 for this fresh instance
         let initial_stats = global_phi_stats();
@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn test_parallel_spectral_correctness() {
         // Verify parallel computation produces same results as sequential
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Test with n > 16 (triggers parallel path)
         let components = create_test_components(20);
@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn test_parallel_vs_sequential_matrix() {
         // Compare parallel and sequential similarity matrix construction
-        let phi = TieredPhi::new(ApproximationTier::Spectral);
+        let phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Test with components that trigger parallel path
         let components = create_test_components(25);
@@ -366,7 +366,7 @@ mod tests {
 
         // Benchmark with larger system (n=50)
         let components = create_test_components(50);
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Warm up
         let _ = phi.compute(&components);
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn test_incremental_first_call() {
         // First call should do full computation
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(20);
 
         let result = phi.compute_incremental(&components);
@@ -412,7 +412,7 @@ mod tests {
     #[test]
     fn test_incremental_no_change() {
         // Same components should return cached value
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(15);
 
         // First computation
@@ -432,7 +432,7 @@ mod tests {
     #[test]
     fn test_incremental_one_change() {
         // Changing one component should trigger incremental update
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let mut components = create_test_components(20);
 
         // First computation
@@ -456,7 +456,7 @@ mod tests {
     #[test]
     fn test_incremental_multiple_changes() {
         // Changing multiple components should still work
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let mut components = create_test_components(30);
 
         // First computation
@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn test_incremental_many_changes_triggers_full() {
         // Changing more than half should trigger full recomputation
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let mut components = create_test_components(20);
 
         // First computation
@@ -509,7 +509,7 @@ mod tests {
         // Incremental should be faster than full for small changes
         use std::time::Instant;
 
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let mut components = create_test_components(40);
 
         // First computation (full)
@@ -524,7 +524,7 @@ mod tests {
         let incremental_time = start_incremental.elapsed();
 
         // Benchmark full computations
-        let mut phi2 = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi2 = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let start_full = Instant::now();
         for i in 0..10 {
             components[0] = HV16::random((i * 1000 + 500) as u64);
@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_clear_incremental_state() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(10);
 
         // Build state
@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_trivial_cases() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Empty components
         let empty: Vec<HV16> = vec![];
@@ -583,7 +583,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_basic() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(20);
 
         let h = phi.compute_hierarchical(&components);
@@ -602,7 +602,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_identical_components() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Components that are very similar should cluster together
         let base = HV16::random(42);
@@ -626,7 +626,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_distinct_clusters() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
 
         // Create two very distinct clusters
         let mut components = vec![];
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_emergence_ratio() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(30);
 
         let h = phi.compute_hierarchical(&components);
@@ -671,7 +671,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_bottleneck_detection() {
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(25);
 
         let h = phi.compute_hierarchical(&components);
@@ -689,7 +689,7 @@ mod tests {
     #[test]
     fn test_hierarchical_consistency_with_macro() {
         // Macro Φ from hierarchical should match regular spectral Φ
-        let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+        let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
         let components = create_test_components(15);
 
         let h = phi.compute_hierarchical(&components);
@@ -708,7 +708,7 @@ mod tests {
 
     #[test]
     fn test_attribution_empty_components() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components: Vec<HV16> = vec![];
 
         let attr = phi.compute_attribution(&components);
@@ -723,7 +723,7 @@ mod tests {
 
     #[test]
     fn test_attribution_single_component() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components = vec![HV16::random(42)];
 
         let attr = phi.compute_attribution(&components);
@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn test_attribution_basic() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components = create_test_components(5);
 
         let attr = phi.compute_attribution(&components);
@@ -767,7 +767,7 @@ mod tests {
     fn test_attribution_hub_spoke_topology() {
         // Create a hub-spoke structure: component 0 is the hub
         // Hub should be most critical since it connects everything
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
 
         // Create hub with specific seed, spokes with similar seeds
         let hub = HV16::random(1000);
@@ -801,7 +801,7 @@ mod tests {
 
     #[test]
     fn test_attribution_fast_vs_full() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components = create_test_components(8);
 
         let full_attr = phi.compute_attribution(&components);
@@ -824,7 +824,7 @@ mod tests {
 
     #[test]
     fn test_attribution_identical_components() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
 
         // All identical components - should have uniform attribution
         let base = HV16::random(999);
@@ -847,7 +847,7 @@ mod tests {
 
     #[test]
     fn test_attribution_critical_detection() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components = create_test_components(10);
 
         let attr = phi.compute_attribution(&components);
@@ -874,7 +874,7 @@ mod tests {
     #[test]
     fn test_attribution_concentration_gradient() {
         // Test that concentration index varies with different distributions
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
 
         // Create systems with different integration patterns
         // System 1: Diverse components (should have distributed importance)
@@ -902,7 +902,7 @@ mod tests {
 
     #[test]
     fn test_phi_attribution_helper_methods() {
-        let mut phi = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi = TieredPhi::new(ApproximationTier::SampledPartition);
         let components = create_test_components(8);
 
         let attr = phi.compute_attribution(&components);
@@ -1154,7 +1154,7 @@ mod tests {
     #[test]
     fn test_dynamics_with_real_phi() {
         let mut dynamics = PhiDynamics::new();
-        let mut phi_calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut phi_calc = TieredPhi::new(ApproximationTier::SampledPartition);
 
         // Create varying topologies and track their Φ over time
         for seed in 0..30 {
@@ -1359,7 +1359,7 @@ mod tests {
             max_scales: 5,
             scale_factor: 3, // Each level has 3x more components
             parallel_scales: false,
-            phi_tier: ApproximationTier::Heuristic,
+            phi_tier: ApproximationTier::SampledPartition,
         };
 
         let mut pyramid = PhiPyramid::with_config(config);

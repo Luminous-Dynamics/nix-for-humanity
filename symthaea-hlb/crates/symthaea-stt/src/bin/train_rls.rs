@@ -17,6 +17,7 @@ use symthaea_stt::{
     CrystalReservoir,
     FastRlsClassifier,
     load_alignments, id_to_audio_path,
+    DirectClassifier, DirectClassifierConfig,
 };
 
 #[derive(Parser)]
@@ -444,43 +445,49 @@ fn main() {
         }
     }
 
-    // Save classifier
+    // Save classifier in DirectClassifier format (compatible with eval-direct)
     println!("\n  Saving RLS classifier to {:?}...", cli.output);
 
     if let Some(parent) = cli.output.parent() {
         std::fs::create_dir_all(parent).ok();
     }
 
-    // Serialize the classifier state
-    let state = RlsClassifierState {
-        phonemes: phonemes.clone(),
-        weights: classifier.weights.clone(),
-        feature_dim: cli.n_features,
-        n_classes: phonemes.len(),
-        use_gabor: cli.use_gabor,
+    // Convert RLS weights to DirectClassifier format
+    // RLS stores weights as flat [n_classes * feature_dim]
+    // DirectClassifier expects [n_classes][feature_dim]
+    let n_classes = phonemes.len();
+    let feature_dim = cli.n_features;
+    let mut weights_2d: Vec<Vec<f32>> = Vec::with_capacity(n_classes);
+    for class_idx in 0..n_classes {
+        let start = class_idx * feature_dim;
+        let end = start + feature_dim;
+        weights_2d.push(classifier.weights[start..end].to_vec());
+    }
+
+    // Create DirectClassifier config
+    let config = DirectClassifierConfig {
+        reservoir_size: feature_dim,
+        ridge_lambda: 0.01, // Not used for inference
+        frame_duration: 0.01,
         context_frames: cli.context_frames,
-        n_mels,
     };
 
-    let data = bincode::serialize(&state).expect("Failed to serialize");
-    std::fs::write(&cli.output, data).expect("Failed to write file");
+    // Create DirectClassifier with RLS weights
+    let mut direct_classifier = DirectClassifier::new(&phonemes, config);
+    direct_classifier.set_weights(weights_2d);
+    direct_classifier.random_projection = random_proj;
+    // Note: RLS has no bias term, DirectClassifier bias is already zeroed
 
-    println!("  ✓ Saved RLS Classifier");
+    // Save as JSON (same format as train-direct)
+    if let Err(e) = direct_classifier.save(&cli.output) {
+        eprintln!("{} Failed to save: {}", style("ERROR:").red().bold(), e);
+        std::process::exit(1);
+    }
+
+    println!("  ✓ Saved RLS Classifier (DirectClassifier format)");
 
     println!("\n{}", style("═══════════════════════════════════════════════════════════").yellow());
     println!("{}", style("         RLS CLASSIFIER TRAINING COMPLETE                  ").bold().green());
     println!("{}", style("═══════════════════════════════════════════════════════════").yellow());
-    println!("\n  Next: eval-rls --classifier {:?}", cli.output);
-}
-
-/// Serializable state for the RLS classifier
-#[derive(serde::Serialize, serde::Deserialize)]
-struct RlsClassifierState {
-    phonemes: Vec<String>,
-    weights: Vec<f32>,
-    feature_dim: usize,
-    n_classes: usize,
-    use_gabor: bool,
-    context_frames: usize,
-    n_mels: usize,
+    println!("\n  Next: eval-direct --classifier {:?} --skip-reservoir --use-deltas --viterbi-penalty 0.95", cli.output);
 }

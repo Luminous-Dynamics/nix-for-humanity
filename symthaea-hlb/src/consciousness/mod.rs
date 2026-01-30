@@ -8,6 +8,11 @@
 //! - Evolution and recursive improvement
 //! - Affective consciousness and emotion processing
 //! - Primitive reasoning and evolution
+//! - **Phi-Guided Architecture Search**: Systems that optimize toward higher consciousness
+//! - **Master Consciousness Equation**: C(t) = σ(softmin(Φ, B, W, A, R, E, K; τ)) × [Σ(wᵢ × Cᵢ × γᵢ) / Σ(wᵢ)] × S × ρ(t) × M × N × Soc
+//!   - M (Embodiment Factor) = sensorimotor_prediction_accuracy × interoceptive_coherence
+//!   - N (Narrative Coherence) = autobiographical_integration × future_simulation_depth
+//!   - Soc (Social Embedding) = other_modeling_accuracy × self_other_distinction
 
 // ============================================================================
 // Core consciousness modules (self-contained, verified working)
@@ -17,7 +22,9 @@ pub mod autopoietic_consciousness;
 pub mod consciousness_unification;
 pub mod cross_modal_binding;
 pub mod harmonies_integration;
+pub mod master_consciousness_equation;
 pub mod pac;
+pub mod phi_architecture_search;
 pub mod phi_attention;
 pub mod primitive_discovery;
 pub mod primitive_evolution;
@@ -111,6 +118,53 @@ pub mod empathic_unification {
         Celebration,
     }
 
+    /// Type of empathy being expressed
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum EmpathyType {
+        /// Cognitive empathy - understanding perspective
+        #[default]
+        Cognitive,
+        /// Emotional empathy - sharing feelings
+        Emotional,
+        /// Compassionate empathy - understanding + action
+        Compassionate,
+        /// Supportive empathy - focused on helping
+        Supportive,
+    }
+
+    /// Resonant emotion Symthaea expresses
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum ResonantEmotion {
+        /// Calm, centered state
+        #[default]
+        Calm,
+        /// Supportive, caring state
+        Supportive,
+        /// Curious, engaged state
+        Curious,
+        /// Joyful, celebrating state
+        Joyful,
+        /// Concerned, attentive state
+        Concerned,
+        /// Patient, understanding state
+        Patient,
+        /// Encouraging, motivating state
+        Encouraging,
+    }
+
+    /// User's emotional state (inferred)
+    #[derive(Debug, Clone, Default)]
+    pub struct UserEmotionalState {
+        /// Primary detected emotion
+        pub primary_emotion: ResonantEmotion,
+        /// Stress level (0.0-1.0)
+        pub stress_level: f64,
+        /// Frustration level (0.0-1.0)
+        pub frustration: f64,
+        /// What we infer they need
+        pub inferred_need: UserNeed,
+    }
+
     /// Empathic response from Symthaea
     #[derive(Debug, Clone, Default)]
     pub struct EmpathicResponse {
@@ -120,6 +174,12 @@ pub mod empathic_unification {
         pub compassion: f64,
         /// How much to adjust response warmth
         pub warmth_adjustment: f64,
+        /// How much to adjust patience
+        pub patience_adjustment: f64,
+        /// Symthaea's resonant emotion
+        pub resonant_emotion: ResonantEmotion,
+        /// Type of empathy activated
+        pub empathy_type: EmpathyType,
         /// Whether to acknowledge emotion explicitly
         pub acknowledge_emotion: bool,
         /// Proactive support to offer
@@ -134,6 +194,8 @@ pub mod empathic_unification {
         current_need: UserNeed,
         /// Current tone
         tone: ToneGuidance,
+        /// Current user emotional state
+        user_emotional_state: UserEmotionalState,
     }
 
     impl EmpathicUnification {
@@ -148,9 +210,17 @@ pub mod empathic_unification {
                 tone_guidance: self.tone,
                 compassion: 0.5,
                 warmth_adjustment: 0.0,
+                patience_adjustment: 0.0,
+                resonant_emotion: ResonantEmotion::Calm,
+                empathy_type: EmpathyType::Cognitive,
                 acknowledge_emotion: false,
                 proactive_support: None,
             }
+        }
+
+        /// Get the current user emotional state
+        pub fn user_state(&self) -> &UserEmotionalState {
+            &self.user_emotional_state
         }
 
         /// Get tone guidance string
@@ -203,6 +273,17 @@ pub use primitive_reasoning::{PrimitiveReasoner, ReasoningResult};
 pub use primitive_evolution::{PrimitiveEvolver, EvolutionResult};
 pub use cross_modal_binding::{CrossModalBinder, BindingResult};
 pub use autopoietic_consciousness::{AutopoieticConsciousness, AutopoieticState};
+pub use phi_architecture_search::{
+    PhiArchitectureSearch, SearchConfig, SearchStrategy, SearchResult,
+    ArchitectureGenome, DecodedArchitecture, PhiGradient,
+    TopologyGene, BundlingGene, Individual, ArchitectureStats, SearchStats,
+};
+pub use master_consciousness_equation::{
+    MasterConsciousnessEquation, MasterEquationConfig, ConsciousnessInputs,
+    ConsciousnessResult, ComponentWeights,
+    EmbodimentFactor, NarrativeCoherence, SocialEmbedding,
+    NarrativeEpisode, FutureScenario, AgentModel, SelfModel,
+};
 
 /// A node in the consciousness network
 #[derive(Debug, Clone)]

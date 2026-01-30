@@ -1,7 +1,7 @@
 //! Core types and implementation for the Tiered Φ Approximation System.
 //!
 //! This module contains the fundamental types:
-//! - [`ApproximationTier`]: Enum for selecting calculation tier (Mock, Heuristic, Spectral, Exact)
+//! - [`ApproximationTier`]: Enum for selecting calculation tier (RandomBaseline, SampledPartition, SpectralConnectivity, ExhaustivePartition)
 //! - [`TieredPhi`]: Main calculator with tier-based Φ computation
 //! - [`TieredPhiConfig`]: Configuration for the calculator
 //! - [`TieredPhiStats`]: Statistics tracking
@@ -24,27 +24,29 @@ use rayon::prelude::*;
 ///
 /// # Important: IIT Alignment
 ///
-/// Only `Exact` tier computes true IIT Φ. Other tiers are approximations
-/// with varying degrees of IIT correlation:
+/// Only `ExhaustivePartition` tier computes true IIT Φ. Other tiers are
+/// approximations with varying degrees of IIT correlation:
 ///
 /// | Tier | IIT-Aligned? | Notes |
 /// |------|--------------|-------|
-/// | Mock | N/A | Testing only |
-/// | Heuristic | ❓ Unclear | Fast but unvalidated |
-/// | Spectral | ❌ NO | Measures mixing time, NOT integration! |
-/// | Exact | ✅ YES | True IIT MIP calculation |
+/// | RandomBaseline | N/A | Testing only — returns deterministic values |
+/// | SampledPartition | ❓ Unclear | Fast partition sampling, IIT correlation unvalidated |
+/// | SpectralConnectivity | ❌ NO | Measures spectral gap (mixing time), NOT integration! |
+/// | ExhaustivePartition | ✅ YES | True IIT MIP calculation (exponential cost) |
 ///
-/// For topology validation (Star > Random), use `Exact` tier or
+/// For topology validation (Star > Random), use `ExhaustivePartition` tier or
 /// `phi_topology_validation.rs` with probabilistic binarization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApproximationTier {
-    /// O(1) - Deterministic mock values for testing
+    /// O(1) - Deterministic baseline values for testing
     /// Returns predictable values based on component count
-    Mock,
+    #[serde(alias = "Mock")]
+    RandomBaseline,
 
-    /// O(n) - Fast heuristic using average similarity
+    /// O(n) - Partition sampling approximation
     /// Good for real-time applications, but IIT correlation unvalidated
-    Heuristic,
+    #[serde(alias = "Heuristic")]
+    SampledPartition,
 
     /// O(n²) - Spectral approximation using algebraic connectivity
     ///
@@ -53,17 +55,19 @@ pub enum ApproximationTier {
     /// Star < Random with this method (opposite of IIT predictions).
     ///
     /// Use for graph analysis, NOT consciousness measurement.
-    Spectral,
+    #[serde(alias = "Spectral")]
+    SpectralConnectivity,
 
-    /// O(2^n) - Exact MIP calculation (true IIT Φ)
+    /// O(2^n) - Exhaustive MIP calculation (true IIT Φ)
     /// Use only for small systems (n ≤ 12) or research validation
-    Exact,
+    #[serde(alias = "Exact")]
+    ExhaustivePartition,
 }
 
 impl Default for ApproximationTier {
     fn default() -> Self {
-        // Default to heuristic for best speed/accuracy tradeoff
-        ApproximationTier::Heuristic
+        // Default to SampledPartition for best speed/accuracy tradeoff
+        ApproximationTier::SampledPartition
     }
 }
 
@@ -71,31 +75,31 @@ impl ApproximationTier {
     /// Get the computational complexity class
     pub fn complexity(&self) -> &'static str {
         match self {
-            ApproximationTier::Mock => "O(1)",
-            ApproximationTier::Heuristic => "O(n)",
-            ApproximationTier::Spectral => "O(n²)",
-            ApproximationTier::Exact => "O(2^n)",
+            ApproximationTier::RandomBaseline => "O(1)",
+            ApproximationTier::SampledPartition => "O(n)",
+            ApproximationTier::SpectralConnectivity => "O(n²)",
+            ApproximationTier::ExhaustivePartition => "O(2^n)",
         }
     }
 
     /// Check if this tier is suitable for a given component count
     pub fn is_suitable_for(&self, n: usize) -> bool {
         match self {
-            ApproximationTier::Mock => true, // Always suitable
-            ApproximationTier::Heuristic => true, // Always suitable
-            ApproximationTier::Spectral => n <= 1000, // Matrix operations
-            ApproximationTier::Exact => n <= 12, // 2^12 = 4096 partitions max
+            ApproximationTier::RandomBaseline => true, // Always suitable
+            ApproximationTier::SampledPartition => true, // Always suitable
+            ApproximationTier::SpectralConnectivity => n <= 1000, // Matrix operations
+            ApproximationTier::ExhaustivePartition => n <= 12, // 2^12 = 4096 partitions max
         }
     }
 
     /// Suggest the best tier for a given component count
     pub fn suggest_for(n: usize) -> Self {
         if n <= 8 {
-            ApproximationTier::Exact
+            ApproximationTier::ExhaustivePartition
         } else if n <= 100 {
-            ApproximationTier::Spectral
+            ApproximationTier::SpectralConnectivity
         } else {
-            ApproximationTier::Heuristic
+            ApproximationTier::SampledPartition
         }
     }
 }
@@ -126,7 +130,7 @@ pub struct TieredPhiConfig {
 impl Default for TieredPhiConfig {
     fn default() -> Self {
         Self {
-            tier: ApproximationTier::Heuristic,
+            tier: ApproximationTier::SampledPartition,
             auto_downgrade: true,
             timeout_ms: 100, // 100ms timeout
             enable_cache: true,
@@ -293,17 +297,17 @@ impl TieredPhi {
 
     /// Create for testing (O(1) deterministic)
     pub fn for_testing() -> Self {
-        Self::new(ApproximationTier::Mock)
+        Self::new(ApproximationTier::RandomBaseline)
     }
 
     /// Create for production (O(n²) spectral - accurate)
     pub fn for_production() -> Self {
-        Self::new(ApproximationTier::Spectral)
+        Self::new(ApproximationTier::SpectralConnectivity)
     }
 
     /// Create for research (O(2^n) exact)
     pub fn for_research() -> Self {
-        Self::new(ApproximationTier::Exact)
+        Self::new(ApproximationTier::ExhaustivePartition)
     }
 
     /// Get current tier
@@ -335,10 +339,10 @@ impl TieredPhi {
 
         // Calculate using current tier
         let result = match self.config.tier {
-            ApproximationTier::Mock => self.compute_mock(components),
-            ApproximationTier::Heuristic => self.compute_heuristic(components),
-            ApproximationTier::Spectral => self.compute_spectral(components),
-            ApproximationTier::Exact => self.compute_exact(components),
+            ApproximationTier::RandomBaseline => self.compute_mock(components),
+            ApproximationTier::SampledPartition => self.compute_heuristic(components),
+            ApproximationTier::SpectralConnectivity => self.compute_spectral(components),
+            ApproximationTier::ExhaustivePartition => self.compute_exact(components),
         };
 
         // Update stats
@@ -363,10 +367,10 @@ impl TieredPhi {
         }
 
         match tier {
-            ApproximationTier::Mock => self.compute_mock(components),
-            ApproximationTier::Heuristic => self.compute_heuristic(components),
-            ApproximationTier::Spectral => self.compute_spectral(components),
-            ApproximationTier::Exact => self.compute_exact(components),
+            ApproximationTier::RandomBaseline => self.compute_mock(components),
+            ApproximationTier::SampledPartition => self.compute_heuristic(components),
+            ApproximationTier::SpectralConnectivity => self.compute_spectral(components),
+            ApproximationTier::ExhaustivePartition => self.compute_exact(components),
         }
     }
 
@@ -429,7 +433,7 @@ impl TieredPhi {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let mut phi_calc = TieredPhi::new(ApproximationTier::Spectral);
+    /// let mut phi_calc = TieredPhi::new(ApproximationTier::SpectralConnectivity);
     ///
     /// // First call: full computation O(n²)
     /// let phi1 = phi_calc.compute_incremental(&components);
@@ -1440,7 +1444,7 @@ impl TieredPhi {
     ///
     /// # Example
     /// ```rust,ignore
-    /// let mut phi = TieredPhi::new(ApproximationTier::Spectral);
+    /// let mut phi = TieredPhi::new(ApproximationTier::SpectralConnectivity);
     /// let components = create_conscious_system();
     /// let attr = phi.compute_attribution(&components);
     /// println!("Most critical component: {}", attr.importance_ranking[0]);
@@ -1734,7 +1738,7 @@ use parking_lot::Mutex as FastMutex;
 ///
 /// NOTE: Uses parking_lot::Mutex (FastMutex) which never poisons and is 2-3x faster.
 static GLOBAL_PHI: Lazy<FastMutex<TieredPhi>> = Lazy::new(|| {
-    FastMutex::new(TieredPhi::new(ApproximationTier::Spectral))
+    FastMutex::new(TieredPhi::new(ApproximationTier::SpectralConnectivity))
 });
 
 /// Compute Φ using the global calculator
@@ -1769,10 +1773,10 @@ pub fn auto_phi(components: &[HV16]) -> f64 {
 /// - n > 500: Mock (for testing/emergency, deterministic)
 pub fn auto_tier(n: usize) -> ApproximationTier {
     match n {
-        0..=8 => ApproximationTier::Exact,
-        9..=50 => ApproximationTier::Spectral,
-        51..=500 => ApproximationTier::Heuristic,
-        _ => ApproximationTier::Mock,
+        0..=8 => ApproximationTier::ExhaustivePartition,
+        9..=50 => ApproximationTier::SpectralConnectivity,
+        51..=500 => ApproximationTier::SampledPartition,
+        _ => ApproximationTier::RandomBaseline,
     }
 }
 
@@ -1785,4 +1789,3 @@ pub fn set_global_tier(tier: ApproximationTier) {
 pub fn global_phi_stats() -> TieredPhiStats {
     GLOBAL_PHI.lock().stats.clone()
 }
-

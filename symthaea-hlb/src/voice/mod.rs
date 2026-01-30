@@ -42,6 +42,44 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 
+// TTS infrastructure modules
+pub mod formant_targets;
+pub mod phoneme_hdc;
+pub mod articulatory_synthesizer;
+pub mod vocoder;
+
+// Cognitive loop integration
+pub mod cognitive_bridge;
+pub mod voice_feedback;
+
+// Rap/rhythmic synthesis modules
+pub mod beat_sync;
+pub mod rhyme_hdc;
+pub mod rap;
+
+// Re-export formant types
+pub use formant_targets::{FormantTarget, FormantDatabase};
+pub use phoneme_hdc::{PhonemeHdcCodec, PhonemeSpec, Place, Manner, AcousticParams, PitchContour};
+pub use articulatory_synthesizer::{ArticulatorySynthesizer, ArticulatoryConfig, FormantFrame, TimedPhoneme};
+pub use vocoder::{FormantVocoder, VocoderConfig};
+
+// Re-export cognitive bridge types
+pub use cognitive_bridge::{
+    CognitivePacing, CognitiveVoiceBridge,
+    SemanticCategory, SemanticProsody,
+};
+
+// Re-export voice feedback types
+pub use voice_feedback::{
+    VoiceFeedbackBridge, VoiceFeedbackConfig,
+    VoiceOutputMetrics, VoiceQualitySummary,
+};
+
+// Re-export rap synthesis types
+pub use beat_sync::{BeatSync, BeatPosition, FlowPattern, SyllableTiming, SwingConfig};
+pub use rhyme_hdc::{RhymeEncoder, RhymeScore, RhymeType, RhymeScheme};
+pub use rap::{RapSynthesizer, RapConfig, FlowStyle, Verse, LyricLine, PhonemeDict, SimplePhonemeDict};
+
 /// LTC-driven speech pacing parameters
 ///
 /// These parameters emerge from the LTC network's temporal dynamics
@@ -184,6 +222,33 @@ impl LTCPacing {
             emotional_valence: self.emotional_valence + (other.emotional_valence - self.emotional_valence) * t,
             arousal: self.arousal + (other.arousal - self.arousal) * t,
             tau: self.tau + (other.tau - self.tau) * t,
+        }
+    }
+
+    /// Apply adaptive behavior multipliers from consciousness state
+    ///
+    /// This modulates pacing based on the cognitive loop's adaptive behavior,
+    /// creating consciousness-driven speech rhythm.
+    pub fn apply_adaptive_behavior(
+        &self,
+        speech_rate_multiplier: f32,
+        pause_multiplier: f32,
+        attention_sensitivity: f32,
+    ) -> LTCPacing {
+        LTCPacing {
+            // Rate scales with speech multiplier
+            rate: (self.rate * speech_rate_multiplier).clamp(0.5, 2.0),
+            // Pauses scale with pause multiplier
+            phrase_pause: (self.phrase_pause * pause_multiplier).clamp(0.1, 2.0),
+            sentence_pause: (self.sentence_pause * pause_multiplier).clamp(0.2, 3.0),
+            // Emphasis modulated by attention sensitivity
+            emphasis: (self.emphasis * attention_sensitivity).clamp(0.5, 2.0),
+            // Breath probability increases with longer pauses
+            breath_probability: (self.breath_probability * pause_multiplier).clamp(0.0, 0.5),
+            // Keep emotional state unchanged
+            emotional_valence: self.emotional_valence,
+            arousal: self.arousal,
+            tau: self.tau,
         }
     }
 }
@@ -386,6 +451,42 @@ impl VoiceOutput {
     pub fn config(&self) -> &VoiceOutputConfig {
         &self.config
     }
+
+    /// Synthesize with adaptive behavior applied
+    ///
+    /// Applies consciousness-driven modulations to the pacing before synthesis.
+    /// This creates speech that naturally reflects the system's cognitive state.
+    pub fn synthesize_with_adaptive_behavior(
+        &mut self,
+        text: &str,
+        speech_rate_multiplier: f32,
+        pause_multiplier: f32,
+        attention_sensitivity: f32,
+    ) -> Result<Vec<f32>> {
+        let adaptive_pacing = self.current_pacing.apply_adaptive_behavior(
+            speech_rate_multiplier,
+            pause_multiplier,
+            attention_sensitivity,
+        );
+        self.synthesize_with_pacing(text, &adaptive_pacing)
+    }
+
+    /// Update pacing from LTC state with adaptive behavior
+    pub fn update_pacing_adaptive(
+        &mut self,
+        hidden: &[f32],
+        tau: f32,
+        speech_rate_multiplier: f32,
+        pause_multiplier: f32,
+        attention_sensitivity: f32,
+    ) {
+        let base_pacing = LTCPacing::from_ltc_state(hidden, tau);
+        self.current_pacing = base_pacing.apply_adaptive_behavior(
+            speech_rate_multiplier,
+            pause_multiplier,
+            attention_sensitivity,
+        );
+    }
 }
 
 impl Default for VoiceOutput {
@@ -491,5 +592,58 @@ mod tests {
 
         let samples = voice.synthesize_with_pacing("This is a calm message.", &pacing).unwrap();
         assert!(!samples.is_empty());
+    }
+
+    #[test]
+    fn test_adaptive_behavior_pacing() {
+        let base = LTCPacing::default();
+
+        // Slow and contemplative: lower rate, longer pauses
+        let contemplative = base.apply_adaptive_behavior(0.8, 1.5, 0.7);
+        assert!(contemplative.rate < base.rate);
+        assert!(contemplative.phrase_pause > base.phrase_pause);
+
+        // Excited: faster rate, shorter pauses
+        let excited = base.apply_adaptive_behavior(1.2, 0.7, 1.3);
+        assert!(excited.rate > base.rate);
+        assert!(excited.phrase_pause < base.phrase_pause);
+    }
+
+    #[test]
+    fn test_voice_with_adaptive_behavior() {
+        let mut voice = VoiceOutput::default();
+
+        // Synthesize with excited adaptive behavior
+        let samples_excited = voice.synthesize_with_adaptive_behavior(
+            "Hello world.",
+            1.2,  // faster speech
+            0.7,  // shorter pauses
+            1.3,  // higher attention
+        ).unwrap();
+
+        // Synthesize same text with contemplative behavior
+        let samples_calm = voice.synthesize_with_adaptive_behavior(
+            "Hello world.",
+            0.8,  // slower speech
+            1.5,  // longer pauses
+            0.7,  // lower attention
+        ).unwrap();
+
+        // Calm version should be longer due to slower rate and longer pauses
+        assert!(samples_calm.len() > samples_excited.len());
+    }
+
+    #[test]
+    fn test_update_pacing_adaptive() {
+        let mut voice = VoiceOutput::default();
+        let hidden = vec![0.5f32; 64];
+
+        // Update with default multipliers
+        voice.update_pacing_adaptive(&hidden, 1.0, 1.0, 1.0, 1.0);
+        let base_rate = voice.pacing().rate;
+
+        // Update with faster multiplier
+        voice.update_pacing_adaptive(&hidden, 1.0, 1.3, 1.0, 1.0);
+        assert!(voice.pacing().rate > base_rate);
     }
 }

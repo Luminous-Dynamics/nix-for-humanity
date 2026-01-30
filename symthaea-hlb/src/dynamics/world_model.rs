@@ -143,9 +143,15 @@ impl WorldModelLayer {
         // Update statistics
         self.stats.updates += 1;
         let error_norm: f32 = self.prediction_error.iter().map(|x| x * x).sum::<f32>().sqrt();
-        let n = self.stats.updates as f32;
-        self.stats.avg_prediction_error =
-            (self.stats.avg_prediction_error * (n - 1.0) + error_norm) / n;
+        // Use exponential moving average (EMA) instead of running average.
+        // Running average (n-1)/n freezes when n > ~16M because (n-1)/n == 1.0 in f32.
+        const EMA_ALPHA: f32 = 0.001;
+        if self.stats.updates == 1 {
+            self.stats.avg_prediction_error = error_norm;
+        } else {
+            self.stats.avg_prediction_error =
+                (1.0 - EMA_ALPHA) * self.stats.avg_prediction_error + EMA_ALPHA * error_norm;
+        }
         self.stats.max_prediction_error = self.stats.max_prediction_error.max(error_norm);
 
         output
@@ -302,9 +308,10 @@ impl HierarchicalCfCWorldModel {
             for i in (0..self.down_projections.len()).rev() {
                 top_down = self.down_projections[i].dot(&top_down);
 
-                // Combine with layer state
-                let layer_state = self.layers[i].state();
-                top_down = &top_down * 0.5 + layer_state * 0.5;
+                // Combine with layer state and apply modulation
+                let layer_state = self.layers[i].state().clone();
+                top_down = &top_down * 0.5 + &layer_state * 0.5;
+                self.layers[i].state = top_down.clone();
             }
         }
 

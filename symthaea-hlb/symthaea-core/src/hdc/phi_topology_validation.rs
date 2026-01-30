@@ -342,7 +342,7 @@ impl MinimalPhiValidation {
             n_nodes,
             dim,
             // Use Spectral tier for good accuracy/speed tradeoff
-            phi_calculator: TieredPhi::new(ApproximationTier::Spectral),
+            phi_calculator: TieredPhi::new(ApproximationTier::SpectralConnectivity),
             seed: 42, // Default reproducible seed
         }
     }

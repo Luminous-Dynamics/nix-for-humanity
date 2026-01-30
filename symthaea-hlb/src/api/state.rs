@@ -20,6 +20,8 @@ pub struct AppState {
     pub baselines: HashMap<String, BaselineTopology>,
     /// Spectral connectivity calculator (lambda2, not IIT Phi)
     pub phi_calculator: ConnectivityCalculator,
+    /// Optional bearer token for authenticated endpoints
+    bearer_token: Option<String>,
 }
 
 /// A submitted evaluation job
@@ -68,7 +70,20 @@ impl AppState {
             results: RwLock::new(HashMap::new()),
             baselines,
             phi_calculator,
+            bearer_token: None,
         }
+    }
+
+    /// Create application state with API config
+    pub fn new_with_config(config: &crate::api::ApiConfig) -> Self {
+        let mut state = Self::new();
+        state.bearer_token = config.bearer_token.clone();
+        state
+    }
+
+    /// Get the configured bearer token (if any)
+    pub fn bearer_token(&self) -> Option<&str> {
+        self.bearer_token.as_deref()
     }
 
     /// Compute baseline topology Φ values

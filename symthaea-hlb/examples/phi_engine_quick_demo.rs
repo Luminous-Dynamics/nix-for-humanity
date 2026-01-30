@@ -50,13 +50,13 @@ fn main() {
 
     // 2. Explicit Tiered method (Mock tier for speed/determinism)
     use symthaea::phi_engine::ApproximationTier;
-    let engine_tiered = PhiEngine::new(PhiMethod::Tiered(ApproximationTier::Mock));
+    let engine_tiered = PhiEngine::new(PhiMethod::Tiered(ApproximationTier::RandomBaseline));
 
     let star_tiered = engine_tiered.compute(&star_hvs);
     let ring_tiered = engine_tiered.compute(&ring_hvs);
     let random_tiered = engine_tiered.compute(&random_hvs);
 
-    println!("\nTiered method ({} / Mock):", star_tiered.method);
+    println!("\nTiered method ({} / RandomBaseline):", star_tiered.method);
     println!("  Star   Φ ≈ {:.4}", star_tiered.phi);
     println!("  Ring   Φ ≈ {:.4}", ring_tiered.phi);
     println!("  Random Φ ≈ {:.4}", random_tiered.phi);
@@ -75,4 +75,3 @@ fn main() {
 
     println!("\nDone.\n");
 }
-

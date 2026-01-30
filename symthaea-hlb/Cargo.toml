@@ -267,6 +267,11 @@ name = "symthaea-mind"
 path = "src/bin/symthaea-mind.rs"
 required-features = ["demo"]
 
+[[bin]]
+name = "symthaea-repl"
+path = "src/bin/symthaea-repl.rs"
+required-features = ["demo"]
+
 # Examples
 # Examples that need cfg-gated modules are marked with required-features
 # They won't be built by default until the required modules are fixed

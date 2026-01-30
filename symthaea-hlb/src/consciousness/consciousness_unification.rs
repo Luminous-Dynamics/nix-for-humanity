@@ -183,7 +183,7 @@ pub struct EmotionalSources {
 }
 
 /// Unified emotion enum bridging all systems
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum UnifiedEmotion {
     // Primary emotions (shared across systems)
     Joy,
@@ -508,7 +508,7 @@ impl EmotionalBridge {
 }
 
 /// Detected emotional pattern
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum EmotionalPattern {
     Stable,
     Escalating,

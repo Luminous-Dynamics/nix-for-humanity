@@ -49,7 +49,7 @@ mod phi_tier_unit_tests {
         let comp_b = hv_from_str("concept_completely_different_b");
         let components = vec![comp_a, comp_b];
 
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
         let phi = calc.compute(&components);
 
         println!("Two different components: Φ = {:.4}", phi);
@@ -69,7 +69,7 @@ mod phi_tier_unit_tests {
         let comp_b = hv_from_str(base_concept);  // Identical
         let components = vec![comp_a, comp_b];
 
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
         let phi = calc.compute(&components);
 
         println!("Two identical components: Φ = {:.4}", phi);
@@ -93,7 +93,7 @@ mod phi_tier_unit_tests {
         let medium_integration = create_medium_integration_state(16);
         let high_integration = create_high_integration_state(16);
 
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
 
         let phi_low = calc.compute(&low_integration);
         let phi_medium = calc.compute(&medium_integration);
@@ -123,7 +123,7 @@ mod phi_tier_unit_tests {
         // Φ is normalized by ln(n), so larger systems need proportionally
         // more integration to achieve same Φ. We just verify all are positive
         // and within valid range [0, 1].
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
 
         let phi_2 = calc.compute(&create_high_integration_state(2));
         let phi_4 = calc.compute(&create_high_integration_state(4));
@@ -167,7 +167,7 @@ mod phi_tier_unit_tests {
 
         // Test Heuristic tier for validity and basic ordering
         {
-            let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+            let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
             let phi_values: Vec<_> = states.iter()
                 .map(|(name, state)| {
                     let phi = calc.compute(state);
@@ -193,7 +193,7 @@ mod phi_tier_unit_tests {
 
         // Test Spectral tier for validity
         {
-            let mut calc = TieredPhi::new(ApproximationTier::Spectral);
+            let mut calc = TieredPhi::new(ApproximationTier::SpectralConnectivity);
             for (name, state) in &states {
                 let phi = calc.compute(state);
                 println!("Spectral tier - {}: Φ = {:.4}", name, phi);
@@ -210,7 +210,7 @@ mod phi_tier_unit_tests {
     #[test]
     fn test_single_component() {
         let components = vec![hv_from_str("single")];
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
         let phi = calc.compute(&components);
 
         // Single component has no integration
@@ -220,7 +220,7 @@ mod phi_tier_unit_tests {
     #[test]
     fn test_empty_components() {
         let components: Vec<HV16> = vec![];
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
         let phi = calc.compute(&components);
 
         // Empty system has no integration
@@ -236,7 +236,7 @@ mod phi_tier_unit_tests {
             create_high_integration_state(16),
         ];
 
-        let mut calc = TieredPhi::new(ApproximationTier::Heuristic);
+        let mut calc = TieredPhi::new(ApproximationTier::SampledPartition);
 
         for state in states {
             let phi = calc.compute(&state);
@@ -255,8 +255,8 @@ mod phi_tier_unit_tests {
         // HEURISTIC should approximate EXACT reasonably well
         let components = create_high_integration_state(4);
 
-        let mut heuristic_calc = TieredPhi::new(ApproximationTier::Heuristic);
-        let mut exact_calc = TieredPhi::new(ApproximationTier::Exact);
+        let mut heuristic_calc = TieredPhi::new(ApproximationTier::SampledPartition);
+        let mut exact_calc = TieredPhi::new(ApproximationTier::ExhaustivePartition);
 
         let phi_heuristic = heuristic_calc.compute(&components);
         let phi_exact = exact_calc.compute(&components);

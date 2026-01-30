@@ -57,6 +57,7 @@ pub mod resolution;
 pub mod active_inference_bridge;
 pub mod persistence;
 pub mod runtime;
+pub mod dream_feedback;
 
 // Re-export key types from core infrastructure
 pub use types::{
@@ -123,6 +124,12 @@ pub use runtime::{
     RuntimeSnapshot, RuntimeSignals, RuntimeEvent,
     RuntimeLogEntry, LogLevel,
     PendingPrediction, AutoResolveType,
+};
+
+// Dream Feedback exports (Counterfactual Learning)
+pub use dream_feedback::{
+    DreamFeedbackBridge, DreamInsight, ActionPrior,
+    ConfidenceAdjustment, DreamFeedbackStats, hash_context,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

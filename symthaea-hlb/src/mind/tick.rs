@@ -102,7 +102,8 @@ impl ContinuousMind {
     /// Process queued inputs.
     pub(crate) fn process_inputs(&mut self) {
         self.input_queue.sort_by(|a, b| {
-            b.priority.partial_cmp(&a.priority).unwrap()
+            a.priority.partial_cmp(&b.priority)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         while let Some(input) = self.input_queue.pop() {

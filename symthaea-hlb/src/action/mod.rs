@@ -307,9 +307,10 @@ pub enum RiskTier {
 
 /// Destructiveness level for command classification (Shell Sidecar support).
 /// Provides granular classification beyond binary is_reversible().
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 pub enum DestructivenessLevel {
     /// Read-only operations: nix search, cat, ls, nix flake show
+    #[default]
     ReadOnly,
     /// Reversible operations: nix-env -i (can uninstall), file writes with backup
     Reversible,

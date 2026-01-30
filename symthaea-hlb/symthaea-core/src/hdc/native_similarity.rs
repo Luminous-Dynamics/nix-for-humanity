@@ -28,7 +28,7 @@ use std::sync::RwLock;
 ///
 /// Stores bipolar {-1, +1} as binary {0, 1} in packed u64 words.
 /// Each u64 holds 64 dimensions, enabling hardware popcount.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct PackedBipolar {
     /// Packed bits: 0 = -1, 1 = +1
     words: Vec<u64>,
@@ -45,6 +45,25 @@ impl PackedBipolar {
 
         for (i, &val) in bipolar.iter().enumerate() {
             if val > 0 {
+                let word_idx = i / 64;
+                let bit_idx = i % 64;
+                words[word_idx] |= 1u64 << bit_idx;
+            }
+        }
+
+        Self { words, dimension }
+    }
+
+    /// Create from continuous values (thresholding at 0)
+    ///
+    /// Values > 0 become +1 (bit=1), values <= 0 become -1 (bit=0)
+    pub fn from_continuous(values: &[f32]) -> Self {
+        let dimension = values.len();
+        let num_words = (dimension + 63) / 64;
+        let mut words = vec![0u64; num_words];
+
+        for (i, &val) in values.iter().enumerate() {
+            if val > 0.0 {
                 let word_idx = i / 64;
                 let bit_idx = i % 64;
                 words[word_idx] |= 1u64 << bit_idx;
