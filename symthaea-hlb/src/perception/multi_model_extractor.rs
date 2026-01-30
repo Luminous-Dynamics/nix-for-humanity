@@ -26,7 +26,8 @@
 //! let activation = extractor.extract_layer("consciousness", 22)?;
 //! ```
 
-use anyhow::{Result, bail};
+// Note: Result and bail are available for future extractor implementations
+// use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
 /// Supported model architectures

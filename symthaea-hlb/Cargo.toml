@@ -441,6 +441,22 @@ required-features = ["benchmarks_module"]
 name = "hdc_ltc_primitives_demo"
 required-features = ["language_module"]
 
+[[example]]
+name = "magi_simulation"
+required-features = ["magi_loop"]
+
+[[example]]
+name = "magi_cli"
+required-features = ["magi_loop"]
+
+[[example]]
+name = "dream_feedback_experiment"
+required-features = ["magi_loop"]
+
+[[example]]
+name = "dream_feedback_scaled"
+required-features = ["magi_loop"]
+
 # Neuroscience validation examples (no required features)
 [[example]]
 name = "meditation_phi_analysis"

@@ -217,6 +217,7 @@ pub struct EmbodimentFactor {
 struct PredictionRecord {
     predicted: f64,
     actual: f64,
+    #[allow(dead_code)]  // Stored for potential temporal analysis
     timestamp: Instant,
 }
 
@@ -603,6 +604,7 @@ struct ToMPrediction {
     /// What actually happened
     actual_state: Option<f64>,
     /// Timestamp
+    #[allow(dead_code)]  // Stored for potential temporal analysis
     timestamp: Instant,
 }
 
@@ -884,6 +886,7 @@ impl Default for GatingFactors {
 #[derive(Debug, Clone)]
 struct ConsciousnessSnapshot {
     level: f64,
+    #[allow(dead_code)]  // Stored for potential temporal analysis
     timestamp: Instant,
 }
 

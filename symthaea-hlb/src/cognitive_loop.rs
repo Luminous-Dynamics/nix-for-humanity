@@ -3046,6 +3046,7 @@ enum TemporalNetwork {
     HdcLtc(HdcLtcBridge),
 }
 
+#[allow(dead_code)]  // Methods provided for API completeness and future use
 impl TemporalNetwork {
     /// Step the network forward
     fn step(&mut self, input: &Array1<f32>, dt: f32) -> Result<()> {
