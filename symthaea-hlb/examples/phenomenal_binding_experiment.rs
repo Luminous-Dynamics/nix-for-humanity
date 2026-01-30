@@ -1,370 +1,104 @@
 //! Phenomenal Binding Experiment
 //!
-//! This example demonstrates Research Direction 2: Testing whether HDC binding (XOR)
-//! produces representations with higher topological integration than bundling
-//! (majority vote) for concept pairs humans report as phenomenally unified.
+//! Tests Research Direction 2: HDC binding vs bundling for phenomenal unity.
 //!
 //! ## Hypothesis (H2)
 //!
-//! HDC binding (⊗) produces representations with higher topological integration
-//! (lower component count, higher unity score) than bundling (⊕), specifically
-//! for concept pairs humans report as phenomenally unified.
+//! HDC binding (XOR) produces representations with higher topological integration
+//! (lower component count, higher unity score) than bundling (majority vote),
+//! specifically for concept pairs humans report as phenomenally unified.
 //!
-//! ## Experimental Design
+//! ## 2x2 Analysis Design
 //!
-//! 2x2 Factorial ANOVA:
-//! - Factor 1: Operation (Bind vs Bundle)
-//! - Factor 2: Pair Type (Unified vs Separate)
-//! - Key test: Interaction effect (binding specifically helps unified pairs)
+//! - Factor A: Operation (Bind vs Bundle)
+//! - Factor B: Pair Type (Unified vs Separate)
+//!
+//! Key test: Interaction effect - does binding specifically help unified pairs?
 //!
 //! ## Usage
 //!
 //! ```bash
-//! cargo run --example phenomenal_binding_experiment
+//! # Run with default settings
+//! cargo run --example phenomenal_binding_experiment --release
+//!
+//! # Run with verbose output
+//! cargo run --example phenomenal_binding_experiment --release -- --verbose
+//!
+//! # Run quick mode (fewer iterations)
+//! cargo run --example phenomenal_binding_experiment --release -- --quick
 //! ```
 
+use std::env;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 
-use symthaea_core::hdc::binary_hv::HV16;
-use symthaea_core::hdc::consciousness_topology::{
-    BettiNumbers, ConsciousnessTopology, TopologyConfig,
-};
+use anyhow::Result;
+use serde::Deserialize;
 
-/// Type of concept pair
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum PairType {
-    Unified,
-    Separate,
+use symthaea_core::hdc::binary_hv::HV16;
+use symthaea_core::hdc::consciousness_topology::{ConsciousnessTopology, TopologyConfig};
+use symthaea_core::hdc::phenomenal_binding_study::PairType;
+
+/// JSON structure for concept pairs file
+#[derive(Debug, Deserialize)]
+struct ConceptPairsFile {
+    unified_pairs: Vec<ConceptPairJson>,
+    separate_pairs: Vec<ConceptPairJson>,
 }
 
-/// A concept pair for the experiment
-#[derive(Debug, Clone)]
-struct ConceptPair {
+/// JSON structure for a single concept pair
+#[derive(Debug, Deserialize)]
+struct ConceptPairJson {
     id: String,
     concept_a: String,
     concept_b: String,
+    combined: String,
+}
+
+/// Concept pair with HDC vectors
+struct ConceptPairWithVectors {
+    id: String,
     pair_type: PairType,
     hv_a: HV16,
     hv_b: HV16,
 }
 
-/// Result of comparing bind vs bundle for one pair
-#[derive(Debug, Clone)]
+/// Result of comparing bind vs bundle
 struct ComparisonResult {
     pair_id: String,
     pair_type: PairType,
     bind_unity: f64,
     bundle_unity: f64,
     unity_advantage: f64,
-    bind_beta_0: usize,
-    bundle_beta_0: usize,
 }
 
-/// Cell means for 2x2 ANOVA
-#[derive(Debug)]
-struct CellMeans {
-    bind_unified: f64,
-    bind_separate: f64,
-    bundle_unified: f64,
-    bundle_separate: f64,
-    n_unified: usize,
-    n_separate: usize,
-}
+fn main() -> Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let verbose = args.iter().any(|a| a == "--verbose" || a == "-v");
+    let quick = args.iter().any(|a| a == "--quick" || a == "-q");
 
-fn main() {
-    println!("\n");
-    println!("================================================================");
+    println!("\n================================================================");
     println!("   PHENOMENAL BINDING EXPERIMENT");
     println!("   Research Direction 2: HDC Binding vs Bundling");
     println!("================================================================\n");
 
-    // Check if data file exists
-    let pairs_path = Path::new("data/binding_study/concept_pairs.json");
-    if !pairs_path.exists() {
-        println!("NOTE: Concept pairs file not found. Using simulated pairs.\n");
-    }
+    // Load or create pairs
+    let pairs = load_or_create_pairs("data/binding_study/concept_pairs.json")?;
+    let n_unified = pairs.iter().filter(|p| p.pair_type == PairType::Unified).count();
+    let n_separate = pairs.iter().filter(|p| p.pair_type == PairType::Separate).count();
 
-    // Create concept pairs (in production, load from JSON)
-    let unified_pairs = create_unified_pairs();
-    let separate_pairs = create_separate_pairs();
+    println!("Pairs: {} unified, {} separate, {} total\n", n_unified, n_separate, pairs.len());
 
-    let mut all_pairs = unified_pairs.clone();
-    all_pairs.extend(separate_pairs.clone());
+    // Run experiment
+    let results: Vec<ComparisonResult> = pairs.iter().enumerate().map(|(i, pair)| {
+        if verbose && (i + 1) % 20 == 0 {
+            println!("  Processing {}/{}...", i + 1, pairs.len());
+        }
+        compare_operations(pair)
+    }).collect();
 
-    println!("Experiment Setup:");
-    println!("  Unified pairs: {}", unified_pairs.len());
-    println!("  Separate pairs: {}", separate_pairs.len());
-    println!("  Total pairs: {}\n", all_pairs.len());
-
-    // Run the experiment
-    println!("Running experiment...\n");
-    let results: Vec<ComparisonResult> = all_pairs.iter().map(|pair| compare_operations(pair)).collect();
-
-    // Compute cell means for 2x2 ANOVA
-    let cell_means = compute_cell_means(&results);
-
-    // Display cell means
-    println!("================================================================");
-    println!("   CELL MEANS (Unity Score)");
-    println!("================================================================\n");
-
-    println!("                 Unified (n={})    Separate (n={})",
-             cell_means.n_unified, cell_means.n_separate);
-    println!("  Bind:          {:.4}              {:.4}",
-             cell_means.bind_unified, cell_means.bind_separate);
-    println!("  Bundle:        {:.4}              {:.4}\n",
-             cell_means.bundle_unified, cell_means.bundle_separate);
-
-    // Compute effects
-    let bind_mean = (cell_means.bind_unified + cell_means.bind_separate) / 2.0;
-    let bundle_mean = (cell_means.bundle_unified + cell_means.bundle_separate) / 2.0;
-    let main_effect_operation = bind_mean - bundle_mean;
-
-    let unified_mean = (cell_means.bind_unified + cell_means.bundle_unified) / 2.0;
-    let separate_mean = (cell_means.bind_separate + cell_means.bundle_separate) / 2.0;
-    let main_effect_pair_type = unified_mean - separate_mean;
-
-    // Interaction effect: Does binding's advantage depend on pair type?
-    let bind_advantage_unified = cell_means.bind_unified - cell_means.bundle_unified;
-    let bind_advantage_separate = cell_means.bind_separate - cell_means.bundle_separate;
-    let interaction = bind_advantage_unified - bind_advantage_separate;
-
-    println!("================================================================");
-    println!("   ANOVA RESULTS");
-    println!("================================================================\n");
-
-    println!("Main Effects:");
-    println!("  Operation (Bind - Bundle): {:.4}", main_effect_operation);
-    println!("  Pair Type (Unified - Separate): {:.4}\n", main_effect_pair_type);
-
-    println!("Simple Effects:");
-    println!("  Binding advantage for UNIFIED pairs: {:.4}", bind_advantage_unified);
-    println!("  Binding advantage for SEPARATE pairs: {:.4}\n", bind_advantage_separate);
-
-    println!("Interaction Effect:");
-    println!("  (Bind_Unified - Bundle_Unified) - (Bind_Separate - Bundle_Separate)");
-    println!("  = {:.4} - {:.4} = {:.4}\n",
-             bind_advantage_unified, bind_advantage_separate, interaction);
-
-    // Effect size calculations
-    let all_unity: Vec<f64> = results
-        .iter()
-        .flat_map(|r| vec![r.bind_unity, r.bundle_unity])
-        .collect();
-    let variance = compute_variance(&all_unity);
-    let std_dev = variance.sqrt().max(0.001);
-
-    let cohens_d_overall = main_effect_operation / std_dev;
-    let cohens_d_unified = bind_advantage_unified / std_dev;
-    let cohens_d_separate = bind_advantage_separate / std_dev;
-
-    println!("Effect Sizes (Cohen's d):");
-    println!("  Overall binding advantage: {:.4}", cohens_d_overall);
-    println!("  Binding advantage (unified): {:.4}", cohens_d_unified);
-    println!("  Binding advantage (separate): {:.4}\n", cohens_d_separate);
-
-    // Simplified F-test for interaction
-    let mse = variance.max(0.001);
-    let f_interaction = (interaction.powi(2) * results.len() as f64) / mse;
-    let interaction_significant = f_interaction > 3.84; // Approximate critical F
-
-    println!("Interaction Test:");
-    println!("  F-statistic: {:.4}", f_interaction);
-    println!("  Significant (F > 3.84): {}\n", if interaction_significant { "Yes" } else { "No" });
-
-    // Interpretation
-    println!("================================================================");
-    println!("   INTERPRETATION");
-    println!("================================================================\n");
-
-    if interaction_significant && interaction > 0.0 {
-        println!("HYPOTHESIS H2 SUPPORTED:");
-        println!("The interaction effect is SIGNIFICANT and POSITIVE.");
-        println!("Binding provides a larger unity advantage for UNIFIED pairs");
-        println!("({:.4}) than for SEPARATE pairs ({:.4}).",
-                 bind_advantage_unified, bind_advantage_separate);
-        println!("\nThis suggests that HDC binding (XOR) captures something");
-        println!("meaningful about phenomenal unity that bundling does not.\n");
-    } else if interaction_significant && interaction < 0.0 {
-        println!("UNEXPECTED RESULT:");
-        println!("The interaction effect is significant but NEGATIVE.");
-        println!("Binding provides MORE advantage for SEPARATE pairs.");
-        println!("This is opposite to hypothesis H2 prediction.\n");
-    } else if main_effect_operation > 0.0 && cohens_d_overall.abs() > 0.2 {
-        println!("PARTIAL SUPPORT:");
-        println!("No significant interaction, but binding shows an overall");
-        println!("advantage (d = {:.4}) regardless of pair type.", cohens_d_overall);
-        println!("Binding creates more unified representations in general,");
-        println!("but this effect is not specific to phenomenally unified pairs.\n");
-    } else {
-        println!("HYPOTHESIS H2 NOT SUPPORTED:");
-        println!("No significant interaction effect detected.");
-        println!("Binding's effect on unity does not depend on whether");
-        println!("concept pairs are phenomenally unified or separate.\n");
-    }
-
-    // Sample individual results
-    println!("================================================================");
-    println!("   SAMPLE RESULTS");
-    println!("================================================================\n");
-
-    println!("Top 5 UNIFIED pairs by binding advantage:");
-    let mut unified_results: Vec<_> = results.iter()
-        .filter(|r| r.pair_type == PairType::Unified)
-        .collect();
-    unified_results.sort_by(|a, b| b.unity_advantage.partial_cmp(&a.unity_advantage).unwrap());
-    for r in unified_results.iter().take(5) {
-        println!("  {} - Bind: {:.4}, Bundle: {:.4}, Advantage: {:.4}",
-                 r.pair_id, r.bind_unity, r.bundle_unity, r.unity_advantage);
-    }
-
-    println!("\nTop 5 SEPARATE pairs by binding advantage:");
-    let mut separate_results: Vec<_> = results.iter()
-        .filter(|r| r.pair_type == PairType::Separate)
-        .collect();
-    separate_results.sort_by(|a, b| b.unity_advantage.partial_cmp(&a.unity_advantage).unwrap());
-    for r in separate_results.iter().take(5) {
-        println!("  {} - Bind: {:.4}, Bundle: {:.4}, Advantage: {:.4}",
-                 r.pair_id, r.bind_unity, r.bundle_unity, r.unity_advantage);
-    }
-
-    println!("\n================================================================");
-    println!("   EXPERIMENT COMPLETE");
-    println!("================================================================\n");
-    println!("Note: This experiment uses simulated concept vectors.");
-    println!("In production, vectors would be derived from semantic");
-    println!("embeddings or LLM activations via the Neural Bridge.\n");
-}
-
-/// Create unified concept pairs
-fn create_unified_pairs() -> Vec<ConceptPair> {
-    let pairs_data = vec![
-        ("red", "apple", "red_apple"),
-        ("loud", "crash", "loud_crash"),
-        ("soft", "fur", "soft_fur"),
-        ("sweet", "strawberry", "sweet_strawberry"),
-        ("warm", "sunlight", "warm_sunlight"),
-        ("sharp", "pain", "sharp_pain"),
-        ("blue", "sky", "blue_sky"),
-        ("cold", "ice", "cold_ice"),
-        ("bright", "light", "bright_light"),
-        ("deep", "voice", "deep_voice"),
-        ("smooth", "silk", "smooth_silk"),
-        ("fragrant", "rose", "fragrant_rose"),
-        ("bitter", "coffee", "bitter_coffee"),
-        ("heavy", "stone", "heavy_stone"),
-        ("green", "grass", "green_grass"),
-    ];
-
-    pairs_data
-        .into_iter()
-        .enumerate()
-        .map(|(i, (a, b, id))| {
-            let seed_a = hash_concept(a);
-            let seed_b = hash_concept(b);
-            ConceptPair {
-                id: id.to_string(),
-                concept_a: a.to_string(),
-                concept_b: b.to_string(),
-                pair_type: PairType::Unified,
-                hv_a: HV16::random(seed_a + i as u64),
-                hv_b: HV16::random(seed_b + i as u64),
-            }
-        })
-        .collect()
-}
-
-/// Create separate concept pairs
-fn create_separate_pairs() -> Vec<ConceptPair> {
-    let pairs_data = vec![
-        ("red", "mailbox", "red_mailbox"),
-        ("loud", "background", "loud_background"),
-        ("cold", "thought", "cold_thought"),
-        ("bright", "memory", "bright_memory"),
-        ("sweet", "distance", "sweet_distance"),
-        ("heavy", "silence", "heavy_silence"),
-        ("sharp", "idea", "sharp_idea"),
-        ("warm", "number", "warm_number"),
-        ("soft", "logic", "soft_logic"),
-        ("blue", "argument", "blue_argument"),
-        ("rough", "calculation", "rough_calculation"),
-        ("deep", "question", "deep_question"),
-        ("bitter", "theory", "bitter_theory"),
-        ("green", "decision", "green_decision"),
-        ("smooth", "schedule", "smooth_schedule"),
-    ];
-
-    pairs_data
-        .into_iter()
-        .enumerate()
-        .map(|(i, (a, b, id))| {
-            let seed_a = hash_concept(a) + 5000;
-            let seed_b = hash_concept(b) + 5000;
-            ConceptPair {
-                id: id.to_string(),
-                concept_a: a.to_string(),
-                concept_b: b.to_string(),
-                pair_type: PairType::Separate,
-                hv_a: HV16::random(seed_a + i as u64),
-                hv_b: HV16::random(seed_b + i as u64),
-            }
-        })
-        .collect()
-}
-
-/// Hash concept text to u64 for deterministic seeding
-fn hash_concept(text: &str) -> u64 {
-    text.bytes().fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64))
-}
-
-/// Compare bind vs bundle for a concept pair
-fn compare_operations(pair: &ConceptPair) -> ComparisonResult {
-    // Compute bound representation (XOR)
-    let bound = pair.hv_a.bind(&pair.hv_b);
-
-    // Compute bundled representation (majority vote)
-    let bundled = HV16::bundle(&[pair.hv_a, pair.hv_b]);
-
-    // Analyze topology for both
-    let bind_assessment = analyze_topology(&bound);
-    let bundle_assessment = analyze_topology(&bundled);
-
-    ComparisonResult {
-        pair_id: pair.id.clone(),
-        pair_type: pair.pair_type,
-        bind_unity: bind_assessment.0,
-        bundle_unity: bundle_assessment.0,
-        unity_advantage: bind_assessment.0 - bundle_assessment.0,
-        bind_beta_0: bind_assessment.1,
-        bundle_beta_0: bundle_assessment.1,
-    }
-}
-
-/// Analyze topology for an HDC vector
-/// Returns (unity_score, beta_0)
-fn analyze_topology(hv: &HV16) -> (f64, usize) {
-    let config = TopologyConfig {
-        min_persistence: 0.1,
-        max_scale: 1.0,
-        num_scales: 10,
-        detect_cycles: true,
-        detect_voids: true,
-    };
-
-    let mut topology = ConsciousnessTopology::new(config);
-
-    // Add main vector and permuted variations
-    topology.add_state(*hv);
-    for shift in 1..5 {
-        topology.add_state(hv.permute(shift * 100));
-    }
-
-    let assessment = topology.analyze(0.5);
-    (assessment.unity_score, assessment.betti.beta_0)
-}
-
-/// Compute cell means for 2x2 ANOVA
-fn compute_cell_means(results: &[ComparisonResult]) -> CellMeans {
+    // Compute cell means
     let unified: Vec<_> = results.iter().filter(|r| r.pair_type == PairType::Unified).collect();
     let separate: Vec<_> = results.iter().filter(|r| r.pair_type == PairType::Separate).collect();
 
@@ -373,30 +107,212 @@ fn compute_cell_means(results: &[ComparisonResult]) -> CellMeans {
     let bind_separate = mean(separate.iter().map(|r| r.bind_unity));
     let bundle_separate = mean(separate.iter().map(|r| r.bundle_unity));
 
-    CellMeans {
-        bind_unified,
-        bind_separate,
-        bundle_unified,
-        bundle_separate,
-        n_unified: unified.len(),
-        n_separate: separate.len(),
+    // Display results
+    println!("================================================================");
+    println!("   CELL MEANS (Unity Score)");
+    println!("================================================================\n");
+    println!("                 Unified (n={})    Separate (n={})", unified.len(), separate.len());
+    println!("  Bind:          {:.4}              {:.4}", bind_unified, bind_separate);
+    println!("  Bundle:        {:.4}              {:.4}\n", bundle_unified, bundle_separate);
+
+    // Main effects
+    let main_op = ((bind_unified + bind_separate) - (bundle_unified + bundle_separate)) / 2.0;
+    let main_type = ((bind_unified + bundle_unified) - (bind_separate + bundle_separate)) / 2.0;
+
+    // Interaction
+    let adv_unified = bind_unified - bundle_unified;
+    let adv_separate = bind_separate - bundle_separate;
+    let interaction = adv_unified - adv_separate;
+
+    println!("================================================================");
+    println!("   EFFECTS");
+    println!("================================================================\n");
+    println!("Main Effects:");
+    println!("  Operation (Bind - Bundle): {:+.4}", main_op);
+    println!("  Pair Type (Unified - Separate): {:+.4}\n", main_type);
+
+    println!("Binding Advantage:");
+    println!("  Unified pairs: {:+.4}", adv_unified);
+    println!("  Separate pairs: {:+.4}\n", adv_separate);
+
+    println!("Interaction: {:+.4}", interaction);
+
+    // Effect sizes
+    let all_unity: Vec<f64> = results.iter()
+        .flat_map(|r| vec![r.bind_unity, r.bundle_unity]).collect();
+    let pooled_std = std_dev(&all_unity).max(0.001);
+
+    let d_unified = adv_unified / pooled_std;
+    let d_separate = adv_separate / pooled_std;
+    let d_interaction = interaction / pooled_std;
+
+    println!("\nEffect Sizes (Cohen's d):");
+    println!("  Unified binding advantage: {:+.4}", d_unified);
+    println!("  Separate binding advantage: {:+.4}", d_separate);
+    println!("  Interaction: {:+.4}", d_interaction);
+
+    // Permutation test
+    let n_perm = if quick { 500 } else { 5000 };
+    let p_value = permutation_test_interaction(&unified, &separate, n_perm);
+
+    println!("\nStatistical Test (permutation, n={}):", n_perm);
+    println!("  Interaction p-value: {:.4} {}", p_value, if p_value < 0.05 { "*" } else { "" });
+
+    // Interpretation
+    println!("\n================================================================");
+    println!("   INTERPRETATION");
+    println!("================================================================\n");
+
+    if interaction > 0.0 && p_value < 0.05 {
+        println!("H2 SUPPORTED: Binding produces higher integration for unified pairs.");
+        println!("Effect size: d = {:+.3}", d_interaction);
+    } else if main_op > 0.0 && d_unified.abs() > 0.2 {
+        println!("PARTIAL SUPPORT: Binding improves integration, but not pair-type specific.");
+    } else {
+        println!("H2 NOT SUPPORTED: No clear binding advantage detected.");
+    }
+
+    // Sample results
+    if verbose {
+        println!("\n================================================================");
+        println!("   SAMPLE RESULTS");
+        println!("================================================================\n");
+
+        let mut sorted: Vec<_> = results.iter().collect();
+        sorted.sort_by(|a, b| b.unity_advantage.partial_cmp(&a.unity_advantage).unwrap());
+
+        println!("Top 5 by binding advantage:");
+        for r in sorted.iter().take(5) {
+            println!("  {} ({}): adv={:+.4}", r.pair_id, r.pair_type.as_str(), r.unity_advantage);
+        }
+    }
+
+    println!("\n================================================================");
+    println!("   EXPERIMENT COMPLETE");
+    println!("================================================================\n");
+
+    Ok(())
+}
+
+/// Load pairs from JSON or create synthetic ones
+fn load_or_create_pairs(path: &str) -> Result<Vec<ConceptPairWithVectors>> {
+    if Path::new(path).exists() {
+        println!("Loading pairs from: {}", path);
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let data: ConceptPairsFile = serde_json::from_reader(reader)?;
+
+        let mut pairs = Vec::new();
+        for (i, p) in data.unified_pairs.iter().enumerate() {
+            pairs.push(ConceptPairWithVectors {
+                id: p.id.clone(),
+                pair_type: PairType::Unified,
+                hv_a: HV16::random(1000 + i as u64 * 2),
+                hv_b: HV16::random(1001 + i as u64 * 2),
+            });
+        }
+        for (i, p) in data.separate_pairs.iter().enumerate() {
+            pairs.push(ConceptPairWithVectors {
+                id: p.id.clone(),
+                pair_type: PairType::Separate,
+                hv_a: HV16::random(2000 + i as u64 * 2),
+                hv_b: HV16::random(2001 + i as u64 * 2),
+            });
+        }
+        Ok(pairs)
+    } else {
+        println!("Using synthetic pairs (file not found)\n");
+        Ok(create_synthetic_pairs())
     }
 }
 
-/// Compute mean of an iterator
+/// Create synthetic pairs
+fn create_synthetic_pairs() -> Vec<ConceptPairWithVectors> {
+    let mut pairs = Vec::new();
+
+    // 20 unified pairs
+    for i in 0..20 {
+        pairs.push(ConceptPairWithVectors {
+            id: format!("unified_{:03}", i + 1),
+            pair_type: PairType::Unified,
+            hv_a: HV16::random(1000 + i * 2),
+            hv_b: HV16::random(1001 + i * 2),
+        });
+    }
+
+    // 20 separate pairs
+    for i in 0..20 {
+        pairs.push(ConceptPairWithVectors {
+            id: format!("separate_{:03}", i + 1),
+            pair_type: PairType::Separate,
+            hv_a: HV16::random(2000 + i * 2),
+            hv_b: HV16::random(2001 + i * 2),
+        });
+    }
+
+    pairs
+}
+
+/// Compare bind vs bundle for a pair
+fn compare_operations(pair: &ConceptPairWithVectors) -> ComparisonResult {
+    let bound = pair.hv_a.bind(&pair.hv_b);
+    let bundled = HV16::bundle(&[pair.hv_a, pair.hv_b]);
+
+    let bind_unity = analyze_topology(&bound);
+    let bundle_unity = analyze_topology(&bundled);
+
+    ComparisonResult {
+        pair_id: pair.id.clone(),
+        pair_type: pair.pair_type,
+        bind_unity,
+        bundle_unity,
+        unity_advantage: bind_unity - bundle_unity,
+    }
+}
+
+/// Analyze topology for an HDC vector
+fn analyze_topology(hv: &HV16) -> f64 {
+    let config = TopologyConfig::default();
+    let mut topology = ConsciousnessTopology::new(config);
+
+    topology.add_state(*hv);
+    for shift in 1..5 {
+        topology.add_state(hv.permute(shift * 100));
+    }
+
+    topology.analyze(0.5).unity_score
+}
+
+/// Permutation test for interaction effect
+fn permutation_test_interaction(unified: &[&ComparisonResult], separate: &[&ComparisonResult], n_perm: usize) -> f64 {
+    let unified_advs: Vec<f64> = unified.iter().map(|r| r.unity_advantage).collect();
+    let separate_advs: Vec<f64> = separate.iter().map(|r| r.unity_advantage).collect();
+    let observed = mean(unified_advs.iter().copied()) - mean(separate_advs.iter().copied());
+
+    let mut combined: Vec<f64> = unified_advs.iter().chain(&separate_advs).copied().collect();
+    let n_u = unified_advs.len();
+    let mut more_extreme = 0;
+    let mut rng: u64 = 42;
+
+    for _ in 0..n_perm {
+        for i in (1..combined.len()).rev() {
+            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+            combined.swap(i, (rng as usize) % (i + 1));
+        }
+        let perm = mean(combined[..n_u].iter().copied()) - mean(combined[n_u..].iter().copied());
+        if perm.abs() >= observed.abs() { more_extreme += 1; }
+    }
+
+    more_extreme as f64 / n_perm as f64
+}
+
 fn mean<I: Iterator<Item = f64>>(iter: I) -> f64 {
-    let values: Vec<f64> = iter.collect();
-    if values.is_empty() {
-        return 0.0;
-    }
-    values.iter().sum::<f64>() / values.len() as f64
+    let v: Vec<f64> = iter.collect();
+    if v.is_empty() { 0.0 } else { v.iter().sum::<f64>() / v.len() as f64 }
 }
 
-/// Compute variance of a slice
-fn compute_variance(values: &[f64]) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
+fn std_dev(values: &[f64]) -> f64 {
+    if values.len() < 2 { return 0.0; }
     let m = values.iter().sum::<f64>() / values.len() as f64;
-    values.iter().map(|x| (x - m).powi(2)).sum::<f64>() / values.len() as f64
+    (values.iter().map(|x| (x - m).powi(2)).sum::<f64>() / (values.len() - 1) as f64).sqrt()
 }

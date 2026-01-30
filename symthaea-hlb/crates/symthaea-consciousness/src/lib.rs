@@ -92,6 +92,8 @@ pub mod consciousness_guided_discovery;
 pub mod recursive_improvement;
 pub mod unified_value_evaluator;
 pub mod dream; // NEW
+pub mod sensorimotor_contingencies; // Enactivist SMC theory (O'Regan & Noe)
+pub mod fep_active_inference; // Full Free Energy Principle / Active Inference implementation
 
 // Re-exports
 pub use pac::PacTracker;
@@ -311,4 +313,23 @@ pub use gis_integration::{
     ConsciousDarkSpotNetwork, NetworkIgnoranceStats, CollectiveBlindSpot,
     // Attention bidding context
     EpistemicBidContext,
+};
+
+// Sensorimotor Contingencies - enactivist perception theory
+pub use sensorimotor_contingencies::{
+    // Core types
+    SensorimotorContingency, ContingencyHV,
+    ActionDescriptor, ActionType,
+    ContextDescriptor, SensoryModality,
+    SensoryChange, PredictedChange,
+    // Learning
+    ContingencyLearner, Experience, LearnResult,
+    LearnerConfig, LearnerStats,
+    // Perception
+    EnactivistPerception, PerceptionResult,
+    PerceptionConfig, PerceptionStats,
+    // Affordances
+    ActionAffordance, AffordanceDetector, AffordanceConfig,
+    // Consciousness integration
+    ContingencyConsciousnessContribution,
 };

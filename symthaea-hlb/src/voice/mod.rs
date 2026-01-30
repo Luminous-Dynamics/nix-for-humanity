@@ -57,6 +57,9 @@ pub mod beat_sync;
 pub mod rhyme_hdc;
 pub mod rap;
 
+// REPL voice output (consciousness-modulated speech for interactive use)
+pub mod repl_voice;
+
 // Re-export formant types
 pub use formant_targets::{FormantTarget, FormantDatabase};
 pub use phoneme_hdc::{PhonemeHdcCodec, PhonemeSpec, Place, Manner, AcousticParams, PitchContour};
@@ -79,6 +82,9 @@ pub use voice_feedback::{
 pub use beat_sync::{BeatSync, BeatPosition, FlowPattern, SyllableTiming, SwingConfig};
 pub use rhyme_hdc::{RhymeEncoder, RhymeScore, RhymeType, RhymeScheme};
 pub use rap::{RapSynthesizer, RapConfig, FlowStyle, Verse, LyricLine, PhonemeDict, SimplePhonemeDict};
+
+// Re-export REPL voice types
+pub use repl_voice::{ReplVoiceOutput, ReplVoiceConfig, SimpleG2P};
 
 /// LTC-driven speech pacing parameters
 ///

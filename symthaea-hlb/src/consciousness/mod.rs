@@ -21,6 +21,7 @@ pub mod affective_consciousness;
 pub mod autopoietic_consciousness;
 pub mod consciousness_unification;
 pub mod cross_modal_binding;
+pub mod fep_active_inference;
 pub mod harmonies_integration;
 pub mod master_consciousness_equation;
 pub mod pac;
@@ -283,6 +284,14 @@ pub use master_consciousness_equation::{
     ConsciousnessResult, ComponentWeights,
     EmbodimentFactor, NarrativeCoherence, SocialEmbedding,
     NarrativeEpisode, FutureScenario, AgentModel, SelfModel,
+};
+pub use fep_active_inference::{
+    ActiveInferenceAgent, ActiveInferenceAgentConfig, ActiveInferenceAgentStats,
+    CognitiveLoopFEPBridge, CognitiveLoopFEPResult,
+    GenerativeModel, FreeEnergyCalculator, FreeEnergyComponents,
+    PrecisionEstimator, ExpectedFreeEnergyComputer, ExpectedFreeEnergyResult,
+    Observation, HiddenState, PerceptionResult, ActionSelectionResult,
+    ActiveInferenceSummary,
 };
 
 /// A node in the consciousness network

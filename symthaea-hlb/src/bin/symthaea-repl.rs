@@ -15,7 +15,22 @@
 //! ```bash
 //! cargo run --bin symthaea-repl --features demo
 //! cargo run --bin symthaea-repl --features "demo,voice-tts"  # With voice output
+//! cargo run --bin symthaea-repl --features "demo,audio"      # With audio playback
 //! ```
+//!
+//! ## Voice Options
+//!
+//! - `--voice`: Enable voice output (requires voice-tts feature)
+//! - `--voice-rate <RATE>`: Speech rate multiplier (default: 1.0)
+//! - `--voice-device <NAME>`: Audio output device name (default: system default)
+//!
+//! ## Consciousness-Modulated Speech
+//!
+//! When voice is enabled, speech prosody is modulated by consciousness state:
+//! - Flow state: Faster, more confident speech
+//! - Contemplation: Slower, more deliberate speech with longer pauses
+//! - High arousal: Higher pitch range, more emphasis
+//! - Uncertainty: Slower rate, longer pauses between phrases
 
 use std::io::{self, Write};
 use std::time::Instant;
@@ -23,6 +38,8 @@ use std::time::Instant;
 use anyhow::Result;
 use clap::Parser;
 use tracing::{info, warn, Level};
+#[cfg(feature = "voice-tts")]
+use tracing::debug;
 
 use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot, TemporalBackend};
 use symthaea::language::{LLMOrgan, LLMOrganConfig, llm_backend};
@@ -30,7 +47,7 @@ use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot
 
 // Voice output (optional)
 #[cfg(feature = "voice-tts")]
-use symthaea::voice::{VoiceOutput, VoiceOutputConfig, LTCPacing};
+use symthaea::voice::{ReplVoiceOutput, ReplVoiceConfig};
 
 /// Symthaea REPL - Interactive Consciousness Interface
 #[derive(Parser, Debug)]
@@ -45,6 +62,14 @@ struct Args {
     /// Enable voice output (requires voice-tts feature)
     #[arg(long)]
     voice: bool,
+
+    /// Speech rate multiplier for voice output (0.5 to 2.0)
+    #[arg(long, value_name = "RATE", default_value = "1.0")]
+    voice_rate: f32,
+
+    /// Audio output device name (default: system default)
+    #[arg(long, value_name = "DEVICE")]
+    voice_device: Option<String>,
 
     /// Number of cognitive cycles per input (default: 3)
     #[arg(long, default_value = "3")]
@@ -75,8 +100,11 @@ struct ReplState {
     sandbox: Option<SandboxRoot>,
 
     /// Whether voice output is enabled
-    #[allow(dead_code)]
     voice_enabled: bool,
+
+    /// Voice output system (consciousness-modulated speech)
+    #[cfg(feature = "voice-tts")]
+    voice_output: Option<ReplVoiceOutput>,
 
     /// Number of cognitive cycles per input
     cycles_per_input: usize,
@@ -89,7 +117,14 @@ struct ReplState {
 }
 
 impl ReplState {
-    fn new(voice_enabled: bool, cycles_per_input: usize, backend: &str) -> Result<Self> {
+    #[allow(unused_variables)]
+    fn new(
+        voice_enabled: bool,
+        voice_rate: f32,
+        voice_device: Option<String>,
+        cycles_per_input: usize,
+        backend: &str,
+    ) -> Result<Self> {
         // Parse temporal backend
         let temporal_backend = match backend.to_lowercase().as_str() {
             "cfc" => TemporalBackend::CfC,
@@ -120,6 +155,33 @@ impl ReplState {
         // Try to create sandbox (may fail if tmp is not writable)
         let sandbox = SandboxRoot::new("repl-session").ok();
 
+        // Initialize voice output if enabled
+        #[cfg(feature = "voice-tts")]
+        let voice_output = if voice_enabled {
+            let config = ReplVoiceConfig {
+                base_rate: voice_rate.clamp(0.5, 2.0),
+                device_name: voice_device,
+                consciousness_modulated: true,
+                ..Default::default()
+            };
+            match ReplVoiceOutput::new(config) {
+                Ok(vo) => {
+                    if vo.is_audio_available() {
+                        info!("Voice output initialized with audio playback");
+                    } else {
+                        info!("Voice output initialized (audio playback unavailable)");
+                    }
+                    Some(vo)
+                }
+                Err(e) => {
+                    warn!("Failed to initialize voice output: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         Ok(Self {
             cognitive,
             llm,
@@ -127,10 +189,54 @@ impl ReplState {
             policy,
             sandbox,
             voice_enabled,
+            #[cfg(feature = "voice-tts")]
+            voice_output,
             cycles_per_input,
             total_interactions: 0,
             temporal_backend,
         })
+    }
+
+    /// Speak text using consciousness-modulated voice
+    #[cfg(feature = "voice-tts")]
+    fn speak(&mut self, text: &str) {
+        if let Some(ref mut voice) = self.voice_output {
+            // Get current consciousness state
+            let snapshot = self.cognitive.consciousness_snapshot();
+
+            // Update voice pacing from consciousness state
+            voice.update_from_consciousness(
+                snapshot.unified_phi,
+                snapshot.prediction_error,
+                snapshot.unified_valence,
+                snapshot.unified_arousal,
+                snapshot.in_flow,
+                snapshot.speech_rate_multiplier,
+                snapshot.pause_multiplier,
+                snapshot.tau_mean,
+            );
+
+            // Log pacing for debugging
+            let pacing = voice.pacing();
+            debug!(
+                "Speaking with consciousness pacing: rate={:.2}, valence={:.2}, arousal={:.2}, flow={}",
+                pacing.rate,
+                pacing.emotional_valence,
+                pacing.arousal,
+                snapshot.in_flow
+            );
+
+            // Speak the text
+            if let Err(e) = voice.speak(text) {
+                warn!("Voice synthesis error: {}", e);
+            }
+        }
+    }
+
+    /// Speak text (no-op when voice-tts feature disabled)
+    #[cfg(not(feature = "voice-tts"))]
+    fn speak(&mut self, _text: &str) {
+        // No-op
     }
 
     /// Process a user input through the integrated cognitive pipeline
@@ -365,12 +471,18 @@ fn display_banner() {
     println!("  Commands:");
     println!("    /metrics    - Display consciousness metrics");
     println!("    /stats      - Display loop statistics");
+    println!("    /voice      - Display voice output status");
     println!("    /reset      - Reset cognitive state");
     println!("    /help       - Show this help");
     println!("    /quit       - Exit the REPL");
     println!("    !<cmd>      - Execute action through Motor Cortex");
     println!();
     println!("  Metrics shown: [Phi] [Coherence] [Flow] [Depth] [Latency]");
+    println!();
+    println!("  Voice Options:");
+    println!("    --voice           Enable voice output");
+    println!("    --voice-rate N    Speech rate multiplier (0.5-2.0)");
+    println!("    --voice-device X  Audio device name");
     println!();
 }
 
@@ -389,12 +501,19 @@ fn main() -> Result<()> {
     // Check voice availability
     #[cfg(not(feature = "voice-tts"))]
     if args.voice {
-        warn!("Voice output requested but voice-tts feature not enabled. Continuing without voice.");
+        warn!("Voice output requested but voice-tts feature not enabled.");
+        warn!("Compile with --features voice-tts or --features audio to enable voice.");
     }
 
     // Initialize REPL state
     let voice_enabled = args.voice && cfg!(feature = "voice-tts");
-    let mut state = ReplState::new(voice_enabled, args.cycles, &args.backend)?;
+    let mut state = ReplState::new(
+        voice_enabled,
+        args.voice_rate,
+        args.voice_device,
+        args.cycles,
+        &args.backend,
+    )?;
 
     info!(
         "Cognitive loop initialized with {} cycles per input, backend: {:?}",
@@ -467,7 +586,43 @@ fn main() -> Result<()> {
             "/reset" | "/r" => {
                 state.cognitive.reset();
                 state.history.clear();
+                #[cfg(feature = "voice-tts")]
+                if let Some(ref mut voice) = state.voice_output {
+                    voice.reset();
+                }
                 println!("Cognitive state reset.");
+                continue;
+            }
+            "/voice" | "/v" => {
+                #[cfg(feature = "voice-tts")]
+                {
+                    if let Some(ref voice) = state.voice_output {
+                        let (utterances, audio_secs) = voice.stats();
+                        let pacing = voice.pacing();
+                        println!("\n  Voice Output Status:");
+                        println!("    Enabled:          Yes");
+                        println!("    Audio Available:  {}", voice.is_audio_available());
+                        println!("    Total Utterances: {}", utterances);
+                        println!("    Total Audio:      {:.1}s", audio_secs);
+                        println!("\n  Current Pacing:");
+                        println!("    Rate:             {:.2}x", pacing.rate);
+                        println!("    Phrase Pause:     {:.2}s", pacing.phrase_pause);
+                        println!("    Sentence Pause:   {:.2}s", pacing.sentence_pause);
+                        println!("    Emphasis:         {:.2}", pacing.emphasis);
+                        println!("    Valence:          {:.2}", pacing.emotional_valence);
+                        println!("    Arousal:          {:.2}", pacing.arousal);
+                        println!("    Tau:              {:.2}", pacing.tau);
+                        println!();
+                    } else {
+                        println!("\n  Voice Output Status: Disabled\n");
+                        println!("  Enable with: --voice\n");
+                    }
+                }
+                #[cfg(not(feature = "voice-tts"))]
+                {
+                    println!("\n  Voice Output Status: Not Available");
+                    println!("  Compile with --features voice-tts to enable\n");
+                }
                 continue;
             }
             _ if state.is_action_command(input) => {
@@ -484,27 +639,13 @@ fn main() -> Result<()> {
                 println!("\n{}\n", response);
 
                 // Voice output if enabled
-                #[cfg(feature = "voice-tts")]
                 if state.voice_enabled {
                     // Get text without the metrics header
                     let text_start = response.find("\n\n").map(|i| i + 2).unwrap_or(0);
                     let text_only = &response[text_start..];
 
-                    // Get pacing from cognitive state
-                    let snapshot = state.cognitive.consciousness_snapshot();
-                    let pacing = LTCPacing::from_ltc_state(
-                        &[], // Would need CfC hidden state
-                        snapshot.tau_mean,
-                    ).apply_adaptive_behavior(
-                        snapshot.speech_rate_multiplier,
-                        snapshot.pause_multiplier,
-                        1.0, // attention_sensitivity
-                    );
-
-                    // Synthesize and play (if voice output is available)
-                    // This is a placeholder - actual implementation would use VoiceOutput
-                    info!("Would speak with pacing: rate={:.2}, pause={:.2}",
-                        pacing.rate, pacing.phrase_pause);
+                    // Speak with consciousness-modulated prosody
+                    state.speak(text_only);
                 }
             }
             Err(e) => {
@@ -521,6 +662,16 @@ fn main() -> Result<()> {
     println!("    Final Coherence:    {:.4}", final_snapshot.temporal_coherence);
     println!("    Time in Flow:       {:.1}s", final_snapshot.total_flow_time_secs);
     println!("    Flow Periods:       {}", final_snapshot.flow_periods);
+
+    // Voice statistics if available
+    #[cfg(feature = "voice-tts")]
+    if let Some(ref voice) = state.voice_output {
+        let (utterances, audio_secs) = voice.stats();
+        if utterances > 0 {
+            println!("    Voice Utterances:   {}", utterances);
+            println!("    Voice Audio:        {:.1}s", audio_secs);
+        }
+    }
 
     Ok(())
 }

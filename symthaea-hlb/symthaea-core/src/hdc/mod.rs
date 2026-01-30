@@ -597,6 +597,10 @@ pub mod consciousness_advanced_cognition;
 // Complete conscious being (sensorimotor, developmental, social, introspection)
 pub mod consciousness_complete_being;
 
+// Sensorimotor Contingencies - O'Regan & Noe enactivist theory
+// Perception IS implicit knowledge of action-sensation laws
+pub mod sensorimotor_contingencies;
+
 // Relational consciousness - I-Thou philosophy, intersubjectivity, relationship dynamics
 // Revolutionary Improvement #18: Consciousness exists BETWEEN beings, not just IN them
 pub mod relational_consciousness;
@@ -641,6 +645,21 @@ pub use process_topology::ProcessTopologyOrganizer;
 // Re-export native similarity types (consciousness-native O(1) search)
 pub use native_similarity::{
     PackedBipolar, NativeSimilarityIndex, BundledQuery, SequenceQuery, IndexStats,
+};
+
+// Re-export sensorimotor contingencies (enactivist perception theory)
+pub use sensorimotor_contingencies::{
+    // Core types
+    SensorimotorContingency, ActionDescriptor, ActionType,
+    ContextDescriptor, SensoryModality, SensoryChange, PredictedChange,
+    // Learning
+    ContingencyLearner, Experience, LearnResult, LearnerConfig, LearnerStats,
+    // Perception
+    EnactivistPerception, PerceptionResult, PerceptionConfig, PerceptionStats,
+    // Affordances
+    ActionAffordance, AffordanceDetector, AffordanceConfig,
+    // Consciousness integration
+    ContingencyConsciousnessContribution,
 };
 
 use anyhow::Result;

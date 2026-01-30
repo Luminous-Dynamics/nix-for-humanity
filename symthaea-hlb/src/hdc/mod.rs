@@ -40,6 +40,9 @@ pub use symthaea_core::hdc::{
 // Re-export native_similarity module for tests
 pub use symthaea_core::hdc::native_similarity;
 
+// Re-export sensorimotor contingencies (enactivist perception)
+pub use symthaea_core::hdc::sensorimotor_contingencies;
+
 // Re-export HDC_DIMENSION at module level for convenience
 pub const HDC_DIM: usize = symthaea_core::hdc::unified_hv::HDC_DIMENSION;
 
@@ -143,6 +146,9 @@ pub mod arithmetic;
 pub mod consciousness;
 pub mod tiered_phi;
 pub mod phi;
+
+// Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling
+pub mod phenomenal_binding_study;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCAL MODULES - Testing
