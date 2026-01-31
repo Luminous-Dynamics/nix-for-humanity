@@ -477,9 +477,6 @@ impl TemporalDifferenceLearner {
         self.total_updates += 1;
         let action_idx = action.min(model.num_actions.saturating_sub(1));
 
-        // Clamp TD error to prevent destabilizing large updates
-        let clamped_td = td_error.clamp(-1.0, 1.0);
-
         // === Update transition matrix P(s'|s,a) ===
         // Both branches use error-driven gradient: (observed - predicted) transition
         for i in 0..model.state_dim.min(old_state.mean.len()) {
@@ -549,17 +546,17 @@ impl TemporalDifferenceLearner {
         // Update confidence tracker
         let from_idx = old_state.mean.iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
         let to_idx = new_state.mean.iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
         let obs_idx = observation.values.iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
 
@@ -1663,7 +1660,7 @@ impl ActiveInferenceAgent {
         // Select action with highest probability (greedy for now)
         let selected_idx = probabilities.iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap_or(0);
 

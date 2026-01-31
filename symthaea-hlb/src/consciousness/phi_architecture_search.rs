@@ -1108,7 +1108,7 @@ impl PhiArchitectureSearch {
         }
 
         // Sort by fitness (descending)
-        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
     }
 
     /// Run random search
@@ -1284,7 +1284,7 @@ impl PhiArchitectureSearch {
 
         // Replace population
         self.population = new_population;
-        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
     }
 
     /// Tournament selection
@@ -1329,7 +1329,7 @@ impl PhiArchitectureSearch {
         }
 
         // Re-sort
-        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
     }
 
     // PRNG helpers

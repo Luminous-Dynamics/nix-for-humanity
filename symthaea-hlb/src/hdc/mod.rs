@@ -156,6 +156,12 @@ pub mod phenomenal_binding_study;
 // Binding Reversibility Study - H2 Revised: Testing binding via reversibility
 pub mod binding_reversibility_study;
 
+// HD-LTC codec: bidirectional translation between HDC and LTC spaces
+pub mod hd_ltc_codec;
+
+// LTC generative core: generative thought engine using HD-LTC codec
+pub mod ltc_generative_core;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCAL MODULES - Testing
 // ═══════════════════════════════════════════════════════════════════════════════
