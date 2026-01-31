@@ -157,6 +157,10 @@ pub mod substrate;
 // GUI bridge (enabled - 0 errors)
 pub mod gui_bridge;
 
+// REPL Orchestrator - Unified interactive system
+// Wires together: cognitive_loop, language, action, voice, shell, observability
+pub mod repl;
+
 // API
 #[cfg(feature = "api_module")]
 pub mod api;

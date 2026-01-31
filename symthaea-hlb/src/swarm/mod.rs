@@ -69,13 +69,14 @@ mod error;
 mod types;
 mod hyperfeel;
 mod holochain;
+mod service;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
 mod handshake;
 
 // Re-exports
-pub use config::{SwarmConfig, PeerConfig};
+pub use config::{SwarmConfig, PeerConfig, BootstrapConfig, MYCELIX_BOOTSTRAP_NODES};
 pub use error::{SwarmError, SwarmResult};
 pub use types::{
     SwarmMessage, ConsciousnessVector, TensorPayload, TensorType,
@@ -100,6 +101,9 @@ pub use iroh::{IrohNode, IrohChannel, TensorStream, StreamConfig};
 
 // Handshake types
 pub use handshake::{HybridHandshake, HandshakeResult, HandshakeError, SwarmMessageExt};
+
+// Network Service - high-level swarm integration
+pub use service::{NetworkService, ServiceStats, PeerEvent, SwarmBridge, CollectiveConsciousness};
 
 // ============================================================================
 // SWARM NODE - Main Entry Point

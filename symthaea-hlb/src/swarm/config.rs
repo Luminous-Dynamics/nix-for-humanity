@@ -66,8 +66,108 @@ impl SwarmConfig {
         Self {
             max_peers: 100,
             min_trust_level: 0.7,
+            bootstrap_peers: MYCELIX_BOOTSTRAP_NODES.iter().map(|s| s.to_string()).collect(),
             ..Default::default()
         }
+    }
+
+    /// Create config with custom bootstrap peers
+    pub fn with_bootstrap(peers: Vec<String>) -> Self {
+        Self {
+            bootstrap_peers: peers,
+            ..Default::default()
+        }
+    }
+
+    /// Add a bootstrap peer to the configuration
+    pub fn add_bootstrap_peer(&mut self, peer: impl Into<String>) {
+        self.bootstrap_peers.push(peer.into());
+    }
+}
+
+// ============================================================================
+// MYCELIX BOOTSTRAP NODES
+// ============================================================================
+
+/// Default Mycelix network bootstrap nodes
+///
+/// These are well-known nodes that help new peers discover the network.
+/// Format: Iroh EndpointAddr serialized as JSON or base64 ticket string.
+///
+/// In production, these would be operated by trusted parties in the Mycelix
+/// network. For development, use local nodes or test infrastructure.
+pub const MYCELIX_BOOTSTRAP_NODES: &[&str] = &[
+    // Development/Testing bootstrap nodes (localhost)
+    // These are placeholders - replace with real bootstrap node tickets
+    // "iroh://localhost:4433/symthaea",
+
+    // Luminous Dynamics operated bootstrap (future)
+    // "iroh://bootstrap-1.mycelix.luminousdynamics.org:4433",
+    // "iroh://bootstrap-2.mycelix.luminousdynamics.org:4433",
+
+    // Community-operated bootstrap nodes (future)
+    // "iroh://bootstrap.mycelix.community:4433",
+];
+
+/// Bootstrap node configuration for different environments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapConfig {
+    /// Primary bootstrap nodes (tried first)
+    pub primary: Vec<String>,
+
+    /// Fallback bootstrap nodes (tried if primary fails)
+    pub fallback: Vec<String>,
+
+    /// Enable mDNS for local peer discovery (recommended for development)
+    pub enable_local_discovery: bool,
+
+    /// Timeout for bootstrap attempts (milliseconds)
+    pub bootstrap_timeout_ms: u64,
+
+    /// Maximum retries per bootstrap node
+    pub max_retries: u32,
+}
+
+impl Default for BootstrapConfig {
+    fn default() -> Self {
+        Self {
+            primary: MYCELIX_BOOTSTRAP_NODES.iter().map(|s| s.to_string()).collect(),
+            fallback: vec![],
+            enable_local_discovery: true,
+            bootstrap_timeout_ms: 10000,
+            max_retries: 3,
+        }
+    }
+}
+
+impl BootstrapConfig {
+    /// Create config for local development (mDNS only, no external bootstrap)
+    pub fn local_dev() -> Self {
+        Self {
+            primary: vec![],
+            fallback: vec![],
+            enable_local_discovery: true,
+            bootstrap_timeout_ms: 5000,
+            max_retries: 1,
+        }
+    }
+
+    /// Create config for testing with specific bootstrap nodes
+    pub fn with_nodes(nodes: Vec<String>) -> Self {
+        Self {
+            primary: nodes,
+            ..Default::default()
+        }
+    }
+
+    /// Check if any bootstrap nodes are configured
+    pub fn has_bootstrap_nodes(&self) -> bool {
+        !self.primary.is_empty() || !self.fallback.is_empty()
+    }
+
+    /// Get all bootstrap nodes (primary then fallback)
+    pub fn all_nodes(&self) -> impl Iterator<Item = &str> {
+        self.primary.iter().chain(self.fallback.iter()).map(|s| s.as_str())
     }
 }
 
