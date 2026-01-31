@@ -19,6 +19,7 @@ bincode = "1.3"  # Binary serialization (v1 API)
 rayon = "1.10"  # Parallel processing
 anyhow = "1.0"  # Error handling
 blake3 = "1.5"  # Fast hashing
+sha3 = "0.10"  # SHAKE-256 Keccak sponge for deterministic genesis
 ordered-float = "4.2"  # Orderable floats for heap-based top-k selection
 parking_lot = "0.12"  # Fast synchronization primitives
 once_cell = "1.19"  # Lazy initialization

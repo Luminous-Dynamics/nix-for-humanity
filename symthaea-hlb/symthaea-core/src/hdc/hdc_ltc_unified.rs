@@ -257,6 +257,28 @@ impl HdcLtcUnifiedNeuron {
         }
     }
 
+    /// Create a neuron with all internal HVs deterministically derived from a genesis seed.
+    ///
+    /// Domain labels are derived as `"{label}::weight_hv"`, `"{label}::input_mask"`, etc.
+    pub fn from_genesis(config: UnifiedConfig, genesis: &crate::genesis::GenesisSeed, label: &str) -> Self {
+        let dim = config.dimension;
+        Self {
+            state: ContinuousHV::zero(dim),
+            weight_hv: genesis.hv(&format!("{}::weight_hv", label), dim),
+            input_mask: genesis.hv(&format!("{}::input_mask", label), dim),
+            tau_modulator: genesis.hv(&format!("{}::tau_modulator", label), dim),
+            gate_weight: genesis.hv(&format!("{}::gate_weight", label), dim),
+            gate_bias: genesis.hv(&format!("{}::gate_bias", label), dim).scale(0.1),
+            weight_momentum: ContinuousHV::zero(dim),
+            input_momentum: ContinuousHV::zero(dim),
+            running_mean: 0.0,
+            running_var: 1.0,
+            total_time: 0.0,
+            update_count: 0,
+            config,
+        }
+    }
+
     /// Create with default configuration
     pub fn new_default(seed: u64) -> Self {
         Self::new(UnifiedConfig::default(), seed)
@@ -1497,5 +1519,26 @@ mod tests {
 
         // Weights should have changed (we didn't update state, but weights affect future dynamics)
         assert!(neuron.weight_hv.norm() <= 2.1, "Weights should remain bounded");
+    }
+
+    #[test]
+    fn test_neuron_from_genesis() {
+        use crate::genesis::GenesisSeed;
+
+        let genesis = GenesisSeed::from_phrase("test constitution");
+        let config = UnifiedConfig::default();
+
+        let n1 = HdcLtcUnifiedNeuron::from_genesis(config.clone(), &genesis, "neuron_0");
+        let n2 = HdcLtcUnifiedNeuron::from_genesis(config, &genesis, "neuron_0");
+
+        // Weight HVs must be bit-identical across two constructions
+        assert_eq!(
+            n1.weight_hv.values, n2.weight_hv.values,
+            "from_genesis must produce identical weight_hv"
+        );
+        assert_eq!(
+            n1.input_mask.values, n2.input_mask.values,
+            "from_genesis must produce identical input_mask"
+        );
     }
 }

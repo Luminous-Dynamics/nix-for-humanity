@@ -4,6 +4,7 @@
 //! Contains primitives for Hyperdimensional Computing (HDC) and Integrated Information (Phi).
 
 pub mod core;
+pub mod genesis;
 pub mod hdc;
 pub mod observability;
 pub mod phi_engine;

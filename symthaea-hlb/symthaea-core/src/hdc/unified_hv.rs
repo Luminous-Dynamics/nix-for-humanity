@@ -116,6 +116,14 @@ impl ContinuousHV {
         Self { values }
     }
 
+    /// Create a deterministic HV from a genesis seed with domain label.
+    ///
+    /// Squeezes `dim * 4` bytes from SHAKE-256, maps each 4-byte chunk
+    /// to an f32 in \[-1, 1\]. Same phrase + label + dim → identical vector.
+    pub fn from_genesis(genesis: &crate::genesis::GenesisSeed, label: &str, dim: usize) -> Self {
+        genesis.hv(label, dim)
+    }
+
     /// Create a random hypervector with default dimension
     pub fn random_default(seed: u64) -> Self {
         Self::random(Self::DEFAULT_DIM, seed)
