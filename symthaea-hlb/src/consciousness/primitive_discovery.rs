@@ -41,6 +41,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::time::{Duration, Instant};
+use super::primitive_composition_rules::CompositionRuleEngine;
 
 // =============================================================================
 // DISCOVERED PRIMITIVE
@@ -173,6 +174,8 @@ pub struct DiscoveryServiceConfig {
     pub auto_integrate: bool,
     /// Phi threshold for auto-integration
     pub auto_integrate_threshold: f64,
+    /// Minimum phi delta above constituents for a composition to be considered emergent
+    pub emergence_delta: f64,
 }
 
 impl Default for DiscoveryServiceConfig {
@@ -188,6 +191,7 @@ impl Default for DiscoveryServiceConfig {
             max_per_cycle: 10,
             auto_integrate: false,
             auto_integrate_threshold: 0.8,
+            emergence_delta: 0.05,
         }
     }
 }
@@ -456,6 +460,8 @@ pub struct PrimitiveDiscoveryService {
     rng_state: u64,
     /// Phi computation engine
     phi_engine: symthaea_core::phi_engine::PhiEngine,
+    /// Composition rule engine for domain-specific binding
+    composition_engine: CompositionRuleEngine,
 }
 
 impl PrimitiveDiscoveryService {
@@ -471,6 +477,7 @@ impl PrimitiveDiscoveryService {
             start_time: Instant::now(),
             rng_state: 42,
             phi_engine: symthaea_core::phi_engine::PhiEngine::auto(),
+            composition_engine: CompositionRuleEngine::new(),
         }
     }
 
@@ -613,10 +620,21 @@ impl PrimitiveDiscoveryService {
                 system.get(names[idx_a]),
                 system.get(names[idx_b]),
             ) {
-                // Compose via binding
-                let composed = prim_a.encoding.bind(&prim_b.encoding);
+                // Compose via domain-specific rules
+                let composed = self.composition_engine.compose(
+                    &prim_a.encoding, &prim_b.encoding,
+                    prim_a.tier, prim_b.tier,
+                );
                 let composed_name = format!("{}_{}", names[idx_a], names[idx_b]);
                 let phi_score = self.estimate_phi(&composed);
+
+                // Skip non-emergent compositions: phi must exceed max constituent + delta
+                let phi_a = self.estimate_phi(&prim_a.encoding);
+                let phi_b = self.estimate_phi(&prim_b.encoding);
+                let max_constituent = phi_a.max(phi_b);
+                if phi_score <= max_constituent + self.config.emergence_delta {
+                    continue;
+                }
 
                 // Use higher tier of the two
                 let tier = if prim_a.tier as u8 > prim_b.tier as u8 {

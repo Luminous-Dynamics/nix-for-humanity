@@ -291,8 +291,12 @@ pub fn print_support_summary() {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // ModelPreset Tests
+    // =========================================================================
+
     #[test]
-    fn test_preset_configs() {
+    fn test_preset_configs_basic() {
         for preset in [
             ModelPreset::BgeM3,
             ModelPreset::BertBase,
@@ -308,17 +312,251 @@ mod tests {
     }
 
     #[test]
+    fn test_preset_bge_m3_config() {
+        let config = ModelPreset::BgeM3.config();
+        assert_eq!(config.num_layers, 24);
+        assert_eq!(config.hidden_dim, 1024);
+        assert_eq!(config.num_attention_heads, 16);
+        assert_eq!(config.vocab_size, 250002);
+        assert_eq!(config.max_position_embeddings, 8192);
+        assert_eq!(config.architecture, ModelArchitecture::Encoder);
+        assert_eq!(config.pooling, PoolingStrategy::Mean);
+        assert!(config.validated);
+    }
+
+    #[test]
+    fn test_preset_bert_base_config() {
+        let config = ModelPreset::BertBase.config();
+        assert_eq!(config.num_layers, 12);
+        assert_eq!(config.hidden_dim, 768);
+        assert_eq!(config.num_attention_heads, 12);
+        assert_eq!(config.pooling, PoolingStrategy::Cls);
+        assert!(!config.validated);
+    }
+
+    #[test]
+    fn test_preset_bert_large_config() {
+        let config = ModelPreset::BertLarge.config();
+        assert_eq!(config.num_layers, 24);
+        assert_eq!(config.hidden_dim, 1024);
+    }
+
+    // =========================================================================
+    // Phenomenal Corridor Tests
+    // =========================================================================
+
+    #[test]
     fn test_phenomenal_corridor() {
         // BGE-M3: 24 layers * 0.92 = 22.08 → layer 22
         assert_eq!(ModelPreset::BgeM3.phenomenal_corridor_layer(), 22);
 
         // BERT-base: 12 layers * 0.92 = 11.04 → layer 11
         assert_eq!(ModelPreset::BertBase.phenomenal_corridor_layer(), 11);
+
+        // BERT-large: 24 layers * 0.92 = 22.08 → layer 22
+        assert_eq!(ModelPreset::BertLarge.phenomenal_corridor_layer(), 22);
+
+        // RoBERTa-base: 12 layers * 0.92 = 11.04 → layer 11
+        assert_eq!(ModelPreset::RobertaBase.phenomenal_corridor_layer(), 11);
     }
+
+    #[test]
+    fn test_phenomenal_corridor_via_config() {
+        let config = ModelPreset::BgeM3.config();
+        assert_eq!(config.phenomenal_corridor_layer(), 22);
+    }
+
+    // =========================================================================
+    // ModelConfig Tests
+    // =========================================================================
 
     #[test]
     fn test_layer_key_generation() {
         let config = ModelPreset::BertBase.config();
         assert_eq!(config.layer_key(5), "bert.encoder.layer.5.output");
+        assert_eq!(config.layer_key(0), "bert.encoder.layer.0.output");
+        assert_eq!(config.layer_key(11), "bert.encoder.layer.11.output");
+    }
+
+    #[test]
+    fn test_layer_key_generation_roberta() {
+        let config = ModelPreset::RobertaBase.config();
+        assert_eq!(config.layer_key(3), "roberta.encoder.layer.3.output");
+    }
+
+    #[test]
+    fn test_layer_key_generation_bge_m3() {
+        let config = ModelPreset::BgeM3.config();
+        // BGE-M3 uses flat names
+        assert_eq!(config.layer_key(22), "encoder.layer.22.output");
+    }
+
+    #[test]
+    fn test_is_valid_layer() {
+        let config = ModelPreset::BertBase.config();
+        assert!(config.is_valid_layer(0));
+        assert!(config.is_valid_layer(11));
+        assert!(!config.is_valid_layer(12));
+        assert!(!config.is_valid_layer(100));
+    }
+
+    #[test]
+    fn test_is_valid_layer_bge_m3() {
+        let config = ModelPreset::BgeM3.config();
+        assert!(config.is_valid_layer(0));
+        assert!(config.is_valid_layer(23));
+        assert!(!config.is_valid_layer(24));
+    }
+
+    // =========================================================================
+    // ModelArchitecture Tests
+    // =========================================================================
+
+    #[test]
+    fn test_model_architecture_equality() {
+        assert_eq!(ModelArchitecture::Encoder, ModelArchitecture::Encoder);
+        assert_ne!(ModelArchitecture::Encoder, ModelArchitecture::Decoder);
+        assert_ne!(ModelArchitecture::Decoder, ModelArchitecture::EncoderDecoder);
+    }
+
+    #[test]
+    fn test_all_presets_are_encoder() {
+        // All currently supported presets are encoder-only models
+        for preset in [
+            ModelPreset::BgeM3,
+            ModelPreset::BertBase,
+            ModelPreset::BertLarge,
+            ModelPreset::RobertaBase,
+            ModelPreset::XlmRobertaBase,
+        ] {
+            assert_eq!(preset.config().architecture, ModelArchitecture::Encoder);
+        }
+    }
+
+    // =========================================================================
+    // PoolingStrategy Tests
+    // =========================================================================
+
+    #[test]
+    fn test_pooling_strategy_equality() {
+        assert_eq!(PoolingStrategy::Cls, PoolingStrategy::Cls);
+        assert_eq!(PoolingStrategy::Mean, PoolingStrategy::Mean);
+        assert_ne!(PoolingStrategy::Cls, PoolingStrategy::Mean);
+    }
+
+    #[test]
+    fn test_pooling_strategies_by_model() {
+        // BERT models use CLS pooling
+        assert_eq!(ModelPreset::BertBase.config().pooling, PoolingStrategy::Cls);
+        assert_eq!(ModelPreset::BertLarge.config().pooling, PoolingStrategy::Cls);
+        // BGE-M3 and RoBERTa use Mean pooling
+        assert_eq!(ModelPreset::BgeM3.config().pooling, PoolingStrategy::Mean);
+        assert_eq!(ModelPreset::RobertaBase.config().pooling, PoolingStrategy::Mean);
+    }
+
+    // =========================================================================
+    // ValidationStatus Tests
+    // =========================================================================
+
+    #[test]
+    fn test_validation_status_untested() {
+        let status = ValidationStatus::untested(ModelPreset::BertBase);
+        assert_eq!(status.preset, ModelPreset::BertBase);
+        assert!(!status.loads);
+        assert!(!status.extracts);
+        assert!(status.effect_observed.is_none());
+        assert!(status.effect_size.is_none());
+        assert_eq!(status.notes, "Not yet tested");
+    }
+
+    #[test]
+    fn test_validation_status_bge_m3_validated() {
+        let status = ValidationStatus::bge_m3_validated();
+        assert_eq!(status.preset, ModelPreset::BgeM3);
+        assert!(status.loads);
+        assert!(status.extracts);
+        assert_eq!(status.effect_observed, Some(true));
+        assert_eq!(status.effect_size, Some(0.69));
+        assert!(status.notes.contains("Layer 22"));
+    }
+
+    #[test]
+    fn test_all_validation_status() {
+        let statuses = all_validation_status();
+        assert_eq!(statuses.len(), 5);
+
+        // First should be BGE-M3 (validated)
+        assert_eq!(statuses[0].preset, ModelPreset::BgeM3);
+        assert!(statuses[0].loads);
+
+        // Rest should be untested
+        for status in &statuses[1..] {
+            assert!(!status.loads);
+            assert!(!status.extracts);
+        }
+    }
+
+    // =========================================================================
+    // print_support_summary Tests
+    // =========================================================================
+
+    #[test]
+    fn test_print_support_summary_does_not_panic() {
+        print_support_summary();
+    }
+
+    // =========================================================================
+    // Serialization Tests
+    // =========================================================================
+
+    #[test]
+    fn test_model_preset_serialization() {
+        let preset = ModelPreset::BgeM3;
+        let json = serde_json::to_string(&preset).unwrap();
+        assert!(json.contains("BgeM3"));
+
+        let deserialized: ModelPreset = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, preset);
+    }
+
+    #[test]
+    fn test_model_config_serialization() {
+        let config = ModelPreset::BertBase.config();
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("bert-base-uncased"));
+
+        let deserialized: ModelConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.num_layers, config.num_layers);
+        assert_eq!(deserialized.hidden_dim, config.hidden_dim);
+    }
+
+    #[test]
+    fn test_validation_status_serialization() {
+        let status = ValidationStatus::bge_m3_validated();
+        let json = serde_json::to_string(&status).unwrap();
+
+        let deserialized: ValidationStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.preset, status.preset);
+        assert_eq!(deserialized.effect_size, status.effect_size);
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_layer_key_with_large_index() {
+        let config = ModelPreset::BgeM3.config();
+        // Should still generate valid key even for out-of-bounds index
+        let key = config.layer_key(999);
+        assert_eq!(key, "encoder.layer.999.output");
+    }
+
+    #[test]
+    fn test_model_config_clone() {
+        let config = ModelPreset::BgeM3.config();
+        let cloned = config.clone();
+        assert_eq!(cloned.num_layers, config.num_layers);
+        assert_eq!(cloned.model_id, config.model_id);
     }
 }

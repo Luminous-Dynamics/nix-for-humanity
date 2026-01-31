@@ -715,11 +715,67 @@ impl Default for LLMOrgan {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // LLMOrganConfig Tests
+    // =========================================================================
+
+    #[test]
+    fn test_llm_organ_config_default() {
+        let config = LLMOrganConfig::default();
+        assert_eq!(config.dimension, 512);
+        assert_eq!(config.max_context_length, 4096);
+        assert!((config.temperature - 0.7).abs() < 0.01);
+        assert!((config.top_p - 0.9).abs() < 0.01);
+        assert_eq!(config.max_generation_length, 1024);
+        assert!(config.memory_enabled);
+        assert_eq!(config.model_id, "local");
+    }
+
+    #[test]
+    fn test_llm_organ_config_custom() {
+        let config = LLMOrganConfig {
+            dimension: 256,
+            max_context_length: 2048,
+            temperature: 0.5,
+            top_p: 0.8,
+            max_generation_length: 512,
+            memory_enabled: false,
+            model_id: "custom-model".to_string(),
+        };
+        assert_eq!(config.dimension, 256);
+        assert!(!config.memory_enabled);
+    }
+
+    // =========================================================================
+    // LLMOrgan Creation Tests
+    // =========================================================================
+
     #[test]
     fn test_llm_organ_creation() {
         let organ = LLMOrgan::default();
         assert_eq!(organ.stats.queries_processed, 0);
     }
+
+    #[test]
+    fn test_llm_organ_with_config() {
+        let config = LLMOrganConfig {
+            dimension: 256,
+            ..Default::default()
+        };
+        let organ = LLMOrgan::with_config(config);
+        assert_eq!(organ.stats.queries_processed, 0);
+    }
+
+    #[test]
+    fn test_llm_organ_new_alias() {
+        let config = LLMOrganConfig::default();
+        let organ = LLMOrgan::new(config);
+        assert_eq!(organ.stats.queries_processed, 0);
+    }
+
+    // =========================================================================
+    // Query Type Tests
+    // =========================================================================
 
     #[test]
     fn test_generation() {
@@ -728,6 +784,7 @@ mod tests {
 
         assert!(!result.text.is_empty());
         assert_eq!(organ.stats.queries_processed, 1);
+        assert!(result.tokens_generated > 0);
     }
 
     #[test]
@@ -748,12 +805,338 @@ mod tests {
     }
 
     #[test]
+    fn test_query_analysis() {
+        let mut organ = LLMOrgan::default();
+        let query = LLMQuery {
+            query_type: QueryType::Analysis,
+            content: "Analyze this complex topic".to_string(),
+            context: Vec::new(),
+            system_prompt: None,
+            params: None,
+        };
+        let result = organ.query(query);
+        assert!(result.text.contains("Analysis"));
+    }
+
+    #[test]
+    fn test_query_code() {
+        let mut organ = LLMOrgan::default();
+        let query = LLMQuery {
+            query_type: QueryType::Code,
+            content: "Write a function".to_string(),
+            context: Vec::new(),
+            system_prompt: None,
+            params: None,
+        };
+        let result = organ.query(query);
+        assert!(result.text.contains("fn"));
+    }
+
+    // =========================================================================
+    // Conversation Memory Tests
+    // =========================================================================
+
+    #[test]
     fn test_conversation_memory() {
         let mut organ = LLMOrgan::default();
         organ.generate("First message");
         organ.generate("Second message");
 
         assert!(organ.conversation_history.len() >= 4);
+    }
+
+    #[test]
+    fn test_conversation_history_accessor() {
+        let mut organ = LLMOrgan::default();
+        organ.generate("Test message");
+
+        let history = organ.conversation_history();
+        assert!(!history.is_empty());
+    }
+
+    #[test]
+    fn test_clear_history() {
+        let mut organ = LLMOrgan::default();
+        organ.generate("Test message");
+        assert!(!organ.conversation_history.is_empty());
+
+        organ.clear_history();
+        assert!(organ.conversation_history.is_empty());
+    }
+
+    #[test]
+    fn test_memory_disabled() {
+        let config = LLMOrganConfig {
+            memory_enabled: false,
+            ..Default::default()
+        };
+        let mut organ = LLMOrgan::new(config);
+        organ.generate("Test message");
+
+        assert!(organ.conversation_history.is_empty());
+    }
+
+    // =========================================================================
+    // ConversationMessage Tests
+    // =========================================================================
+
+    #[test]
+    fn test_conversation_message_new() {
+        let msg = ConversationMessage::new(MessageRole::User, "Hello");
+        assert_eq!(msg.role, MessageRole::User);
+        assert_eq!(msg.content, "Hello");
+        assert!(msg.timestamp > 0);
+        assert!(msg.embedding.is_none());
+    }
+
+    #[test]
+    fn test_conversation_message_user() {
+        let msg = ConversationMessage::user("User message");
+        assert_eq!(msg.role, MessageRole::User);
+        assert_eq!(msg.content, "User message");
+    }
+
+    #[test]
+    fn test_conversation_message_assistant() {
+        let msg = ConversationMessage::assistant("Assistant response");
+        assert_eq!(msg.role, MessageRole::Assistant);
+        assert_eq!(msg.content, "Assistant response");
+    }
+
+    #[test]
+    fn test_conversation_message_system() {
+        let msg = ConversationMessage::system("System instruction");
+        assert_eq!(msg.role, MessageRole::System);
+        assert_eq!(msg.content, "System instruction");
+    }
+
+    // =========================================================================
+    // MessageRole Tests
+    // =========================================================================
+
+    #[test]
+    fn test_message_role_equality() {
+        assert_eq!(MessageRole::User, MessageRole::User);
+        assert_eq!(MessageRole::Assistant, MessageRole::Assistant);
+        assert_ne!(MessageRole::User, MessageRole::Assistant);
+        assert_ne!(MessageRole::System, MessageRole::Function);
+    }
+
+    // =========================================================================
+    // FinishReason Tests
+    // =========================================================================
+
+    #[test]
+    fn test_finish_reason_default_is_end_of_sequence() {
+        let mut organ = LLMOrgan::default();
+        let result = organ.generate("Test");
+        assert_eq!(result.finish_reason, FinishReason::EndOfSequence);
+    }
+
+    #[test]
+    fn test_finish_reason_equality() {
+        assert_eq!(FinishReason::EndOfSequence, FinishReason::EndOfSequence);
+        assert_ne!(FinishReason::EndOfSequence, FinishReason::MaxLength);
+    }
+
+    // =========================================================================
+    // QueryType Tests
+    // =========================================================================
+
+    #[test]
+    fn test_query_type_equality() {
+        assert_eq!(QueryType::Generation, QueryType::Generation);
+        assert_ne!(QueryType::Generation, QueryType::QA);
+        assert_ne!(QueryType::Translation, QueryType::Code);
+    }
+
+    // =========================================================================
+    // LLMGenerationResult Tests
+    // =========================================================================
+
+    #[test]
+    fn test_generation_result_fields() {
+        let mut organ = LLMOrgan::default();
+        let result = organ.generate("Hello");
+
+        assert!(!result.text.is_empty());
+        assert!(result.confidence > 0.0);
+        assert!(result.tokens_generated > 0);
+        assert!(result.generation_time_ms >= 0.0);
+        assert!(result.embedding.dim() > 0);
+    }
+
+    // =========================================================================
+    // Statistics Tests
+    // =========================================================================
+
+    #[test]
+    fn test_stats_accessor() {
+        let mut organ = LLMOrgan::default();
+        assert_eq!(organ.stats().queries_processed, 0);
+
+        organ.generate("Test");
+        assert_eq!(organ.stats().queries_processed, 1);
+    }
+
+    #[test]
+    fn test_stats_accumulation() {
+        let mut organ = LLMOrgan::default();
+        organ.generate("First");
+        organ.generate("Second");
+        organ.generate("Third");
+
+        assert_eq!(organ.stats().queries_processed, 3);
+        assert!(organ.stats().tokens_generated > 0);
+        assert!(organ.stats().avg_generation_time_ms >= 0.0);
+    }
+
+    // =========================================================================
+    // Embedding Cache Tests
+    // =========================================================================
+
+    #[test]
+    fn test_embedding_cache_hit() {
+        let mut organ = LLMOrgan::default();
+
+        // Generate twice with same content - second should hit cache
+        organ.generate("Same text");
+        let initial_hits = organ.stats().cache_hits;
+
+        organ.generate("Same text");
+        assert!(organ.stats().cache_hits > initial_hits);
+    }
+
+    // =========================================================================
+    // ConsciousLlmOrgan Tests
+    // =========================================================================
+
+    #[test]
+    fn test_conscious_llm_organ_creation() {
+        let organ = ConsciousLlmOrgan::default();
+        assert_eq!(organ.provider, LlmProvider::Local);
+        assert!((organ.consciousness_level - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_conscious_llm_organ_with_provider() {
+        let organ = ConsciousLlmOrgan::new(LLMOrganConfig::default(), LlmProvider::Ollama);
+        assert_eq!(organ.provider, LlmProvider::Ollama);
+    }
+
+    #[test]
+    fn test_set_consciousness_level() {
+        let mut organ = ConsciousLlmOrgan::default();
+
+        organ.set_consciousness_level(0.8);
+        assert!((organ.consciousness_level - 0.8).abs() < 0.01);
+
+        // Test clamping
+        organ.set_consciousness_level(1.5);
+        assert!((organ.consciousness_level - 1.0).abs() < 0.01);
+
+        organ.set_consciousness_level(-0.5);
+        assert!((organ.consciousness_level - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_conscious_query_adjusts_confidence() {
+        let mut organ = ConsciousLlmOrgan::default();
+        organ.set_consciousness_level(0.5);
+
+        let query = LLMQuery {
+            query_type: QueryType::Generation,
+            content: "Test".to_string(),
+            context: Vec::new(),
+            system_prompt: None,
+            params: None,
+        };
+
+        let result = organ.conscious_query(query);
+        // Confidence should be adjusted by consciousness level
+        assert!(result.confidence <= 0.85 * 0.5 + 0.01);
+    }
+
+    // =========================================================================
+    // LlmProvider Tests
+    // =========================================================================
+
+    #[test]
+    fn test_llm_provider_default() {
+        let provider = LlmProvider::default();
+        assert_eq!(provider, LlmProvider::Local);
+    }
+
+    #[test]
+    fn test_llm_provider_variants() {
+        assert_ne!(LlmProvider::Ollama, LlmProvider::OpenAI);
+        assert_ne!(LlmProvider::Anthropic, LlmProvider::Local);
+    }
+
+    // =========================================================================
+    // LLMQueryParams Tests
+    // =========================================================================
+
+    #[test]
+    fn test_llm_query_params() {
+        let params = LLMQueryParams {
+            temperature: Some(0.3),
+            max_length: Some(100),
+            stop_sequences: vec!["STOP".to_string()],
+        };
+
+        assert_eq!(params.temperature, Some(0.3));
+        assert_eq!(params.max_length, Some(100));
+        assert_eq!(params.stop_sequences.len(), 1);
+    }
+
+    // =========================================================================
+    // Type Alias Tests
+    // =========================================================================
+
+    #[test]
+    fn test_type_aliases() {
+        // These are just compile-time checks
+        let _organ: LlmOrgan = LLMOrgan::default();
+        let _config: LlmConfig = LLMOrganConfig::default();
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_empty_input() {
+        let mut organ = LLMOrgan::default();
+        let result = organ.generate("");
+        // Should still produce a result, even if input is empty
+        assert!(!result.text.is_empty());
+    }
+
+    #[test]
+    fn test_very_long_input() {
+        let mut organ = LLMOrgan::default();
+        let long_input = "word ".repeat(1000);
+        let result = organ.generate(&long_input);
+        assert!(!result.text.is_empty());
+    }
+
+    #[test]
+    fn test_special_characters_in_input() {
+        let mut organ = LLMOrgan::default();
+        let result = organ.generate("Hello! @#$%^&*() 你好 🎉");
+        assert!(!result.text.is_empty());
+    }
+
+    // =========================================================================
+    // Translation System Prompt Tests
+    // =========================================================================
+
+    #[test]
+    fn test_translation_system_prompt_exists() {
+        assert!(!TRANSLATION_SYSTEM_PROMPT.is_empty());
+        assert!(TRANSLATION_SYSTEM_PROMPT.contains("TRANSLATION"));
+        assert!(TRANSLATION_SYSTEM_PROMPT.contains("EPISTEMIC"));
     }
 }
 

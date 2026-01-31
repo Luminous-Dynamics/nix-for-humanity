@@ -494,10 +494,205 @@ fn tensor_to_vec2d(tensor: &Tensor) -> Result<Vec<Vec<f32>>> {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // LayerExtractorConfig Tests
+    // =========================================================================
+
     #[test]
     fn test_config_default() {
         let config = LayerExtractorConfig::default();
         assert_eq!(config.pooling, PoolingMethod::Mean);
         assert!(!config.keep_sequence_activations);
+    }
+
+    #[test]
+    fn test_config_default_model_id() {
+        let config = LayerExtractorConfig::default();
+        assert_eq!(config.model_id, super::super::bge_m3::BGE_M3_MODEL_ID);
+    }
+
+    #[test]
+    fn test_config_custom() {
+        let config = LayerExtractorConfig {
+            model_id: "custom/model".to_string(),
+            keep_sequence_activations: true,
+            pooling: PoolingMethod::Cls,
+        };
+        assert_eq!(config.model_id, "custom/model");
+        assert!(config.keep_sequence_activations);
+        assert_eq!(config.pooling, PoolingMethod::Cls);
+    }
+
+    #[test]
+    fn test_config_clone() {
+        let config = LayerExtractorConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.model_id, cloned.model_id);
+        assert_eq!(config.pooling, cloned.pooling);
+    }
+
+    // =========================================================================
+    // PoolingMethod Tests
+    // =========================================================================
+
+    #[test]
+    fn test_pooling_method_equality() {
+        assert_eq!(PoolingMethod::Mean, PoolingMethod::Mean);
+        assert_eq!(PoolingMethod::Cls, PoolingMethod::Cls);
+        assert_eq!(PoolingMethod::Last, PoolingMethod::Last);
+        assert_eq!(PoolingMethod::Max, PoolingMethod::Max);
+    }
+
+    #[test]
+    fn test_pooling_method_inequality() {
+        assert_ne!(PoolingMethod::Mean, PoolingMethod::Cls);
+        assert_ne!(PoolingMethod::Cls, PoolingMethod::Last);
+        assert_ne!(PoolingMethod::Last, PoolingMethod::Max);
+        assert_ne!(PoolingMethod::Max, PoolingMethod::Mean);
+    }
+
+    #[test]
+    fn test_pooling_method_debug() {
+        let method = PoolingMethod::Mean;
+        let debug_str = format!("{:?}", method);
+        assert!(debug_str.contains("Mean"));
+    }
+
+    #[test]
+    fn test_pooling_method_clone() {
+        let method = PoolingMethod::Cls;
+        let cloned = method;
+        assert_eq!(method, cloned);
+    }
+
+    // =========================================================================
+    // Constants Tests
+    // =========================================================================
+
+    #[test]
+    fn test_bge_m3_num_layers_constant() {
+        assert_eq!(BGE_M3_NUM_LAYERS, 24);
+    }
+
+    #[test]
+    fn test_bge_m3_hidden_dim_constant() {
+        assert_eq!(BGE_M3_HIDDEN_DIM, 1024);
+    }
+
+    // =========================================================================
+    // LayerActivation Tests (struct creation without model)
+    // =========================================================================
+
+    #[test]
+    fn test_layer_activation_creation() {
+        let activation = LayerActivation {
+            layer_idx: 5,
+            activation: vec![0.1, 0.2, 0.3],
+            sequence_activations: None,
+        };
+        assert_eq!(activation.layer_idx, 5);
+        assert_eq!(activation.activation.len(), 3);
+        assert!(activation.sequence_activations.is_none());
+    }
+
+    #[test]
+    fn test_layer_activation_with_sequence() {
+        let activation = LayerActivation {
+            layer_idx: 10,
+            activation: vec![0.5; 1024],
+            sequence_activations: Some(vec![
+                vec![0.1; 1024],
+                vec![0.2; 1024],
+            ]),
+        };
+        assert!(activation.sequence_activations.is_some());
+        assert_eq!(activation.sequence_activations.as_ref().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_layer_activation_clone() {
+        let activation = LayerActivation {
+            layer_idx: 3,
+            activation: vec![1.0, 2.0, 3.0],
+            sequence_activations: None,
+        };
+        let cloned = activation.clone();
+        assert_eq!(activation.layer_idx, cloned.layer_idx);
+        assert_eq!(activation.activation, cloned.activation);
+    }
+
+    // =========================================================================
+    // AllLayerActivations Tests
+    // =========================================================================
+
+    #[test]
+    fn test_all_layer_activations_creation() {
+        let all_activations = AllLayerActivations {
+            text: "test text".to_string(),
+            layers: vec![
+                LayerActivation {
+                    layer_idx: 0,
+                    activation: vec![0.1; 1024],
+                    sequence_activations: None,
+                },
+                LayerActivation {
+                    layer_idx: 1,
+                    activation: vec![0.2; 1024],
+                    sequence_activations: None,
+                },
+            ],
+            embedding_activation: vec![0.0; 1024],
+        };
+        assert_eq!(all_activations.text, "test text");
+        assert_eq!(all_activations.layers.len(), 2);
+        assert_eq!(all_activations.embedding_activation.len(), 1024);
+    }
+
+    #[test]
+    fn test_all_layer_activations_clone() {
+        let all_activations = AllLayerActivations {
+            text: "clone test".to_string(),
+            layers: vec![],
+            embedding_activation: vec![1.0, 2.0],
+        };
+        let cloned = all_activations.clone();
+        assert_eq!(all_activations.text, cloned.text);
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_empty_activation_vector() {
+        let activation = LayerActivation {
+            layer_idx: 0,
+            activation: vec![],
+            sequence_activations: None,
+        };
+        assert!(activation.activation.is_empty());
+    }
+
+    #[test]
+    fn test_layer_idx_boundary() {
+        // Test layer 23 (last layer in BGE-M3)
+        let activation = LayerActivation {
+            layer_idx: BGE_M3_NUM_LAYERS - 1,
+            activation: vec![0.0; BGE_M3_HIDDEN_DIM],
+            sequence_activations: None,
+        };
+        assert_eq!(activation.layer_idx, 23);
+    }
+}
+
+// Tests that don't require neural-bridge feature
+#[cfg(test)]
+mod feature_independent_tests {
+    use super::*;
+
+    #[test]
+    fn test_constants_accessible_without_feature() {
+        assert_eq!(BGE_M3_NUM_LAYERS, 24);
+        assert_eq!(BGE_M3_HIDDEN_DIM, 1024);
     }
 }

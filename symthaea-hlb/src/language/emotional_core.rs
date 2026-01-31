@@ -294,6 +294,36 @@ impl Default for EmotionalCore {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // EmotionalCoreConfig Tests
+    // =========================================================================
+
+    #[test]
+    fn test_emotional_core_config_default() {
+        let config = EmotionalCoreConfig::default();
+        assert_eq!(config.dimension, 512);
+        assert!((config.sensitivity - 0.5).abs() < 0.01);
+        assert!(config.memory_enabled);
+        assert_eq!(config.categories.len(), 8);
+    }
+
+    #[test]
+    fn test_emotional_core_config_has_all_basic_emotions() {
+        let config = EmotionalCoreConfig::default();
+        assert!(config.categories.contains(&"joy".to_string()));
+        assert!(config.categories.contains(&"sadness".to_string()));
+        assert!(config.categories.contains(&"anger".to_string()));
+        assert!(config.categories.contains(&"fear".to_string()));
+        assert!(config.categories.contains(&"surprise".to_string()));
+        assert!(config.categories.contains(&"disgust".to_string()));
+        assert!(config.categories.contains(&"trust".to_string()));
+        assert!(config.categories.contains(&"anticipation".to_string()));
+    }
+
+    // =========================================================================
+    // EmotionalCore Creation Tests
+    // =========================================================================
+
     #[test]
     fn test_emotional_core_creation() {
         let core = EmotionalCore::default();
@@ -301,7 +331,23 @@ mod tests {
     }
 
     #[test]
-    fn test_emotion_analysis() {
+    fn test_emotional_core_with_custom_config() {
+        let config = EmotionalCoreConfig {
+            dimension: 256,
+            categories: vec!["happy".to_string(), "sad".to_string()],
+            sensitivity: 0.8,
+            memory_enabled: false,
+        };
+        let core = EmotionalCore::new(config);
+        assert_eq!(core.stats.analyses, 0);
+    }
+
+    // =========================================================================
+    // Emotion Analysis Tests
+    // =========================================================================
+
+    #[test]
+    fn test_emotion_analysis_positive() {
         let mut core = EmotionalCore::default();
         let analysis = core.analyze("I am so happy and excited today!");
 
@@ -318,11 +364,296 @@ mod tests {
     }
 
     #[test]
+    fn test_emotion_analysis_anger() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am so angry and furious!");
+
+        assert!(analysis.emotion_scores.get("anger").unwrap_or(&0.0) > &0.0);
+        assert!(analysis.arousal > 0.0);
+    }
+
+    #[test]
+    fn test_emotion_analysis_fear() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am scared and terrified.");
+
+        assert!(analysis.emotion_scores.get("fear").unwrap_or(&0.0) > &0.0);
+    }
+
+    #[test]
+    fn test_emotion_analysis_surprise() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am so surprised and amazed!");
+
+        assert!(analysis.emotion_scores.get("surprise").unwrap_or(&0.0) > &0.0);
+    }
+
+    #[test]
+    fn test_emotion_analysis_neutral() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("The sky is blue.");
+
+        // Neutral text should have low emotion scores
+        assert!(analysis.confidence <= 0.1 || analysis.primary_emotion == "neutral");
+    }
+
+    #[test]
+    fn test_emotion_analysis_empty_input() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("");
+
+        assert_eq!(core.stats.analyses, 1);
+        // Empty input should still return a valid analysis
+        assert!(!analysis.primary_emotion.is_empty());
+    }
+
+    // =========================================================================
+    // VAD (Valence, Arousal, Dominance) Tests
+    // =========================================================================
+
+    #[test]
+    fn test_valence_range() {
+        let mut core = EmotionalCore::default();
+
+        let positive = core.analyze("I am extremely happy!");
+        assert!(positive.valence >= -1.0 && positive.valence <= 1.0);
+
+        let negative = core.analyze("I am extremely sad!");
+        assert!(negative.valence >= -1.0 && negative.valence <= 1.0);
+    }
+
+    #[test]
+    fn test_arousal_range() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am excited and energetic!");
+
+        assert!(analysis.arousal >= 0.0 && analysis.arousal <= 1.0);
+    }
+
+    #[test]
+    fn test_dominance_range() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am powerful and in control!");
+
+        assert!(analysis.dominance >= 0.0 && analysis.dominance <= 1.0);
+    }
+
+    // =========================================================================
+    // Emotional Response Generation Tests
+    // =========================================================================
+
+    #[test]
     fn test_emotional_response() {
         let mut core = EmotionalCore::default();
         let response = core.generate_emotional_response("Hello there", "joy", 0.8);
 
         assert!(!response.text.is_empty());
         assert_eq!(response.target_emotion, "joy");
+        assert!((response.intensity - 0.8).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_emotional_response_sadness() {
+        let mut core = EmotionalCore::default();
+        let response = core.generate_emotional_response("I'm sorry", "sadness", 0.9);
+
+        assert!(response.text.contains("sadly") || response.text.contains("sorrow") || response.text.contains("I'm sorry"));
+        assert_eq!(response.target_emotion, "sadness");
+    }
+
+    #[test]
+    fn test_emotional_response_low_intensity() {
+        let mut core = EmotionalCore::default();
+        let response = core.generate_emotional_response("Hello", "joy", 0.3);
+
+        // Low intensity should not add modifier
+        assert!(!response.text.starts_with("happily") && !response.text.starts_with("joyfully"));
+    }
+
+    #[test]
+    fn test_emotional_response_unknown_emotion() {
+        let mut core = EmotionalCore::default();
+        let response = core.generate_emotional_response("Test", "unknown_emotion", 0.8);
+
+        // Should still generate a response even for unknown emotion
+        assert!(!response.text.is_empty());
+    }
+
+    // =========================================================================
+    // Memory Tests
+    // =========================================================================
+
+    #[test]
+    fn test_memory_enabled() {
+        let mut core = EmotionalCore::default();
+        core.analyze("Happy text");
+        core.analyze("Sad text");
+
+        assert_eq!(core.memory().len(), 2);
+    }
+
+    #[test]
+    fn test_memory_disabled() {
+        let config = EmotionalCoreConfig {
+            memory_enabled: false,
+            ..Default::default()
+        };
+        let mut core = EmotionalCore::new(config);
+        core.analyze("Happy text");
+        core.analyze("Sad text");
+
+        assert!(core.memory().is_empty());
+    }
+
+    #[test]
+    fn test_memory_limit() {
+        let mut core = EmotionalCore::default();
+
+        // Add more than 100 analyses
+        for i in 0..110 {
+            core.analyze(&format!("Text number {}", i));
+        }
+
+        // Memory should be capped at 100
+        assert!(core.memory().len() <= 100);
+    }
+
+    // =========================================================================
+    // State and Accessor Tests
+    // =========================================================================
+
+    #[test]
+    fn test_current_state_accessor() {
+        let mut core = EmotionalCore::default();
+        core.analyze("I am happy!");
+
+        let state = core.current_state();
+        assert!(!state.primary_emotion.is_empty());
+    }
+
+    #[test]
+    fn test_emotion_embedding_accessor() {
+        let core = EmotionalCore::default();
+
+        let joy_emb = core.emotion_embedding("joy");
+        assert!(joy_emb.is_some());
+
+        let unknown_emb = core.emotion_embedding("unknown");
+        assert!(unknown_emb.is_none());
+
+        let neutral_emb = core.emotion_embedding("neutral");
+        assert!(neutral_emb.is_some());
+    }
+
+    #[test]
+    fn test_stats_accessor() {
+        let mut core = EmotionalCore::default();
+        core.analyze("Test");
+        core.generate_emotional_response("Test", "joy", 0.5);
+
+        let stats = core.stats();
+        assert_eq!(stats.analyses, 1);
+        assert_eq!(stats.responses_generated, 1);
+    }
+
+    // =========================================================================
+    // Reset Tests
+    // =========================================================================
+
+    #[test]
+    fn test_reset() {
+        let mut core = EmotionalCore::default();
+        core.analyze("I am happy!");
+        core.analyze("I am sad!");
+
+        assert!(!core.memory().is_empty());
+
+        core.reset();
+
+        assert!(core.memory().is_empty());
+        assert_eq!(core.current_state().primary_emotion, "neutral");
+    }
+
+    // =========================================================================
+    // EmotionalAnalysis Tests
+    // =========================================================================
+
+    #[test]
+    fn test_emotional_analysis_neutral() {
+        let analysis = EmotionalAnalysis::neutral(256);
+
+        assert_eq!(analysis.primary_emotion, "neutral");
+        assert!((analysis.confidence - 1.0).abs() < 0.01);
+        assert!((analysis.valence - 0.0).abs() < 0.01);
+        assert!((analysis.arousal - 0.5).abs() < 0.01);
+        assert!((analysis.dominance - 0.5).abs() < 0.01);
+        assert!(analysis.emotion_scores.is_empty());
+    }
+
+    #[test]
+    fn test_emotional_analysis_clone() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am happy!");
+        let cloned = analysis.clone();
+
+        assert_eq!(analysis.primary_emotion, cloned.primary_emotion);
+        assert!((analysis.valence - cloned.valence).abs() < 0.01);
+    }
+
+    // =========================================================================
+    // Statistics Tests
+    // =========================================================================
+
+    #[test]
+    fn test_avg_valence_accumulation() {
+        let mut core = EmotionalCore::default();
+
+        core.analyze("I am happy!");
+        core.analyze("I am happy!");
+        core.analyze("I am sad!");
+
+        // Average valence should be somewhere in between
+        let stats = core.stats();
+        // Just verify it's being tracked
+        assert!(stats.avg_valence.is_finite());
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_multiple_emotions_in_text() {
+        let mut core = EmotionalCore::default();
+        let analysis = core.analyze("I am happy but also sad and a bit angry.");
+
+        // Should detect multiple emotions
+        let nonzero_emotions = analysis.emotion_scores.values()
+            .filter(|&&v| v > 0.0)
+            .count();
+        assert!(nonzero_emotions >= 1);
+    }
+
+    #[test]
+    fn test_case_insensitivity() {
+        let mut core = EmotionalCore::default();
+
+        let lowercase = core.analyze("i am happy");
+        let uppercase = core.analyze("I AM HAPPY");
+
+        // Both should detect the same emotion
+        assert_eq!(lowercase.primary_emotion, uppercase.primary_emotion);
+    }
+
+    #[test]
+    fn test_embedding_dimension() {
+        let config = EmotionalCoreConfig {
+            dimension: 128,
+            ..Default::default()
+        };
+        let mut core = EmotionalCore::new(config);
+        let analysis = core.analyze("Happy");
+
+        assert_eq!(analysis.embedding.dim(), 128);
     }
 }

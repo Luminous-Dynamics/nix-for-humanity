@@ -27,6 +27,7 @@ pub mod master_consciousness_equation;
 pub mod pac;
 pub mod phi_architecture_search;
 pub mod phi_attention;
+pub mod primitive_composition_rules;
 pub mod primitive_discovery;
 pub mod primitive_evolution;
 pub mod primitive_reasoning;

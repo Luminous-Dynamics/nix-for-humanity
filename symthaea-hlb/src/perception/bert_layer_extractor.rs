@@ -484,16 +484,153 @@ pub fn print_bert_status() {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // BertPreset Tests
+    // =========================================================================
+
     #[test]
-    fn test_bert_presets() {
+    fn test_bert_presets_num_layers() {
         assert_eq!(BertPreset::BertBaseUncased.num_layers(), 12);
         assert_eq!(BertPreset::BertLargeUncased.num_layers(), 24);
-        assert_eq!(BertPreset::BertBaseUncased.phenomenal_corridor_layer(), 11); // 92% of 12
-        assert_eq!(BertPreset::BertLargeUncased.phenomenal_corridor_layer(), 22); // 92% of 24
+        assert_eq!(BertPreset::BertBaseCased.num_layers(), 12);
+        assert_eq!(BertPreset::BertLargeCased.num_layers(), 24);
+        assert_eq!(BertPreset::XlmRobertaBase.num_layers(), 12);
     }
+
+    #[test]
+    fn test_bert_presets_hidden_dim() {
+        assert_eq!(BertPreset::BertBaseUncased.hidden_dim(), 768);
+        assert_eq!(BertPreset::BertLargeUncased.hidden_dim(), 1024);
+        assert_eq!(BertPreset::BertBaseCased.hidden_dim(), 768);
+        assert_eq!(BertPreset::BertLargeCased.hidden_dim(), 1024);
+        assert_eq!(BertPreset::XlmRobertaBase.hidden_dim(), 768);
+    }
+
+    #[test]
+    fn test_bert_presets_phenomenal_corridor_layer() {
+        // 92% of 12 layers = 11.04 → 11
+        assert_eq!(BertPreset::BertBaseUncased.phenomenal_corridor_layer(), 11);
+        // 92% of 24 layers = 22.08 → 22
+        assert_eq!(BertPreset::BertLargeUncased.phenomenal_corridor_layer(), 22);
+        assert_eq!(BertPreset::XlmRobertaBase.phenomenal_corridor_layer(), 11);
+    }
+
+    #[test]
+    fn test_bert_presets_model_id() {
+        assert_eq!(BertPreset::BertBaseUncased.model_id(), "bert-base-uncased");
+        assert_eq!(BertPreset::BertLargeUncased.model_id(), "bert-large-uncased");
+        assert_eq!(BertPreset::BertBaseCased.model_id(), "bert-base-cased");
+        assert_eq!(BertPreset::BertLargeCased.model_id(), "bert-large-cased");
+        assert_eq!(BertPreset::XlmRobertaBase.model_id(), "xlm-roberta-base");
+    }
+
+    #[test]
+    fn test_bert_presets_tensor_prefix() {
+        assert_eq!(BertPreset::BertBaseUncased.tensor_prefix(), "bert");
+        assert_eq!(BertPreset::BertLargeUncased.tensor_prefix(), "bert");
+        assert_eq!(BertPreset::XlmRobertaBase.tensor_prefix(), "roberta");
+    }
+
+    #[test]
+    fn test_bert_presets_uses_modern_naming() {
+        // Legacy models use gamma/beta
+        assert!(!BertPreset::BertBaseUncased.uses_modern_naming());
+        assert!(!BertPreset::BertLargeUncased.uses_modern_naming());
+        assert!(!BertPreset::BertBaseCased.uses_modern_naming());
+        assert!(!BertPreset::BertLargeCased.uses_modern_naming());
+        // XLM-RoBERTa uses modern weight/bias
+        assert!(BertPreset::XlmRobertaBase.uses_modern_naming());
+    }
+
+    #[test]
+    fn test_bert_preset_equality() {
+        assert_eq!(BertPreset::BertBaseUncased, BertPreset::BertBaseUncased);
+        assert_ne!(BertPreset::BertBaseUncased, BertPreset::BertLargeUncased);
+    }
+
+    #[test]
+    fn test_bert_preset_clone() {
+        let preset = BertPreset::XlmRobertaBase;
+        let cloned = preset;
+        assert_eq!(preset, cloned);
+    }
+
+    // =========================================================================
+    // BertExtractionStatus Tests
+    // =========================================================================
 
     #[test]
     fn test_extraction_status() {
         assert_eq!(bert_extraction_status(), BertExtractionStatus::FinalLayerOnly);
+    }
+
+    #[test]
+    fn test_extraction_status_variants() {
+        // Ensure all variants are distinct
+        assert_ne!(BertExtractionStatus::FullSupport, BertExtractionStatus::FinalLayerOnly);
+        assert_ne!(BertExtractionStatus::FinalLayerOnly, BertExtractionStatus::NotSupported);
+        assert_ne!(BertExtractionStatus::FullSupport, BertExtractionStatus::NotSupported);
+    }
+
+    #[test]
+    fn test_extraction_status_debug() {
+        let status = BertExtractionStatus::FinalLayerOnly;
+        let debug_str = format!("{:?}", status);
+        assert!(debug_str.contains("FinalLayerOnly"));
+    }
+
+    // =========================================================================
+    // print_bert_status Tests
+    // =========================================================================
+
+    #[test]
+    fn test_print_bert_status_does_not_panic() {
+        // This test ensures the print function runs without panicking
+        print_bert_status();
+    }
+
+    // =========================================================================
+    // Phenomenal Corridor Calculation Tests
+    // =========================================================================
+
+    #[test]
+    fn test_phenomenal_corridor_boundary_values() {
+        // Test that 92% calculation is correct for various layer counts
+        // For 12 layers: 12 * 0.92 = 11.04 → truncated to 11
+        assert_eq!(((12_f64) * 0.92) as usize, 11);
+        // For 24 layers: 24 * 0.92 = 22.08 → truncated to 22
+        assert_eq!(((24_f64) * 0.92) as usize, 22);
+    }
+
+    // =========================================================================
+    // Edge Case Tests
+    // =========================================================================
+
+    #[test]
+    fn test_all_presets_have_valid_configurations() {
+        let presets = [
+            BertPreset::BertBaseUncased,
+            BertPreset::BertLargeUncased,
+            BertPreset::BertBaseCased,
+            BertPreset::BertLargeCased,
+            BertPreset::XlmRobertaBase,
+        ];
+
+        for preset in presets {
+            // All presets should have positive layer counts
+            assert!(preset.num_layers() > 0, "Preset {:?} has invalid num_layers", preset);
+            // All presets should have positive hidden dimensions
+            assert!(preset.hidden_dim() > 0, "Preset {:?} has invalid hidden_dim", preset);
+            // Phenomenal corridor should be within layer bounds
+            assert!(
+                preset.phenomenal_corridor_layer() < preset.num_layers(),
+                "Preset {:?} has phenomenal corridor outside layer bounds",
+                preset
+            );
+            // Model ID should not be empty
+            assert!(!preset.model_id().is_empty(), "Preset {:?} has empty model_id", preset);
+            // Tensor prefix should not be empty
+            assert!(!preset.tensor_prefix().is_empty(), "Preset {:?} has empty tensor_prefix", preset);
+        }
     }
 }

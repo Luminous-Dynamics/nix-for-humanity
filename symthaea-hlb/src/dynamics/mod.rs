@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod cfc;
+pub mod hierarchical_cfc;
 pub mod cfc_coherence;
 pub mod temporal_signatures;
 pub mod world_model;

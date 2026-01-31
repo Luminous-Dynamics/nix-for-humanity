@@ -821,6 +821,10 @@ impl Default for BgeM3Client {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // XlmRobertaConfig Tests
+    // =========================================================================
+
     #[test]
     fn test_config_defaults() {
         let config = XlmRobertaConfig::default();
@@ -830,8 +834,141 @@ mod tests {
     }
 
     #[test]
+    fn test_config_default_vocab() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.vocab_size, 250002);
+    }
+
+    #[test]
+    fn test_config_default_intermediate() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.intermediate_size, 4096);
+    }
+
+    #[test]
+    fn test_config_default_max_position() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.max_position_embeddings, BGE_M3_MAX_SEQ_LEN);
+    }
+
+    #[test]
+    fn test_config_default_hidden_act() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.hidden_act, "gelu");
+    }
+
+    #[test]
+    fn test_config_default_dropout() {
+        let config = XlmRobertaConfig::default();
+        assert!((config.hidden_dropout_prob - 0.1).abs() < 0.01);
+        assert!((config.attention_probs_dropout_prob - 0.1).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_config_default_layer_norm_eps() {
+        let config = XlmRobertaConfig::default();
+        assert!((config.layer_norm_eps - 1e-5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_config_default_type_vocab() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.type_vocab_size, 1);
+    }
+
+    #[test]
+    fn test_config_default_pad_token() {
+        let config = XlmRobertaConfig::default();
+        assert_eq!(config.pad_token_id, 1);
+    }
+
+    #[test]
+    fn test_config_clone() {
+        let config = XlmRobertaConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.hidden_size, cloned.hidden_size);
+        assert_eq!(config.num_hidden_layers, cloned.num_hidden_layers);
+    }
+
+    // =========================================================================
+    // BgeM3Client Tests
+    // =========================================================================
+
+    #[test]
     fn test_client_creation() {
         let client = BgeM3Client::new();
         assert!(!client.is_loaded());
+    }
+
+    #[test]
+    fn test_client_default() {
+        let client = BgeM3Client::default();
+        assert!(!client.is_loaded());
+    }
+
+    #[test]
+    fn test_client_with_model() {
+        let client = BgeM3Client::with_model("custom/model");
+        assert!(!client.is_loaded());
+        assert_eq!(client.model_id, "custom/model");
+    }
+
+    #[test]
+    fn test_client_unload() {
+        let mut client = BgeM3Client::new();
+        client.unload();
+        assert!(!client.is_loaded());
+    }
+
+    // =========================================================================
+    // Constants Tests
+    // =========================================================================
+
+    #[test]
+    fn test_bge_m3_dim_constant() {
+        assert_eq!(BGE_M3_DIM, 1024);
+    }
+
+    #[test]
+    fn test_bge_m3_max_seq_len_constant() {
+        assert_eq!(BGE_M3_MAX_SEQ_LEN, 8192);
+    }
+
+    #[test]
+    fn test_bge_m3_model_id_constant() {
+        assert_eq!(BGE_M3_MODEL_ID, "BAAI/bge-m3");
+    }
+
+    // =========================================================================
+    // Config Consistency Tests
+    // =========================================================================
+
+    #[test]
+    fn test_attention_head_size_calculation() {
+        let config = XlmRobertaConfig::default();
+        // Head size should be hidden_size / num_attention_heads
+        let expected_head_size = config.hidden_size / config.num_attention_heads;
+        assert_eq!(expected_head_size, 64); // 1024 / 16 = 64
+    }
+
+    #[test]
+    fn test_config_is_debug() {
+        let config = XlmRobertaConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("XlmRobertaConfig"));
+        assert!(debug_str.contains("1024"));
+    }
+}
+
+// Tests that don't require neural-bridge feature
+#[cfg(test)]
+mod feature_independent_tests {
+    use super::*;
+
+    #[test]
+    fn test_constants_are_accessible() {
+        assert_eq!(BGE_M3_DIM, 1024);
+        assert_eq!(BGE_M3_MAX_SEQ_LEN, 8192);
+        assert_eq!(BGE_M3_MODEL_ID, "BAAI/bge-m3");
     }
 }

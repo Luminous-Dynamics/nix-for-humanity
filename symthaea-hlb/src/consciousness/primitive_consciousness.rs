@@ -339,18 +339,36 @@ impl ConsciousnessPrimitiveProcessor {
         &self.history
     }
 
-    /// Estimate phi for a state (simplified)
+    /// Estimate phi for a state using real Phi computation
     fn estimate_phi(&self, state: &PrimitiveConsciousnessState) -> f64 {
-        let active_count = state.all_active().len();
-        let tier_diversity = state.active_by_tier.len();
-        let binding_count = state.bindings.len();
+        use symthaea_core::hdc::unified_hv::ContinuousHV;
+        use symthaea_core::phi_engine::{PhiEngine, PhiMethod};
 
-        // Simplified phi estimate based on integration
-        let base_phi = (active_count as f64).sqrt() * 0.1;
-        let diversity_bonus = (tier_diversity as f64).ln_1p() * 0.2;
-        let binding_bonus = (binding_count as f64).sqrt() * 0.15;
+        // Convert active primitive encodings to node representations
+        let active = state.all_active();
+        if active.is_empty() {
+            return 0.0;
+        }
 
-        (base_phi + diversity_bonus + binding_bonus).min(1.0)
+        // Use up to 8 active primitives as nodes
+        let mut nodes = Vec::new();
+        for prim in active.iter().take(8) {
+            // Convert encoding to continuous representation
+            let bits: Vec<f32> = (0..16)
+                .map(|i| if prim.primitive.encoding.get_bit(i % crate::hdc::HDC_DIMENSION) != 0 { 1.0f32 } else { -1.0f32 })
+                .collect();
+            nodes.push(ContinuousHV::from_vec(bits));
+        }
+
+        if nodes.len() < 2 {
+            // Need at least 2 nodes for meaningful Phi
+            let active_count = active.len();
+            return (active_count as f64).sqrt() * 0.1;
+        }
+
+        let engine = PhiEngine::new(PhiMethod::Auto);
+        let result = engine.compute(&nodes);
+        result.phi.min(1.0)
     }
 
     /// Update history with new state

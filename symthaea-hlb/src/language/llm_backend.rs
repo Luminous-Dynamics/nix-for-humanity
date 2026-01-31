@@ -213,6 +213,46 @@ fn summarize_prompt(prompt: &str) -> String {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // GenerationParams Tests
+    // =========================================================================
+
+    #[test]
+    fn test_generation_params_default() {
+        let params = GenerationParams::default();
+        assert!((params.temperature - 0.7).abs() < 0.01);
+        assert_eq!(params.max_tokens, 256);
+        assert!(params.system_prompt.is_none());
+    }
+
+    #[test]
+    fn test_generation_params_custom() {
+        let params = GenerationParams {
+            temperature: 0.3,
+            max_tokens: 100,
+            system_prompt: Some("You are helpful".to_string()),
+        };
+        assert!((params.temperature - 0.3).abs() < 0.01);
+        assert_eq!(params.max_tokens, 100);
+        assert_eq!(params.system_prompt, Some("You are helpful".to_string()));
+    }
+
+    #[test]
+    fn test_generation_params_clone() {
+        let params = GenerationParams {
+            temperature: 0.5,
+            max_tokens: 200,
+            system_prompt: Some("Test".to_string()),
+        };
+        let cloned = params.clone();
+        assert!((params.temperature - cloned.temperature).abs() < 0.01);
+        assert_eq!(params.max_tokens, cloned.max_tokens);
+    }
+
+    // =========================================================================
+    // SimulatedBackend Tests
+    // =========================================================================
+
     #[tokio::test]
     async fn test_simulated_backend_always_available() {
         let backend = SimulatedBackend;
@@ -230,10 +270,64 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_simulated_backend_name() {
+        let backend = SimulatedBackend;
+        assert_eq!(backend.name(), "Simulated");
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_translate_prompt() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let result = backend.generate("Please translate this text", &params).await;
+        assert!(result.is_ok());
+        let text = result.unwrap();
+        assert!(text.contains("understand") || text.contains("input"));
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_question_prompt() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let result = backend.generate("What is the meaning of life?", &params).await;
+        assert!(result.is_ok());
+        let text = result.unwrap();
+        assert!(text.contains("question") || text.contains("Regarding"));
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_statement_prompt() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let result = backend.generate("The sky is blue.", &params).await;
+        assert!(result.is_ok());
+        let text = result.unwrap();
+        assert!(text.contains("Acknowledged"));
+    }
+
+    // =========================================================================
+    // OllamaBackend Tests
+    // =========================================================================
+
+    #[tokio::test]
     async fn test_ollama_backend_creation() {
         let backend = OllamaBackend::new();
         assert_eq!(backend.name(), "Ollama");
-        // Note: is_available() may return false if Ollama is not running
+    }
+
+    #[test]
+    fn test_ollama_backend_with_config() {
+        let backend = OllamaBackend::with_config("http://localhost:8080", "llama2");
+        assert_eq!(backend.name(), "Ollama");
+        assert_eq!(backend.base_url, "http://localhost:8080");
+        assert_eq!(backend.model, "llama2");
+    }
+
+    #[test]
+    fn test_ollama_backend_default_config() {
+        let backend = OllamaBackend::new();
+        assert_eq!(backend.base_url, "http://localhost:11434");
+        assert_eq!(backend.model, "gemma3:1b");
     }
 
     /// Integration test for Ollama backend.
@@ -267,5 +361,112 @@ mod tests {
                 eprintln!("Ollama generation failed (model may not be installed): {}", e);
             }
         }
+    }
+
+    // =========================================================================
+    // Factory Function Tests
+    // =========================================================================
+
+    #[test]
+    fn test_default_backend() {
+        let backend = default_backend();
+        assert_eq!(backend.name(), "Ollama");
+    }
+
+    #[test]
+    fn test_simulated_backend_factory() {
+        let backend = simulated_backend();
+        assert_eq!(backend.name(), "Simulated");
+    }
+
+    // =========================================================================
+    // summarize_prompt Tests
+    // =========================================================================
+
+    #[test]
+    fn test_summarize_prompt_short() {
+        let result = summarize_prompt("Hello world");
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_summarize_prompt_long() {
+        let long_text = (0..30).map(|i| format!("word{}", i)).collect::<Vec<_>>().join(" ");
+        let result = summarize_prompt(&long_text);
+        assert!(result.ends_with("..."));
+        // Should be truncated to ~20 words
+        let word_count = result.trim_end_matches("...").split_whitespace().count();
+        assert_eq!(word_count, 20);
+    }
+
+    #[test]
+    fn test_summarize_prompt_exactly_20_words() {
+        let text = (0..20).map(|i| format!("word{}", i)).collect::<Vec<_>>().join(" ");
+        let result = summarize_prompt(&text);
+        assert!(!result.ends_with("..."));
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_summarize_prompt_empty() {
+        let result = summarize_prompt("");
+        assert!(result.is_empty());
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_simulated_backend_empty_prompt() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let result = backend.generate("", &params).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_special_characters() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let result = backend.generate("Hello! @#$%^&*() 你好 🎉", &params).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_very_long_prompt() {
+        let backend = SimulatedBackend;
+        let params = GenerationParams::default();
+        let long_prompt = "word ".repeat(1000);
+        let result = backend.generate(&long_prompt, &params).await;
+        assert!(result.is_ok());
+        // Response should be truncated
+        let text = result.unwrap();
+        assert!(text.contains("..."));
+    }
+
+    #[tokio::test]
+    async fn test_simulated_backend_ignores_params() {
+        let backend = SimulatedBackend;
+
+        // Test with various params - should all produce similar output style
+        let params_low_temp = GenerationParams {
+            temperature: 0.0,
+            max_tokens: 10,
+            system_prompt: Some("Be concise".to_string()),
+        };
+
+        let params_high_temp = GenerationParams {
+            temperature: 1.0,
+            max_tokens: 1000,
+            system_prompt: None,
+        };
+
+        let result1 = backend.generate("Hello", &params_low_temp).await.unwrap();
+        let result2 = backend.generate("Hello", &params_high_temp).await.unwrap();
+
+        // Both should produce valid responses (simulated ignores params)
+        assert!(!result1.is_empty());
+        assert!(!result2.is_empty());
     }
 }

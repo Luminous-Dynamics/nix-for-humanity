@@ -174,6 +174,8 @@ pub struct DiscoveryServiceConfig {
     pub auto_integrate: bool,
     /// Phi threshold for auto-integration
     pub auto_integrate_threshold: f64,
+    /// Minimum phi delta above constituents for a composition to be considered emergent
+    pub emergence_delta: f64,
 }
 
 impl Default for DiscoveryServiceConfig {
@@ -189,6 +191,7 @@ impl Default for DiscoveryServiceConfig {
             max_per_cycle: 10,
             auto_integrate: false,
             auto_integrate_threshold: 0.8,
+            emergence_delta: 0.05,
         }
     }
 }
@@ -361,7 +364,7 @@ impl PatternDetector {
     }
 
     fn infer_tier(&self, primitives: &[&str]) -> PrimitiveTier {
-        // Simple heuristic: if contains "meta" or "consciousness", higher tier
+        // Keyword-based fallback (used when no system context available)
         let text = primitives.join(" ").to_lowercase();
         if text.contains("consciousness") || text.contains("meta") {
             PrimitiveTier::MetaCognitive
@@ -372,6 +375,42 @@ impl PatternDetector {
         } else {
             PrimitiveTier::Physical
         }
+    }
+
+    /// Similarity-based tier inference using encoding distance to known tier exemplars
+    fn infer_tier_from_encoding(&self, encoding: &HV16, system: &PrimitiveSystem) -> PrimitiveTier {
+        let tiers = [
+            PrimitiveTier::NSM,
+            PrimitiveTier::Mathematical,
+            PrimitiveTier::Physical,
+            PrimitiveTier::Geometric,
+            PrimitiveTier::Strategic,
+            PrimitiveTier::MetaCognitive,
+            PrimitiveTier::Temporal,
+            PrimitiveTier::Compositional,
+            PrimitiveTier::Consciousness,
+        ];
+
+        let mut best_tier = PrimitiveTier::NSM;
+        let mut best_sim = f32::MIN;
+
+        for &tier in &tiers {
+            let tier_prims = system.get_tier(tier);
+            if tier_prims.is_empty() {
+                continue;
+            }
+
+            let avg_sim: f32 = tier_prims.iter()
+                .map(|p| encoding.similarity(&p.encoding))
+                .sum::<f32>() / tier_prims.len() as f32;
+
+            if avg_sim > best_sim {
+                best_sim = avg_sim;
+                best_tier = tier;
+            }
+        }
+
+        if best_sim < 0.3 { PrimitiveTier::NSM } else { best_tier }
     }
 }
 
@@ -549,6 +588,14 @@ impl PrimitiveDiscoveryService {
                 let composed_name = format!("{}_{}", names[idx_a], names[idx_b]);
                 let phi_score = self.estimate_phi(&composed);
 
+                // Skip non-emergent compositions: phi must exceed max constituent + delta
+                let phi_a = self.estimate_phi(&prim_a.encoding);
+                let phi_b = self.estimate_phi(&prim_b.encoding);
+                let max_constituent = phi_a.max(phi_b);
+                if phi_score <= max_constituent + self.config.emergence_delta {
+                    continue;
+                }
+
                 // Use higher tier of the two
                 let tier = if prim_a.tier as u8 > prim_b.tier as u8 {
                     prim_a.tier
@@ -574,19 +621,40 @@ impl PrimitiveDiscoveryService {
         discoveries
     }
 
-    /// Estimate Phi for an encoding (simplified heuristic)
+    /// Estimate Phi for an encoding using real Phi computation
     fn estimate_phi(&self, encoding: &HV16) -> f64 {
-        // Phi heuristic based on encoding properties
-        let popcount = encoding.popcount();
-        let total_bits = crate::hdc::HDC_DIMENSION;
+        use symthaea_core::hdc::unified_hv::ContinuousHV;
+        use symthaea_core::phi_engine::{PhiEngine, PhiMethod};
 
-        // Balanced encodings (near 50% popcount) tend to have higher phi
-        let balance = 1.0 - ((popcount as f64 / total_bits as f64) - 0.5).abs() * 2.0;
+        // Convert HV16 bits to bipolar representation, partition into nodes
+        let bipolar = encoding.to_bipolar();
+        let chunk_size = bipolar.len() / 4;
+        if chunk_size == 0 {
+            // Fallback for very small encodings
+            let popcount = encoding.popcount();
+            let total_bits = bipolar.len().max(1);
+            return 1.0 - ((popcount as f64 / total_bits as f64) - 0.5).abs() * 2.0;
+        }
 
-        // Add some randomness for exploration
-        let noise = (self.rng_state as f64 / u64::MAX as f64) * 0.2;
+        let nodes: Vec<ContinuousHV> = bipolar
+            .chunks(chunk_size)
+            .map(|chunk| ContinuousHV::from_vec(chunk.to_vec()))
+            .collect();
 
-        (balance * 0.8 + noise).min(1.0).max(0.0)
+        if nodes.len() < 2 {
+            return 0.0;
+        }
+
+        let engine = PhiEngine::new(PhiMethod::Resonator);
+        let phi = engine.compute(&nodes).phi;
+
+        if phi.is_nan() || phi < 0.0 {
+            // Fallback
+            let popcount = encoding.popcount();
+            let total_bits = bipolar.len().max(1);
+            return 1.0 - ((popcount as f64 / total_bits as f64) - 0.5).abs() * 2.0;
+        }
+        phi.min(1.0)
     }
 
     /// Compute confidence based on evaluation count and consistency

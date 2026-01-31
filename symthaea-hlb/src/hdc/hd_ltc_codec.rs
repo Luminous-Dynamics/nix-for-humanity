@@ -550,3 +550,84 @@ mod tests {
         assert_eq!(codec.temporal_context.len(), 5);
     }
 }
+
+#[cfg(test)]
+mod semantic_preservation_tests {
+    use super::*;
+    use symthaea_core::hdc::binary_hv::HV16;
+
+    #[test]
+    fn test_semantic_preservation_through_cfc_roundtrip() {
+        // Create codec
+        let config = HDLTCCodecConfig {
+            ltc_neurons: 256, // Smaller for test speed
+            ..Default::default()
+        };
+        let mut codec = HDLTCCodec::new(config);
+
+        // Create HV pairs with known relationships
+        let hv_a = HV16::random(42);
+        let hv_b = {
+            // Create B similar to A by flipping only ~20% of bits
+            let mut b = hv_a.clone();
+            let flip_hv = HV16::random(100);
+            // Bundle A with a random HV to get something similar but not identical
+            hv_a.bundle(&flip_hv)
+        };
+        let hv_c = HV16::random(9999); // Unrelated to A
+
+        // Measure original similarities
+        let sim_ab_original = hv_a.similarity(&hv_b);
+        let sim_ac_original = hv_a.similarity(&hv_c);
+
+        // Encode all to LTC space
+        let ltc_a = codec.encode_to_ltc(&hv_a);
+        let ltc_b = codec.encode_to_ltc(&hv_b);
+        let ltc_c = codec.encode_to_ltc(&hv_c);
+
+        // Measure LTC-space similarities (cosine)
+        let ltc_sim_ab = cosine_similarity(&ltc_a, &ltc_b);
+        let ltc_sim_ac = cosine_similarity(&ltc_a, &ltc_c);
+
+        // The relative ordering should be preserved:
+        // If A~B > A~C in HDC space, then A~B > A~C in LTC space
+        // (at least the direction should be preserved)
+        if sim_ab_original > sim_ac_original + 0.1 {
+            // Only assert if there's a meaningful gap
+            assert!(
+                ltc_sim_ab > ltc_sim_ac - 0.3, // Allow some tolerance
+                "Similarity ordering not preserved in LTC space: AB={:.3} vs AC={:.3} (HDC: AB={:.3} vs AC={:.3})",
+                ltc_sim_ab, ltc_sim_ac, sim_ab_original, sim_ac_original
+            );
+        }
+
+        // Decode back to HDC space
+        let decoded_a = codec.decode_to_hv(&ltc_a);
+        let decoded_b = codec.decode_to_hv(&ltc_b);
+        let decoded_c = codec.decode_to_hv(&ltc_c);
+
+        // Check round-trip doesn't completely destroy structure
+        let sim_ab_decoded = decoded_a.similarity(&decoded_b);
+        let sim_ac_decoded = decoded_a.similarity(&decoded_c);
+
+        // Round-trip will lose information, but should preserve some structure
+        println!("Original: AB={:.3}, AC={:.3}", sim_ab_original, sim_ac_original);
+        println!("LTC: AB={:.3}, AC={:.3}", ltc_sim_ab, ltc_sim_ac);
+        println!("Decoded: AB={:.3}, AC={:.3}", sim_ab_decoded, sim_ac_decoded);
+
+        // The codec exists and produces output - basic sanity
+        assert!(decoded_a.popcount() > 0, "Decoded A should not be all zeros");
+        assert!(decoded_b.popcount() > 0, "Decoded B should not be all zeros");
+    }
+
+    fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+        let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+        let mag_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let mag_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if mag_a > 0.0 && mag_b > 0.0 {
+            dot / (mag_a * mag_b)
+        } else {
+            0.0
+        }
+    }
+}

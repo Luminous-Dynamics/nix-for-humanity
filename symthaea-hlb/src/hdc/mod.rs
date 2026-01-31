@@ -147,6 +147,9 @@ pub mod consciousness;
 pub mod tiered_phi;
 pub mod phi;
 
+// HDC-LTC neurons with CfC closed-form predict_forward
+pub mod hdc_ltc_neuron;
+
 // Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling
 pub mod phenomenal_binding_study;
 

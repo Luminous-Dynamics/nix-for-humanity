@@ -315,16 +315,203 @@ impl AudioPerception {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // AudioPerceptionConfig Tests
+    // =========================================================================
+
     #[test]
-    fn test_audio_perception_config() {
+    fn test_audio_perception_config_default() {
         let config = AudioPerceptionConfig::default();
         assert_eq!(config.sample_rate, 16000);
         assert!(config.enable_prosody);
+        assert!(config.prototypes_path.is_none());
+        assert!((config.confidence_threshold - 0.3).abs() < 0.01);
     }
+
+    #[test]
+    fn test_audio_perception_config_custom() {
+        let config = AudioPerceptionConfig {
+            prototypes_path: Some("/path/to/prototypes".to_string()),
+            sample_rate: 22050,
+            enable_prosody: false,
+            confidence_threshold: 0.5,
+        };
+        assert_eq!(config.sample_rate, 22050);
+        assert!(!config.enable_prosody);
+        assert!(config.prototypes_path.is_some());
+    }
+
+    // =========================================================================
+    // AudioInput Tests
+    // =========================================================================
 
     #[test]
     fn test_audio_input_creation() {
         let input = AudioInput::new("test");
         assert_eq!(input.modality, ModalityType::Auditory);
+        assert_eq!(input.id, "test");
+        assert!(input.embedding.is_none());
+        assert!((input.confidence - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_audio_input_with_embedding() {
+        let embedding = vec![0.1, 0.2, 0.3];
+        let input = AudioInput::new("test").with_embedding(embedding.clone());
+        assert!(input.embedding.is_some());
+        assert_eq!(input.embedding.unwrap(), embedding);
+    }
+
+    #[test]
+    fn test_audio_input_with_metadata() {
+        let input = AudioInput::new("test")
+            .with_metadata("key1", "value1")
+            .with_metadata("key2", "value2");
+        assert_eq!(input.metadata.get("key1"), Some(&"value1".to_string()));
+        assert_eq!(input.metadata.get("key2"), Some(&"value2".to_string()));
+    }
+
+    #[test]
+    fn test_audio_input_chained_builders() {
+        let input = AudioInput::new("audio_file")
+            .with_embedding(vec![0.5; 10])
+            .with_metadata("format", "wav")
+            .with_metadata("duration", "5.0");
+
+        assert_eq!(input.id, "audio_file");
+        assert!(input.embedding.is_some());
+        assert_eq!(input.metadata.len(), 2);
+    }
+
+    // =========================================================================
+    // ModalityType Tests
+    // =========================================================================
+
+    #[test]
+    fn test_modality_type_equality() {
+        assert_eq!(ModalityType::Auditory, ModalityType::Auditory);
+        assert_eq!(ModalityType::Visual, ModalityType::Visual);
+        assert_ne!(ModalityType::Auditory, ModalityType::Visual);
+        assert_ne!(ModalityType::Textual, ModalityType::Auditory);
+    }
+
+    #[test]
+    fn test_modality_type_clone() {
+        let modality = ModalityType::Auditory;
+        let cloned = modality;
+        assert_eq!(modality, cloned);
+    }
+
+    // =========================================================================
+    // AudioPerceptionResult Tests
+    // =========================================================================
+
+    #[test]
+    fn test_audio_perception_result_creation() {
+        let result = AudioPerceptionResult {
+            phonemes: vec!["a".to_string(), "b".to_string()],
+            confidences: vec![0.9, 0.85],
+            prosody: None,
+            processing_time_ms: 10.5,
+            num_frames: 100,
+        };
+        assert_eq!(result.phonemes.len(), 2);
+        assert_eq!(result.confidences.len(), 2);
+        assert!(result.prosody.is_none());
+        assert_eq!(result.num_frames, 100);
+    }
+
+    // =========================================================================
+    // ProsodyFeatures Tests
+    // =========================================================================
+
+    #[test]
+    fn test_prosody_features_creation() {
+        let prosody = ProsodyFeatures {
+            avg_pitch: 150.0,
+            pitch_variance: 25.0,
+            avg_energy: 0.5,
+            speaking_rate: 4.5,
+        };
+        assert!((prosody.avg_pitch - 150.0).abs() < 0.01);
+        assert!((prosody.pitch_variance - 25.0).abs() < 0.01);
+        assert!((prosody.avg_energy - 0.5).abs() < 0.01);
+        assert!((prosody.speaking_rate - 4.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_prosody_features_clone() {
+        let prosody = ProsodyFeatures {
+            avg_pitch: 200.0,
+            pitch_variance: 30.0,
+            avg_energy: 0.7,
+            speaking_rate: 5.0,
+        };
+        let cloned = prosody.clone();
+        assert!((prosody.avg_pitch - cloned.avg_pitch).abs() < 0.01);
+    }
+
+    // =========================================================================
+    // AudioPerception Stub Tests (when voice-stt is not enabled)
+    // =========================================================================
+
+    #[test]
+    fn test_audio_perception_stub_creation() {
+        let config = AudioPerceptionConfig::default();
+        let result = AudioPerception::new(config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_audio_perception_stub_has_no_prototypes() {
+        let config = AudioPerceptionConfig::default();
+        let perception = AudioPerception::new(config).unwrap();
+        assert!(!perception.has_prototypes());
+    }
+
+    #[cfg(not(feature = "voice-stt"))]
+    #[test]
+    fn test_audio_perception_stub_process_file_errors() {
+        use std::path::Path;
+        let config = AudioPerceptionConfig::default();
+        let mut perception = AudioPerception::new(config).unwrap();
+        let result = perception.process_file(Path::new("/nonexistent/file.wav"));
+        assert!(result.is_err());
+    }
+
+    #[cfg(not(feature = "voice-stt"))]
+    #[test]
+    fn test_audio_perception_stub_process_samples_errors() {
+        let config = AudioPerceptionConfig::default();
+        let mut perception = AudioPerception::new(config).unwrap();
+        let result = perception.process_samples(&[0.1, 0.2, 0.3]);
+        assert!(result.is_err());
+    }
+
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_audio_input_empty_id() {
+        let input = AudioInput::new("");
+        assert_eq!(input.id, "");
+        assert_eq!(input.modality, ModalityType::Auditory);
+    }
+
+    #[test]
+    fn test_audio_input_empty_embedding() {
+        let input = AudioInput::new("test").with_embedding(vec![]);
+        assert!(input.embedding.is_some());
+        assert!(input.embedding.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_audio_input_unicode_metadata() {
+        let input = AudioInput::new("test")
+            .with_metadata("language", "日本語")
+            .with_metadata("emoji", "🎵");
+        assert_eq!(input.metadata.get("language"), Some(&"日本語".to_string()));
+        assert_eq!(input.metadata.get("emoji"), Some(&"🎵".to_string()));
     }
 }

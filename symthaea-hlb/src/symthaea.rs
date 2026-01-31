@@ -1010,6 +1010,59 @@ impl Symthaea {
         self.trajectory.record(now, self.partner.stage, phi_dyad);
     }
 
+    // ========================================================================
+    // Public Embedding API
+    // ========================================================================
+
+    /// Generate an HDC embedding for text.
+    ///
+    /// This is the public API for getting embeddings from Symthaea, used by
+    /// LUCID's semantic search and other consumers. It wraps the internal
+    /// `text_to_hv` method to provide a stable interface.
+    ///
+    /// Returns a `RealHV` hypervector of dimension `hdc_dim` (default 16,384).
+    ///
+    /// ## Encoding Strategy
+    ///
+    /// When Neural Bridge v2 is available (feature `neural-bridge`), uses BGE-M3
+    /// for high-quality semantic encoding. Otherwise falls back to hash-based
+    /// encoding which is fast but lower quality.
+    pub fn embed(&mut self, text: &str) -> RealHV {
+        self.text_to_hv(text)
+    }
+
+    /// Generate an HDC embedding and return as Vec<f32>.
+    ///
+    /// Convenience method that extracts the raw values from the RealHV.
+    pub fn embed_vec(&mut self, text: &str) -> Vec<f32> {
+        self.text_to_hv(text).values
+    }
+
+    /// Batch embed multiple texts.
+    ///
+    /// More efficient than calling `embed` repeatedly as it can amortize
+    /// initialization costs.
+    pub fn embed_batch(&mut self, texts: &[&str]) -> Vec<RealHV> {
+        texts.iter().map(|t| self.text_to_hv(t)).collect()
+    }
+
+    /// Check if high-quality semantic encoding is available.
+    ///
+    /// Returns true if Neural Bridge v2 (BGE-M3) is active, false if using
+    /// hash-based fallback encoding.
+    pub fn has_semantic_encoder(&self) -> bool {
+        self.has_neural_bridge()
+    }
+
+    /// Get the HDC dimension being used.
+    pub fn dimension(&self) -> usize {
+        self.hdc_dim
+    }
+
+    // ========================================================================
+    // Private helpers
+    // ========================================================================
+
     /// Compute current Phi-dyad value.
     fn compute_phi_dyad(&self) -> f64 {
         if self.recent_ai_states.is_empty() {
