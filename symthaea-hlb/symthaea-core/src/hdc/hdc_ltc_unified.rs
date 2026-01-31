@@ -815,6 +815,123 @@ impl HdcLtcUnifiedNeuron {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // BACKPROPAGATION THROUGH TIME (BPTT)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Compute analytical BPTT gradients for a single closed-form step.
+    ///
+    /// Re-runs the forward pass internally, then backpropagates through:
+    /// ```text
+    /// x' = σ × x_∞ + (1-σ) × x       // interpolation
+    /// x_∞ = f(W⊗x + U⊗u)             // equilibrium
+    /// σ = 1 - exp(-dt/τ)              // gating from tau
+    /// τ = τ₀ × (1 + β×||x||) × (1 + 0.2×sim(u, τ_mod))
+    /// ```
+    ///
+    /// Since HDC binding is element-wise multiply, ∂(A⊗B)/∂A = B element-wise.
+    pub fn backward(
+        &self,
+        input: &ContinuousHV,
+        target: &ContinuousHV,
+        dt: f32,
+    ) -> HdcLtcGradients {
+        let dim = self.config.dimension;
+
+        // --- Forward recomputation ---
+        // Pre-activation: z = W⊗x + U⊗u (bundled)
+        let wx = self.weight_hv.bind(&self.state);
+        let uu = self.input_mask.bind(input);
+        let z = ContinuousHV::bundle(&[&wx, &uu]);
+
+        // Equilibrium: x_∞ = f(z)
+        let x_inf = self.config.activation.apply(&z);
+
+        // Tau and sigma
+        let tau = self.compute_tau(input);
+        let decay = (-dt / tau).exp();
+        let sigma = 1.0 - decay;
+
+        // New state: x' = σ × x_∞ + (1-σ) × x
+        let new_state = x_inf.scale(sigma).add(&self.state.scale(1.0 - sigma));
+
+        // --- Backward pass ---
+        // dL/dx' = 2(x' - target) / dim   (MSE gradient)
+        let dh = new_state.subtract(target).scale(2.0 / dim as f32);
+
+        // Through interpolation: dL/dx_∞ = dL/dx' × σ  (element-wise scale)
+        let dx_inf = dh.scale(sigma);
+
+        // Through activation: dL/dz = dL/dx_∞ ⊙ f'(z)
+        // We need element-wise: dx_inf[i] * activation.derivative(z[i])
+        let activation = self.config.activation;
+        let dz_values: Vec<f32> = dx_inf.values.iter()
+            .zip(z.values.iter())
+            .map(|(&di, &zi)| di * activation.derivative(zi))
+            .collect();
+        let dz = ContinuousHV::from_values(dz_values);
+
+        // Bundle = (wx + uu) / n, so ∂bundle/∂wx = 1/n element-wise.
+        // We absorb the 1/n into the learning rate (standard practice) and pass
+        // the full gradient through for stronger signal.
+
+        // Weight gradients via binding chain rule:
+        // W⊗x is element-wise multiply, so ∂(W⊗x)/∂W = x
+        let dw = dz.bind(&self.state);
+
+        // dL/dU = dz ⊙ u
+        let du = dz.bind(input);
+
+        // Tau gradient (scalar):
+        // dσ/dτ = -dt/τ² × exp(-dt/τ)  (since σ = 1 - exp(-dt/τ))
+        // dL/dτ = Σ_i dh_i × (x_∞_i - x_i) × dσ/dτ
+        //       = Σ_i dh_i × (x_inf_i - state_i) × (-dt/τ²) × exp(-dt/τ)
+        let diff = x_inf.subtract(&self.state);
+        let dtau_scalar: f32 = dh.values.iter()
+            .zip(diff.values.iter())
+            .map(|(&dhi, &di)| dhi * di)
+            .sum::<f32>()
+            * (-dt / (tau * tau)) * decay;
+
+        HdcLtcGradients {
+            dw,
+            du,
+            dtau_scalar,
+        }
+    }
+
+    /// Apply BPTT gradients with SGD + momentum, weight decay, and norm clipping.
+    pub fn apply_gradients(&mut self, grads: &HdcLtcGradients, lr: f32) {
+        let m = self.config.momentum;
+        let decay = self.config.weight_decay;
+
+        // Weight HV update with momentum
+        self.weight_momentum = self.weight_momentum.scale(m)
+            .add(&grads.dw.scale(-lr));
+        self.weight_hv = self.weight_hv.scale(1.0 - decay)
+            .add(&self.weight_momentum);
+
+        // Input mask update with momentum
+        self.input_momentum = self.input_momentum.scale(m)
+            .add(&grads.du.scale(-lr));
+        self.input_mask = self.input_mask.scale(1.0 - decay)
+            .add(&self.input_momentum);
+
+        // Tau modulator update (project scalar gradient onto tau_modulator direction)
+        if grads.dtau_scalar.abs() > 1e-10 {
+            self.tau_modulator = self.tau_modulator
+                .add(&self.tau_modulator.normalize().scale(-lr * grads.dtau_scalar));
+        }
+
+        // Norm clip to 2.0
+        if self.weight_hv.norm() > 2.0 {
+            self.weight_hv = self.weight_hv.normalize().scale(2.0);
+        }
+        if self.input_mask.norm() > 2.0 {
+            self.input_mask = self.input_mask.normalize().scale(2.0);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // ADDITIONAL ACCESSORS (for testing/benchmarking)
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -855,6 +972,17 @@ impl HdcLtcUnifiedNeuron {
             weight_norm: self.weight_hv.norm(),
         }
     }
+}
+
+/// Gradients computed by BPTT `backward()` for a single closed-form step.
+#[derive(Debug, Clone)]
+pub struct HdcLtcGradients {
+    /// Gradient for `weight_hv`
+    pub dw: ContinuousHV,
+    /// Gradient for `input_mask`
+    pub du: ContinuousHV,
+    /// Scalar gradient for tau (applied to `tau_modulator`)
+    pub dtau_scalar: f32,
 }
 
 /// Statistics for unified neuron
@@ -1019,6 +1147,19 @@ impl HdcLtcUnifiedNetwork {
             ContinuousHV::bundle(&[&bound_input, original_input])
         } else {
             bound_input
+        }
+    }
+
+    /// Get the effective input for a given layer (after layer binding + skip connections).
+    ///
+    /// Layer 0 receives `original_input` directly.
+    /// Deeper layers receive the bundled previous-layer output, optionally bound
+    /// with a layer-binding vector and optionally skip-connected with the original input.
+    pub fn layer_input(&self, layer_idx: usize, original_input: &ContinuousHV) -> ContinuousHV {
+        if layer_idx == 0 {
+            original_input.clone()
+        } else {
+            self.compute_layer_input(layer_idx, original_input)
         }
     }
 

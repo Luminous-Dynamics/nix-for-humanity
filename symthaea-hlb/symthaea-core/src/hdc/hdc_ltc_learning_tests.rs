@@ -1006,6 +1006,106 @@ mod advanced_learning_tests {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// BPTT (BACKPROPAGATION THROUGH TIME) TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+#[cfg(test)]
+mod bptt_tests {
+    use super::*;
+
+    /// Test that BPTT converges: loss should decrease over repeated backward+apply steps
+    #[test]
+    fn test_bptt_convergence() {
+        let config = test_config();
+        let mut neuron = HdcLtcUnifiedNeuron::new(config, 42);
+
+        let input = random_pattern(100);
+        let target = random_pattern(200);
+        let dt = 0.05;
+        let lr = 0.05;
+
+        // Warm up the neuron state
+        for _ in 0..10 {
+            neuron.evolve_closed_form(dt, &input);
+        }
+
+        let mut losses: Vec<f32> = Vec::new();
+
+        for _iter in 0..50 {
+            // Forward: evolve
+            neuron.evolve_closed_form(dt, &input);
+
+            // Compute loss (MSE in HV space)
+            let state = neuron.state();
+            let dim = state.dim() as f32;
+            let loss: f32 = state.values.iter()
+                .zip(target.values.iter())
+                .map(|(s, t)| (s - t).powi(2))
+                .sum::<f32>() / dim;
+            losses.push(loss);
+
+            // Backward + apply
+            let grads = neuron.backward(&input, &target, dt);
+            neuron.apply_gradients(&grads, lr);
+        }
+
+        let first_5_avg: f32 = losses[..5].iter().sum::<f32>() / 5.0;
+        let last_5_avg: f32 = losses[45..].iter().sum::<f32>() / 5.0;
+
+        println!("BPTT convergence: first 5 avg loss = {:.6}, last 5 avg loss = {:.6}", first_5_avg, last_5_avg);
+        println!("Loss reduction: {:.2}%", (1.0 - last_5_avg / first_5_avg) * 100.0);
+
+        assert!(
+            last_5_avg < first_5_avg,
+            "BPTT should reduce loss: first_5={:.6}, last_5={:.6}",
+            first_5_avg, last_5_avg
+        );
+    }
+
+    /// Test step adaptation: neuron tracks a changing target
+    #[test]
+    fn test_bptt_step_adaptation() {
+        let config = test_config();
+        let mut neuron = HdcLtcUnifiedNeuron::new(config, 42);
+
+        let input = random_pattern(100);
+        let target_a = random_pattern(200);
+        let target_b = random_pattern(300);
+        let dt = 0.05;
+        let lr = 0.05;
+
+        // Train on target A for 50 iterations
+        for _ in 0..50 {
+            neuron.evolve_closed_form(dt, &input);
+            let grads = neuron.backward(&input, &target_a, dt);
+            neuron.apply_gradients(&grads, lr);
+        }
+
+        let sim_a_after_a = neuron.state().similarity(&target_a);
+        let sim_b_after_a = neuron.state().similarity(&target_b);
+        println!("After training on A: sim_A={:.4}, sim_B={:.4}", sim_a_after_a, sim_b_after_a);
+
+        // Now train on target B for 50 iterations
+        for _ in 0..50 {
+            neuron.evolve_closed_form(dt, &input);
+            let grads = neuron.backward(&input, &target_b, dt);
+            neuron.apply_gradients(&grads, lr);
+        }
+
+        let sim_a_after_b = neuron.state().similarity(&target_a);
+        let sim_b_after_b = neuron.state().similarity(&target_b);
+        println!("After training on B: sim_A={:.4}, sim_B={:.4}", sim_a_after_b, sim_b_after_b);
+
+        // After training on B, neuron should be more similar to B than before
+        assert!(
+            sim_b_after_b > sim_b_after_a,
+            "Neuron should track new target B: sim_B went from {:.4} to {:.4}",
+            sim_b_after_a, sim_b_after_b
+        );
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // BENCHMARK HELPERS (for use with criterion)
 // ═══════════════════════════════════════════════════════════════════════════════
 

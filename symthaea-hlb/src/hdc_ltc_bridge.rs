@@ -299,7 +299,10 @@ impl HdcLtcBridge {
         Array1::from_vec(self.current_output.clone())
     }
 
-    /// Train step using Hebbian learning (matches CfCNetwork::train_step)
+    /// Train step using analytical BPTT gradients (matches CfCNetwork::train_step)
+    ///
+    /// Replaces Hebbian learning with backpropagation through the closed-form
+    /// evolution step, computing exact gradients for weight_hv and input_mask.
     pub fn train_step(
         &mut self,
         input: &Array1<f32>,
@@ -310,23 +313,31 @@ impl HdcLtcBridge {
         // Project input to HDC
         let hdc_input = self.project_to_hdc(input);
 
+        // Project target to HDC (reuse same projection)
+        let hdc_target = self.project_to_hdc(target);
+
         // Evolve network
         self.network.evolve_closed_form(dt, &hdc_input);
 
-        // Get output and compute error
+        // Get output and compute error in output space
         let hdc_output = self.network.output();
         let output = self.project_from_hdc(&hdc_output);
 
-        // Compute MSE loss
+        // Compute MSE loss in output space
         let loss: f32 = output.iter()
             .zip(target.iter())
             .map(|(o, t)| (o - t).powi(2))
             .sum::<f32>() / target.len() as f32;
 
-        // Apply Hebbian update to neurons in first layer
-        if let Some(layer) = self.network.layer_mut(0) {
-            for neuron in layer.iter_mut() {
-                neuron.hebbian_update(&hdc_input, Some(learning_rate));
+        // Apply BPTT gradients to all layers
+        let n_layers = self.network.n_layers();
+        for layer_idx in 0..n_layers {
+            let layer_in = self.network.layer_input(layer_idx, &hdc_input);
+            if let Some(layer) = self.network.layer_mut(layer_idx) {
+                for neuron in layer.iter_mut() {
+                    let grads = neuron.backward(&layer_in, &hdc_target, dt);
+                    neuron.apply_gradients(&grads, learning_rate);
+                }
             }
         }
 
