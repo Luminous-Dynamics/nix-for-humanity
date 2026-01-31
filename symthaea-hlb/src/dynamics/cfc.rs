@@ -429,6 +429,11 @@ impl CfCCell {
     pub fn tau(&self) -> &Array1<f32> {
         &self.tau
     }
+
+    /// Scale tau values by a multiplicative factor, clamped to [0.01, 100.0]
+    pub fn scale_tau(&mut self, scale: f32) {
+        self.tau.mapv_inplace(|t| (t * scale).clamp(0.01, 100.0));
+    }
 }
 
 /// Gradient accumulators for CfC backpropagation
@@ -503,6 +508,7 @@ pub struct CfCNetwork {
     /// Adam optimizer states per cell
     adam_states: Vec<AdamState>,
     /// Adam state for output projection
+    #[allow(dead_code)]
     adam_output: Option<AdamState>,
 }
 
@@ -1016,6 +1022,13 @@ impl CfCNetwork {
         self.cells.iter()
             .flat_map(|cell| cell.tau().iter().cloned())
             .collect()
+    }
+
+    /// Scale tau values for a specific layer
+    pub fn scale_tau(&mut self, layer_idx: usize, scale: f32) {
+        if let Some(cell) = self.cells.get_mut(layer_idx) {
+            cell.scale_tau(scale);
+        }
     }
 }
 

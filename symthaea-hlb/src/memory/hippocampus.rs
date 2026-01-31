@@ -424,10 +424,13 @@ impl HippocampusActor {
             results.push((memory.clone(), similarity));
         }
 
-        // Optimize top-k selection: use select_nth_unstable for O(n) average
-        // instead of full O(n log n) sort when results exceed top_k
+        // Handle k=0 edge case: return empty result
         let k = query.top_k;
-        if results.len() > k && k > 0 {
+        if k == 0 {
+            results.clear();
+        } else if results.len() > k {
+            // Optimize top-k selection: use select_nth_unstable for O(n) average
+            // instead of full O(n log n) sort when results exceed top_k
             // Partition so that the k largest elements are in results[0..k]
             // select_nth_unstable_by places the k-th element at index k-1 and
             // partitions such that elements before are >= and after are <=

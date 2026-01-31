@@ -119,6 +119,7 @@ pub struct ReplSession {
     pub observers: Vec<Box<dyn ObservabilityHook>>,
 
     /// IPC connection (for daemon mode)
+    #[allow(dead_code)]
     ipc_state: Option<IpcConnectionState>,
 }
 
@@ -175,6 +176,7 @@ pub struct TurnAction {
 
 /// IPC connection state for daemon mode
 #[derive(Debug)]
+#[allow(dead_code)]
 struct IpcConnectionState {
     connection: ConnectionState,
     last_metrics: MetricsSnapshot,

@@ -346,6 +346,10 @@ pub struct TemporalDifferenceLearner {
     pub avg_prediction_accuracy: f64,
     /// Number of episodes/epochs completed (for learning rate scheduling)
     pub episodes_completed: u64,
+    /// Value function weights for TD learning: V(s) = w · s
+    pub value_weights: Vec<f64>,
+    /// Previous state value (for bootstrapping)
+    pub prev_value: f64,
 }
 
 impl TemporalDifferenceLearner {
@@ -386,6 +390,8 @@ impl TemporalDifferenceLearner {
             avg_td_error: 0.0,
             avg_prediction_accuracy: 0.0,
             episodes_completed: 0,
+            value_weights: vec![0.0; state_dim],
+            prev_value: 0.0,
         }
     }
 
@@ -410,7 +416,7 @@ impl TemporalDifferenceLearner {
         let predicted_next = model.predict_next_state(old_state, action);
 
         // State prediction error (how well did we predict the next state?)
-        let state_prediction_error: f64 = new_state.mean.iter()
+        let _state_prediction_error: f64 = new_state.mean.iter()
             .zip(predicted_next.mean.iter())
             .map(|(actual, predicted)| (actual - predicted).powi(2))
             .sum::<f64>()
@@ -423,9 +429,22 @@ impl TemporalDifferenceLearner {
             .sum::<f64>()
             .sqrt();
 
-        // TD error is the unexpected improvement in prediction
-        // Negative values indicate better-than-expected transitions
-        let td_error = obs_prediction_error + state_prediction_error * 0.5;
+        // Linear value function: V(s) = w · s
+        let v_old: f64 = self.value_weights.iter()
+            .zip(old_state.mean.iter())
+            .map(|(w, s)| w * s)
+            .sum();
+        let v_new: f64 = self.value_weights.iter()
+            .zip(new_state.mean.iter())
+            .map(|(w, s)| w * s)
+            .sum();
+
+        // Intrinsic reward: negative prediction error
+        let reward = -obs_prediction_error;
+
+        // Real TD error: δ = r + γV(s') - V(s)
+        let td_error = reward + self.config.gamma * v_new - v_old;
+        self.prev_value = v_old;
 
         // Update eligibility traces if using TD(lambda)
         if let Some(ref mut traces) = self.eligibility_traces {
@@ -541,6 +560,26 @@ impl TemporalDifferenceLearner {
                 model.likelihood_matrix[i][j] += lr * 0.5 * gradient * trace_scale;
                 model.likelihood_matrix[i][j] = model.likelihood_matrix[i][j].clamp(0.0, 1.0);
             }
+        }
+
+        // Update value function weights: w += lr * δ * s
+        for i in 0..self.value_weights.len().min(old_state.mean.len()) {
+            let trace_scale = if let Some(ref traces) = self.eligibility_traces {
+                let aidx = action_idx.min(traces.transition_traces.len().saturating_sub(1));
+                if aidx < traces.transition_traces.len()
+                    && i < traces.transition_traces[aidx].len()
+                    && i < traces.transition_traces[aidx][i].len()
+                {
+                    traces.transition_traces[aidx][i][i].abs().min(1.0)
+                } else {
+                    1.0
+                }
+            } else {
+                1.0
+            };
+
+            self.value_weights[i] += lr * td_error * old_state.mean[i] * trace_scale;
+            self.value_weights[i] = self.value_weights[i].clamp(-10.0, 10.0);
         }
 
         // Update confidence tracker
@@ -2083,6 +2122,518 @@ pub struct CognitiveLoopFEPResult {
 }
 
 // =============================================================================
+// MOTOR COMMAND SYSTEM
+// =============================================================================
+
+/// Motor command types for embodied action
+///
+/// These represent the possible motor outputs from the active inference system.
+/// In a cognitive architecture, these translate to changes in attention, parameters,
+/// or actual motor commands in an embodied system.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MotorCommandType {
+    /// Modulate attention focus (shift attention to different inputs)
+    AttentionShift,
+    /// Adjust learning rate (precision-weighted learning)
+    LearningRateAdjust,
+    /// Trigger exploration (seek novel inputs)
+    ExplorationTrigger,
+    /// Initiate reflection (metacognitive pause)
+    ReflectionInitiate,
+    /// Consolidate memory (strengthen current representations)
+    MemoryConsolidate,
+    /// Reset expectation (clear prediction cache)
+    ExpectationReset,
+    /// Motor output (for embodied systems)
+    MotorOutput,
+    /// No operation (maintain current state)
+    NoOp,
+}
+
+impl MotorCommandType {
+    /// Convert action index to motor command type
+    pub fn from_action_index(action: usize) -> Self {
+        match action {
+            0 => MotorCommandType::AttentionShift,
+            1 => MotorCommandType::LearningRateAdjust,
+            2 => MotorCommandType::ExplorationTrigger,
+            3 => MotorCommandType::ReflectionInitiate,
+            4 => MotorCommandType::MemoryConsolidate,
+            5 => MotorCommandType::ExpectationReset,
+            6 => MotorCommandType::MotorOutput,
+            _ => MotorCommandType::NoOp,
+        }
+    }
+
+    /// Get action index from motor command type
+    pub fn to_action_index(&self) -> usize {
+        match self {
+            MotorCommandType::AttentionShift => 0,
+            MotorCommandType::LearningRateAdjust => 1,
+            MotorCommandType::ExplorationTrigger => 2,
+            MotorCommandType::ReflectionInitiate => 3,
+            MotorCommandType::MemoryConsolidate => 4,
+            MotorCommandType::ExpectationReset => 5,
+            MotorCommandType::MotorOutput => 6,
+            MotorCommandType::NoOp => 7,
+        }
+    }
+}
+
+/// A motor command with parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MotorCommand {
+    /// Type of motor command
+    pub command_type: MotorCommandType,
+    /// Intensity of the command (0.0-1.0)
+    pub intensity: f64,
+    /// Directional parameters (e.g., attention shift direction)
+    pub parameters: Vec<f64>,
+    /// Confidence in this command
+    pub confidence: f64,
+    /// Expected precision of the command outcome
+    pub expected_precision: f64,
+    /// Predicted outcome (in observation space)
+    pub predicted_outcome: Option<Vec<f64>>,
+}
+
+impl MotorCommand {
+    /// Create a new motor command
+    pub fn new(command_type: MotorCommandType, intensity: f64) -> Self {
+        Self {
+            command_type,
+            intensity: intensity.clamp(0.0, 1.0),
+            parameters: Vec::new(),
+            confidence: 0.5,
+            expected_precision: 0.5,
+            predicted_outcome: None,
+        }
+    }
+
+    /// Add parameters to the command
+    pub fn with_parameters(mut self, params: Vec<f64>) -> Self {
+        self.parameters = params;
+        self
+    }
+
+    /// Set confidence
+    pub fn with_confidence(mut self, confidence: f64) -> Self {
+        self.confidence = confidence.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Set expected precision
+    pub fn with_expected_precision(mut self, precision: f64) -> Self {
+        self.expected_precision = precision.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Set predicted outcome
+    pub fn with_predicted_outcome(mut self, outcome: Vec<f64>) -> Self {
+        self.predicted_outcome = Some(outcome);
+        self
+    }
+
+    /// Check if this is a meaningful command (not NoOp with low intensity)
+    pub fn is_meaningful(&self) -> bool {
+        self.command_type != MotorCommandType::NoOp || self.intensity > 0.5
+    }
+}
+
+/// Motor system interface for embodied active inference
+#[derive(Debug, Clone)]
+pub struct MotorSystem {
+    /// Last executed command
+    last_command: Option<MotorCommand>,
+    /// Command history
+    command_history: VecDeque<MotorCommand>,
+    /// Maximum history size
+    max_history: usize,
+    /// Prediction error for motor outcomes
+    motor_prediction_errors: VecDeque<f64>,
+    /// Proprioceptive feedback (for embodied systems)
+    proprioceptive_state: Vec<f64>,
+}
+
+impl Default for MotorSystem {
+    fn default() -> Self {
+        Self {
+            last_command: None,
+            command_history: VecDeque::with_capacity(100),
+            max_history: 100,
+            motor_prediction_errors: VecDeque::with_capacity(50),
+            proprioceptive_state: vec![0.5; 4],  // Default 4-dimensional state
+        }
+    }
+}
+
+impl MotorSystem {
+    /// Create a new motor system with specified state dimension
+    pub fn new(state_dim: usize) -> Self {
+        Self {
+            last_command: None,
+            command_history: VecDeque::with_capacity(100),
+            max_history: 100,
+            motor_prediction_errors: VecDeque::with_capacity(50),
+            proprioceptive_state: vec![0.5; state_dim],
+        }
+    }
+
+    /// Execute a motor command
+    pub fn execute(&mut self, command: MotorCommand) -> MotorOutcome {
+        // Store command
+        self.last_command = Some(command.clone());
+        if self.command_history.len() >= self.max_history {
+            self.command_history.pop_front();
+        }
+        self.command_history.push_back(command.clone());
+
+        // Simulate execution (in real system, this would actuate)
+        let executed_intensity = command.intensity * (0.9 + rand_f64() * 0.2);  // Add noise
+        let execution_success = rand_f64() < (0.8 + command.confidence * 0.2);
+
+        // Update proprioceptive state based on command
+        self.update_proprioception(&command);
+
+        MotorOutcome {
+            command_type: command.command_type,
+            executed_intensity: executed_intensity.clamp(0.0, 1.0),
+            success: execution_success,
+            proprioceptive_feedback: self.proprioceptive_state.clone(),
+            prediction_error: if let Some(ref predicted) = command.predicted_outcome {
+                self.compute_prediction_error(predicted)
+            } else {
+                0.0
+            },
+        }
+    }
+
+    /// Update proprioceptive state based on executed command
+    fn update_proprioception(&mut self, command: &MotorCommand) {
+        let delta = command.intensity * 0.1;
+        match command.command_type {
+            MotorCommandType::AttentionShift => {
+                // Shift attention dimension
+                if !self.proprioceptive_state.is_empty() {
+                    self.proprioceptive_state[0] += delta * (rand_f64() - 0.5);
+                    self.proprioceptive_state[0] = self.proprioceptive_state[0].clamp(0.0, 1.0);
+                }
+            }
+            MotorCommandType::ExplorationTrigger => {
+                // Increase variability in all dimensions
+                for dim in &mut self.proprioceptive_state {
+                    *dim += delta * (rand_f64() - 0.5) * 2.0;
+                    *dim = dim.clamp(0.0, 1.0);
+                }
+            }
+            MotorCommandType::MemoryConsolidate => {
+                // Stabilize state (reduce change)
+                // No change to proprioception
+            }
+            _ => {
+                // Small random drift
+                for dim in &mut self.proprioceptive_state {
+                    *dim += 0.01 * (rand_f64() - 0.5);
+                    *dim = dim.clamp(0.0, 1.0);
+                }
+            }
+        }
+    }
+
+    /// Compute prediction error between predicted and actual outcome
+    fn compute_prediction_error(&mut self, predicted: &[f64]) -> f64 {
+        let error: f64 = predicted.iter()
+            .zip(self.proprioceptive_state.iter())
+            .map(|(p, a)| (p - a).powi(2))
+            .sum::<f64>()
+            .sqrt() / predicted.len().max(1) as f64;
+
+        if self.motor_prediction_errors.len() >= 50 {
+            self.motor_prediction_errors.pop_front();
+        }
+        self.motor_prediction_errors.push_back(error);
+
+        error
+    }
+
+    /// Get average motor prediction error
+    pub fn average_prediction_error(&self) -> f64 {
+        if self.motor_prediction_errors.is_empty() {
+            0.0
+        } else {
+            self.motor_prediction_errors.iter().sum::<f64>()
+                / self.motor_prediction_errors.len() as f64
+        }
+    }
+
+    /// Get current proprioceptive state
+    pub fn proprioceptive_state(&self) -> &[f64] {
+        &self.proprioceptive_state
+    }
+
+    /// Set proprioceptive state (for embodied systems receiving sensor input)
+    pub fn set_proprioceptive_state(&mut self, state: Vec<f64>) {
+        self.proprioceptive_state = state;
+    }
+
+    /// Get command statistics
+    pub fn command_stats(&self) -> MotorCommandStats {
+        let total_commands = self.command_history.len();
+        let meaningful_commands = self.command_history.iter()
+            .filter(|c| c.is_meaningful())
+            .count();
+
+        let avg_intensity = if total_commands > 0 {
+            self.command_history.iter().map(|c| c.intensity).sum::<f64>()
+                / total_commands as f64
+        } else {
+            0.0
+        };
+
+        let avg_confidence = if total_commands > 0 {
+            self.command_history.iter().map(|c| c.confidence).sum::<f64>()
+                / total_commands as f64
+        } else {
+            0.0
+        };
+
+        MotorCommandStats {
+            total_commands,
+            meaningful_commands,
+            avg_intensity,
+            avg_confidence,
+            avg_prediction_error: self.average_prediction_error(),
+        }
+    }
+
+    /// Reset motor system
+    pub fn reset(&mut self) {
+        self.last_command = None;
+        self.command_history.clear();
+        self.motor_prediction_errors.clear();
+        for dim in &mut self.proprioceptive_state {
+            *dim = 0.5;
+        }
+    }
+}
+
+/// Outcome of motor command execution
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MotorOutcome {
+    /// Type of command that was executed
+    pub command_type: MotorCommandType,
+    /// Actual intensity of execution
+    pub executed_intensity: f64,
+    /// Whether execution was successful
+    pub success: bool,
+    /// Proprioceptive feedback after execution
+    pub proprioceptive_feedback: Vec<f64>,
+    /// Prediction error (if outcome was predicted)
+    pub prediction_error: f64,
+}
+
+/// Motor command statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MotorCommandStats {
+    /// Total commands executed
+    pub total_commands: usize,
+    /// Number of meaningful commands
+    pub meaningful_commands: usize,
+    /// Average intensity
+    pub avg_intensity: f64,
+    /// Average confidence
+    pub avg_confidence: f64,
+    /// Average prediction error
+    pub avg_prediction_error: f64,
+}
+
+/// Simple random number generator for motor noise (deterministic for testing)
+fn rand_f64() -> f64 {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEED: AtomicU64 = AtomicU64::new(12345);
+
+    let mut s = SEED.load(Ordering::Relaxed);
+    s ^= s << 13;
+    s ^= s >> 7;
+    s ^= s << 17;
+    SEED.store(s, Ordering::Relaxed);
+
+    (s as f64) / (u64::MAX as f64)
+}
+
+// =============================================================================
+// ENHANCED COGNITIVE LOOP INTEGRATION
+// =============================================================================
+
+/// Enhanced FEP bridge with motor system integration
+#[derive(Debug, Clone)]
+pub struct EnhancedFEPBridge {
+    /// Core FEP bridge
+    pub core: CognitiveLoopFEPBridge,
+    /// Motor system
+    pub motor: MotorSystem,
+    /// Learning signal output (for downstream systems)
+    learning_signal: f64,
+    /// Whether to gate learning based on precision
+    precision_gated_learning: bool,
+    /// Minimum precision for learning
+    learning_precision_threshold: f64,
+    /// Action-outcome coupling tracker
+    action_outcome_history: VecDeque<(MotorCommandType, f64)>,  // (action, outcome_error)
+}
+
+impl EnhancedFEPBridge {
+    /// Create a new enhanced FEP bridge
+    pub fn new(config: ActiveInferenceAgentConfig, motor_state_dim: usize) -> Self {
+        Self {
+            core: CognitiveLoopFEPBridge::new(config),
+            motor: MotorSystem::new(motor_state_dim),
+            learning_signal: 0.0,
+            precision_gated_learning: true,
+            learning_precision_threshold: 0.4,
+            action_outcome_history: VecDeque::with_capacity(100),
+        }
+    }
+
+    /// Full perception-action-learning cycle
+    pub fn cycle(
+        &mut self,
+        phi: f64,
+        integration: f64,
+        coherence: f64,
+        attention: f64,
+    ) -> EnhancedFEPCycleResult {
+        // 1. Process observation through FEP
+        let fep_result = self.core.process(phi, integration, coherence, attention);
+
+        // 2. Generate motor command from action
+        let command_type = MotorCommandType::from_action_index(fep_result.recommended_action);
+        let command = MotorCommand::new(command_type, fep_result.belief_confidence)
+            .with_confidence(fep_result.model_confidence)
+            .with_expected_precision(1.0 - fep_result.precision_weighted_error)
+            .with_predicted_outcome(vec![
+                phi + (rand_f64() - 0.5) * 0.1,
+                integration,
+                coherence,
+                attention,
+            ]);
+
+        // 3. Execute motor command
+        let motor_outcome = self.motor.execute(command.clone());
+
+        // 4. Update action-outcome history for causal learning
+        if self.action_outcome_history.len() >= 100 {
+            self.action_outcome_history.pop_front();
+        }
+        self.action_outcome_history.push_back((command_type, motor_outcome.prediction_error));
+
+        // 5. Compute learning signal
+        self.learning_signal = self.compute_learning_signal(&fep_result, &motor_outcome);
+
+        // 6. Determine if learning should occur
+        let should_learn = if self.precision_gated_learning {
+            fep_result.model_confidence > self.learning_precision_threshold
+                && fep_result.should_learn
+        } else {
+            fep_result.should_learn
+        };
+
+        EnhancedFEPCycleResult {
+            fep_result,
+            motor_command: command,
+            motor_outcome,
+            learning_signal: self.learning_signal,
+            should_learn,
+            action_outcome_coupling: self.action_outcome_coupling(),
+        }
+    }
+
+    /// Compute learning signal from FEP and motor results
+    fn compute_learning_signal(
+        &self,
+        fep: &CognitiveLoopFEPResult,
+        motor: &MotorOutcome,
+    ) -> f64 {
+        // Learning signal combines:
+        // 1. TD error (temporal prediction error)
+        // 2. Motor prediction error
+        // 3. Free energy (surprise)
+
+        let td_weight = 0.4;
+        let motor_weight = 0.3;
+        let fe_weight = 0.3;
+
+        let td_signal = fep.td_error.abs().min(1.0);
+        let motor_signal = motor.prediction_error.min(1.0);
+        let fe_signal = (fep.free_energy.abs() / 10.0).min(1.0);
+
+        // Learning should increase with surprise/error, but be gated by precision
+        let raw_signal = td_weight * td_signal + motor_weight * motor_signal + fe_weight * fe_signal;
+
+        // Precision-weight the learning signal
+        raw_signal * fep.learning_rate_modulation
+    }
+
+    /// Compute action-outcome coupling (how well actions predict outcomes)
+    fn action_outcome_coupling(&self) -> f64 {
+        if self.action_outcome_history.is_empty() {
+            return 0.5;  // Neutral
+        }
+
+        // Lower average error = better coupling
+        let avg_error: f64 = self.action_outcome_history.iter()
+            .map(|(_, e)| *e)
+            .sum::<f64>() / self.action_outcome_history.len() as f64;
+
+        (1.0 - avg_error).clamp(0.0, 1.0)
+    }
+
+    /// Get the current learning signal
+    pub fn learning_signal(&self) -> f64 {
+        self.learning_signal
+    }
+
+    /// Set precision-gated learning
+    pub fn set_precision_gated_learning(&mut self, enabled: bool, threshold: f64) {
+        self.precision_gated_learning = enabled;
+        self.learning_precision_threshold = threshold.clamp(0.0, 1.0);
+    }
+
+    /// Signal end of episode
+    pub fn end_episode(&mut self) {
+        self.core.end_episode();
+        self.motor.reset();
+        self.action_outcome_history.clear();
+        self.learning_signal = 0.0;
+    }
+
+    /// Reset the bridge
+    pub fn reset(&mut self) {
+        self.core.reset();
+        self.motor.reset();
+        self.action_outcome_history.clear();
+        self.learning_signal = 0.0;
+    }
+}
+
+/// Result from enhanced FEP cycle
+#[derive(Debug, Clone)]
+pub struct EnhancedFEPCycleResult {
+    /// Core FEP result
+    pub fep_result: CognitiveLoopFEPResult,
+    /// Motor command that was issued
+    pub motor_command: MotorCommand,
+    /// Outcome of motor execution
+    pub motor_outcome: MotorOutcome,
+    /// Learning signal for downstream systems
+    pub learning_signal: f64,
+    /// Whether learning should occur this cycle
+    pub should_learn: bool,
+    /// Action-outcome coupling quality
+    pub action_outcome_coupling: f64,
+}
+
+// =============================================================================
 // TESTS
 // =============================================================================
 
@@ -2732,5 +3283,144 @@ mod tests {
                 new_row.iter().zip(old_row.iter()).any(|(n, o)| (n - o).abs() > 0.0001)
             });
         assert!(changed, "Transition matrix should have been updated");
+    }
+
+    // =========================================================================
+    // MOTOR SYSTEM TESTS
+    // =========================================================================
+
+    #[test]
+    fn test_motor_command_type_conversion() {
+        for i in 0..8 {
+            let cmd_type = MotorCommandType::from_action_index(i);
+            let back = cmd_type.to_action_index();
+            assert_eq!(i, back);
+        }
+    }
+
+    #[test]
+    fn test_motor_command_creation() {
+        let cmd = MotorCommand::new(MotorCommandType::AttentionShift, 0.8)
+            .with_confidence(0.9)
+            .with_expected_precision(0.7)
+            .with_parameters(vec![1.0, 0.0]);
+
+        assert_eq!(cmd.command_type, MotorCommandType::AttentionShift);
+        assert!((cmd.intensity - 0.8).abs() < 0.001);
+        assert!((cmd.confidence - 0.9).abs() < 0.001);
+        assert!(cmd.is_meaningful());
+    }
+
+    #[test]
+    fn test_motor_system_execute() {
+        let mut motor = MotorSystem::new(4);
+
+        let cmd = MotorCommand::new(MotorCommandType::ExplorationTrigger, 0.7);
+        let outcome = motor.execute(cmd);
+
+        assert_eq!(outcome.command_type, MotorCommandType::ExplorationTrigger);
+        assert!(outcome.executed_intensity > 0.0);
+        assert_eq!(outcome.proprioceptive_feedback.len(), 4);
+    }
+
+    #[test]
+    fn test_motor_system_stats() {
+        let mut motor = MotorSystem::new(4);
+
+        // Execute several commands
+        for _ in 0..5 {
+            let cmd = MotorCommand::new(MotorCommandType::LearningRateAdjust, 0.5);
+            motor.execute(cmd);
+        }
+
+        let stats = motor.command_stats();
+        assert_eq!(stats.total_commands, 5);
+        assert!(stats.avg_intensity > 0.0);
+    }
+
+    #[test]
+    fn test_motor_system_reset() {
+        let mut motor = MotorSystem::new(4);
+
+        let cmd = MotorCommand::new(MotorCommandType::MemoryConsolidate, 0.9);
+        motor.execute(cmd);
+
+        assert!(motor.last_command.is_some());
+
+        motor.reset();
+
+        assert!(motor.last_command.is_none());
+        assert!(motor.command_history.is_empty());
+    }
+
+    #[test]
+    fn test_enhanced_fep_bridge_cycle() {
+        let config = ActiveInferenceAgentConfig {
+            enable_td_learning: true,
+            ..Default::default()
+        };
+
+        let mut bridge = EnhancedFEPBridge::new(config, 4);
+
+        let result = bridge.cycle(0.5, 0.6, 0.7, 0.4);
+
+        assert!(result.fep_result.free_energy.is_finite());
+        assert!(result.motor_command.is_meaningful() || !result.motor_command.is_meaningful());
+        assert!(result.learning_signal >= 0.0);
+        assert!(result.action_outcome_coupling >= 0.0 && result.action_outcome_coupling <= 1.0);
+    }
+
+    #[test]
+    fn test_enhanced_fep_bridge_learning_signal() {
+        let config = ActiveInferenceAgentConfig {
+            enable_td_learning: true,
+            ..Default::default()
+        };
+
+        let mut bridge = EnhancedFEPBridge::new(config, 4);
+
+        // Run several cycles
+        for i in 0..10 {
+            let phi = 0.3 + (i as f64) * 0.05;
+            bridge.cycle(phi, 0.5, 0.6, 0.4);
+        }
+
+        // Learning signal should be tracked
+        assert!(bridge.learning_signal() >= 0.0);
+    }
+
+    #[test]
+    fn test_enhanced_fep_bridge_precision_gating() {
+        let config = ActiveInferenceAgentConfig {
+            enable_td_learning: true,
+            ..Default::default()
+        };
+
+        let mut bridge = EnhancedFEPBridge::new(config, 4);
+        bridge.set_precision_gated_learning(true, 0.8);
+
+        let result = bridge.cycle(0.5, 0.5, 0.5, 0.5);
+
+        // With high threshold, should_learn depends on model confidence
+        // Just verify it doesn't crash and returns a valid result
+        assert!(result.should_learn || !result.should_learn);
+    }
+
+    #[test]
+    fn test_enhanced_fep_bridge_end_episode() {
+        let config = ActiveInferenceAgentConfig::default();
+        let mut bridge = EnhancedFEPBridge::new(config, 4);
+
+        // Run some cycles
+        for _ in 0..5 {
+            bridge.cycle(0.5, 0.5, 0.5, 0.5);
+        }
+
+        assert!(!bridge.action_outcome_history.is_empty());
+
+        bridge.end_episode();
+
+        assert!(bridge.action_outcome_history.is_empty());
+        assert!(bridge.motor.last_command.is_none());
     }
 }

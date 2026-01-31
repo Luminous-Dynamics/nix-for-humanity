@@ -126,6 +126,7 @@ pub struct HDLTCCodec {
 
     /// Momentum buffer for ltc_to_hv
     #[serde(skip)]
+    #[allow(dead_code)]
     ltc_to_hv_momentum: Vec<f32>,
 
     /// Statistics

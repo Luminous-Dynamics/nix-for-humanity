@@ -59,6 +59,7 @@ pub struct HdcLtcNeuron {
     /// Current state
     state: HdcLtcNeuronState,
     /// Seed counter for deterministic random init
+    #[allow(dead_code)]
     seed: u64,
 }
 

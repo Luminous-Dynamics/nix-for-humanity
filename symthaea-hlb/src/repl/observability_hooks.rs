@@ -418,6 +418,7 @@ impl ObservabilityHook for LoggingHook {
 /// Aggregates metrics over time for dashboard display
 pub struct MetricsAggregator {
     /// Session ID
+    #[allow(dead_code)]
     session_id: String,
     /// Statistics
     stats: ObservabilityStats,

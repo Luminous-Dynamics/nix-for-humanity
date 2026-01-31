@@ -212,7 +212,7 @@ impl LTCGenerativeCore {
         self.recurrent_state = self.codec.encode_to_ltc(seed);
 
         // Generate sequence
-        for step_idx in 0..self.config.max_length {
+        for _step_idx in 0..self.config.max_length {
             // Predict next primitive distribution
             let (next_primitive, probability, phi_estimate) = self.predict_next(current_phi);
 
@@ -308,7 +308,7 @@ impl LTCGenerativeCore {
         };
 
         // Estimate Φ for this step (simplified)
-        let phi_estimate = decoded.confidence * 0.5 + current_phi * 0.5;
+        let _phi_estimate = decoded.confidence * 0.5 + current_phi * 0.5;
 
         selected
     }
@@ -320,7 +320,7 @@ impl LTCGenerativeCore {
         }
 
         // Recent items get higher weight
-        let weights: Vec<f32> = (0..self.context.len())
+        let _weights: Vec<f32> = (0..self.context.len())
             .map(|i| 0.5f32.powf((self.context.len() - i - 1) as f32))
             .collect();
 
@@ -581,7 +581,7 @@ impl LTCGenerativeCore {
         let seed_primitive = seed_decoded.primitives.first().map(|p| p.name.clone());
 
         // Generate sequence
-        for step_idx in 0..self.config.max_length {
+        for _step_idx in 0..self.config.max_length {
             let (primitive, prob, phi) = self.predict_next_with_harmonics(current_phi, &harmonic_weight);
 
             primitives.push(primitive.clone());
@@ -674,7 +674,7 @@ impl LTCGenerativeCore {
         };
 
         // Estimate Φ for this step
-        let phi_estimate = decoded.confidence * 0.5 + current_phi * 0.5;
+        let _phi_estimate = decoded.confidence * 0.5 + current_phi * 0.5;
 
         selected
     }

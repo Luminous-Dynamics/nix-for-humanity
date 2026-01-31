@@ -97,6 +97,7 @@ pub struct ReplOrchestrator {
     session: Option<ReplSession>,
 
     /// IPC client (for client mode)
+    #[allow(dead_code)]
     ipc_client: Option<ShellIpcClient>,
 
     /// IPC connection state

@@ -300,8 +300,11 @@ impl BeatSync {
 
         let pos = BeatPosition::from_time(time, self.bpm, self.beats_per_bar);
 
-        // Only swing odd subdivisions (off-beats)
-        if self.swing.swing_odd && pos.subdivision % 2 == 1 {
+        // Swing applies to off-beat positions:
+        // - For 8th note patterns: subdivision 2 (the "and" of each beat)
+        // - For 16th note patterns: odd subdivisions (1, 3)
+        // We check both subdivision 2 (8th note backbeat) and odd subdivisions (16th note backbeats)
+        if self.swing.swing_odd && (pos.subdivision == 2 || pos.subdivision % 2 == 1) {
             let swing_delay = self.sixteenth_duration() * self.swing.amount;
             time + swing_delay
         } else {
@@ -998,12 +1001,13 @@ mod tests {
     fn test_beat_sync_quantize_8th_notes() {
         let sync = BeatSync::new(120.0);
 
-        // 8th note at 120 BPM = 0.25s
-        let quantized = sync.quantize_8th(0.13);
-        assert!((quantized - 0.0).abs() < 0.001); // Rounds down to 0
+        // 8th note at 120 BPM = 0.25s, midpoint is 0.125s
+        // Values below midpoint round down, values above round up
+        let quantized = sync.quantize_8th(0.1);
+        assert!((quantized - 0.0).abs() < 0.001); // 0.1 < 0.125, rounds down to 0
 
         let quantized = sync.quantize_8th(0.2);
-        assert!((quantized - 0.25).abs() < 0.001); // Rounds up to 0.25
+        assert!((quantized - 0.25).abs() < 0.001); // 0.2 > 0.125, rounds up to 0.25
     }
 
     #[test]

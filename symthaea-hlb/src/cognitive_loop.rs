@@ -68,6 +68,12 @@ use crate::consciousness::consciousness_unification::{
     EmotionalPattern,
 };
 
+use crate::consciousness::fep_active_inference::{
+    ActiveInferenceAgent, ActiveInferenceAgentConfig, Observation,
+    EnhancedFEPBridge, MotorCommandType,
+};
+use crate::memory::coherence_tracker::ConversationCoherenceTracker;
+
 use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1063,6 +1069,44 @@ impl EpisodicMemoryBridge {
         self.next_id = 0;
         self.stats = MemoryBridgeStats::default();
     }
+
+    /// Consolidate recent memories to long-term storage
+    ///
+    /// Triggered by motor commands to strengthen recent experiences.
+    /// This forces consolidation of high-strength short-term memories.
+    pub fn consolidate_recent(&mut self) {
+        // Find strong short-term memories and move to long-term
+        let strong_memories: Vec<EpisodicMemory> = self.short_term.iter()
+            .filter(|m| m.strength >= self.consolidation_threshold * 0.8)  // Slightly lower threshold
+            .cloned()
+            .collect();
+
+        for memory in strong_memories {
+            // Check if not already in long-term
+            if !self.long_term.iter().any(|m| m.id == memory.id) {
+                self.long_term.push(memory);
+                self.stats.consolidations += 1;
+            }
+        }
+
+        // Boost strength of recently consolidated memories
+        for mem in self.long_term.iter_mut().rev().take(5) {
+            mem.strength = (mem.strength + 0.1).min(1.0);
+        }
+
+        // Trim long-term if needed
+        while self.long_term.len() > self.max_long_term {
+            if let Some(min_idx) = self.long_term.iter()
+                .enumerate()
+                .min_by(|a, b| a.1.strength.partial_cmp(&b.1.strength).unwrap_or(std::cmp::Ordering::Equal))
+                .map(|(i, _)| i)
+            {
+                self.long_term.remove(min_idx);
+            } else {
+                break;
+            }
+        }
+    }
 }
 
 /// Goal representation for the cognitive loop
@@ -1271,6 +1315,20 @@ impl WorldModelBridge {
         self.level_errors.fill(0.0);
         self.total_predictions = 0;
         self.avg_error = 0.0;
+    }
+
+    /// Increase plasticity in the world model (triggered by high learning signals)
+    ///
+    /// Higher plasticity means faster state updates and more sensitivity to prediction errors.
+    /// This is implemented by scaling the level states to be more receptive to new input.
+    pub fn increase_plasticity(&mut self, plasticity_signal: f32) {
+        // Reduce state magnitudes slightly to make room for new learning
+        let decay = 1.0 - (plasticity_signal * 0.1).clamp(0.0, 0.3);
+        for level_state in &mut self.level_states {
+            for val in level_state.iter_mut() {
+                *val *= decay;
+            }
+        }
     }
 }
 
@@ -2023,6 +2081,14 @@ impl SelfReflection {
     pub fn full_reset(&mut self) {
         *self = Self::default();
     }
+
+    /// Force an immediate reflection (triggered by motor commands)
+    ///
+    /// This bypasses the normal interval and triggers reflection now.
+    pub fn force_reflection(&mut self) {
+        // Set cycles to trigger immediate reflection
+        self.cycles_since_reflection = self.reflection_interval;
+    }
 }
 
 /// Thresholds from self-reflection for use by other components
@@ -2579,6 +2645,14 @@ pub struct ConsciousnessSnapshot {
 
     /// Average flow period duration (seconds)
     pub avg_flow_duration_secs: f32,
+
+    // ===== FEP Active Inference =====
+
+    /// FEP variational free energy
+    pub fep_free_energy: f64,
+
+    /// FEP precision estimate
+    pub fep_precision: f64,
 }
 
 impl ConsciousnessSnapshot {
@@ -3009,6 +3083,15 @@ pub struct LoopStats {
     /// Active Inference: Average prediction error (from PAC)
     pub active_inference_avg_error: f32,
 
+    /// Enhanced FEP: Learning signal (for downstream systems)
+    pub fep_learning_signal: f32,
+
+    /// Enhanced FEP: Attention shift amount
+    pub attention_shift: f32,
+
+    /// Enhanced FEP: Action-outcome coupling quality
+    pub fep_action_outcome_coupling: f32,
+
     /// Closed Learning Loop: Current strategy
     pub current_strategy: String,
 
@@ -3266,6 +3349,19 @@ pub struct CognitiveLoopService {
 
     /// World Model Bridge for hierarchical grounded prediction
     world_model: WorldModelBridge,
+
+    /// FEP Active Inference Agent for full perception-action loop
+    fep_agent: ActiveInferenceAgent,
+
+    /// Enhanced FEP Bridge with motor system integration
+    /// Provides learning signals and motor command outputs
+    enhanced_fep_bridge: EnhancedFEPBridge,
+
+    /// Current learning signal from FEP (for downstream systems)
+    fep_learning_signal: f32,
+
+    /// Conversation coherence tracker for degradation detection
+    coherence_tracker: ConversationCoherenceTracker,
 }
 
 impl CognitiveLoopService {
@@ -3340,6 +3436,27 @@ impl CognitiveLoopService {
             episodic_memory: EpisodicMemoryBridge::default(),
             goal_system: GoalSystemBridge::new(),
             world_model: WorldModelBridge::default(),
+            // FEP Active Inference Agent
+            fep_agent: ActiveInferenceAgent::new(ActiveInferenceAgentConfig {
+                state_dim: 8,
+                obs_dim: 4,
+                num_actions: 4,
+                enable_td_learning: true,
+                ..Default::default()
+            }),
+            // Enhanced FEP Bridge with motor system (8 motor command types, 4D proprioceptive state)
+            enhanced_fep_bridge: EnhancedFEPBridge::new(
+                ActiveInferenceAgentConfig {
+                    state_dim: 8,
+                    obs_dim: 4,
+                    num_actions: 8,  // Matches MotorCommandType variants
+                    enable_td_learning: true,
+                    ..Default::default()
+                },
+                4,  // Motor state dimension
+            ),
+            fep_learning_signal: 0.0,
+            coherence_tracker: ConversationCoherenceTracker::new(0.3),
         })
     }
 
@@ -3534,6 +3651,135 @@ impl CognitiveLoopService {
             self.prediction_confidence as f64,
             prediction_success,
         );
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10d.6 FEP Active Inference: Full perception-action loop
+        // ═══════════════════════════════════════════════════════════════════════
+        let effective_lr = self.stats.adaptive_learning_rate;
+        let fep_obs = Observation::from_consciousness_state(
+            prediction_error as f64,
+            coherence as f64,
+            self.prediction_confidence as f64,
+            effective_lr as f64,
+        );
+        let _perception = self.fep_agent.perceive(&fep_obs);
+        let action_result = self.fep_agent.select_action();
+        let _outcome = self.fep_agent.act(action_result.action);
+
+        // Apply FEP-selected action to modulate cognitive parameters
+        match action_result.action {
+            0 => {
+                // Modulate trust via precision: higher precision → tighter trust
+                if let Some(ref fe) = self.fep_agent.last_fe_components {
+                    let precision_mod = (1.0 - fe.prediction_error).clamp(0.0, 1.0) as f32;
+                    self.self_reflection.trust_threshold =
+                        (self.self_reflection.trust_threshold * 0.9 + precision_mod * 0.1).clamp(0.1, 0.9);
+                }
+            }
+            1 => {
+                // Adjust flow error threshold via free energy
+                if let Some(ref fe) = self.fep_agent.last_fe_components {
+                    let fe_signal = (fe.total.abs() as f32).clamp(0.0, 2.0) / 2.0;
+                    self.self_reflection.flow_error_threshold =
+                        (self.self_reflection.flow_error_threshold * 0.95 + fe_signal * 0.05).clamp(0.05, 0.5);
+                }
+            }
+            2 => {
+                // Boost exploration
+                self.curiosity_drive.exploration_urge =
+                    (self.curiosity_drive.exploration_urge + 0.05).clamp(0.0, 1.0);
+            }
+            3 => {
+                // Nudge reflection by recording extra cycle data to trigger sooner
+                self.self_reflection.record_cycle(
+                    prediction_error, self.flow_state.in_flow,
+                    true, self.prediction_confidence,
+                );
+            }
+            _ => {}
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10d.6b Enhanced FEP Bridge: Motor commands and learning signals
+        // ═══════════════════════════════════════════════════════════════════════
+        // Run enhanced FEP cycle for motor system integration and learning signals
+        let enhanced_result = self.enhanced_fep_bridge.cycle(
+            prediction_error as f64,
+            coherence as f64,
+            self.prediction_confidence as f64,
+            effective_lr as f64,
+        );
+
+        // Update learning signal for downstream systems
+        self.fep_learning_signal = enhanced_result.learning_signal as f32;
+
+        // Apply motor command-based modulations
+        match enhanced_result.motor_command.command_type {
+            MotorCommandType::AttentionShift => {
+                // Shift attention based on motor command intensity
+                let shift_amount = enhanced_result.motor_command.intensity as f32 * 0.1;
+                // Could modulate HDC attention weights here
+                self.stats.attention_shift = shift_amount;
+            }
+            MotorCommandType::LearningRateAdjust => {
+                // Precision-weighted learning rate adjustment
+                if enhanced_result.should_learn {
+                    let lr_mod = enhanced_result.fep_result.learning_rate_modulation as f32;
+                    self.stats.adaptive_learning_rate =
+                        (self.stats.adaptive_learning_rate * 0.9 + lr_mod * 0.1).clamp(0.01, 1.0);
+                }
+            }
+            MotorCommandType::ExplorationTrigger => {
+                // Boost exploration based on epistemic value
+                if enhanced_result.fep_result.epistemic_value > 0.5 {
+                    self.curiosity_drive.exploration_urge =
+                        (self.curiosity_drive.exploration_urge + 0.1).clamp(0.0, 1.0);
+                }
+            }
+            MotorCommandType::ReflectionInitiate => {
+                // Force reflection if motor command intensity is high
+                if enhanced_result.motor_command.intensity > 0.7 {
+                    self.self_reflection.force_reflection();
+                }
+            }
+            MotorCommandType::MemoryConsolidate => {
+                // Signal episodic memory for consolidation
+                if enhanced_result.motor_command.intensity > 0.5 {
+                    self.episodic_memory.consolidate_recent();
+                }
+            }
+            MotorCommandType::ExpectationReset => {
+                // Clear prediction cache if action-outcome coupling is poor
+                if enhanced_result.action_outcome_coupling < 0.3 {
+                    self.last_prediction = None;
+                    self.prediction_confidence = 0.5;
+                }
+            }
+            MotorCommandType::MotorOutput | MotorCommandType::NoOp => {
+                // No cognitive modulation
+            }
+        }
+
+        // Use learning signal to modulate other systems
+        if self.fep_learning_signal > 0.5 && enhanced_result.should_learn {
+            // High learning signal: increase plasticity in world model
+            self.world_model.increase_plasticity(self.fep_learning_signal);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10d.7 Coherence tracking with degradation detection
+        // ═══════════════════════════════════════════════════════════════════════
+        let degraded = self.coherence_tracker.record_turn(coherence);
+        if degraded {
+            let urgency = self.coherence_tracker.correction_urgency();
+            // Feed urgency as a high-error observation to drive FEP learning
+            let urgent_obs = Observation::from_consciousness_state(
+                urgency as f64, 0.1, 0.1, effective_lr as f64,
+            );
+            self.fep_agent.perceive(&urgent_obs);
+            // Also signal enhanced bridge about degradation
+            self.enhanced_fep_bridge.cycle(urgency as f64, 0.1, 0.1, effective_lr as f64);
+        }
 
         // 10e. Update flow state with adaptive thresholds from self-reflection
         let adapted_thresholds = self.self_reflection.get_thresholds();
@@ -4144,6 +4390,10 @@ impl CognitiveLoopService {
             total_flow_time_secs: self.flow_state.total_flow_time_with_current(),
             flow_periods: self.flow_state.flow_periods,
             avg_flow_duration_secs: self.flow_state.avg_flow_duration_secs,
+
+            // FEP Active Inference metrics
+            fep_free_energy: self.fep_agent.last_fe_components.as_ref().map(|fe| fe.total).unwrap_or(0.0),
+            fep_precision: self.fep_agent.precision.perceptual_precision(),
         }
     }
 
@@ -4285,6 +4535,21 @@ impl CognitiveLoopService {
     /// Get the Active Inference Bridge reference
     pub fn active_inference_bridge(&self) -> &ActiveInferenceBridge {
         &self.active_inference_bridge
+    }
+
+    /// Get the FEP Active Inference Agent reference
+    pub fn fep_agent(&self) -> &ActiveInferenceAgent {
+        &self.fep_agent
+    }
+
+    /// Get the current FEP free energy (if available)
+    pub fn fep_free_energy(&self) -> Option<f64> {
+        self.fep_agent.last_fe_components.as_ref().map(|fe| fe.total)
+    }
+
+    /// Get the conversation coherence tracker reference
+    pub fn coherence_tracker(&self) -> &ConversationCoherenceTracker {
+        &self.coherence_tracker
     }
 
     /// Get the prediction-outcome coupling Modulation Index
@@ -4511,6 +4776,8 @@ impl CognitiveLoopService {
         self.emotion_contagion.reset();
         self.curiosity_drive.reset();
         self.self_reflection.reset(); // Preserves learned thresholds
+        self.fep_agent = ActiveInferenceAgent::new(self.fep_agent.config.clone());
+        self.coherence_tracker.reset();
     }
 
     /// Get the compressed state dimension (input to CfC)
@@ -4692,6 +4959,11 @@ impl CognitiveLoopService {
         self.stats.active_inference_avg_error = ai_stats.average_prediction_error
             .map(|e| e as f32)
             .unwrap_or(0.5);
+
+        // Enhanced FEP Bridge statistics
+        self.stats.fep_learning_signal = self.fep_learning_signal;
+        // attention_shift is updated during cycle processing
+        self.stats.fep_action_outcome_coupling = 0.5;  // Will be updated during cycle
 
         // Closed Learning Loop statistics
         self.stats.current_strategy = format!("{:?}", self.closed_learning_loop.current_strategy);

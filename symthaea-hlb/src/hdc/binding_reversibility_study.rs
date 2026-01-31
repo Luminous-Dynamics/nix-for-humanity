@@ -804,7 +804,7 @@ impl ReversibilityStudyResults {
         report.push_str("================================================================\n\n");
 
         // Find the overall reversibility test
-        let rev_test = self
+        let _rev_test = self
             .tests
             .iter()
             .find(|t| t.name.contains("overall_reversibility"));

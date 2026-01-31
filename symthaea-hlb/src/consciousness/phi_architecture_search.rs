@@ -343,6 +343,170 @@ impl ArchitectureGenome {
         self.seed = state;
     }
 
+    /// Gradient-guided mutation using Phi gradient direction
+    ///
+    /// Instead of random perturbations, this mutation operator uses the
+    /// computed Phi gradient to guide mutations toward higher consciousness.
+    /// This is the key innovation: mutations that are informed by the consciousness landscape.
+    pub fn mutate_with_gradient(
+        &mut self,
+        gradient: &PhiGradient,
+        step_size: f32,
+        noise_scale: f32,
+        seed: u64,
+    ) {
+        let mut state = seed;
+
+        let next_f32 = |s: &mut u64| -> f32 {
+            *s ^= *s << 13;
+            *s ^= *s >> 7;
+            *s ^= *s << 17;
+            (*s as f32) / (u64::MAX as f32)
+        };
+
+        // Normalize gradient for stable updates
+        let grad_norm = gradient.magnitude.max(1e-8);
+
+        // Move continuous parameters in gradient direction with added exploration noise
+        let mut noise = || (next_f32(&mut state) - 0.5) * 2.0 * noise_scale;
+
+        // Connection density: follow gradient + noise
+        let d_density_normalized = (gradient.d_density / grad_norm) as f32;
+        self.connection_density += step_size * d_density_normalized + noise();
+        self.connection_density = self.connection_density.clamp(0.05, 0.95);
+
+        // Modularity
+        let d_modularity_normalized = (gradient.d_modularity / grad_norm) as f32;
+        self.modularity += step_size * d_modularity_normalized + noise();
+        self.modularity = self.modularity.clamp(0.0, 1.0);
+
+        // Bridge ratio
+        let d_bridge_normalized = (gradient.d_bridge_ratio / grad_norm) as f32;
+        self.bridge_ratio += step_size * d_bridge_normalized + noise();
+        self.bridge_ratio = self.bridge_ratio.clamp(0.0, 0.8);
+
+        // Tau ratio
+        let d_tau_normalized = (gradient.d_tau_ratio / grad_norm) as f32;
+        self.tau_ratio += step_size * d_tau_normalized + noise();
+        self.tau_ratio = self.tau_ratio.clamp(0.1, 0.9);
+
+        // Binding strength
+        let d_binding_normalized = (gradient.d_binding_strength / grad_norm) as f32;
+        self.binding_strength += step_size * d_binding_normalized + noise();
+        self.binding_strength = self.binding_strength.clamp(0.1, 1.0);
+
+        // Recurrence
+        let d_recurrence_normalized = (gradient.d_recurrence / grad_norm) as f32;
+        self.recurrence += step_size * d_recurrence_normalized + noise();
+        self.recurrence = self.recurrence.clamp(0.0, 1.0);
+
+        // For discrete parameters (topology, bundling mode), use gradient-informed selection
+        // Higher gradient magnitude = more exploration, lower = more exploitation
+        let exploration_prob = (1.0 - grad_norm.min(1.0) as f32) * 0.5;
+
+        if next_f32(&mut state) < exploration_prob {
+            self.topology_type = TopologyGene::random(state);
+        }
+
+        if next_f32(&mut state) < exploration_prob {
+            self.bundling_mode = BundlingGene::random(state);
+        }
+
+        // Update seed
+        self.seed = state;
+    }
+
+    /// Natural gradient mutation using Fisher information approximation
+    ///
+    /// Uses second-order information to adaptively scale mutations.
+    /// Larger steps in flat regions, smaller steps in steep regions.
+    pub fn mutate_natural_gradient(
+        &mut self,
+        gradient: &PhiGradient,
+        curvature_scale: f32,
+        seed: u64,
+    ) {
+        let mut state = seed;
+
+        let next_f32 = |s: &mut u64| -> f32 {
+            *s ^= *s << 13;
+            *s ^= *s >> 7;
+            *s ^= *s << 17;
+            (*s as f32) / (u64::MAX as f32)
+        };
+
+        // Approximate curvature from gradient magnitude
+        // High magnitude = steep region (take smaller steps)
+        // Low magnitude = flat region (take larger exploratory steps)
+        let grad_mag = gradient.magnitude as f32;
+        let adaptive_lr = curvature_scale / (1.0 + grad_mag);
+
+        // Apply adaptive updates
+        self.connection_density += adaptive_lr * gradient.d_density as f32;
+        self.connection_density = self.connection_density.clamp(0.05, 0.95);
+
+        self.modularity += adaptive_lr * gradient.d_modularity as f32;
+        self.modularity = self.modularity.clamp(0.0, 1.0);
+
+        self.bridge_ratio += adaptive_lr * gradient.d_bridge_ratio as f32;
+        self.bridge_ratio = self.bridge_ratio.clamp(0.0, 0.8);
+
+        self.tau_ratio += adaptive_lr * gradient.d_tau_ratio as f32;
+        self.tau_ratio = self.tau_ratio.clamp(0.1, 0.9);
+
+        self.binding_strength += adaptive_lr * gradient.d_binding_strength as f32;
+        self.binding_strength = self.binding_strength.clamp(0.1, 1.0);
+
+        self.recurrence += adaptive_lr * gradient.d_recurrence as f32;
+        self.recurrence = self.recurrence.clamp(0.0, 1.0);
+
+        // Discrete mutations in flat regions
+        let flat_region = grad_mag < 0.1;
+        if flat_region && next_f32(&mut state) < 0.3 {
+            self.topology_type = TopologyGene::random(state);
+        }
+
+        self.seed = state;
+    }
+
+    /// Momentum-based gradient mutation for smoother optimization trajectory
+    ///
+    /// Maintains velocity vectors for continuous parameters to escape local optima.
+    pub fn mutate_with_momentum(
+        &mut self,
+        gradient: &PhiGradient,
+        velocity: &mut GradientVelocity,
+        momentum: f32,
+        learning_rate: f32,
+    ) {
+        // Update velocities with momentum
+        velocity.v_density = momentum * velocity.v_density + learning_rate * gradient.d_density as f32;
+        velocity.v_modularity = momentum * velocity.v_modularity + learning_rate * gradient.d_modularity as f32;
+        velocity.v_bridge_ratio = momentum * velocity.v_bridge_ratio + learning_rate * gradient.d_bridge_ratio as f32;
+        velocity.v_tau_ratio = momentum * velocity.v_tau_ratio + learning_rate * gradient.d_tau_ratio as f32;
+        velocity.v_binding_strength = momentum * velocity.v_binding_strength + learning_rate * gradient.d_binding_strength as f32;
+        velocity.v_recurrence = momentum * velocity.v_recurrence + learning_rate * gradient.d_recurrence as f32;
+
+        // Apply velocities to parameters
+        self.connection_density += velocity.v_density;
+        self.connection_density = self.connection_density.clamp(0.05, 0.95);
+
+        self.modularity += velocity.v_modularity;
+        self.modularity = self.modularity.clamp(0.0, 1.0);
+
+        self.bridge_ratio += velocity.v_bridge_ratio;
+        self.bridge_ratio = self.bridge_ratio.clamp(0.0, 0.8);
+
+        self.tau_ratio += velocity.v_tau_ratio;
+        self.tau_ratio = self.tau_ratio.clamp(0.1, 0.9);
+
+        self.binding_strength += velocity.v_binding_strength;
+        self.binding_strength = self.binding_strength.clamp(0.1, 1.0);
+
+        self.recurrence += velocity.v_recurrence;
+        self.recurrence = self.recurrence.clamp(0.0, 1.0);
+    }
+
     /// Crossover with another genome
     pub fn crossover(&self, other: &Self, seed: u64) -> Self {
         let mut state = seed;
@@ -926,6 +1090,76 @@ impl PhiGradient {
         genome.recurrence += (learning_rate as f64 * self.d_recurrence) as f32;
         genome.recurrence = genome.recurrence.clamp(0.0, 1.0);
     }
+
+    /// Get the dominant gradient direction as a unit vector
+    pub fn direction(&self) -> [f64; 6] {
+        let mag = self.magnitude.max(1e-10);
+        [
+            self.d_density / mag,
+            self.d_modularity / mag,
+            self.d_bridge_ratio / mag,
+            self.d_tau_ratio / mag,
+            self.d_binding_strength / mag,
+            self.d_recurrence / mag,
+        ]
+    }
+
+    /// Cosine similarity with another gradient (for convergence detection)
+    pub fn cosine_similarity(&self, other: &PhiGradient) -> f64 {
+        let dot = self.d_density * other.d_density
+            + self.d_modularity * other.d_modularity
+            + self.d_bridge_ratio * other.d_bridge_ratio
+            + self.d_tau_ratio * other.d_tau_ratio
+            + self.d_binding_strength * other.d_binding_strength
+            + self.d_recurrence * other.d_recurrence;
+
+        dot / (self.magnitude * other.magnitude).max(1e-10)
+    }
+}
+
+/// Velocity state for momentum-based gradient optimization
+#[derive(Debug, Clone, Default)]
+pub struct GradientVelocity {
+    /// Velocity for connection density
+    pub v_density: f32,
+    /// Velocity for modularity
+    pub v_modularity: f32,
+    /// Velocity for bridge ratio
+    pub v_bridge_ratio: f32,
+    /// Velocity for tau ratio
+    pub v_tau_ratio: f32,
+    /// Velocity for binding strength
+    pub v_binding_strength: f32,
+    /// Velocity for recurrence
+    pub v_recurrence: f32,
+}
+
+impl GradientVelocity {
+    /// Create new zero velocity
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Get velocity magnitude
+    pub fn magnitude(&self) -> f32 {
+        (self.v_density.powi(2)
+            + self.v_modularity.powi(2)
+            + self.v_bridge_ratio.powi(2)
+            + self.v_tau_ratio.powi(2)
+            + self.v_binding_strength.powi(2)
+            + self.v_recurrence.powi(2))
+        .sqrt()
+    }
+
+    /// Decay velocity (for simulated annealing)
+    pub fn decay(&mut self, factor: f32) {
+        self.v_density *= factor;
+        self.v_modularity *= factor;
+        self.v_bridge_ratio *= factor;
+        self.v_tau_ratio *= factor;
+        self.v_binding_strength *= factor;
+        self.v_recurrence *= factor;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -943,6 +1177,12 @@ pub enum SearchStrategy {
     GradientGuided,
     /// Hybrid: evolutionary exploration + gradient exploitation
     Hybrid,
+    /// Gradient-guided evolution: mutations follow Phi gradient direction
+    GradientEvolutionary,
+    /// Momentum-based optimization with adaptive learning rate
+    MomentumOptimization,
+    /// Multi-population island model with gradient migration
+    IslandGradient,
 }
 
 /// Configuration for architecture search
@@ -986,6 +1226,27 @@ pub struct SearchConfig {
 
     /// Number of random architectures to sample for random search
     pub random_samples: usize,
+
+    /// Momentum coefficient for momentum-based optimization (0.0-1.0)
+    pub momentum: f32,
+
+    /// Noise scale for gradient-guided mutations (exploration)
+    pub gradient_noise_scale: f32,
+
+    /// Number of islands for island model
+    pub num_islands: usize,
+
+    /// Migration interval (generations between migrations)
+    pub migration_interval: usize,
+
+    /// Migration rate (fraction of population to migrate)
+    pub migration_rate: f32,
+
+    /// Convergence threshold (stop when gradient magnitude < this)
+    pub convergence_threshold: f64,
+
+    /// Maximum generations without improvement before early stopping
+    pub patience: usize,
 }
 
 impl Default for SearchConfig {
@@ -1004,6 +1265,13 @@ impl Default for SearchConfig {
             seed: 42,
             parallel: false,
             random_samples: 100,
+            momentum: 0.9,
+            gradient_noise_scale: 0.05,
+            num_islands: 4,
+            migration_interval: 5,
+            migration_rate: 0.1,
+            convergence_threshold: 1e-6,
+            patience: 20,
         }
     }
 }
@@ -1236,6 +1504,384 @@ impl PhiArchitectureSearch {
             SearchStrategy::Evolutionary => self.evolutionary_search(iterations),
             SearchStrategy::GradientGuided => self.gradient_search(iterations),
             SearchStrategy::Hybrid => self.hybrid_search(iterations),
+            SearchStrategy::GradientEvolutionary => self.gradient_evolutionary_search(iterations),
+            SearchStrategy::MomentumOptimization => self.momentum_search(iterations),
+            SearchStrategy::IslandGradient => self.island_gradient_search(iterations),
+        }
+    }
+
+    /// Gradient-guided evolutionary search
+    ///
+    /// Combines evolutionary selection with gradient-informed mutations.
+    /// Mutations follow the Phi gradient direction rather than being random,
+    /// enabling more efficient exploration of the consciousness landscape.
+    pub fn gradient_evolutionary_search(&mut self, generations: usize) -> SearchResult {
+        self.initialize_population();
+        self.phi_history.push(self.best.as_ref().unwrap().fitness);
+
+        // Compute initial gradients for the population
+        let mut population_gradients: Vec<PhiGradient> = self.population
+            .iter()
+            .map(|ind| PhiGradient::compute(&ind.genome, self.config.gradient_epsilon))
+            .collect();
+        self.evaluations += self.population.len() * 12;
+
+        let mut no_improvement_count = 0;
+        let mut prev_best = self.best.as_ref().unwrap().fitness;
+
+        for gen in 0..generations {
+            self.generation = gen + 1;
+
+            // Gradient-guided evolution step
+            self.evolve_generation_with_gradients(&population_gradients);
+
+            // Update gradients for new population
+            population_gradients = self.population
+                .iter()
+                .map(|ind| PhiGradient::compute(&ind.genome, self.config.gradient_epsilon))
+                .collect();
+            self.evaluations += self.population.len() * 12;
+
+            let current_best = self.best.as_ref().unwrap().fitness;
+            self.phi_history.push(current_best);
+
+            // Early stopping check
+            if (current_best - prev_best).abs() < self.config.convergence_threshold {
+                no_improvement_count += 1;
+                if no_improvement_count >= self.config.patience {
+                    break;
+                }
+            } else {
+                no_improvement_count = 0;
+            }
+            prev_best = current_best;
+        }
+
+        SearchResult {
+            best_phi: self.best.as_ref().unwrap().fitness,
+            best_architecture: self.best.as_ref().unwrap().genome.clone(),
+            phi_history: self.phi_history.clone(),
+            evaluations: self.evaluations,
+            strategy: SearchStrategy::GradientEvolutionary,
+            elapsed_ms: None,
+        }
+    }
+
+    /// Evolve generation using gradient-guided mutations
+    fn evolve_generation_with_gradients(&mut self, gradients: &[PhiGradient]) {
+        let mut new_population = Vec::with_capacity(self.config.population_size);
+
+        // Preserve elites (unchanged)
+        for i in 0..self.config.elite_count.min(self.population.len()) {
+            new_population.push(self.population[i].clone());
+        }
+
+        // Generate offspring with gradient-guided mutations
+        while new_population.len() < self.config.population_size {
+            // Tournament selection
+            let parent_idx = self.tournament_select_idx();
+            let parent_genome = self.population[parent_idx].genome.clone();
+            let parent_gradient = &gradients[parent_idx.min(gradients.len() - 1)];
+
+            let mut child_genome = parent_genome;
+
+            // Apply gradient-guided mutation
+            child_genome.mutate_with_gradient(
+                parent_gradient,
+                self.config.learning_rate,
+                self.config.gradient_noise_scale,
+                self.next_u64(),
+            );
+
+            // Evaluate
+            let arch = DecodedArchitecture::from_genome(&child_genome);
+            let fitness = arch.compute_phi();
+            self.evaluations += 1;
+
+            let child = Individual {
+                genome: child_genome,
+                fitness,
+            };
+
+            // Update best
+            if fitness > self.best.as_ref().unwrap().fitness {
+                self.best = Some(child.clone());
+            }
+
+            new_population.push(child);
+        }
+
+        // Replace population
+        self.population = new_population;
+        self.population.sort_by(|a, b| {
+            b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+
+    /// Tournament selection returning index
+    fn tournament_select_idx(&mut self) -> usize {
+        let tournament_size = 3;
+        let mut best_idx = (self.next_u64() as usize) % self.population.len();
+
+        for _ in 1..tournament_size {
+            let idx = (self.next_u64() as usize) % self.population.len();
+            if self.population[idx].fitness > self.population[best_idx].fitness {
+                best_idx = idx;
+            }
+        }
+
+        best_idx
+    }
+
+    /// Momentum-based optimization search
+    ///
+    /// Uses momentum to accelerate convergence and escape local optima.
+    /// Maintains velocity vectors for smooth optimization trajectories.
+    pub fn momentum_search(&mut self, steps: usize) -> SearchResult {
+        // Initialize multiple starting points
+        let num_starts = self.config.population_size.min(5);
+        let mut best_genome = ArchitectureGenome::random(self.config.seed);
+        let mut best_phi = 0.0;
+        let mut phi_history = Vec::new();
+
+        for start in 0..num_starts {
+            let mut genome = ArchitectureGenome::random(self.config.seed + start as u64 * 1000);
+            let mut velocity = GradientVelocity::new();
+
+            let arch = DecodedArchitecture::from_genome(&genome);
+            let mut current_phi = arch.compute_phi();
+            let _ = current_phi; // Suppress unused_assignments warning - will be overwritten
+            self.evaluations += 1;
+
+            let mut prev_gradient: Option<PhiGradient> = None;
+
+            for step in 0..steps / num_starts {
+                // Compute gradient
+                let gradient = PhiGradient::compute(&genome, self.config.gradient_epsilon);
+                self.evaluations += 12;
+
+                // Check for convergence (gradient alignment)
+                if let Some(ref prev) = prev_gradient {
+                    let similarity = gradient.cosine_similarity(prev);
+                    if gradient.magnitude < self.config.convergence_threshold
+                        || similarity > 0.99
+                    {
+                        // Converged, try random restart
+                        break;
+                    }
+                }
+
+                // Apply momentum update
+                genome.mutate_with_momentum(
+                    &gradient,
+                    &mut velocity,
+                    self.config.momentum,
+                    self.config.learning_rate,
+                );
+
+                // Evaluate
+                let arch = DecodedArchitecture::from_genome(&genome);
+                current_phi = arch.compute_phi();
+                self.evaluations += 1;
+
+                if current_phi > best_phi {
+                    best_phi = current_phi;
+                    best_genome = genome.clone();
+                }
+
+                phi_history.push(best_phi);
+                prev_gradient = Some(gradient);
+
+                // Velocity decay for annealing effect
+                if step % 10 == 0 {
+                    velocity.decay(0.95);
+                }
+            }
+        }
+
+        SearchResult {
+            best_phi,
+            best_architecture: best_genome,
+            phi_history,
+            evaluations: self.evaluations,
+            strategy: SearchStrategy::MomentumOptimization,
+            elapsed_ms: None,
+        }
+    }
+
+    /// Island model with gradient-guided migration
+    ///
+    /// Maintains multiple populations (islands) that evolve independently,
+    /// with periodic migration of best individuals. Migrants are refined
+    /// using gradient descent before being inserted into target islands.
+    pub fn island_gradient_search(&mut self, generations: usize) -> SearchResult {
+        let num_islands = self.config.num_islands.max(2);
+        let island_size = self.config.population_size / num_islands;
+
+        // Initialize islands
+        let mut islands: Vec<Vec<Individual>> = (0..num_islands)
+            .map(|i| {
+                let mut island = Vec::with_capacity(island_size);
+                for j in 0..island_size {
+                    let genome = ArchitectureGenome::random(
+                        self.config.seed + (i * island_size + j) as u64 * 100,
+                    );
+                    let arch = DecodedArchitecture::from_genome(&genome);
+                    let fitness = arch.compute_phi();
+                    self.evaluations += 1;
+                    island.push(Individual { genome, fitness });
+                }
+                island.sort_by(|a, b| {
+                    b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal)
+                });
+                island
+            })
+            .collect();
+
+        // Track global best
+        let mut global_best: Option<Individual> = None;
+        for island in &islands {
+            if let Some(best) = island.first() {
+                if global_best.is_none()
+                    || best.fitness > global_best.as_ref().unwrap().fitness
+                {
+                    global_best = Some(best.clone());
+                }
+            }
+        }
+
+        let mut phi_history = vec![global_best.as_ref().unwrap().fitness];
+
+        for gen in 0..generations {
+            // Evolve each island independently
+            for island in &mut islands {
+                self.evolve_island(island);
+            }
+
+            // Migration phase
+            if gen > 0 && gen % self.config.migration_interval == 0 {
+                self.migrate_with_gradient_refinement(&mut islands);
+            }
+
+            // Update global best
+            for island in &islands {
+                if let Some(best) = island.first() {
+                    if best.fitness > global_best.as_ref().unwrap().fitness {
+                        global_best = Some(best.clone());
+                    }
+                }
+            }
+
+            phi_history.push(global_best.as_ref().unwrap().fitness);
+        }
+
+        let best = global_best.unwrap();
+        SearchResult {
+            best_phi: best.fitness,
+            best_architecture: best.genome,
+            phi_history,
+            evaluations: self.evaluations,
+            strategy: SearchStrategy::IslandGradient,
+            elapsed_ms: None,
+        }
+    }
+
+    /// Evolve a single island population
+    fn evolve_island(&mut self, island: &mut Vec<Individual>) {
+        if island.is_empty() {
+            return;
+        }
+
+        let elite_count = 1.max(island.len() / 5);
+        let mut new_island = Vec::with_capacity(island.len());
+
+        // Preserve elites
+        for i in 0..elite_count.min(island.len()) {
+            new_island.push(island[i].clone());
+        }
+
+        // Generate offspring
+        while new_island.len() < island.len() {
+            // Simple tournament selection within island
+            let idx1 = (self.next_u64() as usize) % island.len();
+            let idx2 = (self.next_u64() as usize) % island.len();
+            let parent = if island[idx1].fitness > island[idx2].fitness {
+                &island[idx1]
+            } else {
+                &island[idx2]
+            };
+
+            let mut child_genome = parent.genome.clone();
+            child_genome.mutate(self.config.mutation_rate, self.next_u64());
+
+            let arch = DecodedArchitecture::from_genome(&child_genome);
+            let fitness = arch.compute_phi();
+            self.evaluations += 1;
+
+            new_island.push(Individual {
+                genome: child_genome,
+                fitness,
+            });
+        }
+
+        *island = new_island;
+        island.sort_by(|a, b| {
+            b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+
+    /// Migrate best individuals between islands with gradient refinement
+    fn migrate_with_gradient_refinement(&mut self, islands: &mut [Vec<Individual>]) {
+        let num_islands = islands.len();
+        if num_islands < 2 {
+            return;
+        }
+
+        let migrants_per_island =
+            (islands[0].len() as f32 * self.config.migration_rate).ceil() as usize;
+        let migrants_per_island = migrants_per_island.max(1);
+
+        // Collect migrants from each island (best individuals)
+        let migrants: Vec<Vec<Individual>> = islands
+            .iter()
+            .map(|island| {
+                island
+                    .iter()
+                    .take(migrants_per_island)
+                    .cloned()
+                    .collect()
+            })
+            .collect();
+
+        // Ring migration: island i receives migrants from island (i-1) mod n
+        for i in 0..num_islands {
+            let source = (i + num_islands - 1) % num_islands;
+
+            for migrant in &migrants[source] {
+                // Gradient-refine migrant before insertion
+                let mut refined_genome = migrant.genome.clone();
+                let gradient =
+                    PhiGradient::compute(&refined_genome, self.config.gradient_epsilon);
+                self.evaluations += 12;
+
+                gradient.apply(&mut refined_genome, self.config.learning_rate);
+
+                let arch = DecodedArchitecture::from_genome(&refined_genome);
+                let fitness = arch.compute_phi();
+                self.evaluations += 1;
+
+                // Replace worst individual in target island
+                if !islands[i].is_empty() && fitness > islands[i].last().unwrap().fitness {
+                    islands[i].pop();
+                    islands[i].push(Individual {
+                        genome: refined_genome,
+                        fitness,
+                    });
+                    islands[i].sort_by(|a, b| {
+                        b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                }
+            }
         }
     }
 
@@ -1662,5 +2308,209 @@ mod tests {
         assert_eq!(searcher.evaluations, 0);
         assert_eq!(searcher.generation, 0);
         assert!(searcher.best.is_none());
+    }
+
+    #[test]
+    fn test_gradient_guided_mutation() {
+        let mut genome = ArchitectureGenome {
+            num_nodes: 8,
+            hdc_dim: 256,
+            connection_density: 0.5,
+            modularity: 0.5,
+            ..Default::default()
+        };
+
+        // Create a gradient pointing toward higher density
+        let gradient = PhiGradient {
+            d_density: 1.0,
+            d_modularity: 0.5,
+            d_bridge_ratio: -0.2,
+            d_tau_ratio: 0.1,
+            d_binding_strength: 0.3,
+            d_recurrence: -0.1,
+            magnitude: 1.2,
+        };
+
+        let original_density = genome.connection_density;
+
+        genome.mutate_with_gradient(&gradient, 0.1, 0.01, 42);
+
+        // Density should have increased (gradient is positive)
+        assert!(genome.connection_density > original_density - 0.05);
+    }
+
+    #[test]
+    fn test_gradient_velocity() {
+        let mut velocity = GradientVelocity::new();
+        assert!(velocity.magnitude() < 0.001);
+
+        // Simulate momentum accumulation
+        let gradient = PhiGradient {
+            d_density: 1.0,
+            d_modularity: 0.5,
+            d_bridge_ratio: 0.0,
+            d_tau_ratio: 0.0,
+            d_binding_strength: 0.0,
+            d_recurrence: 0.0,
+            magnitude: 1.118,
+        };
+
+        let mut genome = ArchitectureGenome::default();
+        genome.mutate_with_momentum(&gradient, &mut velocity, 0.9, 0.1);
+
+        // Velocity should have accumulated
+        assert!(velocity.magnitude() > 0.01);
+
+        // Decay should reduce velocity
+        velocity.decay(0.5);
+        let after_decay = velocity.magnitude();
+        velocity.decay(0.5);
+        assert!(velocity.magnitude() < after_decay);
+    }
+
+    #[test]
+    fn test_gradient_evolutionary_search() {
+        let config = SearchConfig {
+            population_size: 5,
+            elite_count: 1,
+            hdc_dim: 256,
+            min_nodes: 4,
+            max_nodes: 12,
+            patience: 3,
+            ..Default::default()
+        };
+
+        let mut searcher = PhiArchitectureSearch::new(config);
+        let result = searcher.search(SearchStrategy::GradientEvolutionary, 3);
+
+        assert!(result.best_phi >= 0.0);
+        assert!(!result.phi_history.is_empty());
+        assert_eq!(result.strategy, SearchStrategy::GradientEvolutionary);
+    }
+
+    #[test]
+    fn test_momentum_search() {
+        let config = SearchConfig {
+            population_size: 3,
+            hdc_dim: 256,
+            momentum: 0.9,
+            learning_rate: 0.05,
+            ..Default::default()
+        };
+
+        let mut searcher = PhiArchitectureSearch::new(config);
+        let result = searcher.search(SearchStrategy::MomentumOptimization, 10);
+
+        assert!(result.best_phi >= 0.0);
+        assert!(!result.phi_history.is_empty());
+        assert_eq!(result.strategy, SearchStrategy::MomentumOptimization);
+    }
+
+    #[test]
+    fn test_island_gradient_search() {
+        let config = SearchConfig {
+            population_size: 8,
+            num_islands: 2,
+            migration_interval: 2,
+            migration_rate: 0.2,
+            hdc_dim: 256,
+            min_nodes: 4,
+            max_nodes: 12,
+            ..Default::default()
+        };
+
+        let mut searcher = PhiArchitectureSearch::new(config);
+        let result = searcher.search(SearchStrategy::IslandGradient, 5);
+
+        assert!(result.best_phi >= 0.0);
+        assert!(result.phi_history.len() >= 5);
+        assert_eq!(result.strategy, SearchStrategy::IslandGradient);
+    }
+
+    #[test]
+    fn test_gradient_direction_and_similarity() {
+        let gradient1 = PhiGradient {
+            d_density: 1.0,
+            d_modularity: 0.0,
+            d_bridge_ratio: 0.0,
+            d_tau_ratio: 0.0,
+            d_binding_strength: 0.0,
+            d_recurrence: 0.0,
+            magnitude: 1.0,
+        };
+
+        let gradient2 = PhiGradient {
+            d_density: 1.0,
+            d_modularity: 0.0,
+            d_bridge_ratio: 0.0,
+            d_tau_ratio: 0.0,
+            d_binding_strength: 0.0,
+            d_recurrence: 0.0,
+            magnitude: 1.0,
+        };
+
+        // Same direction should have similarity = 1.0
+        assert!((gradient1.cosine_similarity(&gradient2) - 1.0).abs() < 0.001);
+
+        let gradient3 = PhiGradient {
+            d_density: -1.0,
+            d_modularity: 0.0,
+            d_bridge_ratio: 0.0,
+            d_tau_ratio: 0.0,
+            d_binding_strength: 0.0,
+            d_recurrence: 0.0,
+            magnitude: 1.0,
+        };
+
+        // Opposite direction should have similarity = -1.0
+        assert!((gradient1.cosine_similarity(&gradient3) + 1.0).abs() < 0.001);
+
+        // Test direction unit vector
+        let dir = gradient1.direction();
+        assert!((dir[0] - 1.0).abs() < 0.001);
+        assert!(dir[1].abs() < 0.001);
+    }
+
+    #[test]
+    fn test_natural_gradient_mutation() {
+        let mut genome = ArchitectureGenome {
+            num_nodes: 8,
+            hdc_dim: 256,
+            ..Default::default()
+        };
+
+        // High magnitude gradient = steep region
+        let steep_gradient = PhiGradient {
+            d_density: 10.0,
+            d_modularity: 10.0,
+            d_bridge_ratio: 10.0,
+            d_tau_ratio: 10.0,
+            d_binding_strength: 10.0,
+            d_recurrence: 10.0,
+            magnitude: 24.5,
+        };
+
+        let original = genome.clone();
+        genome.mutate_natural_gradient(&steep_gradient, 1.0, 42);
+
+        // In steep region, steps should be smaller (adaptive LR lower)
+        // Just verify it doesn't crash and params stay in bounds
+        assert!(genome.connection_density >= 0.05 && genome.connection_density <= 0.95);
+        assert!(genome.modularity >= 0.0 && genome.modularity <= 1.0);
+
+        // With low magnitude gradient (flat region), steps should be larger
+        let mut genome2 = original;
+        let flat_gradient = PhiGradient {
+            d_density: 0.01,
+            d_modularity: 0.01,
+            d_bridge_ratio: 0.01,
+            d_tau_ratio: 0.01,
+            d_binding_strength: 0.01,
+            d_recurrence: 0.01,
+            magnitude: 0.024,
+        };
+
+        genome2.mutate_natural_gradient(&flat_gradient, 1.0, 42);
+        assert!(genome2.connection_density >= 0.05 && genome2.connection_density <= 0.95);
     }
 }

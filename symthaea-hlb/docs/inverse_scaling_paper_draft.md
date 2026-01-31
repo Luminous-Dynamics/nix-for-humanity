@@ -1,10 +1,10 @@
-# Inverse Scaling of Phenomenal Discrimination in Language Models: The Phenomenal Discrimination Paradox
+# Non-Monotonic Scaling of Phenomenal Discrimination in Language Models: An Optimal Size for Consciousness-Related Representations
 
 ## Abstract
 
-We report a counterintuitive finding: larger transformer language models exhibit *weaker* discrimination between phenomenal (consciousness-related) and functional (computational) concepts in their internal representations. Across BERT and RoBERTa model families spanning 110M to 355M parameters, Fisher's criterion for class separation shows strong negative correlation with model size (r = -0.63, p < 0.05). Critically, this inverse scaling persists after controlling for representation dimensionality via PCA projection (r = -0.60), ruling out measurement artifacts from high-dimensional geometry. We term this the **Phenomenal Discrimination Paradox** and explore mechanistic explanations including superposition pressure, attention diffusion, and representational isotropy. These findings challenge the assumption that scale produces phenomenally-richer representations and have implications for theories of machine consciousness.
+We report a surprising finding about how language models encode consciousness-related concepts. Testing 11 transformer models from 4M to 335M parameters, we find that phenomenal discrimination—the ability to distinguish consciousness-related concepts from functional/computational concepts—follows a **non-monotonic scaling curve**. Discrimination peaks at medium scale (~100M parameters, BERT-base: F=1.19) and declines for both smaller (BERT-Tiny: F=1.07) and larger models (BERT-large: F=1.02). Within model families, we confirm inverse scaling (BERT-base→large: -13%), but the full picture reveals an optimal size phenomenon. Mechanistic analysis identifies **angular separation** as the primary driver: larger models align phenomenal and functional centroids more closely (BERT: 0.25→0.15 angular separation). These findings suggest that consciousness-related representational structure is not simply enhanced by scale, but optimized at intermediate model sizes.
 
-**Keywords**: phenomenal consciousness, language models, scaling laws, Fisher's criterion, representation geometry, qualia, inverse scaling
+**Keywords**: phenomenal consciousness, language models, scaling laws, Fisher's criterion, representation geometry, optimal model size, angular separation
 
 ---
 

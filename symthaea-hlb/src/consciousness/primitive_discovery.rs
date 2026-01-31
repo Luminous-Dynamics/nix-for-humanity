@@ -742,7 +742,7 @@ impl PrimitiveDiscoveryService {
         }
         // Convert to a full Primitive using a domain HV derived from the encoding
         let domain_hv = HV16::random(discovery.encoding.popcount() as u64);
-        let primitive = discovery.to_primitive(&domain_hv);
+        let _primitive = discovery.to_primitive(&domain_hv);
         // PrimitiveSystem doesn't have a register method, so we can't actually add it
         // For now, just return true to signal the integration was accepted
         true

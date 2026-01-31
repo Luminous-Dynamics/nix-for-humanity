@@ -393,6 +393,7 @@ pub struct EvolutionStepResult {
 struct PrimitiveEvolutionResult {
     phi_delta: f64,
     new_primitives: Vec<String>,
+    #[allow(dead_code)]
     tier: PrimitiveTier,
 }
 

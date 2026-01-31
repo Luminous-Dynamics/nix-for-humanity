@@ -4,6 +4,7 @@
 //! including episodic memory (hippocampus), conversation memory,
 //! and memory consolidation systems.
 
+pub mod coherence_tracker;
 pub mod conversation_memory;
 pub mod hippocampus;
 

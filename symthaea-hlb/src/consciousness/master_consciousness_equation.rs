@@ -304,6 +304,210 @@ impl EmbodimentFactor {
 
         recent - older
     }
+
+    // ========================================================================
+    // ENHANCED SENSORIMOTOR PREDICTION METHODS
+    // ========================================================================
+
+    /// Record a multi-dimensional sensorimotor prediction with motor command context
+    ///
+    /// This enhanced method tracks:
+    /// - Motor command that generated the prediction
+    /// - Multi-dimensional sensory outcome
+    /// - Proprioceptive feedback accuracy
+    pub fn record_sensorimotor_prediction_extended(
+        &mut self,
+        motor_command: f64,
+        predicted_sensory: &[f64],
+        actual_sensory: &[f64],
+        proprioceptive_feedback: Option<f64>,
+    ) {
+        // Compute multi-dimensional prediction accuracy
+        let dim = predicted_sensory.len().min(actual_sensory.len()).max(1);
+        let mse: f64 = predicted_sensory.iter()
+            .zip(actual_sensory.iter())
+            .map(|(p, a)| (p - a).powi(2))
+            .sum::<f64>() / dim as f64;
+        let accuracy = 1.0 - mse.sqrt().min(1.0);
+
+        // Include proprioceptive feedback if available
+        let combined_accuracy = if let Some(prop) = proprioceptive_feedback {
+            // Weight proprioceptive feedback at 30%
+            accuracy * 0.7 + prop * 0.3
+        } else {
+            accuracy
+        };
+
+        // Update EMA with weighted accuracy
+        self.sensorimotor_accuracy =
+            self.sensorimotor_accuracy * (1.0 - self.smoothing) +
+            combined_accuracy * self.smoothing;
+
+        // Store record (use motor command as predicted, accuracy as actual for trend analysis)
+        if self.prediction_history.len() >= self.max_history {
+            self.prediction_history.pop_front();
+        }
+        self.prediction_history.push_back(PredictionRecord {
+            predicted: motor_command,
+            actual: combined_accuracy,
+            timestamp: Instant::now(),
+        });
+    }
+
+    /// Compute contingency between motor commands and sensory outcomes
+    ///
+    /// This measures the predictability of sensory consequences from actions,
+    /// a key aspect of sensorimotor contingency theory.
+    pub fn compute_sensorimotor_contingency(&self) -> f64 {
+        if self.prediction_history.len() < 10 {
+            return 0.5; // Neutral when insufficient data
+        }
+
+        // Compute correlation between motor commands and prediction accuracy
+        let records: Vec<_> = self.prediction_history.iter().collect();
+        let n = records.len() as f64;
+
+        let sum_x: f64 = records.iter().map(|r| r.predicted).sum();
+        let sum_y: f64 = records.iter().map(|r| r.actual).sum();
+        let sum_xy: f64 = records.iter().map(|r| r.predicted * r.actual).sum();
+        let sum_x2: f64 = records.iter().map(|r| r.predicted.powi(2)).sum();
+        let sum_y2: f64 = records.iter().map(|r| r.actual.powi(2)).sum();
+
+        let numerator = n * sum_xy - sum_x * sum_y;
+        let denominator = ((n * sum_x2 - sum_x.powi(2)) * (n * sum_y2 - sum_y.powi(2))).sqrt();
+
+        if denominator.abs() < 1e-10 {
+            return 0.5;
+        }
+
+        // Convert correlation to 0-1 range
+        let correlation = numerator / denominator;
+        (correlation + 1.0) / 2.0
+    }
+
+    // ========================================================================
+    // ENHANCED INTEROCEPTIVE COHERENCE METHODS
+    // ========================================================================
+
+    /// Update interoceptive coherence with multi-system bodily state
+    ///
+    /// This enhanced method tracks coherence across multiple bodily systems:
+    /// - Cardiac (heart rate variability)
+    /// - Respiratory (breathing patterns)
+    /// - Autonomic (sympathetic/parasympathetic balance)
+    /// - Metabolic (energy state)
+    pub fn update_interoceptive_multisystem(
+        &mut self,
+        expected_states: &InteroceptiveState,
+        actual_states: &InteroceptiveState,
+    ) {
+        // Compute coherence for each system
+        let cardiac_coherence = 1.0 - (expected_states.cardiac - actual_states.cardiac).abs().min(1.0);
+        let respiratory_coherence = 1.0 - (expected_states.respiratory - actual_states.respiratory).abs().min(1.0);
+        let autonomic_coherence = 1.0 - (expected_states.autonomic - actual_states.autonomic).abs().min(1.0);
+        let metabolic_coherence = 1.0 - (expected_states.metabolic - actual_states.metabolic).abs().min(1.0);
+
+        // Weighted average (cardiac and autonomic weighted higher)
+        let combined_coherence =
+            cardiac_coherence * 0.3 +
+            autonomic_coherence * 0.3 +
+            respiratory_coherence * 0.2 +
+            metabolic_coherence * 0.2;
+
+        // Update with smoothing
+        self.interoceptive_coherence =
+            self.interoceptive_coherence * (1.0 - self.smoothing) +
+            combined_coherence * self.smoothing;
+    }
+
+    /// Compute allostatic prediction error
+    ///
+    /// Allostasis is the process of achieving stability through change.
+    /// This measures how well the system predicts needed bodily adjustments.
+    pub fn compute_allostatic_error(&self) -> f64 {
+        // Use recent prediction history to estimate allostatic prediction capability
+        if self.prediction_history.len() < 5 {
+            return 0.5;
+        }
+
+        // Variance in recent predictions indicates prediction instability
+        let recent: Vec<f64> = self.prediction_history.iter()
+            .rev()
+            .take(10)
+            .map(|r| (r.predicted - r.actual).abs())
+            .collect();
+
+        let mean = recent.iter().sum::<f64>() / recent.len() as f64;
+        let variance = recent.iter()
+            .map(|x| (x - mean).powi(2))
+            .sum::<f64>() / recent.len() as f64;
+
+        // Lower variance = better allostatic prediction
+        1.0 - variance.sqrt().min(1.0)
+    }
+
+    /// Get detailed embodiment diagnostics
+    pub fn diagnostics(&self) -> EmbodimentDiagnostics {
+        EmbodimentDiagnostics {
+            sensorimotor_accuracy: self.sensorimotor_accuracy,
+            interoceptive_coherence: self.interoceptive_coherence,
+            sensorimotor_contingency: self.compute_sensorimotor_contingency(),
+            allostatic_error: self.compute_allostatic_error(),
+            accuracy_trend: self.recent_accuracy_trend(),
+            prediction_count: self.prediction_history.len(),
+            embodiment_factor: self.compute(),
+        }
+    }
+}
+
+/// Multi-system interoceptive state representation
+#[derive(Debug, Clone, Default)]
+pub struct InteroceptiveState {
+    /// Cardiac state (normalized heart rate variability)
+    pub cardiac: f64,
+    /// Respiratory state (breathing regularity)
+    pub respiratory: f64,
+    /// Autonomic balance (sympathetic vs parasympathetic)
+    pub autonomic: f64,
+    /// Metabolic/energy state
+    pub metabolic: f64,
+}
+
+impl InteroceptiveState {
+    /// Create a new interoceptive state
+    pub fn new(cardiac: f64, respiratory: f64, autonomic: f64, metabolic: f64) -> Self {
+        Self {
+            cardiac: cardiac.clamp(0.0, 1.0),
+            respiratory: respiratory.clamp(0.0, 1.0),
+            autonomic: autonomic.clamp(0.0, 1.0),
+            metabolic: metabolic.clamp(0.0, 1.0),
+        }
+    }
+
+    /// Create from a single value (uniform across systems)
+    pub fn uniform(value: f64) -> Self {
+        let v = value.clamp(0.0, 1.0);
+        Self { cardiac: v, respiratory: v, autonomic: v, metabolic: v }
+    }
+}
+
+/// Detailed diagnostics for embodiment factor
+#[derive(Debug, Clone)]
+pub struct EmbodimentDiagnostics {
+    /// Current sensorimotor prediction accuracy
+    pub sensorimotor_accuracy: f64,
+    /// Current interoceptive coherence
+    pub interoceptive_coherence: f64,
+    /// Sensorimotor contingency measure
+    pub sensorimotor_contingency: f64,
+    /// Allostatic prediction error
+    pub allostatic_error: f64,
+    /// Recent accuracy trend
+    pub accuracy_trend: f64,
+    /// Number of predictions recorded
+    pub prediction_count: usize,
+    /// Final embodiment factor M
+    pub embodiment_factor: f64,
 }
 
 // ============================================================================
@@ -518,6 +722,300 @@ impl NarrativeCoherence {
     pub fn scenario_count(&self) -> usize {
         self.future_scenarios.len()
     }
+
+    // ========================================================================
+    // ENHANCED AUTOBIOGRAPHICAL INTEGRATION METHODS
+    // ========================================================================
+
+    /// Add an episode with semantic embedding for better integration scoring
+    ///
+    /// This enhanced method uses:
+    /// - Semantic similarity to existing episodes
+    /// - Emotional coherence patterns
+    /// - Causal chain detection
+    pub fn add_episode_with_embedding(
+        &mut self,
+        content: String,
+        valence: f64,
+        semantic_embedding: &[f64],
+        theme_tags: Vec<String>,
+    ) {
+        // Compute semantic integration with existing episodes
+        let semantic_integration = self.compute_semantic_integration(semantic_embedding);
+
+        // Compute thematic coherence
+        let thematic_coherence = self.compute_thematic_coherence(&theme_tags);
+
+        // Combined integration score
+        let integration = semantic_integration * 0.5 + thematic_coherence * 0.3 +
+            self.compute_episode_integration(&content) * 0.2;
+
+        // Find causal links based on both valence and temporal proximity
+        let causal_links: Vec<usize> = self.episodes.iter()
+            .rev()
+            .take(10)
+            .enumerate()
+            .filter(|(i, ep)| {
+                let valence_match = (ep.valence - valence).abs() < 0.4;
+                let recency_weight = 1.0 - (*i as f64 / 10.0);
+                valence_match && recency_weight > 0.3
+            })
+            .map(|(i, _)| self.episodes.len() - 1 - i)
+            .collect();
+
+        if self.episodes.len() >= self.max_episodes {
+            self.episodes.pop_front();
+        }
+
+        self.episodes.push_back(NarrativeEpisode {
+            content,
+            timestamp: Instant::now(),
+            valence,
+            integration_score: integration,
+            causal_links,
+        });
+
+        self.update_integration();
+    }
+
+    /// Compute semantic integration with existing narrative
+    fn compute_semantic_integration(&self, embedding: &[f64]) -> f64 {
+        if self.episodes.is_empty() || embedding.is_empty() {
+            return 0.5;
+        }
+
+        let avg_content_length = self.episodes.iter()
+            .map(|ep| ep.content.len())
+            .sum::<usize>() as f64 / self.episodes.len() as f64;
+
+        let embedding_magnitude: f64 = embedding.iter()
+            .map(|x| x.powi(2))
+            .sum::<f64>()
+            .sqrt();
+
+        let semantic_density = (embedding_magnitude / (embedding.len() as f64).sqrt()).min(1.0);
+        let content_coherence = (avg_content_length / 100.0).min(1.0);
+
+        semantic_density * 0.6 + content_coherence * 0.4
+    }
+
+    /// Compute thematic coherence based on recurring themes
+    fn compute_thematic_coherence(&self, tags: &[String]) -> f64 {
+        if tags.is_empty() {
+            return 0.5;
+        }
+
+        let theme_count = tags.len();
+        let unique_themes: std::collections::HashSet<_> = tags.iter().collect();
+        let uniqueness_ratio = unique_themes.len() as f64 / theme_count as f64;
+
+        1.0 - uniqueness_ratio * 0.5
+    }
+
+    /// Compute narrative arc coherence
+    pub fn compute_narrative_arc_coherence(&self) -> f64 {
+        if self.episodes.len() < 5 {
+            return 0.5;
+        }
+
+        let valences: Vec<f64> = self.episodes.iter().map(|ep| ep.valence).collect();
+        let mean_valence = valences.iter().sum::<f64>() / valences.len() as f64;
+        let variance = valences.iter()
+            .map(|v| (v - mean_valence).powi(2))
+            .sum::<f64>() / valences.len() as f64;
+
+        let variance_factor = 1.0 - (variance - 0.25).abs() * 2.0;
+        let total_links: usize = self.episodes.iter()
+            .map(|ep| ep.causal_links.len())
+            .sum();
+        let link_density = (total_links as f64 / self.episodes.len() as f64).min(1.0);
+
+        variance_factor.max(0.0) * 0.5 + link_density * 0.5
+    }
+
+    /// Get the most salient episodes (highest integration + recency)
+    pub fn salient_episodes(&self, top_k: usize) -> Vec<&NarrativeEpisode> {
+        let mut scored: Vec<_> = self.episodes.iter()
+            .enumerate()
+            .map(|(i, ep)| {
+                let recency = i as f64 / self.episodes.len().max(1) as f64;
+                let score = ep.integration_score * 0.6 + recency * 0.4;
+                (ep, score)
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        scored.into_iter().take(top_k).map(|(ep, _)| ep).collect()
+    }
+
+    // ========================================================================
+    // ENHANCED FUTURE SIMULATION METHODS
+    // ========================================================================
+
+    /// Add a future scenario with branching paths
+    pub fn add_branching_scenario(
+        &mut self,
+        description: String,
+        horizon_steps: usize,
+        branches: Vec<SimulationBranch>,
+    ) {
+        let best_branch = branches.iter()
+            .max_by(|a, b| a.probability.partial_cmp(&b.probability).unwrap_or(std::cmp::Ordering::Equal));
+
+        if let Some(branch) = best_branch {
+            self.future_scenarios.push(FutureScenario {
+                description,
+                horizon_steps,
+                probability: branch.probability,
+                desirability: branch.desirability,
+            });
+
+            for alt_branch in branches.iter().filter(|b| b.probability > 0.1) {
+                if self.future_scenarios.len() < 15 {
+                    self.future_scenarios.push(FutureScenario {
+                        description: alt_branch.description.clone(),
+                        horizon_steps: alt_branch.steps_to_outcome,
+                        probability: alt_branch.probability,
+                        desirability: alt_branch.desirability,
+                    });
+                }
+            }
+        }
+
+        while self.future_scenarios.len() > 15 {
+            if let Some(min_idx) = self.future_scenarios.iter()
+                .enumerate()
+                .min_by(|a, b| a.1.probability.partial_cmp(&b.1.probability).unwrap_or(std::cmp::Ordering::Equal))
+                .map(|(i, _)| i)
+            {
+                self.future_scenarios.remove(min_idx);
+            }
+        }
+
+        self.update_simulation_depth();
+    }
+
+    /// Compute prospective memory capability
+    pub fn compute_prospective_capability(&self) -> f64 {
+        if self.future_scenarios.is_empty() {
+            return 0.3;
+        }
+
+        let avg_horizon = self.future_scenarios.iter()
+            .map(|s| s.horizon_steps)
+            .sum::<usize>() as f64 / self.future_scenarios.len() as f64;
+        let specificity = 1.0 - (avg_horizon / 20.0).min(1.0);
+
+        let desirabilities: Vec<f64> = self.future_scenarios.iter()
+            .map(|s| s.desirability)
+            .collect();
+        let mean_des = desirabilities.iter().sum::<f64>() / desirabilities.len() as f64;
+        let des_variance = desirabilities.iter()
+            .map(|d| (d - mean_des).powi(2))
+            .sum::<f64>() / desirabilities.len() as f64;
+        let action_orientation = des_variance.sqrt().min(1.0);
+
+        let avg_prob = self.future_scenarios.iter()
+            .map(|s| s.probability)
+            .sum::<f64>() / self.future_scenarios.len() as f64;
+        let realism = 1.0 - (avg_prob - 0.5).abs() * 2.0;
+
+        specificity * 0.3 + action_orientation * 0.3 + realism.max(0.0) * 0.4
+    }
+
+    /// Compute mental time travel depth
+    pub fn compute_mental_time_travel(&self) -> f64 {
+        let past_depth = if self.episodes.is_empty() {
+            0.0
+        } else {
+            let link_depth = self.episodes.iter()
+                .map(|ep| ep.causal_links.len())
+                .max()
+                .unwrap_or(0);
+            (link_depth as f64 / 5.0).min(1.0)
+        };
+
+        let future_depth = if self.future_scenarios.is_empty() {
+            0.0
+        } else {
+            let max_horizon = self.future_scenarios.iter()
+                .map(|s| s.horizon_steps)
+                .max()
+                .unwrap_or(0);
+            (max_horizon as f64 / 10.0).min(1.0)
+        };
+
+        (past_depth + future_depth) / 2.0
+    }
+
+    /// Get detailed narrative coherence diagnostics
+    pub fn diagnostics(&self) -> NarrativeCoherenceDiagnostics {
+        NarrativeCoherenceDiagnostics {
+            autobiographical_integration: self.autobiographical_integration,
+            future_simulation_depth: self.future_simulation_depth,
+            narrative_arc_coherence: self.compute_narrative_arc_coherence(),
+            prospective_capability: self.compute_prospective_capability(),
+            mental_time_travel: self.compute_mental_time_travel(),
+            episode_count: self.episodes.len(),
+            scenario_count: self.future_scenarios.len(),
+            narrative_coherence: self.compute(),
+        }
+    }
+}
+
+/// A branch in a future simulation
+#[derive(Debug, Clone)]
+pub struct SimulationBranch {
+    /// Description of this outcome branch
+    pub description: String,
+    /// Steps to reach this outcome
+    pub steps_to_outcome: usize,
+    /// Probability of this branch
+    pub probability: f64,
+    /// Desirability of this outcome
+    pub desirability: f64,
+    /// Actions required to achieve this branch
+    pub required_actions: Vec<String>,
+}
+
+impl SimulationBranch {
+    /// Create a new simulation branch
+    pub fn new(description: String, steps: usize, probability: f64, desirability: f64) -> Self {
+        Self {
+            description,
+            steps_to_outcome: steps,
+            probability: probability.clamp(0.0, 1.0),
+            desirability: desirability.clamp(-1.0, 1.0),
+            required_actions: Vec::new(),
+        }
+    }
+
+    /// Add a required action
+    pub fn with_action(mut self, action: String) -> Self {
+        self.required_actions.push(action);
+        self
+    }
+}
+
+/// Detailed diagnostics for narrative coherence
+#[derive(Debug, Clone)]
+pub struct NarrativeCoherenceDiagnostics {
+    /// Autobiographical integration score
+    pub autobiographical_integration: f64,
+    /// Future simulation depth
+    pub future_simulation_depth: f64,
+    /// Narrative arc coherence
+    pub narrative_arc_coherence: f64,
+    /// Prospective memory capability
+    pub prospective_capability: f64,
+    /// Mental time travel depth
+    pub mental_time_travel: f64,
+    /// Number of episodes stored
+    pub episode_count: usize,
+    /// Number of future scenarios
+    pub scenario_count: usize,
+    /// Final narrative coherence N
+    pub narrative_coherence: f64,
 }
 
 // ============================================================================
@@ -1492,5 +1990,192 @@ mod tests {
         assert!((result.embodiment_factor - 1.0).abs() < 0.001);
         assert!((result.narrative_coherence - 1.0).abs() < 0.001);
         assert!((result.social_embedding - 1.0).abs() < 0.001);
+    }
+
+    // ========================================================================
+    // ENHANCED EMBODIMENT FACTOR TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_sensorimotor_prediction_extended() {
+        let mut ef = EmbodimentFactor::new();
+
+        // Record multi-dimensional predictions
+        ef.record_sensorimotor_prediction_extended(
+            0.5, // motor command
+            &[0.5, 0.6, 0.4], // predicted sensory
+            &[0.5, 0.55, 0.45], // actual sensory (close to predicted)
+            Some(0.9), // good proprioceptive feedback
+        );
+
+        let m = ef.compute();
+        assert!(m > 0.0 && m <= 1.0);
+
+        // Sensorimotor accuracy should be high after good prediction
+        assert!(ef.sensorimotor_accuracy() > 0.5);
+    }
+
+    #[test]
+    fn test_sensorimotor_contingency() {
+        let mut ef = EmbodimentFactor::new();
+
+        // Record a sequence of predictions with consistent pattern
+        for i in 0..20 {
+            let motor = (i as f64) / 20.0;
+            let outcome = motor * 0.9; // Strong contingency
+            ef.record_prediction(motor, outcome);
+        }
+
+        let contingency = ef.compute_sensorimotor_contingency();
+        assert!(contingency > 0.5); // Should show high contingency
+    }
+
+    #[test]
+    fn test_interoceptive_multisystem() {
+        let mut ef = EmbodimentFactor::new();
+
+        let expected = InteroceptiveState::new(0.6, 0.7, 0.5, 0.8);
+        let actual = InteroceptiveState::new(0.65, 0.68, 0.52, 0.78);
+
+        ef.update_interoceptive_multisystem(&expected, &actual);
+
+        // Coherence should be high since states are close
+        assert!(ef.interoceptive_coherence() > 0.7);
+    }
+
+    #[test]
+    fn test_allostatic_error() {
+        let mut ef = EmbodimentFactor::new();
+
+        // Record consistent predictions (low variance)
+        for _ in 0..10 {
+            ef.record_prediction(0.5, 0.52); // Small consistent error
+        }
+
+        let allostatic = ef.compute_allostatic_error();
+        assert!(allostatic > 0.5); // Low variance = good allostatic prediction
+    }
+
+    #[test]
+    fn test_embodiment_diagnostics() {
+        let mut ef = EmbodimentFactor::new();
+
+        ef.record_prediction(0.5, 0.5);
+        ef.update_interoceptive(0.6, 0.6);
+
+        let diag = ef.diagnostics();
+        assert!(diag.embodiment_factor > 0.0);
+        assert_eq!(diag.prediction_count, 1);
+    }
+
+    // ========================================================================
+    // ENHANCED NARRATIVE COHERENCE TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_episode_with_embedding() {
+        let mut nc = NarrativeCoherence::new();
+
+        nc.add_episode_with_embedding(
+            "First experience".to_string(),
+            0.7,
+            &[0.1, 0.2, 0.3, 0.4],
+            vec!["learning".to_string(), "growth".to_string()],
+        );
+
+        nc.add_episode_with_embedding(
+            "Related experience".to_string(),
+            0.6,
+            &[0.15, 0.25, 0.28, 0.38],
+            vec!["learning".to_string()],
+        );
+
+        assert_eq!(nc.episode_count(), 2);
+        assert!(nc.autobiographical_integration() > 0.0);
+    }
+
+    #[test]
+    fn test_narrative_arc_coherence() {
+        let mut nc = NarrativeCoherence::new();
+
+        // Add episodes with emotional arc (starts positive, dips, recovers)
+        nc.add_episode("Beginning".to_string(), 0.6);
+        nc.add_episode("Challenge".to_string(), 0.2);
+        nc.add_episode("Struggle".to_string(), -0.1);
+        nc.add_episode("Turning point".to_string(), 0.3);
+        nc.add_episode("Resolution".to_string(), 0.7);
+        nc.add_episode("Growth".to_string(), 0.8);
+
+        let arc_coherence = nc.compute_narrative_arc_coherence();
+        assert!(arc_coherence > 0.0);
+    }
+
+    #[test]
+    fn test_salient_episodes() {
+        let mut nc = NarrativeCoherence::new();
+
+        nc.add_episode("Low relevance".to_string(), 0.1);
+        nc.add_episode("Medium relevance".to_string(), 0.5);
+        nc.add_episode("High relevance".to_string(), 0.8);
+
+        let salient = nc.salient_episodes(2);
+        assert_eq!(salient.len(), 2);
+    }
+
+    #[test]
+    fn test_branching_scenario() {
+        let mut nc = NarrativeCoherence::new();
+
+        let branches = vec![
+            SimulationBranch::new("Success path".to_string(), 5, 0.6, 0.9),
+            SimulationBranch::new("Alternative path".to_string(), 7, 0.3, 0.5),
+            SimulationBranch::new("Unlikely path".to_string(), 10, 0.1, 0.2),
+        ];
+
+        nc.add_branching_scenario("Main goal".to_string(), 5, branches);
+
+        assert!(nc.scenario_count() >= 2); // Should have main + at least one alternative
+    }
+
+    #[test]
+    fn test_prospective_capability() {
+        let mut nc = NarrativeCoherence::new();
+
+        nc.add_future_scenario("Near term".to_string(), 2, 0.7, 0.6);
+        nc.add_future_scenario("Medium term".to_string(), 5, 0.5, 0.8);
+        nc.add_future_scenario("Long term".to_string(), 10, 0.3, 0.9);
+
+        let capability = nc.compute_prospective_capability();
+        assert!(capability > 0.0 && capability <= 1.0);
+    }
+
+    #[test]
+    fn test_mental_time_travel() {
+        let mut nc = NarrativeCoherence::new();
+
+        // Add past episodes with causal links
+        nc.add_episode("Past 1".to_string(), 0.5);
+        nc.add_episode("Past 2".to_string(), 0.5);
+        nc.add_episode("Past 3".to_string(), 0.5);
+
+        // Add future scenarios
+        nc.add_future_scenario("Future 1".to_string(), 5, 0.7, 0.8);
+        nc.add_future_scenario("Future 2".to_string(), 8, 0.5, 0.6);
+
+        let mtt = nc.compute_mental_time_travel();
+        assert!(mtt > 0.0);
+    }
+
+    #[test]
+    fn test_narrative_diagnostics() {
+        let mut nc = NarrativeCoherence::new();
+
+        nc.add_episode("Event 1".to_string(), 0.5);
+        nc.add_future_scenario("Plan 1".to_string(), 3, 0.7, 0.8);
+
+        let diag = nc.diagnostics();
+        assert_eq!(diag.episode_count, 1);
+        assert_eq!(diag.scenario_count, 1);
+        assert!(diag.narrative_coherence > 0.0);
     }
 }

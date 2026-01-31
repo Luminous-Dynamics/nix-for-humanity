@@ -128,13 +128,7 @@ impl HierarchicalCfC {
                 // gate > 0.5 → slow down lower level (increase tau)
                 // gate < 0.5 → speed up lower level (decrease tau)
                 let tau_scale = 1.0 + gate_strength * (gate - 0.5);
-                let taus = self.levels[i].flattened_tau();
-                let new_taus: Vec<f32> = taus.iter()
-                    .map(|t| (t * tau_scale).clamp(0.01, 100.0))
-                    .collect();
-                // Note: We can't directly set tau values through the public API,
-                // so feedback is applied implicitly through state modulation
-                let _ = new_taus; // feedback effect is through output gating
+                self.levels[i].scale_tau(0, tau_scale);
             }
         }
 

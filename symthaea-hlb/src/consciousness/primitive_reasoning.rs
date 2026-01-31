@@ -248,6 +248,7 @@ pub struct AdaptivePrimitiveSelector {
     /// Stats for each (primitive, task) pair
     stats: HashMap<(String, TaskType), PrimitiveTaskStats>,
     /// Learning rate
+    #[allow(dead_code)]
     learning_rate: f64,
 }
 

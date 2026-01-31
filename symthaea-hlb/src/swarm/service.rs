@@ -122,6 +122,7 @@ pub struct ServiceStats {
 /// The main network service for swarm integration
 pub struct NetworkService {
     /// Configuration
+    #[allow(dead_code)]
     config: SwarmConfig,
 
     /// Iroh node for P2P transport
@@ -129,6 +130,7 @@ pub struct NetworkService {
     iroh: Option<IrohNode>,
 
     /// Handshake manager for trust verification
+    #[allow(dead_code)]
     handshake: Arc<RwLock<HybridHandshake>>,
 
     /// Connected peers with their state
@@ -292,7 +294,7 @@ impl NetworkService {
     }
 
     /// Connect to a specific peer using their ticket
-    pub async fn connect_to_peer(&self, ticket: &str) -> SwarmResult<PeerInfo> {
+    pub async fn connect_to_peer(&self, _ticket: &str) -> SwarmResult<PeerInfo> {
         #[cfg(not(feature = "swarm"))]
         {
             Err(SwarmError::FeatureNotEnabled {
@@ -305,7 +307,7 @@ impl NetworkService {
             let iroh = self.iroh.as_ref().ok_or(SwarmError::NotInitialized)?;
 
             // Connect via Iroh
-            let channel = iroh.connect(ticket).await?;
+            let channel = iroh.connect(_ticket).await?;
             let peer_id = channel.peer_id().to_string();
 
             // Create peer info
@@ -322,7 +324,7 @@ impl NetworkService {
     }
 
     /// Broadcast our consciousness state to all connected peers
-    pub async fn broadcast_consciousness(&self, state: &ConsciousnessVector) -> SwarmResult<usize> {
+    pub async fn broadcast_consciousness(&self, _state: &ConsciousnessVector) -> SwarmResult<usize> {
         #[cfg(not(feature = "swarm"))]
         {
             // In stub mode, just return 0
@@ -335,7 +337,7 @@ impl NetworkService {
             let peer_ids: Vec<String> = self.peers.read().keys().cloned().collect();
 
             let mut sent_count = 0;
-            let bytes = state.estimated_size() as u64;
+            let bytes = _state.estimated_size() as u64;
 
             for peer_id in peer_ids {
                 if let Some(channel) = iroh.get_channel(&peer_id) {
