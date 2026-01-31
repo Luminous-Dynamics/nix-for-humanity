@@ -433,7 +433,7 @@ impl LongTermMemory {
             .collect();
 
         // Sort by relevance (highest first)
-        scored_memories.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap());
+        scored_memories.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(std::cmp::Ordering::Equal));
 
         // Second pass: mark retrieved memories (mutable borrow)
         for retrieved in &scored_memories.iter().take(top_k).collect::<Vec<_>>() {

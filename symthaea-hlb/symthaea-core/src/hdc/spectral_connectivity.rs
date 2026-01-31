@@ -248,65 +248,6 @@ impl ConnectivityCalculator {
         }
     }
 
-    /// Adaptive normalization using actual graph structure
-    #[allow(dead_code)]
-    fn normalize_connectivity_adaptive(&self, connectivity: f64, similarity_matrix: &[Vec<f64>]) -> f64 {
-        let n = similarity_matrix.len();
-
-        if n < 2 {
-            return 0.0;
-        }
-
-        let max_weighted_degree = similarity_matrix.iter()
-            .enumerate()
-            .map(|(i, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter(|(j, _)| *j != i)
-                    .map(|(_, &val)| val)
-                    .sum::<f64>()
-            })
-            .fold(f64::NEG_INFINITY, f64::max);
-
-        let avg_weighted_degree: f64 = similarity_matrix.iter()
-            .enumerate()
-            .map(|(i, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter(|(j, _)| *j != i)
-                    .map(|(_, &val)| val)
-                    .sum::<f64>()
-            })
-            .sum::<f64>() / n as f64;
-
-        let structure_based_max = max_weighted_degree.max(avg_weighted_degree);
-        let effective_max = self.max_connectivity.max(structure_based_max);
-
-        let shifted = (connectivity - self.min_connectivity).max(0.0);
-
-        let normalized = if effective_max > self.min_connectivity {
-            shifted / (effective_max - self.min_connectivity)
-        } else {
-            0.0
-        };
-
-        normalized.clamp(0.0, 1.0)
-    }
-
-    /// Legacy normalization method
-    #[allow(dead_code)]
-    fn normalize_connectivity(&self, connectivity: f64, n: usize) -> f64 {
-        let shifted = (connectivity - self.min_connectivity).max(0.0);
-        let effective_max = (self.max_connectivity).min(n as f64);
-
-        let normalized = if effective_max > self.min_connectivity {
-            shifted / (effective_max - self.min_connectivity)
-        } else {
-            0.0
-        };
-
-        normalized.clamp(0.0, 1.0)
-    }
 }
 
 impl Default for ConnectivityCalculator {

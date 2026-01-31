@@ -228,6 +228,13 @@ nvml = []                      # NVIDIA Management Library for GPU monitoring
 network = []                   # Mycelix network client (real HTTP fetching)
 partnership_module = []        # Partnership module for Φ_dyad computation
 web_research_module = []       # Web research epistemic verification (scaffolded)
+benchmarks_module = []         # Benchmarks module compilation gate
+consciousness_module = []      # Consciousness examples compilation gate
+embeddings_module = []         # Embeddings examples compilation gate
+language_module = []           # Language examples compilation gate
+brain_module = []              # Brain subsystem examples compilation gate
+soul_module = []               # Soul/identity examples compilation gate
+school_module = []             # School/learning examples compilation gate
 
 [dev-dependencies]
 criterion = "0.5"
