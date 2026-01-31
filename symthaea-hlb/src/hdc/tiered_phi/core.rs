@@ -1501,7 +1501,7 @@ impl TieredPhi {
         // Step 3: Create importance ranking (highest first)
         let mut importance_ranking: Vec<usize> = (0..n).collect();
         importance_ranking.sort_by(|&a, &b| {
-            component_scores[b].partial_cmp(&component_scores[a]).unwrap()
+            component_scores[b].partial_cmp(&component_scores[a]).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Step 4: Identify critical and redundant components
@@ -1604,7 +1604,7 @@ impl TieredPhi {
         // Step 4: Create importance ranking (highest first)
         let mut importance_ranking: Vec<usize> = (0..n).collect();
         importance_ranking.sort_by(|&a, &b| {
-            component_scores[b].partial_cmp(&component_scores[a]).unwrap()
+            component_scores[b].partial_cmp(&component_scores[a]).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Step 5: Identify critical and redundant components
@@ -1653,7 +1653,7 @@ impl TieredPhi {
 
         // Sort for Gini calculation
         let mut sorted = shifted.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         // Gini coefficient formula
         let mut gini_sum = 0.0;

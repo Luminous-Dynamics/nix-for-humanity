@@ -549,7 +549,7 @@ impl BindingStudy {
             means.push(sum / values.len() as f64);
         }
 
-        means.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        means.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         let lower_idx = ((1.0 - self.config.confidence_level) / 2.0 * self.config.n_bootstrap as f64) as usize;
         let upper_idx = ((1.0 + self.config.confidence_level) / 2.0 * self.config.n_bootstrap as f64) as usize;
@@ -580,7 +580,7 @@ impl BindingStudy {
             diffs.push(sum_a / group_a.len() as f64 - sum_b / group_b.len() as f64);
         }
 
-        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         let lower_idx = ((1.0 - self.config.confidence_level) / 2.0 * self.config.n_bootstrap as f64) as usize;
         let upper_idx = ((1.0 + self.config.confidence_level) / 2.0 * self.config.n_bootstrap as f64) as usize;
@@ -644,7 +644,7 @@ impl BindingStudy {
         let std_adv = self.std_dev(&advantages);
 
         let mut sorted_adv = advantages.clone();
-        sorted_adv.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        sorted_adv.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let median_adv = sorted_adv[sorted_adv.len() / 2];
 
         CategoryStatistics {

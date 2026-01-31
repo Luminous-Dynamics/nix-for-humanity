@@ -817,7 +817,7 @@ impl PhenomenalDetector {
 
         // Find most phenomenal passages
         let mut sorted = passage_scores.clone();
-        sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         let top_phenomenal: Vec<_> = sorted.into_iter().take(3).collect();
 
         Ok(DocumentAnalysis {

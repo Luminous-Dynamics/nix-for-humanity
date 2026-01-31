@@ -344,7 +344,7 @@ impl RhymeEncoder {
         candidates.iter()
             .map(|(word, phonemes)| (*word, self.rhyme_score(target, phonemes)))
             .filter(|(_, score)| score.rhyme_type != RhymeType::None)
-            .max_by(|a, b| a.1.score.partial_cmp(&b.1.score).unwrap())
+            .max_by(|a, b| a.1.score.partial_cmp(&b.1.score).unwrap_or(std::cmp::Ordering::Equal))
     }
 }
 

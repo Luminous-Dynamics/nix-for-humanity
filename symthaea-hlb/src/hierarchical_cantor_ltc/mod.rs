@@ -489,7 +489,7 @@ impl HierarchicalCantorLtcNetwork {
     pub fn query(&self, query: &RealHV, top_k: usize) -> Vec<(usize, usize, f32)> {
         let mut results = Vec::new();
         self.query_recursive(&self.root, query, &mut results);
-        results.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+        results.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
         results.truncate(top_k);
         results
     }

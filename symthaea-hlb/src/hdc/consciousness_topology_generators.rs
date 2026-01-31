@@ -372,7 +372,7 @@ impl TopologyGenerator {
             .min_by(|a, b| {
                 let diff_a = (a.phi_estimate - target_phi).abs();
                 let diff_b = (b.phi_estimate - target_phi).abs();
-                diff_a.partial_cmp(&diff_b).unwrap()
+                diff_a.partial_cmp(&diff_b).unwrap_or(std::cmp::Ordering::Equal)
             })
             .unwrap()
     }

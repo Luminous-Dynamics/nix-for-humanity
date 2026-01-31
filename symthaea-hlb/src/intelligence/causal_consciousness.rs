@@ -143,7 +143,7 @@ impl HSICTest {
             return 1.0;
         }
 
-        dists.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         dists[dists.len() / 2].max(1e-10)
     }
 
@@ -500,7 +500,7 @@ impl CausalAttention {
             }
         }
 
-        causes.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        causes.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         causes
     }
 
@@ -517,7 +517,7 @@ impl CausalAttention {
             }
         }
 
-        effects.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        effects.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         effects
     }
 

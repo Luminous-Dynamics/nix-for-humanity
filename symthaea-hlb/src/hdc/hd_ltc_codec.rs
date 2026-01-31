@@ -572,7 +572,7 @@ mod semantic_preservation_tests {
             let mut b = hv_a.clone();
             let flip_hv = HV16::random(100);
             // Bundle A with a random HV to get something similar but not identical
-            hv_a.bundle(&flip_hv)
+            HV16::bundle(&[hv_a.clone(), flip_hv])
         };
         let hv_c = HV16::random(9999); // Unrelated to A
 

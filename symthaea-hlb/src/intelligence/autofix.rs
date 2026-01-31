@@ -481,7 +481,7 @@ impl AutoFixer {
         }
 
         // Sort by confidence
-        suggestions.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        suggestions.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         suggestions.dedup_by(|a, b| a.0 == b.0);
 
         suggestions

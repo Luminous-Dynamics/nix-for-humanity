@@ -366,7 +366,7 @@ impl LTCGenerativeCore {
 
         // Sample (simplified: just take highest for now)
         // In production, would use proper sampling
-        candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         let selected = &candidates[0];
 
         (selected.0.clone(), selected.1, decoded.confidence)
@@ -402,7 +402,7 @@ impl LTCGenerativeCore {
             })
             .collect();
 
-        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         let selected = &scored[0];
 
         (selected.0.clone(), selected.1, selected.2)

@@ -239,7 +239,7 @@ impl UniversalSemantics {
             .filter(|(_, sim)| *sim >= self.config.similarity_threshold)
             .collect();
 
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         // Update statistics
         if let Some((_, best_sim)) = results.first() {

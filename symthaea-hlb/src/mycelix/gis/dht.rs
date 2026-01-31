@@ -518,7 +518,7 @@ impl DarkSpotDHT {
         }
 
         // Sort by similarity
-        matches.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap());
+        matches.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(std::cmp::Ordering::Equal));
         matches
     }
 
@@ -773,7 +773,7 @@ impl CuriosityEngine {
         self.queue.push(item);
 
         // Sort by priority (EIG)
-        self.queue.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
+        self.queue.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
 
         Ok(request)
     }
@@ -808,7 +808,7 @@ impl CuriosityEngine {
         self.queue.push(item);
 
         // Sort by priority (harmonic EIG)
-        self.queue.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
+        self.queue.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
 
         Ok(request)
     }

@@ -472,7 +472,7 @@ impl IntelliSenseEngine {
         }
 
         // Sort by confidence (descending)
-        completions.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
+        completions.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
         completions.truncate(10);
 
         completions

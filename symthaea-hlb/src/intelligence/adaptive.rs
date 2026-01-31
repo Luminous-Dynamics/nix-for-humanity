@@ -151,7 +151,7 @@ impl PatternStore {
             // Remove lowest weight pattern
             if let Some(min_idx) = patterns.iter()
                 .enumerate()
-                .min_by(|(_, a), (_, b)| a.weight.partial_cmp(&b.weight).unwrap())
+                .min_by(|(_, a), (_, b)| a.weight.partial_cmp(&b.weight).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(i, _)| i)
             {
                 patterns.remove(min_idx);
@@ -175,7 +175,7 @@ impl PatternStore {
         }
 
         // Sort by relevance
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         results
     }
 

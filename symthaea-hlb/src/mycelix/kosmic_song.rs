@@ -248,7 +248,7 @@ impl HarmonicProfile {
     pub fn dominant(&self) -> Harmony {
         let (idx, _) = self.activations.iter()
             .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or((0, &0.0));
 
         self.index_to_harmony(idx)

@@ -233,7 +233,7 @@ impl PrimitiveEvolver {
         // Keep best individuals (elitism)
         let elite_count = (self.config.population_size as f32 * 0.1) as usize;
         let mut sorted: Vec<_> = self.population.values().cloned().collect();
-        sorted.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        sorted.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
 
         for concept in sorted.iter().take(elite_count) {
             new_population.insert(concept.id, concept.clone());
@@ -270,7 +270,7 @@ impl PrimitiveEvolver {
     /// Select individuals for reproduction
     fn select(&self) -> Vec<EvolvingConcept> {
         let mut candidates: Vec<_> = self.population.values().cloned().collect();
-        candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
 
         // Tournament selection
         let tournament_size = 3;
@@ -303,7 +303,7 @@ impl PrimitiveEvolver {
 
         let initial_best = self.population.values()
             .map(|c| c.fitness)
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(0.0);
 
         let mut converged = false;
@@ -316,7 +316,7 @@ impl PrimitiveEvolver {
 
             let current_best = self.population.values()
                 .map(|c| c.fitness)
-                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(0.0);
 
             if (current_best - prev_best).abs() < convergence_threshold {
@@ -333,7 +333,7 @@ impl PrimitiveEvolver {
 
         let final_best = self.population.values()
             .map(|c| c.fitness)
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(0.0);
 
         EvolutionResult {
@@ -350,7 +350,7 @@ impl PrimitiveEvolver {
         let fitnesses: Vec<f64> = self.population.values().map(|c| c.fitness).collect();
 
         let best = fitnesses.iter().copied()
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(0.0);
 
         let avg = if fitnesses.is_empty() {
@@ -402,7 +402,7 @@ impl PrimitiveEvolver {
     /// Get best concept
     pub fn best(&self) -> Option<&EvolvingConcept> {
         self.population.values()
-            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
+            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(std::cmp::Ordering::Equal))
     }
 
     /// Get statistics

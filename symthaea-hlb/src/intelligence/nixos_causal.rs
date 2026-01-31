@@ -179,7 +179,7 @@ impl NixOSCausalAnalyzer {
         }
 
         // Sort by confidence
-        root_causes.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
+        root_causes.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
 
         RootCauseAnalysis {
             symptom: symptom.to_string(),
@@ -216,7 +216,7 @@ impl NixOSCausalAnalyzer {
         }
 
         // Sort by confidence
-        effects.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
+        effects.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
         effects
     }
 

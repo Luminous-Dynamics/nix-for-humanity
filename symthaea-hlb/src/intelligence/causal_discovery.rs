@@ -462,7 +462,7 @@ impl CausalDiscoveryEngine {
 
         // Sort pairs by x
         let mut pairs: Vec<(f64, f64)> = xn.iter().cloned().zip(yn.iter().cloned()).collect();
-        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Compute log slopes for X→Y
         let mut slopes_xy = Vec::new();
@@ -475,7 +475,7 @@ impl CausalDiscoveryEngine {
         }
 
         // Sort pairs by y for Y→X
-        pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut slopes_yx = Vec::new();
         for i in 0..pairs.len() - 1 {
@@ -891,7 +891,7 @@ impl CausalDiscoveryEngine {
     fn median(&self, v: &[f64]) -> f64 {
         if v.is_empty() { return 0.0; }
         let mut sorted = v.to_vec();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let n = sorted.len();
         if n % 2 == 1 {
             sorted[n / 2]
@@ -1181,7 +1181,7 @@ impl<'a> ParallelPredictHelper<'a> {
         let yn: Vec<f64> = y.iter().map(|&v| (v - min_y) / (max_y - min_y)).collect();
 
         let mut pairs: Vec<(f64, f64)> = xn.iter().cloned().zip(yn.iter().cloned()).collect();
-        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut slopes_xy = Vec::new();
         for i in 0..pairs.len() - 1 {
@@ -1192,7 +1192,7 @@ impl<'a> ParallelPredictHelper<'a> {
             }
         }
 
-        pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        pairs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
         let mut slopes_yx = Vec::new();
         for i in 0..pairs.len() - 1 {
             let dy = pairs[i + 1].1 - pairs[i].1;

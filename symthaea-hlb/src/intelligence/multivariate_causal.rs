@@ -353,7 +353,7 @@ impl PCAlgorithm {
         if dists.is_empty() {
             return 1.0;
         }
-        dists.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         dists[dists.len() / 2].max(1e-10)
     }
 

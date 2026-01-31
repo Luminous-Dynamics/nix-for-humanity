@@ -166,7 +166,7 @@ impl EmotionalCore {
 
         // Find primary emotion
         let (primary_emotion, confidence) = emotion_scores.iter()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(e, s)| (e.clone(), *s))
             .unwrap_or(("neutral".to_string(), 0.0));
 

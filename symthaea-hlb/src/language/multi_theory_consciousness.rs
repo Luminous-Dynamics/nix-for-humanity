@@ -207,7 +207,7 @@ impl GlobalWorkspace {
             // Find minimum salience
             let min_idx = self.contents.iter()
                 .enumerate()
-                .min_by(|(_, a), (_, b)| a.salience.partial_cmp(&b.salience).unwrap())
+                .min_by(|(_, a), (_, b)| a.salience.partial_cmp(&b.salience).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(i, _)| i);
 
             if let Some(idx) = min_idx {
@@ -646,7 +646,7 @@ impl PredictiveProcessor {
             priors.push((prediction.to_string(), strength));
             // Limit priors per context
             if priors.len() > 10 {
-                priors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                priors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 priors.truncate(10);
             }
         }
@@ -1093,7 +1093,7 @@ impl MultiTheoryMetrics {
         ];
 
         theories.iter()
-            .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+            .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(_, name)| *name)
             .unwrap_or("Unknown")
     }
