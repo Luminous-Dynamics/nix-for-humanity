@@ -676,7 +676,7 @@ impl ConsciousPipeline {
 
     /// Execute the detected action
     async fn execute_action(&mut self, intent: &DetectedIntent) -> Result<ExecutionOutcome> {
-        let _phi_before = self.current_phi;
+        let phi_before = self.current_phi;
 
         // For now, we simulate execution
         // In a full implementation, this would call NixOSExecutor
@@ -701,11 +701,11 @@ impl ConsciousPipeline {
             self.stats.failed_executions += 1;
         }
 
-        // Calculate post-execution Φ
+        // Calculate post-execution Φ relative to pre-execution state
         let phi_after = if success {
-            (self.current_phi * 1.05).min(1.0) // Success slightly increases Φ
+            (phi_before * 1.05).min(1.0) // Success slightly increases Φ
         } else {
-            (self.current_phi * 0.95).max(0.1) // Failure slightly decreases Φ
+            (phi_before * 0.95).max(0.1) // Failure slightly decreases Φ
         };
         self.current_phi = phi_after;
 

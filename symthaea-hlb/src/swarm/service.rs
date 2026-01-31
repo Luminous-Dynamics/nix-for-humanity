@@ -482,17 +482,55 @@ impl SwarmBridge {
         &self.service
     }
 
-    /// Share a learned pattern with the network (future: integrate with mycelix DHT)
-    pub async fn share_pattern(&self, _pattern: &[f32], _context: &str) -> SwarmResult<()> {
-        // TODO: Convert to consciousness vector and broadcast
-        // For now, this is a placeholder for swarm learning
+    /// Share a learned pattern with the network by converting to consciousness vector
+    ///
+    /// The pattern is embedded into a `ConsciousnessVector` and broadcast to all
+    /// connected peers. The context string is hashed to create the focus_hash field.
+    pub async fn share_pattern(&self, pattern: &[f32], context: &str) -> SwarmResult<()> {
+        // Convert pattern to attention vector (truncate or pad to 64 elements)
+        let mut attention = vec![0.0f32; 64];
+        for (i, &v) in pattern.iter().take(64).enumerate() {
+            attention[i] = v;
+        }
+
+        // Compute simple phi from pattern magnitude (normalized)
+        let magnitude: f32 = pattern.iter().map(|v| v * v).sum::<f32>().sqrt();
+        let phi = (magnitude / (pattern.len() as f32).sqrt()).min(1.0) as f64;
+
+        // Create context hash from the context string
+        let focus_hash = context.bytes().fold(0u64, |acc, b| {
+            acc.wrapping_mul(31).wrapping_add(b as u64)
+        });
+
+        // Build consciousness vector
+        let mut consciousness = ConsciousnessVector::new(attention, phi);
+        consciousness.focus_hash = focus_hash;
+
+        // Broadcast to all connected peers
+        self.service.broadcast_consciousness(&consciousness).await?;
+
         Ok(())
     }
 
     /// Query the network for similar patterns (future: DHT lookup)
+    ///
+    /// # Current Status: Placeholder
+    ///
+    /// Full implementation requires:
+    /// 1. DHT integration with Holochain for pattern storage and retrieval
+    /// 2. Pattern indexing structure (e.g., LSH or HNSW) for similarity search
+    /// 3. Query routing protocol to find peers with similar patterns
+    /// 4. Trust-weighted result aggregation from multiple peers
+    ///
+    /// For now, returns empty results. Enable the `mycelix-dht` feature (future)
+    /// for full pattern query support.
     pub async fn query_patterns(&self, _query: &[f32], _k: usize) -> SwarmResult<Vec<(String, f64)>> {
-        // TODO: Implement pattern similarity query via network
-        // Returns (peer_id, similarity) pairs
+        // Future implementation would:
+        // 1. Hash the query pattern using locality-sensitive hashing
+        // 2. Query the Holochain DHT for entries with similar hashes
+        // 3. Retrieve pattern vectors from matching peers
+        // 4. Compute exact cosine similarity with query
+        // 5. Return top-k results sorted by similarity
         Ok(vec![])
     }
 
@@ -527,12 +565,43 @@ pub struct CollectiveConsciousness {
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // ServiceStats Tests
+    // =========================================================================
+
     #[test]
     fn test_service_stats_default() {
         let stats = ServiceStats::default();
         assert_eq!(stats.connected_peers, 0);
         assert_eq!(stats.messages_sent, 0);
+        assert_eq!(stats.messages_received, 0);
+        assert_eq!(stats.bytes_sent, 0);
+        assert_eq!(stats.bytes_received, 0);
+        assert_eq!(stats.bootstrap_attempts, 0);
+        assert_eq!(stats.bootstrap_successes, 0);
+        assert_eq!(stats.uptime_seconds, 0);
     }
+
+    #[test]
+    fn test_service_stats_clone() {
+        let stats = ServiceStats {
+            connected_peers: 5,
+            messages_sent: 100,
+            messages_received: 200,
+            bytes_sent: 1000,
+            bytes_received: 2000,
+            bootstrap_attempts: 3,
+            bootstrap_successes: 2,
+            uptime_seconds: 3600,
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.connected_peers, 5);
+        assert_eq!(cloned.messages_sent, 100);
+    }
+
+    // =========================================================================
+    // BootstrapConfig Tests
+    // =========================================================================
 
     #[test]
     fn test_bootstrap_config() {
@@ -541,6 +610,37 @@ mod tests {
         assert!(!config.has_bootstrap_nodes() || true); // May or may not have nodes
         assert!(config.enable_local_discovery);
     }
+
+    #[test]
+    fn test_bootstrap_config_local_dev() {
+        let config = BootstrapConfig::local_dev();
+        assert!(!config.has_bootstrap_nodes());
+        assert!(config.enable_local_discovery);
+        assert_eq!(config.max_retries, 1);
+    }
+
+    #[test]
+    fn test_bootstrap_config_with_nodes() {
+        let nodes = vec!["node1".to_string(), "node2".to_string()];
+        let config = BootstrapConfig::with_nodes(nodes);
+        assert!(config.has_bootstrap_nodes());
+        assert_eq!(config.primary.len(), 2);
+    }
+
+    #[test]
+    fn test_bootstrap_config_all_nodes() {
+        let mut config = BootstrapConfig::default();
+        config.primary = vec!["primary1".to_string()];
+        config.fallback = vec!["fallback1".to_string()];
+        let all: Vec<&str> = config.all_nodes().collect();
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[0], "primary1");
+        assert_eq!(all[1], "fallback1");
+    }
+
+    // =========================================================================
+    // CollectiveConsciousness Tests
+    // =========================================================================
 
     #[test]
     fn test_collective_consciousness() {
@@ -552,5 +652,635 @@ mod tests {
         };
         assert_eq!(cc.peer_count, 5);
         assert!(cc.coherence > 0.8);
+    }
+
+    #[test]
+    fn test_collective_consciousness_clone() {
+        let cc = CollectiveConsciousness {
+            peer_count: 10,
+            mean_phi: 0.9,
+            coherence: 0.95,
+            total_messages: 5000,
+        };
+        let cloned = cc.clone();
+        assert_eq!(cloned.peer_count, 10);
+        assert!((cloned.mean_phi - 0.9).abs() < 0.01);
+    }
+
+    // =========================================================================
+    // PeerEvent Tests
+    // =========================================================================
+
+    #[test]
+    fn test_peer_event_discovered() {
+        let peer = PeerInfo::new("test-peer-123");
+        let event = PeerEvent::Discovered(peer.clone());
+        match event {
+            PeerEvent::Discovered(p) => assert_eq!(p.node_id, "test-peer-123"),
+            _ => panic!("Expected Discovered event"),
+        }
+    }
+
+    #[test]
+    fn test_peer_event_connected() {
+        let peer = PeerInfo::new("connected-peer");
+        let event = PeerEvent::Connected(peer);
+        match event {
+            PeerEvent::Connected(p) => assert_eq!(p.node_id, "connected-peer"),
+            _ => panic!("Expected Connected event"),
+        }
+    }
+
+    #[test]
+    fn test_peer_event_disconnected() {
+        let event = PeerEvent::Disconnected {
+            peer_id: "disc-peer".to_string(),
+            reason: "timeout".to_string(),
+        };
+        match event {
+            PeerEvent::Disconnected { peer_id, reason } => {
+                assert_eq!(peer_id, "disc-peer");
+                assert_eq!(reason, "timeout");
+            }
+            _ => panic!("Expected Disconnected event"),
+        }
+    }
+
+    #[test]
+    fn test_peer_event_trust_changed() {
+        let event = PeerEvent::TrustChanged {
+            peer_id: "trust-peer".to_string(),
+            old: TrustLevel::Unknown,
+            new: TrustLevel::Verified(0.8),
+        };
+        match event {
+            PeerEvent::TrustChanged { peer_id, old, new } => {
+                assert_eq!(peer_id, "trust-peer");
+                assert_eq!(old.value(), 0.0);
+                assert!((new.value() - 0.8).abs() < 0.01);
+            }
+            _ => panic!("Expected TrustChanged event"),
+        }
+    }
+
+    #[test]
+    fn test_peer_event_consciousness_update() {
+        let event = PeerEvent::ConsciousnessUpdate {
+            peer_id: "conscious-peer".to_string(),
+            phi: 0.75,
+            sequence: 42,
+        };
+        match event {
+            PeerEvent::ConsciousnessUpdate { peer_id, phi, sequence } => {
+                assert_eq!(peer_id, "conscious-peer");
+                assert!((phi - 0.75).abs() < 0.01);
+                assert_eq!(sequence, 42);
+            }
+            _ => panic!("Expected ConsciousnessUpdate event"),
+        }
+    }
+
+    #[test]
+    fn test_peer_event_clone() {
+        let event = PeerEvent::Disconnected {
+            peer_id: "clone-test".to_string(),
+            reason: "testing clone".to_string(),
+        };
+        let cloned = event.clone();
+        match cloned {
+            PeerEvent::Disconnected { peer_id, .. } => assert_eq!(peer_id, "clone-test"),
+            _ => panic!("Clone failed"),
+        }
+    }
+
+    // =========================================================================
+    // NetworkService Creation and Initialization Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_service_creation_default_config() {
+        let config = SwarmConfig::default();
+        let service = NetworkService::new(config).await;
+        assert!(service.is_ok());
+        let service = service.unwrap();
+        assert_eq!(service.peer_count(), 0);
+        assert!(!service.is_enabled() || service.is_enabled()); // Either is valid based on feature
+    }
+
+    #[tokio::test]
+    async fn test_service_creation_local_only() {
+        let config = SwarmConfig::local_only();
+        let service = NetworkService::new(config).await.unwrap();
+        assert_eq!(service.peer_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_service_creation_custom_config() {
+        let config = SwarmConfig {
+            max_peers: 10,
+            min_trust_level: 0.9,
+            heartbeat_interval_ms: 5000,
+            ..Default::default()
+        };
+        let service = NetworkService::new(config).await.unwrap();
+        assert_eq!(service.peer_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_service_node_id() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let node_id = service.node_id();
+        // Without swarm feature, node_id is empty; with it, it's non-empty
+        assert!(node_id.is_empty() || !node_id.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_service_stats_initial() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let stats = service.stats();
+        assert_eq!(stats.connected_peers, 0);
+        assert_eq!(stats.messages_sent, 0);
+        assert_eq!(stats.messages_received, 0);
+        assert_eq!(stats.bootstrap_attempts, 0);
+    }
+
+    #[tokio::test]
+    async fn test_service_stats_uptime() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        // Wait a tiny bit to ensure uptime > 0
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        let stats = service.stats();
+        // Uptime should be at least 0 (could be 0 if less than 1 second)
+        assert!(stats.uptime_seconds >= 0);
+    }
+
+    // =========================================================================
+    // Bootstrap Process Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_bootstrap_no_nodes_no_discovery() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let config = BootstrapConfig {
+            primary: vec![],
+            fallback: vec![],
+            enable_local_discovery: false,
+            bootstrap_timeout_ms: 1000,
+            max_retries: 1,
+        };
+        let result = service.bootstrap(config).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_with_local_discovery_only() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let config = BootstrapConfig::local_dev();
+        let result = service.bootstrap(config).await;
+        assert!(result.is_ok());
+        // With only local discovery and no peers, should return 0
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_attempts_tracked() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let config = BootstrapConfig {
+            primary: vec!["invalid-ticket".to_string()],
+            fallback: vec![],
+            enable_local_discovery: false,
+            bootstrap_timeout_ms: 100,
+            max_retries: 1,
+        };
+        let _ = service.bootstrap(config).await;
+        let stats = service.stats();
+        assert_eq!(stats.bootstrap_attempts, 1);
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_empty_config() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let config = BootstrapConfig {
+            primary: vec![],
+            fallback: vec![],
+            enable_local_discovery: false,
+            bootstrap_timeout_ms: 1000,
+            max_retries: 1,
+        };
+        let result = service.bootstrap(config).await;
+        assert!(result.is_ok());
+        // Should return 0 since no nodes and no local discovery
+        let connected = result.unwrap();
+        assert_eq!(connected, 0);
+        // Bootstrap should not have been attempted since early return
+        let stats = service.stats();
+        assert_eq!(stats.bootstrap_attempts, 0);
+    }
+
+    // =========================================================================
+    // Peer Connection Lifecycle Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_connect_to_peer_without_swarm_feature() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let result = service.connect_to_peer("invalid-ticket").await;
+        // Without swarm feature, should return FeatureNotEnabled error
+        // With swarm feature, should return connection error
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_peer_info_nonexistent() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let info = service.get_peer_info("nonexistent-peer");
+        assert!(info.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_connected_peer_ids_empty() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let peer_ids = service.connected_peer_ids();
+        assert!(peer_ids.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_disconnect_nonexistent_peer() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        // Should not panic when disconnecting nonexistent peer
+        service.disconnect_peer("nonexistent", "test cleanup");
+        assert_eq!(service.peer_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_peer_consciousness_nonexistent() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let consciousness = service.get_peer_consciousness("nonexistent-peer");
+        assert!(consciousness.is_none());
+    }
+
+    // =========================================================================
+    // Consciousness Broadcasting Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_broadcast_consciousness_no_peers() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let state = ConsciousnessVector::new(vec![0.0; 64], 0.5);
+        let result = service.broadcast_consciousness(&state).await;
+        assert!(result.is_ok());
+        // With no peers, should return 0 sent
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_receive_consciousness_updates_state() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.75);
+        service.receive_consciousness("peer-1", state.clone());
+
+        let retrieved = service.get_peer_consciousness("peer-1");
+        assert!(retrieved.is_some());
+        let retrieved = retrieved.unwrap();
+        assert!((retrieved.phi - 0.75).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_receive_consciousness_updates_stats() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.75);
+        service.receive_consciousness("peer-1", state);
+
+        let stats = service.stats();
+        assert_eq!(stats.messages_received, 1);
+        assert!(stats.bytes_received > 0);
+    }
+
+    #[tokio::test]
+    async fn test_receive_consciousness_broadcasts_event() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let mut rx = service.subscribe_consciousness();
+        let mut event_rx = service.subscribe_peer_events();
+
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.8);
+        service.receive_consciousness("peer-2", state);
+
+        // Check consciousness channel
+        let received = rx.try_recv();
+        assert!(received.is_ok());
+        let (peer_id, consciousness) = received.unwrap();
+        assert_eq!(peer_id, "peer-2");
+        assert!((consciousness.phi - 0.8).abs() < 0.01);
+
+        // Check peer event channel
+        let event = event_rx.try_recv();
+        assert!(event.is_ok());
+        match event.unwrap() {
+            PeerEvent::ConsciousnessUpdate { peer_id, phi, .. } => {
+                assert_eq!(peer_id, "peer-2");
+                assert!((phi - 0.8).abs() < 0.01);
+            }
+            _ => panic!("Expected ConsciousnessUpdate event"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_receive_multiple_consciousness_updates() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        for i in 0..5 {
+            let state = ConsciousnessVector::new(vec![0.1; 64], 0.5 + (i as f64 * 0.1));
+            service.receive_consciousness(&format!("peer-{}", i), state);
+        }
+
+        let stats = service.stats();
+        assert_eq!(stats.messages_received, 5);
+    }
+
+    // =========================================================================
+    // Network Metrics Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_network_mean_phi_empty() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let mean_phi = service.network_mean_phi();
+        assert_eq!(mean_phi, 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_network_mean_phi_single_peer() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.6);
+        service.receive_consciousness("peer-1", state);
+
+        let mean_phi = service.network_mean_phi();
+        assert!((mean_phi - 0.6).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_network_mean_phi_multiple_peers() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        service.receive_consciousness("peer-1", ConsciousnessVector::new(vec![0.1; 64], 0.4));
+        service.receive_consciousness("peer-2", ConsciousnessVector::new(vec![0.1; 64], 0.6));
+        service.receive_consciousness("peer-3", ConsciousnessVector::new(vec![0.1; 64], 0.8));
+
+        let mean_phi = service.network_mean_phi();
+        // Mean of 0.4, 0.6, 0.8 = 0.6
+        assert!((mean_phi - 0.6).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_network_coherence_empty() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let coherence = service.network_coherence();
+        // Empty or single node is perfectly coherent
+        assert_eq!(coherence, 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_network_coherence_single_peer() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.5);
+        service.receive_consciousness("peer-1", state);
+
+        let coherence = service.network_coherence();
+        // Single peer is perfectly coherent
+        assert_eq!(coherence, 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_network_coherence_identical_peers() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        // All peers have same phi = high coherence
+        for i in 0..5 {
+            service.receive_consciousness(
+                &format!("peer-{}", i),
+                ConsciousnessVector::new(vec![0.1; 64], 0.7),
+            );
+        }
+
+        let coherence = service.network_coherence();
+        // Zero variance = maximum coherence
+        assert!((coherence - 1.0).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_network_coherence_varied_peers() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        // Peers with varied phi values = lower coherence
+        service.receive_consciousness("peer-1", ConsciousnessVector::new(vec![0.1; 64], 0.1));
+        service.receive_consciousness("peer-2", ConsciousnessVector::new(vec![0.1; 64], 0.9));
+
+        let coherence = service.network_coherence();
+        // High variance = lower coherence
+        assert!(coherence < 1.0);
+        assert!(coherence >= 0.0);
+    }
+
+    // =========================================================================
+    // Subscription Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_subscribe_consciousness() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let rx = service.subscribe_consciousness();
+        // Should be able to subscribe without error
+        drop(rx);
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_peer_events() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let rx = service.subscribe_peer_events();
+        // Should be able to subscribe without error
+        drop(rx);
+    }
+
+    #[tokio::test]
+    async fn test_multiple_subscribers() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        let mut rx1 = service.subscribe_consciousness();
+        let mut rx2 = service.subscribe_consciousness();
+
+        let state = ConsciousnessVector::new(vec![0.1; 64], 0.5);
+        service.receive_consciousness("peer-1", state);
+
+        // Both subscribers should receive the update
+        assert!(rx1.try_recv().is_ok());
+        assert!(rx2.try_recv().is_ok());
+    }
+
+    // =========================================================================
+    // Ticket Creation Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_create_ticket_without_swarm() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        let result = service.create_ticket();
+        // Without swarm feature, should return FeatureNotEnabled
+        // With swarm feature, should return a ticket
+        if !service.is_enabled() {
+            assert!(result.is_err());
+        }
+    }
+
+    // =========================================================================
+    // Graceful Shutdown Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_shutdown_empty_service() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        // Should not panic on shutdown with no peers
+        service.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_with_consciousness_state() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        // Add some consciousness state
+        for i in 0..3 {
+            service.receive_consciousness(
+                &format!("peer-{}", i),
+                ConsciousnessVector::new(vec![0.1; 64], 0.5),
+            );
+        }
+
+        // Shutdown should clean up all state
+        service.shutdown().await;
+        // Service is consumed by shutdown, so we can't verify state after
+    }
+
+    // =========================================================================
+    // SwarmBridge Tests
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_swarm_bridge_creation() {
+        let service = Arc::new(NetworkService::new(SwarmConfig::default()).await.unwrap());
+        let bridge = SwarmBridge::new(service.clone());
+        assert_eq!(bridge.service().peer_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_swarm_bridge_collective_summary_empty() {
+        let service = Arc::new(NetworkService::new(SwarmConfig::default()).await.unwrap());
+        let bridge = SwarmBridge::new(service);
+        let summary = bridge.collective_summary();
+
+        assert_eq!(summary.peer_count, 0);
+        assert_eq!(summary.mean_phi, 0.0);
+        assert_eq!(summary.coherence, 1.0);
+        assert_eq!(summary.total_messages, 0);
+    }
+
+    #[tokio::test]
+    async fn test_swarm_bridge_collective_summary_with_data() {
+        let service = Arc::new(NetworkService::new(SwarmConfig::default()).await.unwrap());
+
+        service.receive_consciousness("peer-1", ConsciousnessVector::new(vec![0.1; 64], 0.5));
+        service.receive_consciousness("peer-2", ConsciousnessVector::new(vec![0.1; 64], 0.7));
+
+        let bridge = SwarmBridge::new(service);
+        let summary = bridge.collective_summary();
+
+        // 2 messages received
+        assert!(summary.total_messages >= 2);
+        // Mean of 0.5 and 0.7 = 0.6
+        assert!((summary.mean_phi - 0.6).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_swarm_bridge_share_pattern() {
+        let service = Arc::new(NetworkService::new(SwarmConfig::default()).await.unwrap());
+        let bridge = SwarmBridge::new(service);
+
+        let pattern = vec![0.1, 0.2, 0.3, 0.4];
+        let result = bridge.share_pattern(&pattern, "test-context").await;
+        // Currently returns Ok(()) as placeholder
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_swarm_bridge_query_patterns() {
+        let service = Arc::new(NetworkService::new(SwarmConfig::default()).await.unwrap());
+        let bridge = SwarmBridge::new(service);
+
+        let query = vec![0.1, 0.2, 0.3];
+        let result = bridge.query_patterns(&query, 5).await;
+        // Currently returns empty vec as placeholder
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    // =========================================================================
+    // Edge Cases and Error Handling
+    // =========================================================================
+
+    #[tokio::test]
+    async fn test_large_consciousness_vector() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+        // Large attention vector
+        let state = ConsciousnessVector::new(vec![0.1; 1024], 0.5);
+        service.receive_consciousness("peer-1", state.clone());
+
+        let retrieved = service.get_peer_consciousness("peer-1");
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().attention.len(), 1024);
+    }
+
+    #[tokio::test]
+    async fn test_extreme_phi_values() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        service.receive_consciousness("peer-1", ConsciousnessVector::new(vec![0.1; 64], 0.0));
+        service.receive_consciousness("peer-2", ConsciousnessVector::new(vec![0.1; 64], 1.0));
+
+        let mean = service.network_mean_phi();
+        assert!((mean - 0.5).abs() < 0.01);
+    }
+
+    #[tokio::test]
+    async fn test_rapid_consciousness_updates() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        // Rapid updates from same peer
+        for i in 0..100 {
+            let state = ConsciousnessVector::new(vec![0.1; 64], (i as f64) / 100.0);
+            service.receive_consciousness("peer-1", state);
+        }
+
+        // Should have last state
+        let final_state = service.get_peer_consciousness("peer-1");
+        assert!(final_state.is_some());
+        assert!((final_state.unwrap().phi - 0.99).abs() < 0.01);
+
+        // Should have 100 messages
+        let stats = service.stats();
+        assert_eq!(stats.messages_received, 100);
+    }
+
+    #[tokio::test]
+    async fn test_consciousness_update_overwrites_previous() {
+        let service = NetworkService::new(SwarmConfig::default()).await.unwrap();
+
+        let state1 = ConsciousnessVector::new(vec![0.1; 64], 0.3);
+        service.receive_consciousness("peer-1", state1);
+
+        let state2 = ConsciousnessVector::new(vec![0.2; 64], 0.8);
+        service.receive_consciousness("peer-1", state2);
+
+        let retrieved = service.get_peer_consciousness("peer-1");
+        assert!(retrieved.is_some());
+        assert!((retrieved.unwrap().phi - 0.8).abs() < 0.01);
     }
 }

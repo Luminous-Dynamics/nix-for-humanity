@@ -68,6 +68,15 @@ pub use phenomenal_detector::{
     ContrastiveEvaluation, ExampleEvaluation,
 };
 
+// Scaling Findings - Research findings on phenomenal discrimination scaling
+// Documents optimal model sizes and angular separation mechanisms
+pub mod scaling_findings;
+pub use scaling_findings::{
+    Architecture, OptimalModelConfig, ScalingMetrics, ScalingFindings,
+    DiscriminationQuality, ModelRecommendation,
+    get_optimal_model, get_all_optimal_configs, get_scaling_findings, recommend_model,
+};
+
 // Multi-Model Extractor Framework - Cross-architecture support
 pub mod multi_model_extractor;
 pub use multi_model_extractor::{

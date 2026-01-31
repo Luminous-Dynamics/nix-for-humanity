@@ -364,9 +364,41 @@ impl WebResearcher {
     }
 }
 
+/// Error returned when WebResearcher creation fails
+#[derive(Debug)]
+pub struct WebResearcherCreationError(anyhow::Error);
+
+impl std::fmt::Display for WebResearcherCreationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Failed to create WebResearcher: {}", self.0)
+    }
+}
+
+impl std::error::Error for WebResearcherCreationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.0.source()
+    }
+}
+
+impl WebResearcher {
+    /// Try to create a WebResearcher with default configuration.
+    ///
+    /// Returns `None` if the HTTP client cannot be created (e.g., TLS initialization failure).
+    /// This is a safer alternative to `Default::default()` which can panic.
+    pub fn try_default() -> Option<Self> {
+        Self::new().ok()
+    }
+}
+
 impl Default for WebResearcher {
+    /// Creates a WebResearcher with default configuration.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the HTTP client cannot be created. For a non-panicking alternative,
+    /// use `WebResearcher::new()` or `WebResearcher::try_default()`.
     fn default() -> Self {
-        Self::new().expect("Failed to create default WebResearcher")
+        Self::new().expect("Failed to create default WebResearcher: HTTP client initialization failed")
     }
 }
 

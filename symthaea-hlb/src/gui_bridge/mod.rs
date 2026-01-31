@@ -231,9 +231,9 @@ impl GuiBridge {
     }
 
     /// Register a widget binding
-    pub fn register_binding(&mut self, binding: WidgetBinding) {
-        // Encode semantic HV for the binding
-        let _semantic_hv = self.translator.encode_path(&binding.nix_path);
+    pub fn register_binding(&mut self, mut binding: WidgetBinding) {
+        // Encode semantic HV for the binding and store it
+        binding.semantic_hv = self.translator.encode_path(&binding.nix_path);
 
         self.bindings.push(binding);
     }

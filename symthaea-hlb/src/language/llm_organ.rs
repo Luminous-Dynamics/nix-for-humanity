@@ -304,6 +304,7 @@ impl LLMOrgan {
 
         // Try backend first if available
         if let Some(ref backend) = self.backend {
+            let start = std::time::Instant::now();
             let params = GenerationParams {
                 temperature: query.params.as_ref()
                     .and_then(|p| p.temperature)
@@ -316,9 +317,15 @@ impl LLMOrgan {
 
             match backend.generate(&query.content, &params).await {
                 Ok(text) => {
+                    let generation_time_ms = start.elapsed().as_secs_f64() * 1000.0;
                     self.stats.queries_processed += 1;
                     let tokens_generated = text.split_whitespace().count();
                     self.stats.tokens_generated += tokens_generated as u64;
+
+                    // Update average generation time
+                    let n = self.stats.queries_processed as f64;
+                    self.stats.avg_generation_time_ms =
+                        (self.stats.avg_generation_time_ms * (n - 1.0) + generation_time_ms) / n;
 
                     let embedding = self.text_to_embedding(&text);
 
@@ -334,7 +341,7 @@ impl LLMOrgan {
                         text,
                         confidence: 0.9,
                         tokens_generated,
-                        generation_time_ms: 0.0, // TODO: measure
+                        generation_time_ms,
                         embedding,
                         finish_reason: FinishReason::EndOfSequence,
                     };

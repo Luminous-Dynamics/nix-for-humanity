@@ -627,11 +627,13 @@ impl CausalLTCBridge {
             })
             .sum();
 
-        let _n = self.cross_level_causality.len() as f64;
+        let n = self.cross_level_causality.len() as f64;
         let max_possible = self.level_attention.len() as f64 * (self.level_attention.len() as f64 - 1.0);
 
         if max_possible > 0.0 {
-            total / max_possible
+            // Normalize by actual connection density (n / max_possible) and total strength
+            let density = n / max_possible;
+            total / max_possible * density.sqrt()
         } else {
             0.0
         }

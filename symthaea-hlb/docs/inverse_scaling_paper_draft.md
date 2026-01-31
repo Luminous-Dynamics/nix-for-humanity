@@ -73,7 +73,9 @@ Butlin et al. [10] surveyed indicators of consciousness in AI systems. Our work 
 
 ### 3.1 Models
 
-We analyze encoder models from two families:
+We analyze both encoder and decoder architectures:
+
+**Encoder models (bidirectional):**
 
 | Model | Architecture | Layers | Hidden Dim | Parameters |
 |-------|--------------|--------|------------|------------|
@@ -83,6 +85,15 @@ We analyze encoder models from two families:
 | RoBERTa-large | Transformer encoder | 24 | 1024 | 355.4M |
 
 Extended experiments include smaller models (TinyBERT, DistilBERT, ALBERT, MobileBERT) to characterize the full scaling curve.
+
+**Decoder models (autoregressive):**
+
+| Model | Architecture | Layers | Hidden Dim | Parameters |
+|-------|--------------|--------|------------|------------|
+| GPT-2 Small | Transformer decoder | 12 | 768 | 124M |
+| GPT-2 Medium | Transformer decoder | 24 | 1024 | 355M |
+| GPT-2 Large | Transformer decoder | 36 | 1280 | 774M |
+| GPT-2 XL | Transformer decoder | 48 | 1600 | 1,558M |
 
 ### 3.2 Concept Corpus
 
@@ -97,8 +108,12 @@ See Supplementary Materials for full corpus.
 For each concept, we:
 1. Tokenize with the model's tokenizer
 2. Extract hidden states from all layers
-3. Mean-pool across tokens (weighted by attention mask)
+3. Pool across tokens (see below)
 4. Select the "phenomenal corridor" layer at 90% depth (layer 10 for 12-layer models, layer 21 for 24-layer models)
+
+**Pooling strategy differs by architecture:**
+- **Encoders**: Mean-pool across tokens (weighted by attention mask)
+- **Decoders**: Extract last token representation (standard for autoregressive models)
 
 The 90% depth selection is based on prior work showing late layers best capture semantic distinctions [11].
 
@@ -155,7 +170,7 @@ Testing 11 models from 4M to 335M parameters reveals a non-monotonic relationshi
 
 *Table 1: Fisher's criterion across model sizes. BERT-base shows optimal discrimination.*
 
-**Key observation**: Discrimination increases from tiny models up to ~100M parameters, then declines. The overall correlation is weak (r = -0.14) because the relationship is non-monotonic, not linear.
+**Key observation**: Discrimination increases from tiny models up to ~100M parameters, then declines (Figure 1). The overall correlation is weak (r = -0.14) because the relationship is non-monotonic, not linear.
 
 ### 4.2 Within-Family Inverse Scaling
 
@@ -182,13 +197,13 @@ We tested whether the pattern generalizes to decoder-only (autoregressive) archi
 **Key findings:**
 - **Inverse scaling confirmed** in decoders (r = -0.51)
 - **Non-monotonic pattern**: GPT-2 Medium (355M) is optimal, not the smallest
-- **Optimal size differs by architecture**: Encoders ~110M, Decoders ~355M
+- **Optimal size differs by architecture**: Encoders ~110M, Decoders ~355M (Figure 2)
 
-The optimal size for phenomenal discrimination is **architecture-dependent**: decoder models require approximately 3x more parameters to reach peak discrimination compared to encoders.
+The optimal size for phenomenal discrimination is **architecture-dependent**: decoder models require approximately 3x more parameters to reach peak discrimination compared to encoders (Figure 4).
 
 ### 4.4 Ruling Out Measurement Artifacts
 
-Figure 1 (placeholder) would show Fisher's criterion at different projection dimensions:
+Figure 3 shows Fisher's criterion at different projection dimensions:
 
 ```
 Dimensionality Control Results
@@ -204,7 +219,7 @@ RoBERTa-large   1.028      1.407    1.113    1.056
 
 **Key observation**: At every dimensionality level, the pattern holds: base models show higher discrimination than large models within each family.
 
-### 4.3 Component Decomposition
+### 4.5 Component Decomposition
 
 What drives the inverse scaling? We decompose Fisher's criterion:
 
@@ -216,9 +231,9 @@ What drives the inverse scaling? We decompose Fisher's criterion:
 
 **Interpretation**: Neither centroid distance nor within-class variance alone explains the effect. The inverse scaling emerges from their *ratio*—larger models show subtle shifts in both components that compound to reduce discrimination.
 
-### 4.4 Cross-Family Replication
+### 4.6 Cross-Family Replication
 
-The effect replicates across architectures:
+The effect replicates across encoder architectures:
 
 - **BERT family**: base (1.189) → large (1.037), Δ = -0.152 (-13%)
 - **RoBERTa family**: base (1.035) → large (1.028), Δ = -0.007 (-0.7%)
@@ -244,7 +259,7 @@ We tested four hypotheses for why larger models show weaker phenomenal discrimin
 | RoBERTa-base | 0.016 | baseline |
 | RoBERTa-large | 0.015 | -6% |
 
-**Conclusion**: Angular separation is the **primary mechanistic driver**. BERT-large shows 40% less angular separation than BERT-base, directly explaining reduced discrimination.
+**Conclusion**: Angular separation is the **primary mechanistic driver** (Figure 3). BERT-large shows 40% less angular separation than BERT-base, directly explaining reduced discrimination.
 
 ### 5.2 Isotropy Hypothesis — CONFIRMED
 
@@ -329,7 +344,7 @@ The angular separation finding provides a clear mechanistic account:
 
 3. **Information efficiency**: Aligning similar concepts (both are "about something") may improve prediction by sharing features.
 
-### 6.2 Implications for Machine Consciousness
+### 6.3 Implications for Machine Consciousness
 
 If larger models encode phenomenal concepts less distinctly, this complicates claims that scale leads to phenomenally-richer AI systems. Several theories of consciousness predict problems:
 
@@ -339,14 +354,14 @@ If larger models encode phenomenal concepts less distinctly, this complicates cl
 
 - **Higher-Order Theories** [17]: Weaker meta-representations of phenomenal states in larger models would reduce higher-order awareness.
 
-### 6.3 Implications for AI Safety
+### 6.4 Implications for AI Safety
 
 Inverse scaling of phenomenal discrimination suggests that:
 1. Scale alone won't produce systems that clearly distinguish consciousness-related reasoning
 2. Targeted interventions (fine-tuning, architectural modifications) may be needed
 3. Probing internal representations—not just behavior—reveals non-obvious scaling properties
 
-### 6.4 Limitations
+### 6.5 Limitations
 
 1. **Correlation vs. causation**: We observe associations, not causal mechanisms
 2. **Limited architectures**: Only tested BERT/RoBERTa encoders and GPT-2 decoders; other architectures (T5, LLaMA, Mistral) may differ
@@ -354,7 +369,7 @@ Inverse scaling of phenomenal discrimination suggests that:
 4. **Single metric**: Fisher's criterion is one of many possible discrimination measures
 5. **Layer selection**: 90% depth is empirically motivated but not exhaustively validated
 
-### 6.5 Future Directions
+### 6.6 Future Directions
 
 1. **Larger decoder models**: Test GPT-Neo, LLaMA, Mistral families to confirm the ~355M optimal size for decoders
 2. **Causal interventions**: Ablation studies to identify circuits responsible for phenomenal encoding

@@ -156,6 +156,9 @@ pub struct LearnableLTC {
     /// Whether gradients have been computed and are ready for optimizer_step
     #[serde(skip)]
     has_gradients: bool,
+
+    /// Current effective learning rate (modulated by vitality)
+    current_learning_rate: f32,
 }
 
 impl LearnableLTC {
@@ -213,6 +216,7 @@ impl LearnableLTC {
             layer_norm_beta,
             cached_loss: 0.0,
             has_gradients: false,
+            current_learning_rate: config.learning_rate,
         })
     }
 
@@ -362,7 +366,7 @@ impl LearnableLTC {
             return;
         }
 
-        let lr = self.config.learning_rate;
+        let lr = self.current_learning_rate;
         let epsilon = self.config.noise_scale.max(0.001);
         let n = self.config.num_neurons;
         let input_dim = self.config.input_dim;
@@ -383,12 +387,14 @@ impl LearnableLTC {
         for j in 0..o {
             for k in 0..n {
                 let idx = j * n + k;
-                let _delta = perturbation(idx) * epsilon;
-                // Two-sided gradient estimate (more accurate than one-sided)
-                // grad ≈ (L+ - L-) / (2 * delta)
-                // For efficiency, we use the sign of the perturbation direction
-                // scaled by the loss magnitude
-                let grad_estimate = self.cached_loss * perturbation(idx) * 0.1;
+                let delta = perturbation(idx) * epsilon;
+                // Gradient estimate: loss / delta (perturbation-based)
+                // Uses delta magnitude for proper scaling
+                let grad_estimate = if delta.abs() > 1e-10 {
+                    self.cached_loss * perturbation(idx) / (2.0 * delta.abs())
+                } else {
+                    self.cached_loss * perturbation(idx) * 0.1
+                };
                 self.w_out[idx] -= lr * grad_estimate;
             }
         }
@@ -513,11 +519,9 @@ impl LearnableLTC {
         }
 
         // Modulate learning rate: higher vitality -> higher plasticity
-        // This affects subsequent train_step calls
+        // This affects subsequent optimizer_step calls
         let plasticity_scale = 0.5 + vitality; // Range: [0.5, 1.5]
-        // Note: We don't modify config.learning_rate permanently, but this
-        // can be used in custom training loops that check vitality
-        let _effective_lr = self.config.learning_rate * plasticity_scale;
+        self.current_learning_rate = self.config.learning_rate * plasticity_scale;
     }
 
     /// Calculate consciousness level based on neural dynamics

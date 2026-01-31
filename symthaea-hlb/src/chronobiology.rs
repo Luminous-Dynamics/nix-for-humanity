@@ -32,7 +32,7 @@ impl Biorhythm {
         
         // Circadian cycle (24h sine wave)
         // Peak at 14:00 (2pm), Trough at 02:00 (2am)
-        let _circadian = -(2.0 * PI * (hour - 14.0) / 24.0).cos(); // -1.0 to 1.0
+        let circadian = -(2.0 * PI * (hour - 14.0) / 24.0).cos(); // -1.0 to 1.0
 
         let phase = match hour {
             5.0..=8.0 => CircadianPhase::Dawn,
@@ -41,13 +41,19 @@ impl Biorhythm {
             _ => CircadianPhase::Night,
         };
 
-        // Modulators derived from phase
-        let (arousal, plasticity, creativity) = match phase {
-            CircadianPhase::Dawn => (0.6, 0.8, 0.5),   // Warming up
-            CircadianPhase::Day => (1.0, 0.5, 0.3),    // Focused work
-            CircadianPhase::Dusk => (0.5, 0.7, 0.7),   // Reflection
-            CircadianPhase::Night => (0.2, 1.0, 1.0),  // Dreaming (High plasticity/chaos)
+        // Base modulators from phase, then blend with continuous circadian wave
+        // circadian maps [-1, 1] to a 0..1 blend factor
+        let wave = (circadian + 1.0) / 2.0; // 0.0 at trough, 1.0 at peak
+        let (base_arousal, base_plasticity, base_creativity) = match phase {
+            CircadianPhase::Dawn => (0.6, 0.8, 0.5),
+            CircadianPhase::Day => (1.0, 0.5, 0.3),
+            CircadianPhase::Dusk => (0.5, 0.7, 0.7),
+            CircadianPhase::Night => (0.2, 1.0, 1.0),
         };
+        // Blend: 80% phase-based + 20% continuous wave modulation
+        let arousal = base_arousal * (0.8 + 0.2 * wave);
+        let plasticity = base_plasticity * (0.8 + 0.2 * (1.0 - wave));
+        let creativity = base_creativity * (0.8 + 0.2 * (1.0 - wave));
 
         Self {
             phase,

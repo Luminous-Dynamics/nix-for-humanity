@@ -197,11 +197,13 @@ impl GlottalSource {
         if self.phase < open_ratio {
             // Opening phase - polynomial rise and fall
             let t = self.phase / open_ratio;
-            let _pulse = 3.0 * t * t - 2.0 * t * t * t;  // Smoothstep
+            let pulse = 3.0 * t * t - 2.0 * t * t * t;  // Smoothstep
 
-            // Derivative for LF model approximation
+            // LF model: blend pulse shape with its derivative for realistic glottal waveform
             let derivative = 6.0 * t * (1.0 - t) / open_ratio;
-            -derivative * (1.0 - self.shape * 0.5)
+            // shape controls blend: 0 = pure derivative (breathy), 1 = more pulse (pressed)
+            let blend = self.shape;
+            -(derivative * (1.0 - blend * 0.5)) + pulse * blend * 0.3
         } else {
             // Closed phase
             0.0

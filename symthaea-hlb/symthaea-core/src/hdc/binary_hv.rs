@@ -156,7 +156,7 @@ impl HV16 {
     /// let recovered = orange_cat.bind(&cat);
     /// assert!(recovered.similarity(&orange) > 0.99);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn bind(&self, other: &Self) -> Self {
         Self(super::simd_ops::bind_simd(&self.0, &other.0))
     }
@@ -542,7 +542,7 @@ impl HV16 {
     /// let sim = a.similarity(&b);
     /// assert!(sim > 0.45 && sim < 0.55);  // Random vectors ~0.5
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn similarity(&self, other: &Self) -> f32 {
         let matching_bits = super::simd_ops::matching_bits_simd(&self.0, &other.0);
         matching_bits as f32 / Self::DIM as f32
@@ -573,7 +573,7 @@ impl HV16 {
     /// let dist = a.hamming_distance(&b);
     /// assert!(dist > 0 && dist < 2048);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn hamming_distance(&self, other: &Self) -> u32 {
         super::simd_ops::hamming_distance_simd(&self.0, &other.0)
     }
@@ -602,7 +602,7 @@ impl HV16 {
     ///
     /// assert_eq!(a.similarity(&inv), 0.0);  // Opposite
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn invert(&self) -> Self {
         Self(super::simd_ops::invert_simd(&self.0))
     }
