@@ -208,10 +208,10 @@ def main():
 
     # GPT-2 model family
     models = [
-        ("gpt2", "GPT-2 Small"),           # 12L, 768H, 124M
-        ("gpt2-medium", "GPT-2 Medium"),   # 24L, 1024H, 355M
-        ("gpt2-large", "GPT-2 Large"),     # 36L, 1280H, 774M
-        ("gpt2-xl", "GPT-2 XL"),           # 48L, 1600H, 1.5B
+        ("gpt2", "GPT-2 Small"),  # 12L, 768H, 124M
+        ("gpt2-medium", "GPT-2 Medium"),  # 24L, 1024H, 355M
+        ("gpt2-large", "GPT-2 Large"),  # 36L, 1280H, 774M
+        ("gpt2-xl", "GPT-2 XL"),  # 48L, 1600H, 1.5B
     ]
 
     results = []
@@ -282,7 +282,9 @@ def main():
         best_idx = np.argmax(fishers)
         if best_idx > 0 and best_idx < len(fishers) - 1:
             print("  NON-MONOTONIC SCALING (OPTIMAL SIZE PHENOMENON)")
-            print(f"    Best model: {results[best_idx]['display_name']} (Fisher = {fishers[best_idx]:.4f})")
+            print(
+                f"    Best model: {results[best_idx]['display_name']} (Fisher = {fishers[best_idx]:.4f})"
+            )
             finding = "non_monotonic"
         else:
             print("  NO CLEAR SCALING PATTERN")
@@ -306,7 +308,9 @@ def main():
     print("  Encoder (BERT) optimal: ~110M params (BERT-base)")
     if results:
         decoder_best = results[best_idx]
-        print(f"  Decoder (GPT-2) best:   ~{decoder_best['n_params_millions']:.0f}M params ({decoder_best['display_name']})")
+        print(
+            f"  Decoder (GPT-2) best:   ~{decoder_best['n_params_millions']:.0f}M params ({decoder_best['display_name']})"
+        )
 
     # Save results
     output = {
