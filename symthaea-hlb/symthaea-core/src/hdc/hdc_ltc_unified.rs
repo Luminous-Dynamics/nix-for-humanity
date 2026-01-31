@@ -1072,6 +1072,42 @@ pub struct HdcLtcUnifiedNetwork {
 }
 
 impl HdcLtcUnifiedNetwork {
+    /// Create a network with all neurons and layer bindings deterministically
+    /// derived from a genesis seed.
+    ///
+    /// Domain labels follow the pattern:
+    /// - Neurons: `"layer_{l}::neuron_{n}"`
+    /// - Layer bindings: `"layer_binding_{l}"`
+    pub fn from_genesis(config: UnifiedNetworkConfig, genesis: &crate::genesis::GenesisSeed) -> Self {
+        let mut layers = Vec::new();
+
+        for (l, &layer_size) in config.layer_sizes.iter().enumerate() {
+            let layer: Vec<HdcLtcUnifiedNeuron> = (0..layer_size)
+                .map(|n| {
+                    let label = format!("layer_{}::neuron_{}", l, n);
+                    HdcLtcUnifiedNeuron::from_genesis(config.neuron_config.clone(), genesis, &label)
+                })
+                .collect();
+            layers.push(layer);
+        }
+
+        let dim = config.neuron_config.dimension;
+        let layer_bindings: Vec<ContinuousHV> = (0..config.layer_sizes.len())
+            .map(|l| genesis.hv(&format!("layer_binding_{}", l), dim))
+            .collect();
+
+        let layer_outputs = config.layer_sizes.iter()
+            .map(|_| ContinuousHV::zero(dim))
+            .collect();
+
+        Self {
+            layers,
+            layer_bindings,
+            layer_outputs,
+            config,
+        }
+    }
+
     /// Create new network
     pub fn new(config: UnifiedNetworkConfig, seed: u64) -> Self {
         let mut layers = Vec::new();
@@ -1540,5 +1576,64 @@ mod tests {
             n1.input_mask.values, n2.input_mask.values,
             "from_genesis must produce identical input_mask"
         );
+    }
+
+    #[test]
+    fn test_network_from_genesis() {
+        use crate::genesis::GenesisSeed;
+
+        let genesis = GenesisSeed::from_phrase("network test");
+        let config = UnifiedNetworkConfig {
+            layer_sizes: vec![2, 3, 2],
+            ..Default::default()
+        };
+
+        let net1 = HdcLtcUnifiedNetwork::from_genesis(config.clone(), &genesis);
+        let net2 = HdcLtcUnifiedNetwork::from_genesis(config, &genesis);
+
+        // All neurons must be bit-identical
+        for l in 0..net1.n_layers() {
+            for (n, (a, b)) in net1.layer(l).unwrap().iter()
+                .zip(net2.layer(l).unwrap().iter())
+                .enumerate()
+            {
+                assert_eq!(
+                    a.weight_hv_ref().values,
+                    b.weight_hv_ref().values,
+                    "layer {} neuron {} weight_hv mismatch", l, n
+                );
+            }
+        }
+
+        // Layer bindings must be identical
+        assert_eq!(
+            net1.layer_bindings.iter().map(|hv| &hv.values).collect::<Vec<_>>(),
+            net2.layer_bindings.iter().map(|hv| &hv.values).collect::<Vec<_>>(),
+            "layer_bindings mismatch"
+        );
+
+        // Different neurons in different layers should be near-orthogonal
+        let n00 = net1.layer(0).unwrap()[0].weight_hv_ref();
+        let n11 = net1.layer(1).unwrap()[1].weight_hv_ref();
+        let sim = n00.similarity(n11);
+        assert!(sim.abs() < 0.05, "Different neurons should be near-orthogonal, got {}", sim);
+    }
+
+    #[test]
+    fn test_network_from_genesis_evolves() {
+        use crate::genesis::GenesisSeed;
+
+        let genesis = GenesisSeed::from_phrase("evolve test");
+        let config = UnifiedNetworkConfig {
+            layer_sizes: vec![2, 2],
+            ..Default::default()
+        };
+        let mut net = HdcLtcUnifiedNetwork::from_genesis(config, &genesis);
+        let input = ContinuousHV::random_default(123);
+
+        net.evolve_closed_form(1.0, &input);
+
+        let output = net.output();
+        assert!(output.norm() > 0.0, "Network should produce output after evolution");
     }
 }
