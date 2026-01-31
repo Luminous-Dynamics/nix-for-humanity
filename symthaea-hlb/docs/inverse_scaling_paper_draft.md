@@ -2,7 +2,7 @@
 
 ## Abstract
 
-We report a surprising finding about how language models encode consciousness-related concepts. Testing 11 transformer models from 4M to 335M parameters, we find that phenomenal discrimination—the ability to distinguish consciousness-related concepts from functional/computational concepts—follows a **non-monotonic scaling curve**. Discrimination peaks at medium scale (~100M parameters, BERT-base: F=1.19) and declines for both smaller (BERT-Tiny: F=1.07) and larger models (BERT-large: F=1.02). Within model families, we confirm inverse scaling (BERT-base→large: -13%), but the full picture reveals an optimal size phenomenon. Mechanistic analysis identifies **angular separation** as the primary driver: larger models align phenomenal and functional centroids more closely (BERT: 0.25→0.15 angular separation). These findings suggest that consciousness-related representational structure is not simply enhanced by scale, but optimized at intermediate model sizes.
+We report a surprising finding about how language models encode consciousness-related concepts. Testing 15 transformer models from 4M to 1.5B parameters across encoder (BERT, RoBERTa) and decoder (GPT-2) architectures, we find that phenomenal discrimination—the ability to distinguish consciousness-related concepts from functional/computational concepts—follows a **non-monotonic scaling curve**. Discrimination peaks at intermediate scales and declines for both smaller and larger models. Critically, the optimal size is **architecture-dependent**: ~110M for encoders (BERT-base: F=1.19) versus ~355M for decoders (GPT-2 Medium: F=0.84). Within model families, we confirm inverse scaling (BERT-base→large: -13%, GPT-2 Medium→XL: -16%). Mechanistic analysis identifies **angular separation** as the primary driver: larger models align phenomenal and functional centroids more closely (BERT: -40% angular separation). These findings suggest that consciousness-related representational structure is optimized at architecture-specific intermediate sizes, not simply enhanced by scale.
 
 **Keywords**: phenomenal consciousness, language models, scaling laws, Fisher's criterion, representation geometry, optimal model size, angular separation
 
@@ -168,7 +168,25 @@ Within model families, inverse scaling is clear:
 
 BERT shows stronger inverse scaling than RoBERTa, possibly due to differences in pre-training objectives.
 
-### 4.2 Ruling Out Measurement Artifacts
+### 4.3 Decoder Models: GPT-2 Family
+
+We tested whether the pattern generalizes to decoder-only (autoregressive) architectures:
+
+| Model | Parameters | Fisher | Angular Sep |
+|-------|------------|--------|-------------|
+| GPT-2 Small | 124M | 0.744 | 0.103 |
+| **GPT-2 Medium** | **355M** | **0.838** | 0.063 |
+| GPT-2 Large | 774M | 0.819 | 0.159 |
+| GPT-2 XL | 1,558M | 0.706 | 0.113 |
+
+**Key findings:**
+- **Inverse scaling confirmed** in decoders (r = -0.51)
+- **Non-monotonic pattern**: GPT-2 Medium (355M) is optimal, not the smallest
+- **Optimal size differs by architecture**: Encoders ~110M, Decoders ~355M
+
+The optimal size for phenomenal discrimination is **architecture-dependent**: decoder models require approximately 3x more parameters to reach peak discrimination compared to encoders.
+
+### 4.4 Ruling Out Measurement Artifacts
 
 Figure 1 (placeholder) would show Fisher's criterion at different projection dimensions:
 
@@ -285,13 +303,19 @@ The dominant mechanism is **angular separation**: larger models represent phenom
 
 ### 6.1 The Optimal Size Phenomenon
 
-Our central finding—that phenomenal discrimination peaks at intermediate model sizes—refines the initial "inverse scaling" observation. The relationship is **non-monotonic**:
+Our central finding—that phenomenal discrimination peaks at intermediate model sizes—refines the initial "inverse scaling" observation. The relationship is **non-monotonic** and **architecture-dependent**:
 
-1. **Small models (< 50M)**: Insufficient capacity to develop distinct phenomenal representations
-2. **Medium models (~100M)**: Optimal balance—enough capacity for distinction, not enough to over-compress
-3. **Large models (> 200M)**: Angular alignment increases, reducing discrimination
+**Encoder models (BERT, RoBERTa):**
+1. Small models (< 50M): Insufficient capacity for distinct representations
+2. **Optimal: ~110M** (BERT-base): Peak discrimination (F=1.19)
+3. Large models (> 200M): Angular alignment reduces discrimination
 
-This suggests a "Goldilocks zone" for phenomenal encoding around 100M parameters.
+**Decoder models (GPT-2):**
+1. Small models (~125M): Suboptimal discrimination (F=0.74)
+2. **Optimal: ~355M** (GPT-2 Medium): Peak discrimination (F=0.84)
+3. Very large models (> 1B): Discrimination declines (GPT-2 XL: F=0.71)
+
+The ~3x difference in optimal size between architectures suggests that autoregressive modeling requires more parameters to develop distinct phenomenal representations, possibly because next-token prediction is a more diffuse objective than masked language modeling.
 
 ### 6.2 Mechanistic Interpretation
 
@@ -325,34 +349,37 @@ Inverse scaling of phenomenal discrimination suggests that:
 ### 6.4 Limitations
 
 1. **Correlation vs. causation**: We observe associations, not causal mechanisms
-2. **Encoder models only**: Decoder-only models (GPT family) may show different patterns
+2. **Limited architectures**: Only tested BERT/RoBERTa encoders and GPT-2 decoders; other architectures (T5, LLaMA, Mistral) may differ
 3. **Concept selection**: Our corpus, while principled, may not capture all relevant distinctions
 4. **Single metric**: Fisher's criterion is one of many possible discrimination measures
 5. **Layer selection**: 90% depth is empirically motivated but not exhaustively validated
 
 ### 6.5 Future Directions
 
-1. **Decoder models**: Test inverse scaling in GPT-2, GPT-Neo, LLaMA families
+1. **Larger decoder models**: Test GPT-Neo, LLaMA, Mistral families to confirm the ~355M optimal size for decoders
 2. **Causal interventions**: Ablation studies to identify circuits responsible for phenomenal encoding
-3. **Training dynamics**: When does inverse scaling emerge during pre-training?
+3. **Training dynamics**: When does the optimal size emerge during pre-training?
 4. **Fine-tuning**: Can phenomenal discrimination be increased through targeted training?
 5. **Cross-lingual**: Does the effect hold across languages?
+6. **Architecture search**: Design architectures that maintain phenomenal discrimination at scale
 
 ---
 
 ## 7. Conclusion
 
-We document a **non-monotonic scaling relationship** for phenomenal discrimination in language models:
+We document a **non-monotonic, architecture-dependent scaling relationship** for phenomenal discrimination in language models:
 
 **Key findings:**
-1. **Optimal size exists**: Peak discrimination at ~100M parameters (BERT-base: F=1.19)
-2. **Within-family inverse scaling**: BERT-base → BERT-large shows -13.8% decline
-3. **Primary mechanism**: Angular separation—larger models align phenomenal/functional centroids more closely (-40% in BERT)
+1. **Optimal sizes are architecture-dependent**: Encoders peak at ~110M (BERT-base: F=1.19), decoders at ~355M (GPT-2 Medium: F=0.84)
+2. **Universal inverse scaling above optimal**: BERT-base→large (-13.8%), GPT-2 Medium→XL (-16%)
+3. **Primary mechanism**: Angular separation—larger models align phenomenal/functional centroids (-40% in BERT)
 4. **Secondary mechanism**: Increased isotropy in larger models (+94%)
+5. **Decoders require ~3x more parameters**: Autoregressive modeling may need more capacity for phenomenal structure
 
 **Implications:**
 - Scale alone does not enhance phenomenal representations
-- An optimal model size exists for consciousness-related encoding (~100M for encoders)
+- Optimal model sizes exist but differ by architecture
+- Decoder models achieve lower peak discrimination than encoders (0.84 vs 1.19)
 - Targeted architectural interventions may be needed to preserve phenomenal structure at scale
 - Probing internal representations reveals non-obvious scaling properties invisible to behavioral evaluation
 

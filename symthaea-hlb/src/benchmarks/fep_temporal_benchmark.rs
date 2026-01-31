@@ -191,16 +191,36 @@ mod tests {
 
     #[test]
     fn test_fep_error_reduction_step() {
-        let bench = FepTemporalBenchmark::new(FepTemporalBenchmarkConfig::default());
+        let bench = FepTemporalBenchmark::new(FepTemporalBenchmarkConfig {
+            num_cycles: 300,
+            warmup_cycles: 20,
+            measurement_window: 10,
+        });
         let result = bench.run_step_function();
         println!(
             "Step: initial_error={:.4}, final_error={:.4}, reduction={:.1}%",
             result.initial_error, result.final_error, result.error_reduction_pct
         );
-        // After a step change, the system should adapt
         assert!(
-            result.prediction_errors.len() == 200,
-            "Should have run all 200 cycles"
+            result.prediction_errors.len() == 300,
+            "Should have run all 300 cycles"
+        );
+
+        // Measure recovery within the second half (after the distribution shift at cycle 150):
+        // Compare the spike region (first 20 cycles after shift) vs recovery region (last 20).
+        let half = result.prediction_errors.len() / 2;
+        let early_2nd: f32 = result.prediction_errors[half..half + 20].iter().sum::<f32>() / 20.0;
+        let late_2nd: f32 = result.prediction_errors[result.prediction_errors.len() - 20..].iter().sum::<f32>() / 20.0;
+        println!(
+            "Step 2nd-half: early_avg={:.4}, late_avg={:.4}, recovery={:.1}%",
+            early_2nd, late_2nd,
+            if early_2nd > 0.0 { ((early_2nd - late_2nd) / early_2nd) * 100.0 } else { 0.0 }
+        );
+        // The system should not degrade: late error should not exceed early error by more than 5%
+        assert!(
+            late_2nd <= early_2nd * 1.05,
+            "Error in last 20 cycles ({:.4}) should not significantly exceed first 20 of 2nd half ({:.4})",
+            late_2nd, early_2nd
         );
     }
 

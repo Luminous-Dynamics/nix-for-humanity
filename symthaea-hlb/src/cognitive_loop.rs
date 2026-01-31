@@ -3360,6 +3360,9 @@ pub struct CognitiveLoopService {
     /// Current learning signal from FEP (for downstream systems)
     fep_learning_signal: f32,
 
+    /// FEP-driven learning rate boost (applied during CfC training step)
+    fep_lr_boost: f32,
+
     /// Conversation coherence tracker for degradation detection
     coherence_tracker: ConversationCoherenceTracker,
 }
@@ -3456,6 +3459,7 @@ impl CognitiveLoopService {
                 4,  // Motor state dimension
             ),
             fep_learning_signal: 0.0,
+            fep_lr_boost: 1.0,
             coherence_tracker: ConversationCoherenceTracker::new(0.3),
         })
     }
@@ -3667,36 +3671,46 @@ impl CognitiveLoopService {
         let _outcome = self.fep_agent.act(action_result.action);
 
         // Apply FEP-selected action to modulate cognitive parameters
+        let is_surprised = self.fep_agent.is_surprised();
         match action_result.action {
             0 => {
-                // Modulate trust via precision: higher precision → tighter trust
+                // Boost learning rate when free energy is high
+                if let Some(ref fe) = self.fep_agent.last_fe_components {
+                    let fe_boost = (fe.total.abs() as f32 / 2.0).clamp(0.0, 1.5);
+                    self.fep_lr_boost =
+                        (self.fep_lr_boost * (1.0 + fe_boost * 0.5)).clamp(1.0, 5.0);
+                }
+            }
+            1 => {
+                // Reset sensory precision toward 1.0 to trust new observations after shift
+                let current = self.fep_agent.precision.sensory_precision;
+                self.fep_agent.precision.sensory_precision =
+                    current * 0.7 + 1.0 * 0.3;
+            }
+            2 => {
+                // Boost exploration — stronger nudge when surprised
+                let nudge = if is_surprised { 0.15 } else { 0.05 };
+                self.curiosity_drive.exploration_urge =
+                    (self.curiosity_drive.exploration_urge + nudge).clamp(0.0, 1.0);
+            }
+            3 => {
+                // Tighten trust via precision
                 if let Some(ref fe) = self.fep_agent.last_fe_components {
                     let precision_mod = (1.0 - fe.prediction_error).clamp(0.0, 1.0) as f32;
                     self.self_reflection.trust_threshold =
                         (self.self_reflection.trust_threshold * 0.9 + precision_mod * 0.1).clamp(0.1, 0.9);
                 }
             }
-            1 => {
-                // Adjust flow error threshold via free energy
-                if let Some(ref fe) = self.fep_agent.last_fe_components {
-                    let fe_signal = (fe.total.abs() as f32).clamp(0.0, 2.0) / 2.0;
-                    self.self_reflection.flow_error_threshold =
-                        (self.self_reflection.flow_error_threshold * 0.95 + fe_signal * 0.05).clamp(0.05, 0.5);
-                }
-            }
-            2 => {
-                // Boost exploration
-                self.curiosity_drive.exploration_urge =
-                    (self.curiosity_drive.exploration_urge + 0.05).clamp(0.0, 1.0);
-            }
-            3 => {
-                // Nudge reflection by recording extra cycle data to trigger sooner
-                self.self_reflection.record_cycle(
-                    prediction_error, self.flow_state.in_flow,
-                    true, self.prediction_confidence,
-                );
-            }
             _ => {}
+        }
+
+        // Surprise-gated learning rate boost: when FEP detects surprise, accelerate adaptation
+        if is_surprised {
+            let surprise_boost = (self.fep_agent.current_free_energy() as f32 / 3.0).clamp(0.1, 0.5);
+            self.fep_lr_boost = (self.fep_lr_boost + surprise_boost).clamp(1.0, 5.0);
+        } else {
+            // Decay boost back toward 1.0 when not surprised
+            self.fep_lr_boost = (self.fep_lr_boost * 0.95).max(1.0);
         }
 
         // ═══════════════════════════════════════════════════════════════════════
@@ -3771,6 +3785,8 @@ impl CognitiveLoopService {
         // ═══════════════════════════════════════════════════════════════════════
         let degraded = self.coherence_tracker.record_turn(coherence);
         if degraded {
+            // Coherence degradation → boost learning rate to accelerate recovery
+            self.fep_lr_boost = (self.fep_lr_boost * 1.3).clamp(1.0, 5.0);
             let urgency = self.coherence_tracker.correction_urgency();
             // Feed urgency as a high-error observation to drive FEP learning
             let urgent_obs = Observation::from_consciousness_state(
@@ -3832,7 +3848,7 @@ impl CognitiveLoopService {
         let base_lr = self.combined_learning_rate();
         let adaptive_lr = self.adaptive_behavior.effective_learning_rate(base_lr);
         let flow_lr = self.flow_state.effective_learning_multiplier(adaptive_lr);
-        let effective_lr = self.curiosity_drive.effective_learning_rate(flow_lr);
+        let effective_lr = self.curiosity_drive.effective_learning_rate(flow_lr) * self.fep_lr_boost;
 
         // 11. Learn if error is significant AND we have a previous state AND not paused
         let (learning_occurred, training_loss) = if prediction_error > self.config.learning_threshold
