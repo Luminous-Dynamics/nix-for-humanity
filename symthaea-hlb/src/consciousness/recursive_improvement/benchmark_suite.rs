@@ -578,17 +578,17 @@ impl RouterBenchmarkSuite {
 
         // Find best performers
         let fastest = benchmarks.iter()
-            .min_by(|a, b| a.avg_latency_us.partial_cmp(&b.avg_latency_us).unwrap())
+            .min_by(|a, b| a.avg_latency_us.partial_cmp(&b.avg_latency_us).unwrap_or(std::cmp::Ordering::Equal))
             .map(|b| b.router_name.clone())
             .unwrap_or_default();
 
         let highest_throughput = benchmarks.iter()
-            .max_by(|a, b| a.throughput.partial_cmp(&b.throughput).unwrap())
+            .max_by(|a, b| a.throughput.partial_cmp(&b.throughput).unwrap_or(std::cmp::Ordering::Equal))
             .map(|b| b.router_name.clone())
             .unwrap_or_default();
 
         let most_consistent = benchmarks.iter()
-            .max_by(|a, b| a.consistency.partial_cmp(&b.consistency).unwrap())
+            .max_by(|a, b| a.consistency.partial_cmp(&b.consistency).unwrap_or(std::cmp::Ordering::Equal))
             .map(|b| b.router_name.clone())
             .unwrap_or_default();
 

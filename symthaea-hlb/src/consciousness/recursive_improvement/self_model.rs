@@ -374,7 +374,7 @@ impl SelfModel {
     /// Get most severe limitations
     pub fn most_severe_limitations(&self, n: usize) -> Vec<&KnownLimitation> {
         let mut sorted: Vec<_> = self.limitations.iter().collect();
-        sorted.sort_by(|a, b| b.severity.partial_cmp(&a.severity).unwrap());
+        sorted.sort_by(|a, b| b.severity.partial_cmp(&a.severity).unwrap_or(std::cmp::Ordering::Equal));
         sorted.into_iter().take(n).collect()
     }
 
@@ -487,7 +487,7 @@ impl SelfModel {
         task_domains
             .iter()
             .filter_map(|d| self.capabilities.get(d).map(|e| (*d, e.level)))
-            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
     }
 
     /// Generate summary of self-model

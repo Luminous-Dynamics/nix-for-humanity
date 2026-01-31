@@ -600,7 +600,7 @@ impl MetaCognitiveController {
                 .meta_goals
                 .iter()
                 .enumerate()
-                .min_by(|(_, a), (_, b)| a.priority.partial_cmp(&b.priority).unwrap())
+                .min_by(|(_, a), (_, b)| a.priority.partial_cmp(&b.priority).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(i, _)| i);
 
             if let Some(idx) = min_priority_idx {
@@ -760,7 +760,7 @@ impl MetaCognitiveController {
     fn process_workspace(&mut self) {
         // Process high-priority broadcasts first
         let mut broadcasts: Vec<_> = self.global_workspace.iter().cloned().collect();
-        broadcasts.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
+        broadcasts.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
 
         for broadcast in broadcasts.iter().take(5) {
             match broadcast.content_type {

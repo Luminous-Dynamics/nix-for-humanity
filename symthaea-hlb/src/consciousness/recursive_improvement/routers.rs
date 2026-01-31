@@ -189,7 +189,7 @@ impl ConsciousnessRouter for PhiMaximizingRouter {
         } else {
             // Exploit best action
             let best_action = self.q_values.iter()
-                .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(k, _)| *k)
                 .unwrap_or(ActionType::Integrate);
             ConsciousnessAction::new(format!("{:?}", best_action).to_lowercase(), best_action)

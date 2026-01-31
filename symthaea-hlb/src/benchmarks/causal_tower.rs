@@ -572,7 +572,7 @@ impl IgciDiscovery {
 
         // Sort by x
         let mut pairs: Vec<(f64, f64)> = x.iter().zip(y.iter()).map(|(&a, &b)| (a, b)).collect();
-        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Compute slopes
         let mut log_slopes = Vec::new();
@@ -1092,7 +1092,7 @@ impl SlopeDiscovery {
         let mut pairs: Vec<(f64, f64)> = x.iter().zip(y.iter())
             .map(|(&a, &b)| (a, b))
             .collect();
-        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Compute local slopes
         let mut slopes = Vec::new();
@@ -1748,7 +1748,7 @@ fn median_distance(data: &[f64]) -> f64 {
         return 1.0;
     }
 
-    distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    distances.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let mid = distances.len() / 2;
 
     if distances.len() % 2 == 0 {
@@ -1779,7 +1779,7 @@ fn to_ranks(data: &[f64]) -> Vec<f64> {
     let mut indexed: Vec<(usize, f64)> = data.iter().enumerate()
         .map(|(i, &v)| (i, v))
         .collect();
-    indexed.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    indexed.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut ranks = vec![0.0; n];
     for (rank, (original_idx, _)) in indexed.iter().enumerate() {

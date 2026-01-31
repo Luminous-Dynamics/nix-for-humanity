@@ -247,7 +247,7 @@ impl ImprovementGenerator {
         self.patterns.effective_causal_patterns.iter()
             .filter(|p| p.bottleneck_type == bottleneck.bottleneck_type)
             .filter(|p| root_cause.as_ref().map_or(true, |rc| &p.root_cause == rc))
-            .max_by(|a, b| a.success_rate.partial_cmp(&b.success_rate).unwrap())
+            .max_by(|a, b| a.success_rate.partial_cmp(&b.success_rate).unwrap_or(std::cmp::Ordering::Equal))
     }
 
     /// Create improvement from learned pattern
