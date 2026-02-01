@@ -438,11 +438,17 @@ impl PhononDynamics {
         let coordination = material.structure.coordination() as f64;
         let screening_factor = coordination / 12.0; // Normalized to FCC
 
-        // Phonon coupling (can transfer momentum to nuclei)
-        let phonon_factor = material.debye_temp_k / 500.0; // Higher Debye = stronger coupling
+        // Phonon confinement factor for LCF
+        // For LCF, moderate Debye temperatures are optimal:
+        // - Too high = lattice too rigid, poor deuterium accommodation
+        // - Too low = insufficient screening
+        // Optimal range ~150-350K; use a broad Gaussian centered at 250K
+        let debye_optimal = 250.0;
+        let debye_sigma = 200.0;
+        let phonon_factor = (-((material.debye_temp_k - debye_optimal) / debye_sigma).powi(2) / 2.0).exp();
 
-        // Overall LCF potential
-        let lcf_potential = (h_solubility * screening_factor * phonon_factor).min(1.0);
+        // Overall LCF potential: weighted combination favoring hydrogen solubility
+        let lcf_potential = (0.5 * h_solubility + 0.25 * screening_factor + 0.25 * phonon_factor).min(1.0);
 
         LCFAnalysis {
             material_name: material.name.clone(),
