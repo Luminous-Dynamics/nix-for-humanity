@@ -1368,7 +1368,7 @@ impl PhiArchitectureSearch {
 
             let individual = Individual { genome, fitness };
 
-            if self.best.is_none() || fitness > self.best.as_ref().unwrap().fitness {
+            if self.best.is_none() || fitness > self.best.as_ref().expect("best individual must be set after initialization").fitness {
                 self.best = Some(individual.clone());
             }
 
@@ -1412,17 +1412,17 @@ impl PhiArchitectureSearch {
     /// Run evolutionary search
     pub fn evolutionary_search(&mut self, generations: usize) -> SearchResult {
         self.initialize_population();
-        self.phi_history.push(self.best.as_ref().unwrap().fitness);
+        self.phi_history.push(self.best.as_ref().expect("best individual must be set after initialization").fitness);
 
         for gen in 0..generations {
             self.generation = gen + 1;
             self.evolve_generation();
-            self.phi_history.push(self.best.as_ref().unwrap().fitness);
+            self.phi_history.push(self.best.as_ref().expect("best individual must be set after initialization").fitness);
         }
 
         SearchResult {
-            best_phi: self.best.as_ref().unwrap().fitness,
-            best_architecture: self.best.as_ref().unwrap().genome.clone(),
+            best_phi: self.best.as_ref().expect("best individual must be set after initialization").fitness,
+            best_architecture: self.best.as_ref().expect("best individual must be set after initialization").genome.clone(),
             phi_history: self.phi_history.clone(),
             evaluations: self.evaluations,
             strategy: SearchStrategy::Evolutionary,
@@ -1473,7 +1473,7 @@ impl PhiArchitectureSearch {
     /// Run hybrid search (evolutionary + gradient)
     pub fn hybrid_search(&mut self, generations: usize) -> SearchResult {
         self.initialize_population();
-        self.phi_history.push(self.best.as_ref().unwrap().fitness);
+        self.phi_history.push(self.best.as_ref().expect("best individual must be set after initialization").fitness);
 
         for gen in 0..generations {
             self.generation = gen + 1;
@@ -1484,12 +1484,12 @@ impl PhiArchitectureSearch {
             // Gradient refinement on top individuals
             self.gradient_refine_elites();
 
-            self.phi_history.push(self.best.as_ref().unwrap().fitness);
+            self.phi_history.push(self.best.as_ref().expect("best individual must be set after initialization").fitness);
         }
 
         SearchResult {
-            best_phi: self.best.as_ref().unwrap().fitness,
-            best_architecture: self.best.as_ref().unwrap().genome.clone(),
+            best_phi: self.best.as_ref().expect("best individual must be set after initialization").fitness,
+            best_architecture: self.best.as_ref().expect("best individual must be set after initialization").genome.clone(),
             phi_history: self.phi_history.clone(),
             evaluations: self.evaluations,
             strategy: SearchStrategy::Hybrid,
@@ -1517,7 +1517,7 @@ impl PhiArchitectureSearch {
     /// enabling more efficient exploration of the consciousness landscape.
     pub fn gradient_evolutionary_search(&mut self, generations: usize) -> SearchResult {
         self.initialize_population();
-        self.phi_history.push(self.best.as_ref().unwrap().fitness);
+        self.phi_history.push(self.best.as_ref().expect("best individual must be set after initialization").fitness);
 
         // Compute initial gradients for the population
         let mut population_gradients: Vec<PhiGradient> = self.population
@@ -1527,7 +1527,7 @@ impl PhiArchitectureSearch {
         self.evaluations += self.population.len() * 12;
 
         let mut no_improvement_count = 0;
-        let mut prev_best = self.best.as_ref().unwrap().fitness;
+        let mut prev_best = self.best.as_ref().expect("best individual must be set after initialization").fitness;
 
         for gen in 0..generations {
             self.generation = gen + 1;
@@ -1542,7 +1542,7 @@ impl PhiArchitectureSearch {
                 .collect();
             self.evaluations += self.population.len() * 12;
 
-            let current_best = self.best.as_ref().unwrap().fitness;
+            let current_best = self.best.as_ref().expect("best individual must be set after initialization").fitness;
             self.phi_history.push(current_best);
 
             // Early stopping check
@@ -1558,8 +1558,8 @@ impl PhiArchitectureSearch {
         }
 
         SearchResult {
-            best_phi: self.best.as_ref().unwrap().fitness,
-            best_architecture: self.best.as_ref().unwrap().genome.clone(),
+            best_phi: self.best.as_ref().expect("best individual must be set after initialization").fitness,
+            best_architecture: self.best.as_ref().expect("best individual must be set after initialization").genome.clone(),
             phi_history: self.phi_history.clone(),
             evaluations: self.evaluations,
             strategy: SearchStrategy::GradientEvolutionary,
@@ -1604,7 +1604,7 @@ impl PhiArchitectureSearch {
             };
 
             // Update best
-            if fitness > self.best.as_ref().unwrap().fitness {
+            if fitness > self.best.as_ref().expect("best individual must be set after initialization").fitness {
                 self.best = Some(child.clone());
             }
 
@@ -1743,14 +1743,14 @@ impl PhiArchitectureSearch {
         for island in &islands {
             if let Some(best) = island.first() {
                 if global_best.is_none()
-                    || best.fitness > global_best.as_ref().unwrap().fitness
+                    || best.fitness > global_best.as_ref().expect("global_best must be set after first island").fitness
                 {
                     global_best = Some(best.clone());
                 }
             }
         }
 
-        let mut phi_history = vec![global_best.as_ref().unwrap().fitness];
+        let mut phi_history = vec![global_best.as_ref().expect("global_best must be set after first island").fitness];
 
         for gen in 0..generations {
             // Evolve each island independently
@@ -1766,16 +1766,16 @@ impl PhiArchitectureSearch {
             // Update global best
             for island in &islands {
                 if let Some(best) = island.first() {
-                    if best.fitness > global_best.as_ref().unwrap().fitness {
+                    if best.fitness > global_best.as_ref().expect("global_best must be set after first island").fitness {
                         global_best = Some(best.clone());
                     }
                 }
             }
 
-            phi_history.push(global_best.as_ref().unwrap().fitness);
+            phi_history.push(global_best.as_ref().expect("global_best must be set after first island").fitness);
         }
 
-        let best = global_best.unwrap();
+        let best = global_best.expect("global_best must be set after island evolution");
         SearchResult {
             best_phi: best.fitness,
             best_architecture: best.genome,
@@ -1871,7 +1871,7 @@ impl PhiArchitectureSearch {
                 self.evaluations += 1;
 
                 // Replace worst individual in target island
-                if !islands[i].is_empty() && fitness > islands[i].last().unwrap().fitness {
+                if !islands[i].is_empty() && fitness > islands[i].last().expect("island must not be empty").fitness {
                     islands[i].pop();
                     islands[i].push(Individual {
                         genome: refined_genome,
@@ -1921,7 +1921,7 @@ impl PhiArchitectureSearch {
             };
 
             // Update best
-            if self.best.is_none() || fitness > self.best.as_ref().unwrap().fitness {
+            if self.best.is_none() || fitness > self.best.as_ref().expect("best individual must be set after initialization").fitness {
                 self.best = Some(child.clone());
             }
 
@@ -1968,7 +1968,7 @@ impl PhiArchitectureSearch {
                 self.population[i].genome = genome;
                 self.population[i].fitness = fitness;
 
-                if fitness > self.best.as_ref().unwrap().fitness {
+                if fitness > self.best.as_ref().expect("best individual must be set after initialization").fitness {
                     self.best = Some(self.population[i].clone());
                 }
             }
