@@ -220,6 +220,39 @@ impl LearnableLTC {
         })
     }
 
+    /// Create a deterministic LTC network from a genesis seed.
+    pub fn from_genesis(
+        config: LearnableLTCConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Result<Self> {
+        let n = config.num_neurons;
+        let i = config.input_dim;
+        let o = config.output_dim;
+        let init_scale_in = (6.0 / (n + i) as f32).sqrt();
+        let init_scale_rec = (6.0 / (n + n) as f32).sqrt();
+        let init_scale_out = (6.0 / (o + n) as f32).sqrt();
+        let mut rng = genesis.domain(&format!("{label}::weights"));
+        let w_in: Vec<f32> = (0..(n * i)).map(|_| rng.gen_range(-init_scale_in..init_scale_in)).collect();
+        let w_rec: Vec<f32> = (0..(n * n)).map(|_| rng.gen_range(-init_scale_rec..init_scale_rec)).collect();
+        let w_out: Vec<f32> = (0..(o * n)).map(|_| rng.gen_range(-init_scale_out..init_scale_out)).collect();
+        let mut tau_rng = genesis.domain(&format!("{label}::tau"));
+        let tau: Vec<f32> = (0..n).map(|_| tau_rng.gen_range(config.tau_bounds.0..config.tau_bounds.1)).collect();
+        let tau_sens: Vec<f32> = (0..n).map(|_| tau_rng.gen_range(0.0..0.1)).collect();
+        Ok(Self {
+            config: config.clone(),
+            w_in, w_rec, w_out,
+            b_in: vec![0.0; n], b_rec: vec![0.0; n], b_out: vec![0.0; o],
+            tau, tau_sens,
+            state: LTCState::zeros(n),
+            layer_norm_gamma: vec![1.0; n],
+            layer_norm_beta: vec![0.0; n],
+            cached_loss: 0.0,
+            has_gradients: false,
+            current_learning_rate: config.learning_rate,
+        })
+    }
+
     /// Forward pass through the LTC network
     ///
     /// Returns (output, final_state)

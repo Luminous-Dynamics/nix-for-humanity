@@ -2,55 +2,6 @@
 //!
 //! This module implements a compositional physics hierarchy where higher-level
 //! structures are **derived** from lower-level ones using HDC operations.
-//!
-//! ## The God Protocol Hierarchy
-//!
-//! ```text
-//! Layer 3: CARBON ─────────────────────────────────────────────────────┐
-//!          Bundle(6×Proton, 6×Neutron, 6×Electron)                     │ CHEMISTRY
-//!                     ↑              ↑           ↑                     │
-//! Layer 2: PROTON ────┼──── NEUTRON ─┼───────────┼─────────────────────┤
-//!          Bundle(U,U,D)    Bundle(U,D,D)        │                     │ NUCLEAR
-//!                 ↑              ↑               │                     │
-//! Layer 1: UP_QUARK ─── DOWN_QUARK ─── ELECTRON ─┴─────────────────────┘ STANDARD
-//!          (axiom)      (axiom)        (axiom)                           MODEL
-//! ```
-//!
-//! ## Key Insight
-//!
-//! Instead of hardcoding elements as independent vectors, we **construct** them:
-//! - Carbon-12: `Bundle(6×Proton, 6×Neutron, 6×Electron)`
-//! - Carbon-14: `Bundle(6×Proton, 8×Neutron, 6×Electron)`
-//!
-//! This means Symthaea **understands** isotopes inherently—they share structure
-//! but differ in neutron count.
-//!
-//! ## From Chemistry to Nuclear Physics
-//!
-//! If you only give her the periodic table, she can do chemistry (mix fluids).
-//! With the Standard Model, she can reason about:
-//! - Nuclear isomers (batteries storing energy in the nucleus)
-//! - Radioactive decay (neutron → proton + electron + antineutrino)
-//! - Fusion/fission (binding energy from mass defect)
-//!
-//! ## Usage
-//!
-//! ```rust,ignore
-//! use symthaea_core::physics::{StandardModel, PeriodicTable};
-//! use symthaea_core::genesis::GenesisSeed;
-//!
-//! let genesis = GenesisSeed::from_phrase("E=mc²");
-//! let model = StandardModel::from_genesis(&genesis);
-//! let table = PeriodicTable::from_model(&model, &genesis);
-//!
-//! // Carbon is COMPOSED, not memorized
-//! let carbon = table.element(6);
-//! let carbon_14 = table.isotope(6, 8); // 6 protons, 8 neutrons
-//!
-//! // They share structure
-//! let similarity = carbon.similarity(&carbon_14);
-//! assert!(similarity > 0.9, "Isotopes should be highly similar");
-//! ```
 
 mod standard_model;
 mod hadrons;
@@ -69,6 +20,13 @@ mod thermal_transport;
 mod neutron_shielding;
 mod geometry;
 mod pulse_dynamics;
+mod coupled_physics;
+mod spark_prototype_spec;
+mod design_space;
+mod literature_validation;
+mod uncertainty;
+mod manufacturing;
+mod economics;
 
 pub use standard_model::*;
 pub use hadrons::*;
@@ -87,3 +45,10 @@ pub use thermal_transport::*;
 pub use neutron_shielding::*;
 pub use geometry::*;
 pub use pulse_dynamics::*;
+pub use coupled_physics::*;
+pub use spark_prototype_spec::*;
+pub use design_space::*;
+pub use literature_validation::*;
+pub use uncertainty::*;
+pub use manufacturing::*;
+pub use economics::*;

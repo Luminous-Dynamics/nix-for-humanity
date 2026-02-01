@@ -341,7 +341,7 @@ impl PhononDynamics {
         }
 
         // Sort by best match
-        matches.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        matches.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
         matches
     }
 

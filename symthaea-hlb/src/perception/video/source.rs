@@ -415,7 +415,7 @@ impl MockVideoSource {
                 MockPattern::Burst { avg_gap_frames } => {
                     // Pseudo-random bursts using deterministic hash
                     let hash = seq.wrapping_mul(0x5851F42D4C957F2D).wrapping_add(0x14057B7EF767814F);
-                    let gap = (hash % (avg_gap_frames as u64 * 2)) as u64;
+                    let gap = hash % (avg_gap_frames as u64 * 2);
 
                     // Burst when sequence aligns with hash-based timing
                     if seq % (gap.max(1)) < 3 {

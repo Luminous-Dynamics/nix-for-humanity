@@ -403,7 +403,7 @@ impl NuclearPhysics {
     pub fn most_stable_mass_number(&self) -> u16 {
         self.binding_curve
             .iter()
-            .max_by(|a, b| a.binding_per_nucleon_mev.partial_cmp(&b.binding_per_nucleon_mev).unwrap())
+            .max_by(|a, b| a.binding_per_nucleon_mev.partial_cmp(&b.binding_per_nucleon_mev).unwrap_or(std::cmp::Ordering::Equal))
             .map(|p| p.mass_number)
             .unwrap_or(56)
     }

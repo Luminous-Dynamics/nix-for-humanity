@@ -323,14 +323,14 @@ impl AdvancedMaterials {
     pub fn best_max_phase(&self, damage: &RadiationDamage) -> Option<(&MAXPhase, MAXAnalysis)> {
         self.max_phases.iter()
             .map(|p| (p, self.analyze_max_phase(p, damage)))
-            .max_by(|a, b| a.1.lcf_score.partial_cmp(&b.1.lcf_score).unwrap())
+            .max_by(|a, b| a.1.lcf_score.partial_cmp(&b.1.lcf_score).unwrap_or(std::cmp::Ordering::Equal))
     }
 
     /// Find best nano-laminate for given conditions
     pub fn best_nano_laminate(&self, damage: &RadiationDamage) -> Option<(&NanoLaminate, LaminateAnalysis)> {
         self.nano_laminates.iter()
             .map(|l| (l, self.analyze_nano_laminate(l, damage)))
-            .max_by(|a, b| a.1.lcf_score.partial_cmp(&b.1.lcf_score).unwrap())
+            .max_by(|a, b| a.1.lcf_score.partial_cmp(&b.1.lcf_score).unwrap_or(std::cmp::Ordering::Equal))
     }
 
     /// Get all materials sorted by LCF score
@@ -359,7 +359,7 @@ impl AdvancedMaterials {
             });
         }
 
-        rankings.sort_by(|a, b| b.lcf_score.partial_cmp(&a.lcf_score).unwrap());
+        rankings.sort_by(|a, b| b.lcf_score.partial_cmp(&a.lcf_score).unwrap_or(std::cmp::Ordering::Equal));
         rankings
     }
 }

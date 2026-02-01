@@ -387,7 +387,7 @@ impl InverseSearchEngine {
 
         // Sort by match score
         candidates.sort_by(|a, b| {
-            b.match_score.partial_cmp(&a.match_score).unwrap()
+            b.match_score.partial_cmp(&a.match_score).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         candidates
@@ -509,7 +509,7 @@ impl InverseSearchEngine {
         results.sort_by(|a, b| {
             let score_a = a.1 * a.0.match_score;
             let score_b = b.1 * b.0.match_score;
-            score_b.partial_cmp(&score_a).unwrap()
+            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         results

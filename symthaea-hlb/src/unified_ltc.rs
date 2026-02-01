@@ -487,6 +487,88 @@ impl UnifiedLTC {
         })
     }
 
+    /// Create a deterministic Unified LTC from a genesis seed.
+    pub fn from_genesis(
+        config: UnifiedLTCConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Result<Self> {
+        use rand::Rng;
+        let n = config.num_neurons;
+        let input_dim = config.input_dim;
+        let output_dim = config.output_dim;
+
+        let (scalar_states, hdc_states, hdc_weights, hdc_input_masks, hdc_weight_momentum, hdc_weight_velocity) =
+            match &config.state_type {
+                StateType::Scalar => (vec![0.0f32; n], vec![], vec![], vec![], vec![], vec![]),
+                StateType::HDC { dimension } => {
+                    let states: Vec<_> = (0..n).map(|_| ContinuousHV::zero(*dimension)).collect();
+                    let weights: Vec<_> = (0..n).map(|i| genesis.hv(&format!("{label}::hdc_weight::{i}"), *dimension)).collect();
+                    let masks: Vec<_> = (0..n).map(|i| genesis.hv(&format!("{label}::hdc_mask::{i}"), *dimension)).collect();
+                    let momentum: Vec<_> = (0..n).map(|_| ContinuousHV::zero(*dimension)).collect();
+                    let velocity: Vec<_> = (0..n).map(|_| ContinuousHV::zero(*dimension)).collect();
+                    (vec![], states, weights, masks, momentum, velocity)
+                }
+            };
+
+        let mut rng = genesis.domain(&format!("{label}::tau"));
+        let tau: Vec<f32> = (0..n).map(|_| rng.gen_range(config.tau_min..config.tau_max)).collect();
+
+        let mut w_rng = genesis.domain(&format!("{label}::w_rec"));
+        let (w_rec, mask) = match &config.connectivity {
+            Connectivity::Dense => {
+                let w: Vec<f32> = (0..n * n).map(|_| w_rng.gen_range(-0.1..0.1)).collect();
+                (w, None)
+            }
+            Connectivity::Sparse { sparsity, mask_row_len, .. } => {
+                let mut w = vec![0.0f32; n * n];
+                let mut m = vec![0u64; n * *mask_row_len];
+                for i in 0..n {
+                    for j in 0..n {
+                        if w_rng.gen::<f32>() < *sparsity {
+                            w[i * n + j] = w_rng.gen_range(-0.1..0.1);
+                            let mask_idx = i * mask_row_len + j / 64;
+                            m[mask_idx] |= 1u64 << (j % 64);
+                        }
+                    }
+                }
+                (w, Some(m))
+            }
+        };
+
+        let connectivity = if let Some(m) = mask {
+            let mask_row_len = n.div_ceil(64);
+            Connectivity::Sparse {
+                sparsity: match &config.connectivity {
+                    Connectivity::Sparse { sparsity, .. } => *sparsity,
+                    _ => 0.1,
+                },
+                mask: m,
+                mask_row_len,
+            }
+        } else {
+            config.connectivity.clone()
+        };
+
+        let mut io_rng = genesis.domain(&format!("{label}::io_weights"));
+        let w_in: Vec<f32> = (0..n * input_dim).map(|_| io_rng.gen_range(-0.1..0.1)).collect();
+        let w_out: Vec<f32> = (0..output_dim * n).map(|_| io_rng.gen_range(-0.1..0.1)).collect();
+        let bias: Vec<f32> = (0..n).map(|_| io_rng.gen_range(-0.1..0.1)).collect();
+
+        let mut new_config = config;
+        new_config.connectivity = connectivity;
+
+        Ok(Self {
+            config: new_config,
+            scalar_states, tau, w_rec, w_in, w_out, bias,
+            hdc_states, hdc_weights, hdc_input_masks,
+            m_w_rec: vec![0.0f32; n * n], v_w_rec: vec![0.0f32; n * n],
+            m_tau: vec![0.0f32; n], v_tau: vec![0.0f32; n],
+            hdc_weight_momentum, hdc_weight_velocity,
+            step: 0, total_time: 0.0, update_count: 0,
+        })
+    }
+
     /// Check if mask bit is set at [i, j]
     #[inline]
     fn mask_get(&self, i: usize, j: usize) -> bool {

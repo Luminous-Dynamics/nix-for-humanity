@@ -390,7 +390,7 @@ impl ElectronNuclearCoupling {
             .min_by(|a, b| {
                 let diff_a = (a.2 - target_ev).abs();
                 let diff_b = (b.2 - target_ev).abs();
-                diff_a.partial_cmp(&diff_b).unwrap()
+                diff_a.partial_cmp(&diff_b).unwrap_or(std::cmp::Ordering::Equal)
             })
             .unwrap()
     }
@@ -423,7 +423,7 @@ impl ElectronNuclearCoupling {
     pub fn best_candidates(&self, n: usize) -> Vec<&NEECCoupling> {
         let mut sorted: Vec<&NEECCoupling> = self.candidates.iter().collect();
         sorted.sort_by(|a, b| {
-            b.coupling_strength.partial_cmp(&a.coupling_strength).unwrap()
+            b.coupling_strength.partial_cmp(&a.coupling_strength).unwrap_or(std::cmp::Ordering::Equal)
         });
         sorted.into_iter().take(n).collect()
     }

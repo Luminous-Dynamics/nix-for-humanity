@@ -481,7 +481,7 @@ impl HEADesigner {
 
         // Sort by match score
         results.sort_by(|a, b| {
-            b.match_score.partial_cmp(&a.match_score).unwrap()
+            b.match_score.partial_cmp(&a.match_score).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         results
@@ -567,7 +567,7 @@ impl HEADesigner {
 
         // Select top 5 elements
         let mut scored: Vec<(u8, f64)> = element_scores.into_iter().collect();
-        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let top_5: Vec<(u8, f64)> = scored.into_iter()
             .take(5)
@@ -660,7 +660,7 @@ pub fn multi_seed_hea_search(
         .map(|(_name, results)| {
             let occurrence_count = results.len();
             let best_result = results.iter()
-                .max_by(|a, b| a.0.match_score.partial_cmp(&b.0.match_score).unwrap())
+                .max_by(|a, b| a.0.match_score.partial_cmp(&b.0.match_score).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap();
 
             let total_match: f32 = results.iter().map(|(r, _)| r.match_score).sum();
@@ -680,7 +680,7 @@ pub fn multi_seed_hea_search(
         .collect();
 
     // Sort by consensus score
-    consensus.sort_by(|a, b| b.consensus_score.partial_cmp(&a.consensus_score).unwrap());
+    consensus.sort_by(|a, b| b.consensus_score.partial_cmp(&a.consensus_score).unwrap_or(std::cmp::Ordering::Equal));
 
     consensus
 }

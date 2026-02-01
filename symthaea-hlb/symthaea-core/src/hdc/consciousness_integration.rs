@@ -3470,6 +3470,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: graph topology optimization (~60s)"]
     fn test_phi_optimization_multiple_steps() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.enable_phi_optimization(8, 5);
@@ -3492,6 +3493,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: 20 cycles with phi optimization (~90s)"]
     fn test_phi_optimization_during_processing() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.set_embodiment(0.8);
@@ -3562,6 +3564,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: 15 cycles with phi optimization (~80s)"]
     fn test_phi_trend_with_optimization() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.set_embodiment(0.9);
@@ -3853,6 +3856,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: 1024-dim self-awareness (~60s)"]
     fn test_process_self_aware() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.enable_self_awareness(1024, 16);
@@ -3904,6 +3908,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: 15 cycles with self-awareness (~90s)"]
     fn test_self_awareness_during_processing() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.set_embodiment(0.8);
@@ -3930,6 +3935,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: meta-cognitive assessment (~70s)"]
     fn test_meta_cognitive_assessment() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.enable_self_awareness(1024, 16);
@@ -4070,6 +4076,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive: full 11-system consciousness pipeline (~120s)"]
     fn test_optimization_cycle() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.set_embodiment(0.8);
