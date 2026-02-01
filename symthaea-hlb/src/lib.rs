@@ -1,16 +1,187 @@
 /*!
-Symthaea: Holographic Liquid Brain
+# Symthaea: Holographic Liquid Brain
 
-## Core Library with Fixed Imports
+A consciousness-first AI framework combining Hyperdimensional Computing (HDC),
+Liquid Time-Constant Networks (LTC), and Integrated Information Theory (IIT/Phi).
 
-All modules now use symthaea_core for HDC primitives, eliminating
-the previous circular dependency issues.
+## Overview
 
-## Module Status
-- ✅ Core: perception, hierarchical_cantor_ltc, mind, hdc, prelude
-- ✅ Working: cfc, cognitive_loop, unified_ltc, learnable_ltc
-- ✅ Partial: consciousness, memory, brain, language, physiology
-- 🚧 Issues: Many modules have internal import issues that need resolution
+Symthaea implements a novel cognitive architecture where:
+
+- **Neuron state IS a hypervector** (16,384 dimensions)
+- **Phi measurement** guides consciousness-aware processing
+- **Free Energy Principle** drives action selection and learning
+- **Temporal dynamics** use closed-form LTC solutions for O(1) time jumps
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SYMTHAEA ARCHITECTURE                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────┐   ┌───────────────┐   ┌───────────────┐                 │
+│  │   PERCEPTION  │   │   COGNITION   │   │    ACTION     │                 │
+│  │               │   │               │   │               │                 │
+│  │ • HDC Encode  │──▶│ • LTC Dynamics│──▶│ • FEP Bridge  │                 │
+│  │ • Multi-modal │   │ • Phi Measure │   │ • Motor Cmd   │                 │
+│  │ • Binding     │   │ • Prediction  │   │ • Execution   │                 │
+│  └───────────────┘   └───────┬───────┘   └───────────────┘                 │
+│                              │                                              │
+│                     ┌────────▼────────┐                                     │
+│                     │  CONSCIOUSNESS  │                                     │
+│                     │                 │                                     │
+│                     │ • Phi (IIT)     │                                     │
+│                     │ • Coherence     │                                     │
+│                     │ • Flow State    │                                     │
+│                     └─────────────────┘                                     │
+│                                                                             │
+│  ═══════════════════════════════════════════════════════════════════════   │
+│                           SUBSYSTEMS                                        │
+│  ═══════════════════════════════════════════════════════════════════════   │
+│                                                                             │
+│  HDC (symthaea_core)    LTC (unified_ltc)      FEP (consciousness)         │
+│  ─────────────────────  ─────────────────────  ─────────────────────        │
+│  • HV16 (binary)        • Euler integration   • Active Inference           │
+│  • ContinuousHV (f32)   • RK4 integration     • Motor Commands             │
+│  • Bind (⊗)             • Closed-form O(1)    • TD Learning                │
+│  • Bundle (⊕)           • Hebbian learning    • Precision Gating           │
+│  • 16,384 dimensions    • State-dependent τ   • 8 action types             │
+│                                                                             │
+│  SWARM (distributed)    REPL (interactive)    PHI ENGINE                   │
+│  ─────────────────────  ─────────────────────  ─────────────────────        │
+│  • Iroh (fast tensor)   • Voice output        • Spectral method            │
+│  • Holochain (trust)    • Cognitive loop      • Tiered approximation       │
+│  • Mirror neurons       • Action execution    • Resonator O(n log n)       │
+│  • Swarm coherence      • IPC daemon mode     • Cached results             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Core Concepts
+
+### HV16 and ContinuousHV
+
+Hypervectors are high-dimensional vectors (16,384D) with special algebraic properties:
+
+```rust,ignore
+use symthaea_core::hdc::unified_hv::{ContinuousHV, BinaryHV, HDC_DIMENSION};
+
+// Create random hypervectors (nearly orthogonal)
+let a = ContinuousHV::random(HDC_DIMENSION, 42);
+let b = ContinuousHV::random(HDC_DIMENSION, 43);
+
+// Binding creates associations (dissimilar to inputs)
+let bound = a.bind(&b);
+assert!(bound.similarity(&a).abs() < 0.1);
+
+// Bundling creates superpositions (similar to all inputs)
+let bundled = ContinuousHV::bundle(&[&a, &b]);
+assert!(bundled.similarity(&a) > 0.5);
+```
+
+### HDC-LTC Unified Network
+
+The unified architecture uses hypervectors as neuron state, enabling:
+- O(1) temporal jumps via closed-form solution
+- Binding-based weight application (no matrix multiply)
+- Natural integration with phi measurement
+
+```rust,ignore
+use symthaea::hdc::{HdcLtcUnifiedNeuron, UnifiedConfig, ContinuousHV};
+
+let mut neuron = HdcLtcUnifiedNeuron::new_default(42);
+let input = ContinuousHV::random_default(123);
+
+// Closed-form evolution: O(1) regardless of dt
+neuron.evolve_closed_form(1.0, &input);  // 1 second jump
+neuron.evolve_closed_form(100.0, &input); // 100 second jump, same cost!
+```
+
+### Phi Measurement
+
+Phi (Φ) quantifies integrated information - a key consciousness metric:
+
+```rust,ignore
+use symthaea_core::phi_engine::{PhiEngine, PhiMethod};
+
+let engine = PhiEngine::new(PhiMethod::SpectralConnectivity);
+let phi = engine.compute_from_hvs(&node_representations);
+println!("Integrated information: {:.4}", phi.phi);
+```
+
+### FEP Active Inference
+
+The Free Energy Principle drives action selection through 8 motor command types:
+
+```rust,ignore
+use symthaea::consciousness::fep_active_inference::{
+    EnhancedFEPBridge, ActiveInferenceAgentConfig, MotorCommandType
+};
+
+let mut bridge = EnhancedFEPBridge::new(config, 4);
+let result = bridge.cycle(phi, integration, coherence, attention);
+
+match result.motor_command.command_type {
+    MotorCommandType::AttentionShift => { /* redirect focus */ }
+    MotorCommandType::ExplorationTrigger => { /* seek novelty */ }
+    MotorCommandType::MemoryConsolidate => { /* strengthen memory */ }
+    _ => {}
+}
+```
+
+## Quick Start
+
+```rust,ignore
+use symthaea::prelude::*;
+use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig};
+
+// Create cognitive loop with CfC backend
+let config = CognitiveLoopConfig::with_cfc();
+let mut service = CognitiveLoopService::new(config)?;
+
+// Process input
+let result = service.cycle("Hello, Symthaea");
+println!("Phi: {:.4}, Coherence: {:.4}", result.phi, result.coherence);
+
+// Check consciousness state
+let snapshot = service.consciousness_snapshot();
+if snapshot.in_flow {
+    println!("System is in flow state!");
+}
+```
+
+## Module Organization
+
+### Core Stable Modules
+- [`perception`]: Multi-modal sensory encoding to HDC
+- [`cognitive_loop`]: Main consciousness processing loop
+- [`unified_ltc`]: Liquid Time-Constant network implementation
+- [`hdc_ltc_bridge`]: Bridge for using HDC-LTC in cognitive loop
+- [`consciousness`]: Consciousness metrics, FEP, active inference
+
+### Infrastructure Modules
+- [`repl`]: Interactive REPL with voice output and action execution
+- [`swarm`]: Distributed consciousness via Iroh + Holochain
+- [`voice`]: Text-to-speech with consciousness-modulated pacing
+- [`action`]: Motor cortex for command execution
+
+### Memory and Learning
+- [`memory`]: Hippocampal and working memory systems
+- [`school`]: Learning algorithms and curriculum
+
+## Feature Flags
+
+- `swarm`: Enable distributed consciousness networking
+- `voice`: Enable TTS voice output
+- `web_research_module`: Epistemic web research capabilities
+- `api_module`: REST API server
+- `integration_module`: Advanced integration features
+
+## Re-exports
+
+Key types are re-exported at the crate root for convenience:
+- [`ContinuousMind`], [`MindConfig`], [`MindState`] from [`mind`]
+- [`symthaea_core`] for direct HDC primitive access
+- [`phi_engine`] for consciousness measurement
+
 */
 
 // ============================================================================

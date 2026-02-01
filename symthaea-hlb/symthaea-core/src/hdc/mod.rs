@@ -307,6 +307,7 @@ pub mod arithmetic;                          // Modular arithmetic (re-exports a
 pub mod celegans_connectome;               // Revolutionary #100: C. elegans connectome validation (302 neurons)
 pub mod native_similarity;                 // O(1) XOR+popcount similarity search (consciousness-native)
 pub mod sparse_hv;                         // Sparse HDC for memory-efficient low-density vectors
+pub mod hv_pool;                           // Thread-local memory pools for HV16/ContinuousHV (10-100x faster allocation)
 
 // Property-based tests for HDC invariants
 #[cfg(test)]
@@ -706,6 +707,14 @@ pub use sensorimotor_contingencies::{
     ActionAffordance, AffordanceDetector, AffordanceConfig,
     // Consciousness integration
     ContingencyConsciousnessContribution,
+};
+
+// Re-export HV memory pool types (10-100x faster allocation for hot paths)
+pub use hv_pool::{
+    HV16Pool, PooledHV16,
+    ContinuousHVPool, PooledContinuousHV,
+    PoolStats as HVPoolStats,
+    pooled_bind, pooled_similarity,
 };
 
 use anyhow::Result;

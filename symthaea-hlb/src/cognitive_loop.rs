@@ -165,6 +165,11 @@ pub struct CognitiveLoopConfig {
 
     /// Maximum cycles before stats reset (for long-running service)
     pub max_cycles_before_reset: usize,
+
+    /// Optional genesis phrase for deterministic initialization.
+    /// When set, all HDC vectors and network weights are derived from this
+    /// phrase via SHAKE-256, making the system fully reproducible.
+    pub genesis_phrase: Option<String>,
 }
 
 impl Default for CognitiveLoopConfig {
@@ -179,6 +184,7 @@ impl Default for CognitiveLoopConfig {
             enable_consolidation: true,
             target_frequency: 50.0, // 50 Hz
             max_cycles_before_reset: 100000,
+            genesis_phrase: None,
         }
     }
 }
@@ -3388,7 +3394,12 @@ impl CognitiveLoopService {
                 // Ensure dimensions match CfC config for compatibility
                 bridge_config.input_dim = config.cfc_config.input_dim;
                 bridge_config.output_dim = config.cfc_config.num_neurons;
-                let bridge = HdcLtcBridge::new(bridge_config);
+                let bridge = if let Some(ref phrase) = config.genesis_phrase {
+                    let genesis = symthaea_core::genesis::GenesisSeed::from_phrase(phrase);
+                    HdcLtcBridge::from_genesis(bridge_config, &genesis)
+                } else {
+                    HdcLtcBridge::new(bridge_config)
+                };
                 TemporalNetwork::HdcLtc(bridge)
             }
         };
@@ -5429,7 +5440,7 @@ mod tests {
 
     #[test]
     fn test_predictions_trustworthy() {
-        let mut service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
+        let service = CognitiveLoopService::new(CognitiveLoopConfig::default()).unwrap();
 
         // Initial state should have some trust
         assert!(service.prediction_confidence() > 0.3);

@@ -1,6 +1,7 @@
 //! # Full Active Inference Implementation (FEP Integration)
 //!
-//! Implements Karl Friston's Free Energy Principle (FEP) as a complete active inference loop.
+//! Implements Karl Friston's Free Energy Principle (FEP) as a complete active inference loop
+//! with motor command generation and temporal difference learning.
 //!
 //! ## Mathematical Foundation
 //!
@@ -23,17 +24,106 @@
 //! 2. **Action Selection**: Choose actions that minimize expected free energy
 //! 3. **Model Learning**: Update generative model parameters based on prediction errors
 //!
+//! ## Architecture Overview
+//!
+//! ```text
+//! ┌─────────────────────────────────────────────────────────────────────────┐
+//! │                    FEP ACTIVE INFERENCE PIPELINE                        │
+//! ├─────────────────────────────────────────────────────────────────────────┤
+//! │                                                                         │
+//! │  Observation (phi, integration, coherence, attention)                   │
+//! │           │                                                             │
+//! │           ▼                                                             │
+//! │  ┌─────────────────┐    ┌──────────────────┐    ┌────────────────┐     │
+//! │  │  Generative     │───▶│  Free Energy     │───▶│  Precision     │     │
+//! │  │  Model P(o,s)   │    │  Calculator      │    │  Estimator     │     │
+//! │  └─────────────────┘    └──────────────────┘    └───────┬────────┘     │
+//! │                                                          │              │
+//! │           ┌──────────────────────────────────────────────┘              │
+//! │           ▼                                                             │
+//! │  ┌─────────────────┐    ┌──────────────────┐    ┌────────────────┐     │
+//! │  │  Expected FE    │───▶│  Action          │───▶│  Motor         │     │
+//! │  │  Computer       │    │  Selection       │    │  Command       │     │
+//! │  └─────────────────┘    └──────────────────┘    └───────┬────────┘     │
+//! │                                                          │              │
+//! │           ┌──────────────────────────────────────────────┘              │
+//! │           ▼                                                             │
+//! │  ┌─────────────────┐    ┌──────────────────┐                           │
+//! │  │  Motor System   │───▶│  TD Learner      │                           │
+//! │  │  (Execute)      │    │  (Update Model)  │                           │
+//! │  └─────────────────┘    └──────────────────┘                           │
+//! └─────────────────────────────────────────────────────────────────────────┘
+//! ```
+//!
+//! ## Motor Command System
+//!
+//! The FEP bridge outputs one of 8 [`MotorCommandType`] variants based on predicted
+//! expected free energy. Each command represents a different cognitive action:
+//!
+//! | Command | Index | When It Fires | Effect |
+//! |---------|-------|---------------|--------|
+//! | `AttentionShift` | 0 | High precision error in specific modality | Redirect processing focus |
+//! | `LearningRateAdjust` | 1 | Model confidence is changing | Increase/decrease learning |
+//! | `ExplorationTrigger` | 2 | Low epistemic value, high uncertainty | Seek novel inputs |
+//! | `ReflectionInitiate` | 3 | High free energy, stable state | Pause for metacognition |
+//! | `MemoryConsolidate` | 4 | High confidence, low prediction error | Strengthen representations |
+//! | `ExpectationReset` | 5 | Persistent high prediction error | Clear prediction cache |
+//! | `MotorOutput` | 6 | Pragmatic action needed | Execute external action |
+//! | `NoOp` | 7 | System at equilibrium | Maintain current state |
+//!
+//! ## Temporal Difference Learning
+//!
+//! The module implements TD(λ) learning with eligibility traces:
+//!
+//! ```text
+//! δ = r + γV(s') - V(s)    // TD error
+//! e(s,a) = γλe(s,a) + ∇    // Eligibility trace
+//! θ ← θ + αδe             // Parameter update
+//! ```
+//!
+//! Key configuration parameters in [`TemporalDifferenceLearningConfig`]:
+//! - `gamma` (default 0.99): Discount factor for future rewards
+//! - `lambda` (default 0.8): Eligibility trace decay (0=TD(0), 1=Monte Carlo)
+//! - `initial_learning_rate` (default 0.1): Starting learning rate
+//!
 //! ## Components
 //!
-//! - `GenerativeModel`: Maps hidden states → predicted observations
-//! - `FreeEnergyCalculator`: Computes variational free energy and its components
-//! - `PrecisionEstimator`: Dynamic precision weighting for confidence-weighted errors
-//! - `ActiveInferenceAgent`: Full perception-action loop
+//! - [`GenerativeModel`]: Maps hidden states → predicted observations
+//! - [`FreeEnergyCalculator`]: Computes variational free energy and its components
+//! - [`PrecisionEstimator`]: Dynamic precision weighting for confidence-weighted errors
+//! - [`ActiveInferenceAgent`]: Full perception-action loop
+//! - [`MotorSystem`]: Executes commands and tracks proprioceptive feedback
+//! - [`TemporalDifferenceLearner`]: Updates model based on prediction errors
+//! - [`EnhancedFEPBridge`]: High-level integration with cognitive loop
 //!
-//! ## Integration
+//! ## Integration with Cognitive Loop
 //!
-//! This module integrates with the cognitive loop's prediction error system, providing
-//! precision-weighted prediction errors that modulate learning and attention.
+//! Use [`EnhancedFEPBridge`] to connect FEP to the cognitive loop:
+//!
+//! ```rust,ignore
+//! use symthaea::consciousness::fep_active_inference::{
+//!     EnhancedFEPBridge, ActiveInferenceAgentConfig
+//! };
+//!
+//! let config = ActiveInferenceAgentConfig::default();
+//! let mut bridge = EnhancedFEPBridge::new(config, 4);
+//!
+//! // Each cognitive cycle:
+//! let result = bridge.cycle(phi, integration, coherence, attention);
+//!
+//! // Use the motor command
+//! match result.motor_command.command_type {
+//!     MotorCommandType::AttentionShift => { /* redirect focus */ }
+//!     MotorCommandType::ExplorationTrigger => { /* seek novelty */ }
+//!     // ...
+//! }
+//!
+//! // Check if learning should occur
+//! if result.should_learn {
+//!     // Apply learning signal to downstream systems
+//!     let lr = result.learning_signal;
+//! }
+//! ```
 //!
 //! ## References
 //!
@@ -42,6 +132,7 @@
 //!   Active Inference: A Process Theory.
 //! - Parr, T., Pezzulo, G., & Friston, K. J. (2022). Active Inference: The Free Energy
 //!   Principle in Mind, Brain, and Behavior.
+//! - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.)
 
 use std::collections::VecDeque;
 use std::f64::consts::PI;
@@ -346,8 +437,10 @@ pub struct TemporalDifferenceLearner {
     pub avg_prediction_accuracy: f64,
     /// Number of episodes/epochs completed (for learning rate scheduling)
     pub episodes_completed: u64,
-    /// Value function weights for TD learning: V(s) = w · s
+    /// Value function weights for TD learning: V(s) = tanh(w · s + b)
     pub value_weights: Vec<f64>,
+    /// Value function bias
+    pub value_bias: f64,
     /// Previous state value (for bootstrapping)
     pub prev_value: f64,
 }
@@ -391,6 +484,7 @@ impl TemporalDifferenceLearner {
             avg_prediction_accuracy: 0.0,
             episodes_completed: 0,
             value_weights: vec![0.0; state_dim],
+            value_bias: 0.0,
             prev_value: 0.0,
         }
     }
@@ -429,15 +523,17 @@ impl TemporalDifferenceLearner {
             .sum::<f64>()
             .sqrt();
 
-        // Linear value function: V(s) = w · s
-        let v_old: f64 = self.value_weights.iter()
+        // Nonlinear value function: V(s) = tanh(w · s + b)
+        let pre_old: f64 = self.value_weights.iter()
             .zip(old_state.mean.iter())
             .map(|(w, s)| w * s)
-            .sum();
-        let v_new: f64 = self.value_weights.iter()
+            .sum::<f64>() + self.value_bias;
+        let v_old = pre_old.tanh();
+        let pre_new: f64 = self.value_weights.iter()
             .zip(new_state.mean.iter())
             .map(|(w, s)| w * s)
-            .sum();
+            .sum::<f64>() + self.value_bias;
+        let v_new = pre_new.tanh();
 
         // Intrinsic reward: negative prediction error
         let reward = -obs_prediction_error;
@@ -562,7 +658,14 @@ impl TemporalDifferenceLearner {
             }
         }
 
-        // Update value function weights: w += lr * δ * s
+        // Update value function weights: w += lr * δ * dtanh * s, b += lr * δ * dtanh
+        // dtanh = 1 - tanh^2(w · s + b)
+        let pre_act: f64 = self.value_weights.iter()
+            .zip(old_state.mean.iter())
+            .map(|(w, s)| w * s)
+            .sum::<f64>() + self.value_bias;
+        let dtanh = 1.0 - pre_act.tanh().powi(2);
+
         for i in 0..self.value_weights.len().min(old_state.mean.len()) {
             let trace_scale = if let Some(ref traces) = self.eligibility_traces {
                 let aidx = action_idx.min(traces.transition_traces.len().saturating_sub(1));
@@ -578,9 +681,11 @@ impl TemporalDifferenceLearner {
                 1.0
             };
 
-            self.value_weights[i] += lr * td_error * old_state.mean[i] * trace_scale;
+            self.value_weights[i] += lr * td_error * dtanh * old_state.mean[i] * trace_scale;
             self.value_weights[i] = self.value_weights[i].clamp(-10.0, 10.0);
         }
+        self.value_bias += lr * td_error * dtanh;
+        self.value_bias = self.value_bias.clamp(-5.0, 5.0);
 
         // Update confidence tracker
         let from_idx = old_state.mean.iter()
@@ -2125,28 +2230,105 @@ pub struct CognitiveLoopFEPResult {
 // MOTOR COMMAND SYSTEM
 // =============================================================================
 
-/// Motor command types for embodied action
+/// Motor command types for embodied action.
 ///
-/// These represent the possible motor outputs from the active inference system.
-/// In a cognitive architecture, these translate to changes in attention, parameters,
-/// or actual motor commands in an embodied system.
+/// These represent the 8 possible motor outputs from the active inference system.
+/// The FEP bridge selects a command type based on which action minimizes expected
+/// free energy. In a cognitive architecture, these translate to changes in attention,
+/// learning parameters, or actual motor commands in an embodied system.
+///
+/// # Command Selection
+///
+/// The active inference agent evaluates expected free energy for each action:
+///
+/// ```text
+/// G(a) = E_q[ln q(s') - ln p(o',s') | a]
+///      = Pragmatic Value + Epistemic Value
+/// ```
+///
+/// The action with lowest G(a) is selected and mapped to the corresponding
+/// `MotorCommandType` via [`MotorCommandType::from_action_index`].
+///
+/// # When Each Command Fires
+///
+/// | Command | Typical Trigger Condition |
+/// |---------|---------------------------|
+/// | `AttentionShift` | High precision error in specific sensory modality |
+/// | `LearningRateAdjust` | Model confidence changing rapidly |
+/// | `ExplorationTrigger` | Low epistemic value, high state uncertainty |
+/// | `ReflectionInitiate` | High free energy but stable belief state |
+/// | `MemoryConsolidate` | High confidence, consistently low prediction error |
+/// | `ExpectationReset` | Persistent high prediction error (model mismatch) |
+/// | `MotorOutput` | Pragmatic goals require external action |
+/// | `NoOp` | System near equilibrium, minimal free energy |
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use symthaea::consciousness::fep_active_inference::MotorCommandType;
+///
+/// let action_index = 2; // From FEP action selection
+/// let cmd = MotorCommandType::from_action_index(action_index);
+/// assert_eq!(cmd, MotorCommandType::ExplorationTrigger);
+///
+/// // Convert back
+/// assert_eq!(cmd.to_action_index(), 2);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MotorCommandType {
-    /// Modulate attention focus (shift attention to different inputs)
+    /// Modulate attention focus (shift attention to different inputs).
+    ///
+    /// Fires when precision-weighted error is high in a specific modality,
+    /// indicating that attention resources should be redirected.
+    /// Updates the proprioceptive attention dimension.
     AttentionShift,
-    /// Adjust learning rate (precision-weighted learning)
+
+    /// Adjust learning rate based on precision dynamics.
+    ///
+    /// Fires when model confidence is changing, either increasing
+    /// (reduce learning rate) or decreasing (increase learning rate).
+    /// Implements precision-weighted learning modulation.
     LearningRateAdjust,
-    /// Trigger exploration (seek novel inputs)
+
+    /// Trigger exploration to reduce state uncertainty.
+    ///
+    /// Fires when epistemic value is high (information gain potential)
+    /// but pragmatic value is low. Causes increased variability in
+    /// proprioceptive state to gather diverse observations.
     ExplorationTrigger,
-    /// Initiate reflection (metacognitive pause)
+
+    /// Initiate metacognitive reflection.
+    ///
+    /// Fires when free energy is high but beliefs are relatively stable,
+    /// suggesting the need for higher-order reasoning about the current
+    /// situation rather than immediate action.
     ReflectionInitiate,
-    /// Consolidate memory (strengthen current representations)
+
+    /// Consolidate current representations into long-term memory.
+    ///
+    /// Fires when model confidence is high and prediction error is
+    /// consistently low, indicating stable learned patterns that
+    /// should be strengthened.
     MemoryConsolidate,
-    /// Reset expectation (clear prediction cache)
+
+    /// Reset prediction expectations.
+    ///
+    /// Fires when prediction error remains persistently high despite
+    /// learning, suggesting fundamental model mismatch that requires
+    /// clearing cached predictions rather than incremental updates.
     ExpectationReset,
-    /// Motor output (for embodied systems)
+
+    /// Execute external motor action.
+    ///
+    /// Fires when pragmatic goals require physical/external action.
+    /// In embodied systems, this translates to actual motor commands.
+    /// In cognitive systems, may trigger shell commands or API calls.
     MotorOutput,
-    /// No operation (maintain current state)
+
+    /// No operation - maintain current state.
+    ///
+    /// Fires when the system is near equilibrium with minimal free energy.
+    /// Indicates the current policy is adequate and no change is needed.
     NoOp,
 }
 
@@ -2465,21 +2647,140 @@ fn rand_f64() -> f64 {
 // ENHANCED COGNITIVE LOOP INTEGRATION
 // =============================================================================
 
-/// Enhanced FEP bridge with motor system integration
+/// Enhanced FEP bridge with motor system integration.
+///
+/// `EnhancedFEPBridge` is the primary interface for integrating Free Energy Principle
+/// active inference into the Symthaea cognitive loop. It combines:
+///
+/// - **Perception**: Processing consciousness observations (phi, integration, coherence, attention)
+/// - **Action Selection**: Choosing motor commands that minimize expected free energy
+/// - **Motor Execution**: Executing commands through the [`MotorSystem`]
+/// - **Learning**: Updating the generative model based on prediction errors
+///
+/// # Architecture
+///
+/// ```text
+/// ┌─────────────────────────────────────────────────────────────────┐
+/// │                   EnhancedFEPBridge                             │
+/// ├─────────────────────────────────────────────────────────────────┤
+/// │                                                                 │
+/// │  ┌──────────────────────┐    ┌──────────────────────┐          │
+/// │  │  CognitiveLoopFEP    │    │    MotorSystem       │          │
+/// │  │  Bridge (core)       │    │                      │          │
+/// │  │                      │    │  • execute()         │          │
+/// │  │  • process()         │───▶│  • proprioception    │          │
+/// │  │  • select_action()   │    │  • command_history   │          │
+/// │  │  • TD learning       │    │                      │          │
+/// │  └──────────────────────┘    └──────────────────────┘          │
+/// │                                      │                         │
+/// │                    ┌─────────────────┘                         │
+/// │                    ▼                                           │
+/// │           ┌───────────────────┐                                │
+/// │           │  Learning Signal  │                                │
+/// │           │  Computation      │                                │
+/// │           │                   │                                │
+/// │           │  TD error × 0.4   │                                │
+/// │           │  Motor err × 0.3  │                                │
+/// │           │  FE × 0.3         │                                │
+/// │           └───────────────────┘                                │
+/// └─────────────────────────────────────────────────────────────────┘
+/// ```
+///
+/// # Precision-Gated Learning
+///
+/// Learning only occurs when model confidence exceeds the threshold (default 0.4).
+/// This prevents learning from noisy or uncertain observations:
+///
+/// ```rust,ignore
+/// let mut bridge = EnhancedFEPBridge::new(config, 4);
+///
+/// // Customize precision gating
+/// bridge.set_precision_gated_learning(true, 0.5); // Stricter threshold
+///
+/// let result = bridge.cycle(phi, integration, coherence, attention);
+/// if result.should_learn {
+///     // Model confidence > 0.5, safe to learn
+///     downstream_learner.apply_gradient(result.learning_signal);
+/// }
+/// ```
+///
+/// # Complete Cycle Example
+///
+/// ```rust,ignore
+/// use symthaea::consciousness::fep_active_inference::{
+///     EnhancedFEPBridge, ActiveInferenceAgentConfig, MotorCommandType
+/// };
+///
+/// let config = ActiveInferenceAgentConfig::default();
+/// let mut bridge = EnhancedFEPBridge::new(config, 4); // 4D motor state
+///
+/// // Main cognitive loop
+/// loop {
+///     // Get consciousness metrics from upstream
+///     let (phi, integration, coherence, attention) = get_consciousness_state();
+///
+///     // Full perception-action-learning cycle
+///     let result = bridge.cycle(phi, integration, coherence, attention);
+///
+///     // Handle motor command
+///     match result.motor_command.command_type {
+///         MotorCommandType::AttentionShift => {
+///             // Redirect attention based on parameters
+///             let direction = &result.motor_command.parameters;
+///             shift_attention(direction);
+///         }
+///         MotorCommandType::ExplorationTrigger => {
+///             // Increase state variability
+///             enable_exploration_mode();
+///         }
+///         MotorCommandType::MemoryConsolidate => {
+///             // Strengthen current representations
+///             consolidate_working_memory();
+///         }
+///         _ => {}
+///     }
+///
+///     // Apply learning if appropriate
+///     if result.should_learn {
+///         apply_learning(result.learning_signal);
+///     }
+///
+///     // Monitor action-outcome coupling
+///     println!("Coupling quality: {:.2}", result.action_outcome_coupling);
+/// }
+/// ```
+///
+/// # Episode Boundaries
+///
+/// Call [`end_episode`](Self::end_episode) at natural task boundaries to:
+/// - Reset eligibility traces in the TD learner
+/// - Clear motor command history
+/// - Reset action-outcome coupling tracker
+///
+/// This is important for episodic tasks where the future shouldn't bootstrap
+/// from the past across episode boundaries.
 #[derive(Debug, Clone)]
 pub struct EnhancedFEPBridge {
-    /// Core FEP bridge
+    /// Core FEP bridge containing the generative model and active inference agent.
     pub core: CognitiveLoopFEPBridge,
-    /// Motor system
+
+    /// Motor system for command execution and proprioceptive feedback.
     pub motor: MotorSystem,
-    /// Learning signal output (for downstream systems)
+
+    /// Learning signal output (0.0-1.0) for downstream systems.
+    /// Combines TD error, motor prediction error, and free energy.
     learning_signal: f64,
-    /// Whether to gate learning based on precision
+
+    /// Whether to gate learning based on model precision/confidence.
+    /// When true, learning only occurs if confidence > threshold.
     precision_gated_learning: bool,
-    /// Minimum precision for learning
+
+    /// Minimum precision/confidence required for learning (default 0.4).
     learning_precision_threshold: f64,
-    /// Action-outcome coupling tracker
-    action_outcome_history: VecDeque<(MotorCommandType, f64)>,  // (action, outcome_error)
+
+    /// History of (action, outcome_error) pairs for computing action-outcome coupling.
+    /// High coupling (low avg error) indicates the model predicts action effects well.
+    action_outcome_history: VecDeque<(MotorCommandType, f64)>,
 }
 
 impl EnhancedFEPBridge {

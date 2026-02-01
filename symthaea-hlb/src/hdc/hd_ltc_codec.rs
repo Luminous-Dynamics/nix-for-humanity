@@ -570,7 +570,6 @@ mod semantic_preservation_tests {
         let hv_a = HV16::random(42);
         let hv_b = {
             // Create B similar to A by flipping only ~20% of bits
-            let mut b = hv_a.clone();
             let flip_hv = HV16::random(100);
             // Bundle A with a random HV to get something similar but not identical
             HV16::bundle(&[hv_a.clone(), flip_hv])

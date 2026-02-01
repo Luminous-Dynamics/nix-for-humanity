@@ -359,6 +359,7 @@ fn test_epistemic_metadata() {
 
 // =============================================================================
 // End-to-End Pipeline Tests (Full BGE-M3 Model)
+// Requires: --features neural-bridge
 // =============================================================================
 
 /// End-to-end test: Text → HDC via full NeuralBridgeV2 pipeline.
@@ -369,6 +370,7 @@ fn test_epistemic_metadata() {
 /// Run with: cargo test --test neural_bridge_integration --features neural-bridge test_e2e_text_to_hdc -- --nocapture --ignored
 #[test]
 #[ignore = "Downloads 2.2GB model - run explicitly with --ignored"]
+#[cfg(feature = "neural-bridge")]
 fn test_e2e_text_to_hdc() {
     use symthaea::perception::NeuralBridgeV2;
 
@@ -451,6 +453,7 @@ fn test_e2e_text_to_hdc() {
 /// Test batch encoding performance.
 #[test]
 #[ignore = "Downloads 2.2GB model - run explicitly with --ignored"]
+#[cfg(feature = "neural-bridge")]
 fn test_e2e_batch_encoding() {
     use symthaea::perception::NeuralBridgeV2;
 
@@ -499,6 +502,7 @@ fn test_e2e_batch_encoding() {
 /// Test epistemic metadata generation.
 #[test]
 #[ignore = "Downloads 2.2GB model - run explicitly with --ignored"]
+#[cfg(feature = "neural-bridge")]
 fn test_e2e_epistemic_encoding() {
     use symthaea::perception::NeuralBridgeV2;
 
@@ -603,6 +607,7 @@ fn test_projection_performance() {
 /// vs ~380ms for uncached encoding.
 #[test]
 #[ignore = "Downloads 2.2GB model - run explicitly with --ignored"]
+#[cfg(feature = "neural-bridge")]
 fn test_e2e_cache_performance() {
     use symthaea::perception::NeuralBridgeV2;
     use std::time::Instant;

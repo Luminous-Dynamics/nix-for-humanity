@@ -156,6 +156,7 @@ fn main() {
         seed: 42,
         parallel: false,
         random_samples: 50,
+        ..Default::default()
     };
 
     // Random Search

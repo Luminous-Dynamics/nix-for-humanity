@@ -2435,7 +2435,7 @@ mod tests {
             ..knockout_critical.clone()
         };
 
-        let knockout_significant = NodeInterventionResult {
+        let _knockout_significant = NodeInterventionResult {
             percent_change: -8.0, // Significant but not critical
             ..knockout_critical.clone()
         };

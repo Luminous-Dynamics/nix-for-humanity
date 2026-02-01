@@ -858,7 +858,7 @@ mod tests {
             detector.record_trace(&["BIND", "SEQUENCE", "NEGATE"], &encoding);
         }
 
-        let patterns = detector.get_significant_patterns();
+        let _patterns = detector.get_significant_patterns();
         // Pattern should be detected but may not meet 2x threshold yet
         assert!(detector.pattern_counts.len() >= 1);
     }

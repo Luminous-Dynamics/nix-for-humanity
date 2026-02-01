@@ -674,7 +674,7 @@ mod tests {
     fn test_mutation() {
         let hv = RealHV::random(512, 42);
         let mut concept = EvolvingConcept::new(1, "test", hv.clone());
-        let original = concept.hv.clone();
+        let _original = concept.hv.clone();
         concept.mutate(0.1);
         // After mutation, the HV should be different
         assert_eq!(concept.mutations, 1);

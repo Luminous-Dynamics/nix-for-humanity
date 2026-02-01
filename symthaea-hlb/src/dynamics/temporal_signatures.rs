@@ -804,7 +804,7 @@ mod tests {
             encoder.record(0.5);
         }
 
-        let (pattern, confidence) = encoder.classify_state();
+        let (_pattern, confidence) = encoder.classify_state();
         assert!(confidence > 0.0);
         // With constant values, should be Focused or similar low-variance state
     }

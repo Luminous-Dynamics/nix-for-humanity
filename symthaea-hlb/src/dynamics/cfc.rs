@@ -1070,6 +1070,13 @@ impl CfCNetwork {
             cell.scale_tau(scale);
         }
     }
+
+    /// Scale tau values for all layers uniformly
+    pub fn scale_tau_all(&mut self, scale: f32) {
+        for cell in &mut self.cells {
+            cell.scale_tau(scale);
+        }
+    }
 }
 
 #[cfg(test)]

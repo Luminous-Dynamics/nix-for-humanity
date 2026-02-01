@@ -19,13 +19,11 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use symthaea::hdc::{
     consciousness_topology_generators::ConsciousnessTopology,
-    phi_real::RealPhiCalculator,
+    spectral_connectivity::RealPhiCalculator,
     phi_resonant::ResonantPhiCalculator,
     HV16, HDC_DIMENSION,
 };
-use symthaea::consciousness::temporal_primitives::{
-    TemporalReasoner, TemporalInterval, AllenRelation, TemporalConfig,
-};
+// Note: temporal_primitives module is not yet implemented - benchmark removed
 
 // =============================================================================
 // HDC COMPREHENSIVE
@@ -108,37 +106,10 @@ fn bench_standard_topologies(c: &mut Criterion) {
 }
 
 // =============================================================================
-// TEMPORAL REASONING
+// TEMPORAL REASONING (disabled - module not yet implemented)
 // =============================================================================
-
-fn bench_temporal_reasoning(c: &mut Criterion) {
-    let mut group = c.benchmark_group("std_temporal");
-    group.sample_size(100);
-
-    let config = TemporalConfig::default();
-    let reasoner = TemporalReasoner::new(config.clone());
-
-    let interval_a = TemporalInterval::new("A", 0.0, 1.0).unwrap();
-    let interval_b = TemporalInterval::new("B", 1.5, 2.5).unwrap();
-
-    group.bench_function("compute_relation", |b| {
-        b.iter(|| black_box(reasoner.compute_relation(&interval_a, &interval_b)))
-    });
-
-    group.bench_function("compose_relations", |b| {
-        b.iter(|| black_box(reasoner.compose(AllenRelation::Precedes, AllenRelation::Precedes)))
-    });
-
-    group.bench_function("encode_relation", |b| {
-        b.iter(|| black_box(reasoner.encode_relation(AllenRelation::Overlaps)))
-    });
-
-    group.bench_function("encode_statement", |b| {
-        b.iter(|| black_box(reasoner.encode_statement(&interval_a, AllenRelation::Precedes, &interval_b)))
-    });
-
-    group.finish();
-}
+// TODO: Re-enable when temporal_primitives module is implemented
+// fn bench_temporal_reasoning(c: &mut Criterion) { ... }
 
 // =============================================================================
 // SCALABILITY
@@ -220,7 +191,7 @@ criterion_group!(
     standard_benches,
     bench_hdc_comprehensive,
     bench_standard_topologies,
-    bench_temporal_reasoning,
+    // bench_temporal_reasoning,  // Disabled - temporal_primitives not yet implemented
     bench_scalability,
     bench_hypercube_scaling,
 );

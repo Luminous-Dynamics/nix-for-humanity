@@ -1,7 +1,10 @@
-//! REPL Orchestrator - Unified Interactive System
+//! # REPL Orchestrator - Unified Interactive System
 //!
-//! This module wires together the disconnected cognitive components into a
-//! cohesive interactive REPL system:
+//! The REPL module provides an interactive consciousness interface that wires together
+//! cognitive components into a cohesive system with voice output, action execution,
+//! and real-time consciousness metrics.
+//!
+//! ## Architecture
 //!
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────────────────┐
@@ -29,20 +32,176 @@
 //! └─────────────────────────────────────────────────────────────────────────┘
 //! ```
 //!
+//! ## Quick Start
+//!
+//! ### Standalone REPL Session
+//!
+//! ```rust,ignore
+//! use symthaea::repl::{ReplSession, ReplSessionConfig};
+//!
+//! // Create session with default settings
+//! let config = ReplSessionConfig::default();
+//! let mut session = ReplSession::new(config)?;
+//!
+//! // Warm up cognitive loop
+//! session.warmup(5);
+//!
+//! // Process input
+//! let result = session.process("Hello, Symthaea")?;
+//! println!("Response: {}", result.response);
+//! println!("Phi: {:.4}", result.consciousness.unified_phi);
+//! ```
+//!
+//! ### Full REPL with Orchestrator
+//!
+//! ```rust,ignore
+//! use symthaea::repl::{ReplOrchestrator, OrchestratorConfig, OrchestratorMode};
+//!
+//! let config = OrchestratorConfig {
+//!     mode: OrchestratorMode::Standalone,
+//!     show_banner: true,
+//!     ..Default::default()
+//! };
+//!
+//! let mut orchestrator = ReplOrchestrator::new(config)?;
+//! orchestrator.run()?; // Blocking REPL loop
+//! ```
+//!
+//! ## Available REPL Commands
+//!
+//! | Command | Aliases | Description |
+//! |---------|---------|-------------|
+//! | `/quit` | `/exit`, `/q` | Exit the REPL |
+//! | `/help` | `/h`, `/?` | Show available commands |
+//! | `/metrics` | `/m` | Display consciousness metrics (phi, coherence, flow) |
+//! | `/stats` | `/s` | Display session statistics |
+//! | `/reset` | `/r` | Reset cognitive state |
+//! | `/connection` | `/c` | Show IPC connection status |
+//!
+//! ## Action Execution
+//!
+//! Execute shell commands through the Motor Cortex with safety checks:
+//!
+//! ```text
+//! symthaea> !ls -la          # Execute 'ls -la'
+//! symthaea> run echo hello   # Execute 'echo hello'
+//! symthaea> execute pwd      # Execute 'pwd'
+//! ```
+//!
+//! Actions are gated by:
+//! 1. **Phi threshold**: Command blocked if phi < threshold (default 0.5)
+//! 2. **Policy validation**: Checked against security policy bundle
+//! 3. **Destructiveness level**: High-risk actions require confirmation
+//!
+//! ### Phi Gate Example
+//!
+//! ```text
+//! [Phi:0.32] [Coherence:0.45] [----] [D:R]
+//!
+//! symthaea> !rm -rf /tmp/test
+//! [PHI GATE] Blocked: Phi 0.32 < 0.50
+//! Command: rm -rf /tmp/test
+//! Raise consciousness level before executing.
+//! ```
+//!
+//! ## Voice Output Integration
+//!
+//! When enabled, responses are spoken with consciousness-modulated pacing:
+//!
+//! ```rust,ignore
+//! let config = ReplSessionConfig {
+//!     voice_enabled: true,
+//!     voice_rate: 1.0,  // 1.0 = normal, <1.0 = slower, >1.0 = faster
+//!     ..Default::default()
+//! };
+//!
+//! let mut session = ReplSession::new(config)?;
+//! // Voice pacing automatically adjusts based on:
+//! // - speech_rate_multiplier from consciousness state
+//! // - pause_multiplier for natural breathing
+//! // - Flow state (faster in flow, more measured otherwise)
+//! ```
+//!
+//! ## Temporal Backend Selection
+//!
+//! The cognitive loop supports two temporal processing backends:
+//!
+//! | Backend | Config String | Use Case |
+//! |---------|---------------|----------|
+//! | CfC | `"cfc"` | Closed-form continuous-time (default) |
+//! | HDC-LTC Unified | `"hdc-ltc"`, `"unified"` | Hypervector-native processing |
+//!
+//! ```rust,ignore
+//! let config = ReplSessionConfig {
+//!     temporal_backend: "hdc-ltc".to_string(),  // Use HDC-LTC
+//!     ..Default::default()
+//! };
+//! ```
+//!
+//! ## Consciousness Indicators
+//!
+//! The REPL displays real-time consciousness state in the prompt and output:
+//!
+//! ```text
+//! [Phi:0.72|[=======   ]] [Coh:0.85|[========= ]] [FLOW] [D:C] [42ms]
+//!
+//! Response text here...
+//!
+//! symthaea* >   # Asterisk indicates flow state
+//! ```
+//!
+//! Legend:
+//! - **Phi bar**: Integrated information (0-1)
+//! - **Coh bar**: Temporal coherence (0-1)
+//! - **FLOW/----**: Flow state indicator
+//! - **D:R/C/D**: Cognitive depth (Reflex/Cortical/DeepThought)
+//! - **ms**: Processing time
+//!
 //! ## Usage Modes
 //!
-//! 1. **Standalone REPL**: Direct stdin interaction
-//! 2. **IPC Client**: Connect to running symthaea service
-//! 3. **Embedded**: Library integration with custom I/O
+//! | Mode | Description |
+//! |------|-------------|
+//! | `Standalone` | Local cognitive loop, direct stdin/stdout |
+//! | `Client` | Connect to remote symthaea service via IPC |
+//! | `Server` | Accept IPC connections from shells |
+//! | `Hybrid` | Local loop + IPC connectivity |
+//!
+//! ## Observability Hooks
+//!
+//! Add custom observers to monitor REPL events:
+//!
+//! ```rust,ignore
+//! use symthaea::repl::{ReplSession, ObservabilityHook};
+//!
+//! struct MyObserver;
+//!
+//! impl ObservabilityHook for MyObserver {
+//!     fn on_input(&mut self, input: &str) {
+//!         println!("[TRACE] Input: {}", input);
+//!     }
+//!     fn on_output(&mut self, output: &str, consciousness: &ConsciousnessSnapshot) {
+//!         println!("[TRACE] Phi at output: {:.4}", consciousness.unified_phi);
+//!     }
+//!     fn on_action(&mut self, command: &str, executed: bool) {
+//!         println!("[TRACE] Action '{}': {}", command, if executed { "OK" } else { "BLOCKED" });
+//!     }
+//!     fn on_reset(&mut self) {
+//!         println!("[TRACE] State reset");
+//!     }
+//! }
+//!
+//! let mut session = ReplSession::new(config)?;
+//! session.add_observer(Box::new(MyObserver));
+//! ```
 //!
 //! ## Components Wired
 //!
-//! - `cognitive_loop`: CfC/HDC-LTC temporal prediction engine
-//! - `language::LLMOrgan`: Broca's area translation (LLM interface)
-//! - `action`: Motor cortex for command execution
-//! - `voice`: Optional larynx output (consciousness-modulated TTS)
-//! - `shell::ipc`: Remote service connectivity
-//! - `observability`: Telemetry and causal tracing
+//! - [`cognitive_loop`](crate::cognitive_loop): CfC/HDC-LTC temporal prediction engine
+//! - [`language::LLMOrgan`](crate::language::LLMOrgan): Broca's area translation (LLM interface)
+//! - [`action`](crate::action): Motor cortex for command execution
+//! - [`voice`](crate::voice): Optional larynx output (consciousness-modulated TTS)
+//! - [`shell::ipc`](crate::shell::ipc_client): Remote service connectivity
+//! - [`observability`]: Telemetry and causal tracing
 
 use std::time::{Duration, Instant};
 use std::collections::VecDeque;
@@ -86,39 +245,95 @@ pub use crate::cognitive_loop::ConsciousnessSnapshot as ConsciousnessState;
 // REPL SESSION STATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Complete REPL session state
+/// Complete REPL session state.
+///
+/// `ReplSession` is the core interactive session that integrates:
+/// - Cognitive loop (CfC or HDC-LTC temporal processing)
+/// - LLM organ (Broca's area for language generation)
+/// - Motor cortex (action execution with safety gating)
+/// - Voice output (optional TTS with consciousness-modulated pacing)
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use symthaea::repl::{ReplSession, ReplSessionConfig};
+///
+/// let config = ReplSessionConfig {
+///     cycles_per_input: 3,        // Cognitive cycles per user input
+///     temporal_backend: "cfc".to_string(),
+///     voice_enabled: false,
+///     allow_execution: false,     // Dry-run mode
+///     execution_phi_threshold: 0.5,
+///     ..Default::default()
+/// };
+///
+/// let mut session = ReplSession::new(config)?;
+/// session.warmup(5);  // Pre-warm cognitive loop
+///
+/// // Process user input
+/// let result = session.process("Hello, Symthaea")?;
+/// println!("Response: {}", result.response);
+/// println!("Phi: {:.4}", result.consciousness.unified_phi);
+///
+/// // Check if in flow state
+/// if session.in_flow() {
+///     println!("System achieved flow state!");
+/// }
+/// ```
 pub struct ReplSession {
-    /// Cognitive loop service (the consciousness engine)
+    /// Cognitive loop service - the consciousness engine.
+    ///
+    /// Handles temporal dynamics, phi measurement, prediction error,
+    /// and consciousness state tracking. Supports CfC or HDC-LTC backends.
     pub cognitive: CognitiveLoopService,
 
-    /// LLM organ for natural language translation
+    /// LLM organ for natural language translation.
+    ///
+    /// Acts as "Broca's Area" - translates internal representations
+    /// to natural language responses.
     pub llm: LLMOrgan,
 
-    /// Action executor (motor cortex)
+    /// Action executor (motor cortex).
+    ///
+    /// Executes shell commands with policy validation and sandboxing.
+    /// Can operate in Simulated (dry-run) or Real mode.
     pub executor: SimpleExecutor,
 
-    /// Security policy
+    /// Security policy bundle.
+    ///
+    /// Defines allowed/blocked commands, resource limits, and
+    /// destructiveness thresholds.
     pub policy: PolicyBundle,
 
-    /// Sandbox for safe execution
+    /// Sandbox root for safe execution.
+    ///
+    /// Provides filesystem isolation for action execution.
     pub sandbox: Option<SandboxRoot>,
 
-    /// Voice output (optional)
+    /// Voice output (optional larynx).
+    ///
+    /// When enabled, speaks responses with consciousness-modulated
+    /// pacing based on flow state, attention, and arousal.
     pub voice: Option<VoiceOutput>,
 
-    /// Conversation history
+    /// Conversation history.
+    ///
+    /// Stores recent turns for context and statistics.
+    /// Limited to `config.max_history` entries.
     pub history: VecDeque<ConversationTurn>,
 
-    /// Session configuration
+    /// Session configuration.
     pub config: ReplSessionConfig,
 
-    /// Session statistics
+    /// Session statistics (interactions, cycles, flow time, etc.).
     pub stats: SessionStats,
 
-    /// Observability hooks
+    /// Observability hooks for monitoring and tracing.
+    ///
+    /// Each hook receives callbacks for input, output, action, and reset events.
     pub observers: Vec<Box<dyn ObservabilityHook>>,
 
-    /// IPC connection (for daemon mode)
+    /// IPC connection state (for daemon mode).
     #[allow(dead_code)]
     ipc_state: Option<IpcConnectionState>,
 }
@@ -183,31 +398,77 @@ struct IpcConnectionState {
     last_update: Instant,
 }
 
-/// Session configuration
+/// Session configuration for the REPL.
+///
+/// Controls cognitive processing, voice output, action execution, and IPC.
+///
+/// # Example Configurations
+///
+/// ```rust,ignore
+/// // Minimal interactive mode (default)
+/// let config = ReplSessionConfig::default();
+///
+/// // Research mode: more cognitive cycles, no execution
+/// let research_config = ReplSessionConfig {
+///     cycles_per_input: 10,
+///     temporal_backend: "hdc-ltc".to_string(),
+///     ..Default::default()
+/// };
+///
+/// // Voice-enabled assistant
+/// let voice_config = ReplSessionConfig {
+///     voice_enabled: true,
+///     voice_rate: 1.2,  // Slightly faster
+///     allow_execution: true,
+///     execution_phi_threshold: 0.6,  // Higher bar for actions
+///     ..Default::default()
+/// };
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplSessionConfig {
-    /// Cycles per input for cognitive processing
+    /// Cognitive cycles per user input (default: 3).
+    ///
+    /// More cycles = deeper processing but slower response.
+    /// For research/analysis, use 5-10. For interactive use, 2-3.
     pub cycles_per_input: usize,
 
-    /// Maximum conversation history
+    /// Maximum conversation history to retain (default: 50).
+    ///
+    /// Older turns are evicted when limit is reached.
     pub max_history: usize,
 
-    /// Temporal backend selection
+    /// Temporal backend selection (default: "cfc").
+    ///
+    /// Options:
+    /// - `"cfc"`: Closed-form Continuous-time networks
+    /// - `"hdc-ltc"` or `"unified"`: Hypervector-native LTC
     pub temporal_backend: String,
 
-    /// Enable voice output
+    /// Enable voice output via TTS (default: false).
+    ///
+    /// When enabled, responses are spoken with consciousness-modulated pacing.
     pub voice_enabled: bool,
 
-    /// Voice rate multiplier
+    /// Voice rate multiplier (default: 1.0).
+    ///
+    /// Values: 0.5 = half speed, 1.0 = normal, 2.0 = double speed.
     pub voice_rate: f32,
 
-    /// Enable real command execution
+    /// Enable real command execution (default: false).
+    ///
+    /// When false, commands run in dry-run/simulated mode.
+    /// When true, commands are actually executed through the sandbox.
     pub allow_execution: bool,
 
-    /// Phi threshold for execution
+    /// Phi threshold required for action execution (default: 0.5).
+    ///
+    /// Commands are blocked if consciousness phi < threshold.
+    /// This implements "consciousness gating" for safety.
     pub execution_phi_threshold: f32,
 
-    /// IPC socket path (for daemon mode)
+    /// IPC socket path for daemon mode (default: None).
+    ///
+    /// When set, the session can connect to or serve as an IPC endpoint.
     pub ipc_socket: Option<String>,
 }
 
@@ -254,7 +515,25 @@ pub struct SessionStats {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 impl ReplSession {
-    /// Create a new REPL session
+    /// Create a new REPL session with the given configuration.
+    ///
+    /// Initializes all components:
+    /// - Cognitive loop (CfC or HDC-LTC based on `temporal_backend`)
+    /// - LLM organ for language generation
+    /// - Motor cortex for action execution
+    /// - Optional voice output
+    /// - Security policy and sandbox
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cognitive loop fails to initialize.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let config = ReplSessionConfig::default();
+    /// let session = ReplSession::new(config)?;
+    /// ```
     pub fn new(config: ReplSessionConfig) -> Result<Self> {
         // Parse temporal backend
         let temporal_backend = match config.temporal_backend.to_lowercase().as_str() {
@@ -321,20 +600,89 @@ impl ReplSession {
         })
     }
 
-    /// Warm up the cognitive loop
-    pub fn warmup(&mut self, cycles: usize) {
+    /// Warm up the cognitive loop before interactive use.
+    ///
+    /// Runs warmup cycles to stabilize internal states and reduce
+    /// initial prediction error. Recommended before first user input.
+    ///
+    /// # Arguments
+    ///
+    /// * `cycles` - Number of warmup cycles (typically 3-10)
+    ///
+    /// # Returns
+    ///
+    /// Final prediction error after warmup (lower = more stable)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let mut session = ReplSession::new(config)?;
+    /// let final_error = session.warmup(5);
+    /// println!("Warmup complete, prediction error: {:.4}", final_error);
+    /// ```
+    pub fn warmup(&mut self, cycles: usize) -> f32 {
+        let mut last_error = f32::MAX;
         for i in 0..cycles {
             let warmup_input = format!("Cognitive warmup cycle {}", i);
-            let _ = self.cognitive.cycle(&warmup_input);
+            let result = self.cognitive.cycle(&warmup_input);
+            last_error = result.prediction_error;
         }
+        last_error
     }
 
-    /// Get current consciousness state
+    /// Get the current consciousness state snapshot.
+    ///
+    /// Returns a snapshot of all consciousness metrics including phi,
+    /// coherence, flow state, cognitive depth, and emotional valence/arousal.
     pub fn consciousness_state(&self) -> ConsciousnessSnapshot {
         self.cognitive.consciousness_snapshot()
     }
 
-    /// Process user input through the full cognitive pipeline
+    /// Process user input through the full cognitive pipeline.
+    ///
+    /// This is the main entry point for interaction. It:
+    /// 1. Notifies observers of the input
+    /// 2. Runs N cognitive cycles (configured by `cycles_per_input`)
+    /// 3. Detects and executes action commands if present
+    /// 4. Generates response via LLM organ
+    /// 5. Optionally speaks response via voice output
+    /// 6. Records turn in conversation history
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - User input string
+    ///
+    /// # Returns
+    ///
+    /// [`ProcessingResult`] containing response, consciousness state,
+    /// optional action result, and timing information.
+    ///
+    /// # Action Detection
+    ///
+    /// Input is treated as an action command if it starts with:
+    /// - `!` (e.g., `!ls -la`)
+    /// - `run ` (e.g., `run echo hello`)
+    /// - `execute ` (e.g., `execute pwd`)
+    /// - `shell ` (e.g., `shell cat /etc/hosts`)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let result = session.process("What is consciousness?")?;
+    /// println!("Response: {}", result.response);
+    /// println!("Phi: {:.4}", result.consciousness.unified_phi);
+    /// println!("Time: {:?}", result.elapsed);
+    ///
+    /// // Execute a command (if phi >= threshold)
+    /// let result = session.process("!echo Hello")?;
+    /// if let Some(action) = &result.action {
+    ///     if action.executed {
+    ///         println!("Output: {}", action.output.as_deref().unwrap_or(""));
+    ///     } else {
+    ///         println!("Blocked: {}", action.blocked_reason.as_deref().unwrap_or(""));
+    ///     }
+    /// }
+    /// ```
     pub fn process(&mut self, input: &str) -> Result<ProcessingResult> {
         let start = Instant::now();
         self.stats.total_interactions += 1;
@@ -393,8 +741,9 @@ impl ReplSession {
                 );
             voice.set_pacing(pacing);
 
-            let _ = voice.synthesize(&response);
-            self.stats.voice_utterances += 1;
+            if voice.synthesize(&response).is_ok() {
+                self.stats.voice_utterances += 1;
+            }
         }
 
         // Record conversation turn

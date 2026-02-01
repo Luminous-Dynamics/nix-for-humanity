@@ -31,11 +31,14 @@ chrono = { version = "0.4", features = ["serde"] }  # DateTime
 # Qdrant: Sensory Cortex - ultra-fast vector similarity for perception
 qdrant-client = { version = "1.16", optional = true }
 # CozoDB: Prefrontal Cortex - recursive Datalog for causal reasoning
-cozo = { version = "0.7", optional = true }
+# Disabled: cozo sqlite3-src conflicts with rusqlite libsqlite3-sys (links = "sqlite3")
+# cozo = { version = "0.7", optional = true }
 # LanceDB: Long-Term Memory - multimodal embeddings storage
-lancedb = { version = "0.4", features = ["remote"], optional = true }
+# Disabled: lancedb jumped from 0.4 to 0.23+ with breaking API changes; re-enable when needed
+# lancedb = { version = "0.23", optional = true }
 # DuckDB: Epistemic Auditor - analytical queries for self-reflection
-duckdb = { version = "0.10", features = ["bundled"], optional = true }
+# Disabled: duckdb sqlite3-src conflicts with rusqlite libsqlite3-sys (links = "sqlite3")
+# duckdb = { version = "0.10", features = ["bundled"], optional = true }
 # Tokio async runtime (required for async database operations)
 tokio = { version = "1.35", features = ["rt", "sync", "time"], optional = true }
 
@@ -61,9 +64,9 @@ rayon = []            # Enable parallel computation with rayon
 # Multi-Database Consciousness Architecture features
 # Each database maps to a "brain region" with specialized computational role
 qdrant = ["dep:qdrant-client", "dep:tokio"]  # Sensory Cortex: vector similarity (<10ms)
-datalog = ["dep:cozo"]                       # Prefrontal Cortex: recursive reasoning
-lance = ["dep:lancedb", "dep:tokio"]         # Long-Term Memory: multimodal storage
-duck = ["dep:duckdb"]                        # Epistemic Auditor: analytics/Phi stats
+datalog = []                                 # Prefrontal Cortex: recursive reasoning (cozo dep pending fix)
+lance = ["dep:tokio"]                         # Long-Term Memory: multimodal storage (lancedb dep pending upgrade)
+duck = []                                    # Epistemic Auditor: analytics/Phi stats (duckdb dep pending fix)
 
 # Enable all databases (full consciousness infrastructure)
 full-databases = ["qdrant", "datalog", "lance", "duck"]

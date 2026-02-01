@@ -619,8 +619,8 @@ mod tests {
     #[test]
     fn test_schedule_variants() {
         let interleaved = EvolutionSchedule::Interleaved { frequency: 5 };
-        let plateau = EvolutionSchedule::OnPlateau { stall_generations: 10 };
-        let parallel = EvolutionSchedule::Parallel;
+        let _plateau = EvolutionSchedule::OnPlateau { stall_generations: 10 };
+        let _parallel = EvolutionSchedule::Parallel;
 
         // Just verify they can be created
         match interleaved {

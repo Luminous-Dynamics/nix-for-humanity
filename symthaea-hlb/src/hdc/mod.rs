@@ -80,6 +80,7 @@ pub use symthaea_core::hdc::simd_ops;
 pub use symthaea_core::hdc::consciousness_integration;
 pub use symthaea_core::hdc::consciousness_topology_generators;
 pub use symthaea_core::hdc::spectral_connectivity;
+pub use symthaea_core::hdc::phi_resonant;
 pub use symthaea_core::hdc::global_workspace;
 pub use symthaea_core::hdc::meta_consciousness;
 pub use symthaea_core::hdc::relational_consciousness;

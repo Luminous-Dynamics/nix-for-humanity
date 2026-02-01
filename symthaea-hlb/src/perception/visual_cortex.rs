@@ -107,6 +107,20 @@ impl VisualCortex {
             current = layer_output;
         }
 
+        // Update attention weights based on layer feature energies
+        if self.config.use_attention && !layer_features.is_empty() {
+            let energies: Vec<f32> = layer_features.iter()
+                .map(|f| f.as_slice().iter().map(|v| v * v).sum::<f32>().sqrt())
+                .collect();
+            let total_energy: f32 = energies.iter().sum();
+            if total_energy > 0.0 {
+                for (w, e) in self.attention_weights.iter_mut().zip(energies.iter()) {
+                    // Exponential moving average: 80% old + 20% new
+                    *w = 0.8 * *w + 0.2 * (e / total_energy);
+                }
+            }
+        }
+
         // Aggregate features
         let final_features = self.aggregate_features(&layer_features);
 

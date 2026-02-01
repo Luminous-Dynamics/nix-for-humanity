@@ -705,7 +705,7 @@ mod tests {
 
     #[test]
     fn test_signal_computation() {
-        let mut bus = ExperienceBus::with_defaults();
+        let bus = ExperienceBus::with_defaults();
 
         // With no experiences, prediction error should be high
         let hdv = RealHV::random(16384, 42);

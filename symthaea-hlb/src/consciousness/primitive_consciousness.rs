@@ -622,7 +622,7 @@ mod tests {
         let decomposer = ConsciousnessDecomposer::new();
         let semantic = vec![0.1; 64];
 
-        let activations = decomposer.decompose(&semantic);
+        let _activations = decomposer.decompose(&semantic);
         // Should return a valid result (may or may not find activations)
         // The decomposer processed the semantic input successfully
     }

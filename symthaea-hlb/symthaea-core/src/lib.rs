@@ -8,6 +8,7 @@ pub mod genesis;
 pub mod hdc;
 pub mod observability;
 pub mod phi_engine;
+pub mod physics;
 
 // Re-exports are handled at the module level
 // Key types are available from their respective modules:

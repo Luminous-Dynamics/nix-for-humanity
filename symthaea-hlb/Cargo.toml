@@ -1,3 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "symthaea-core",
+    "crates/symthaea-stt",
+    "crates/symthaea-sentinel",
+    "crates/symthaea-consciousness",
+    "crates/symthaea-perception",
+    "crates/symthaea-math",
+    "crates/symthaea-dynamics",
+    "crates/symthaea-gym",
+    # "rust-sentinels",        # Excluded: pyo3 ^0.22 conflicts with root pyo3 ^0.24 (links = "python")
+    # "tools/clinical_validation",  # Standalone tool, no workspace deps
+]
+
+[workspace.dependencies]
+ndarray = { version = "0.15", features = ["rayon"] }
+serde = { version = "1.0", features = ["derive"] }
+anyhow = "1.0"
+rand = "0.8"
+tokio = { version = "1.35", features = ["full"] }
+tracing = "0.1"
+
 [package]
 name = "symthaea"
 version = "0.2.0"
@@ -46,7 +70,7 @@ safetensors = { version = "0.4", optional = true }  # Safe tensor loading
 candle-core = { version = "0.8", optional = true }
 candle-nn = { version = "0.8", optional = true }
 candle-transformers = { version = "0.8", optional = true }
-half = { version = "2.4", optional = true }  # f16 support for GPU inference
+half = { version = "2.6", optional = true }  # f16 support for GPU inference (>=2.6 for burn+candle compat)
 
 # Phase 11: Database Trinity (Deferred to Week 11+)
 # lancedb = { version = "0.4", features = ["remote"] }  # Vector database

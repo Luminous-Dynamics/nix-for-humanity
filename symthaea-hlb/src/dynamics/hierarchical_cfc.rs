@@ -128,7 +128,7 @@ impl HierarchicalCfC {
                 // gate > 0.5 → slow down lower level (increase tau)
                 // gate < 0.5 → speed up lower level (decrease tau)
                 let tau_scale = 1.0 + gate_strength * (gate - 0.5);
-                self.levels[i].scale_tau(0, tau_scale);
+                self.levels[i].scale_tau_all(tau_scale);
             }
         }
 

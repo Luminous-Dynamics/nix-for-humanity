@@ -811,7 +811,8 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         let stats = service.stats();
         // Uptime should be at least 0 (could be 0 if less than 1 second)
-        assert!(stats.uptime_seconds >= 0);
+        // uptime_seconds is u64, always >= 0; just verify it exists
+        let _ = stats.uptime_seconds;
     }
 
     // =========================================================================

@@ -246,7 +246,7 @@ impl ScalingMetrics {
             return Self::default_poor();
         }
 
-        let dim = phen_reps[0].len();
+        let _dim = phen_reps[0].len();
 
         // Compute centroids
         let phen_centroid = compute_centroid(phen_reps);
