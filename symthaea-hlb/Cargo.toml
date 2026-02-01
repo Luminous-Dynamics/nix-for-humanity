@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.dependencies]
-ndarray = { version = "0.15", features = ["rayon"] }
+ndarray = { version = "0.15", features = ["rayon", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
 anyhow = "1.0"
 rand = "0.8"
@@ -132,7 +132,7 @@ parking_lot = "0.12"  # High-performance synchronization primitives
 rusqlite = { version = "0.37", features = ["bundled"] }  # SQLite database (bundled to avoid system dependency)
 once_cell = "1.19"
 dashmap = "5.5"
-lru = "0.12"
+lru = "0.16"
 rand = "0.8"
 rand_chacha = "0.3"  # Deterministic RNG for reproducible JL projections
 blake3 = "1.5"
@@ -161,7 +161,7 @@ ort = { version = "2.0.0-rc.10", features = ["half", "load-dynamic", "ndarray"],
 futures = { version = "0.3", optional = true }  # Async TTS streaming
 rodio = { version = "0.19", default-features = false, optional = true }  # Audio playback (no backends by default)
 hound = { version = "3.5", optional = true }        # WAV file I/O
-hf-hub = { version = "0.3", optional = true }       # HuggingFace Hub for model download
+hf-hub = { version = "0.4", optional = true }       # HuggingFace Hub for model download
 
 # Enhancement #8 Week 4: PyPhi Integration (IIT 3.0 exact Φ calculation)
 pyo3 = { version = "0.24", features = ["auto-initialize"], optional = true }  # Rust-Python bridge for PyPhi
