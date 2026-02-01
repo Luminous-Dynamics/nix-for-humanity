@@ -11,7 +11,7 @@
 //!
 //! Use incremental state from `IncrementalPhiState` to approximate gradients:
 //!
-//! 1. **Sensitivity Gradient**: Approximate ∂Φ/∂component[i] using cached similarity matrix
+//! 1. **Sensitivity Gradient**: Approximate `∂Φ/∂component[i]` using cached similarity matrix
 //! 2. **Streaming Updates**: Emit gradient events through consciousness streaming
 //! 3. **Adaptive Precision**: Trade accuracy for speed based on system requirements
 //!
@@ -104,7 +104,7 @@ impl Default for GradientConfig {
 pub struct PhiGradient {
     /// Current Phi value
     pub phi: f64,
-    /// Gradient for each component: ∂Φ/∂component[i]
+    /// Gradient for each component: `∂Φ/∂component[i]`
     /// Positive = increasing this component helps Φ
     /// Negative = component is hurting integration
     pub component_gradients: Vec<f64>,

@@ -2037,7 +2037,10 @@ mod tests {
         let expected = InteroceptiveState::new(0.6, 0.7, 0.5, 0.8);
         let actual = InteroceptiveState::new(0.65, 0.68, 0.52, 0.78);
 
-        ef.update_interoceptive_multisystem(&expected, &actual);
+        // Run multiple updates to allow EMA to converge (smoothing factor is 0.1)
+        for _ in 0..20 {
+            ef.update_interoceptive_multisystem(&expected, &actual);
+        }
 
         // Coherence should be high since states are close
         assert!(ef.interoceptive_coherence() > 0.7);

@@ -12,7 +12,7 @@
 //! Each model family requires specific handling:
 //! - Tensor naming conventions differ
 //! - Attention patterns vary (bidirectional vs causal)
-//! - Pooling strategies differ ([CLS] vs mean vs last-token)
+//! - Pooling strategies differ (`[CLS]` vs mean vs last-token)
 //!
 //! ## Usage
 //!
@@ -144,7 +144,7 @@ impl ModelPreset {
 /// Pooling strategy for sequence outputs
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PoolingStrategy {
-    /// Use [CLS] token (first position)
+    /// Use `[CLS]` token (first position)
     Cls,
     /// Mean pool across all tokens
     Mean,

@@ -6,7 +6,7 @@ Projects dense embeddings to HDC space via Johnson-Lindenstrauss projection.
 
 ## Architecture
 
-```
+```text
 Text/Image → Burn Model → Dense Embedding (768D) → JL Projection → HDC (16384D)
 ```
 

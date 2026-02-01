@@ -201,7 +201,7 @@
 //! - [`action`](crate::action): Motor cortex for command execution
 //! - [`voice`](crate::voice): Optional larynx output (consciousness-modulated TTS)
 //! - [`shell::ipc`](crate::shell::ipc_client): Remote service connectivity
-//! - [`observability`]: Telemetry and causal tracing
+//! - `observability`: Telemetry and causal tracing
 
 use std::time::{Duration, Instant};
 use std::collections::VecDeque;

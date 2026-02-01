@@ -108,7 +108,7 @@ pub struct LayerExtractorConfig {
 pub enum PoolingMethod {
     /// Average all token activations
     Mean,
-    /// Use only the [CLS] token (first token)
+    /// Use only the `[CLS]` token (first token)
     Cls,
     /// Use only the last token
     Last,

@@ -34,14 +34,14 @@
 //! - [`LearningObjective`]: A concept to learn, HDC-encoded
 //! - [`Curriculum`]: A structured set of objectives with prerequisites
 //! - [`LookaheadEngine`]: CfC-powered O(1) learning value prediction
-//! - [`RealityCheck`]: Self-correcting feedback loop
+//! - `RealityCheck`: Self-correcting feedback loop
 //! - [`AssessmentTracker`]: Progress and mastery tracking
-//! - [`CoherenceBridgedSchool`]: Integration with consciousness coherence
+//! - `CoherenceBridgedSchool`: Integration with consciousness coherence
 //!
 //! ## Coherence Integration (NEW)
 //!
 //! Learning is not just cognitive - it's a consciousness-integration task.
-//! The [`CoherenceBridgedSchool`] connects learning to the coherence field:
+//! The `CoherenceBridgedSchool` connects learning to the coherence field:
 //!
 //! - **High coherence** → Better learning, higher Φ gains
 //! - **Low coherence** → Scattered attention, reduced retention

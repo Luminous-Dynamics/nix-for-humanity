@@ -520,12 +520,23 @@ pub fn recommend_model(
                     expected_fisher: 1.15,
                     reasoning: "BERT-Mini offers good discrimination (F=1.15) in a very small footprint.".to_string(),
                 }
-            } else if max_params < 70.0 {
-                ModelRecommendation {
-                    model_name: "distilbert-base-uncased".to_string(),
-                    params_millions: 66.4,
-                    expected_fisher: 1.18,
-                    reasoning: "DistilBERT approaches optimal discrimination (F=1.18) with fewer parameters.".to_string(),
+            } else if max_params < 67.0 {
+                // DistilBERT is 66.4M params, so only recommend if we can fit it
+                if max_params >= 66.4 {
+                    ModelRecommendation {
+                        model_name: "distilbert-base-uncased".to_string(),
+                        params_millions: 66.4,
+                        expected_fisher: 1.18,
+                        reasoning: "DistilBERT approaches optimal discrimination (F=1.18) with fewer parameters.".to_string(),
+                    }
+                } else {
+                    // Between 30M and 66.4M, recommend BERT-Mini as it's the only one that fits
+                    ModelRecommendation {
+                        model_name: "prajjwal1/bert-mini".to_string(),
+                        params_millions: 11.2,
+                        expected_fisher: 1.15,
+                        reasoning: "BERT-Mini is the best fit within the parameter constraint.".to_string(),
+                    }
                 }
             } else {
                 ModelRecommendation {

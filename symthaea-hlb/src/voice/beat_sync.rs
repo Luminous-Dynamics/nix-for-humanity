@@ -300,11 +300,9 @@ impl BeatSync {
 
         let pos = BeatPosition::from_time(time, self.bpm, self.beats_per_bar);
 
-        // Swing applies to off-beat positions:
-        // - For 8th note patterns: subdivision 2 (the "and" of each beat)
-        // - For 16th note patterns: odd subdivisions (1, 3)
-        // We check both subdivision 2 (8th note backbeat) and odd subdivisions (16th note backbeats)
-        if self.swing.swing_odd && (pos.subdivision == 2 || pos.subdivision % 2 == 1) {
+        // Swing applies only to odd subdivisions (1, 3) when swing_odd is true
+        // These are the off-beat 16th notes that get delayed for groove
+        if self.swing.swing_odd && pos.subdivision % 2 == 1 {
             let swing_delay = self.sixteenth_duration() * self.swing.amount;
             time + swing_delay
         } else {

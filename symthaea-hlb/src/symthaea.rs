@@ -1031,7 +1031,7 @@ impl Symthaea {
         self.text_to_hv(text)
     }
 
-    /// Generate an HDC embedding and return as Vec<f32>.
+    /// Generate an HDC embedding and return as `Vec<f32>`.
     ///
     /// Convenience method that extracts the raw values from the RealHV.
     pub fn embed_vec(&mut self, text: &str) -> Vec<f32> {

@@ -291,7 +291,7 @@ pub enum PoolingMethod {
     /// Mean pooling over all tokens
     #[default]
     Mean,
-    /// Use [CLS] token
+    /// Use `[CLS]` token
     Cls,
     /// Use last token (for causal models)
     LastToken,

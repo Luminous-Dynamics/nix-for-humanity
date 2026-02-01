@@ -212,9 +212,9 @@ pub struct StateTransition {
 /// Eligibility traces for TD(lambda) learning
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EligibilityTraces {
-    /// Traces for transition matrix: [action][from_state][to_state]
+    /// Traces for transition matrix: `[action][from_state][to_state]`
     pub transition_traces: Vec<Vec<Vec<f64>>>,
-    /// Traces for likelihood matrix: [state][observation]
+    /// Traces for likelihood matrix: `[state][observation]`
     pub likelihood_traces: Vec<Vec<f64>>,
     /// Lambda parameter
     pub lambda: f64,
@@ -309,9 +309,9 @@ impl EligibilityTraces {
 /// Tracks confidence/uncertainty in generative model parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelConfidenceTracker {
-    /// Confidence in transition model for each action: [action][from_state][to_state]
+    /// Confidence in transition model for each action: `[action][from_state][to_state]`
     pub transition_confidence: Vec<Vec<Vec<f64>>>,
-    /// Confidence in likelihood model: [state][observation]
+    /// Confidence in likelihood model: `[state][observation]`
     pub likelihood_confidence: Vec<Vec<f64>>,
     /// Visit counts for transition model
     pub transition_counts: Vec<Vec<Vec<u64>>>,
