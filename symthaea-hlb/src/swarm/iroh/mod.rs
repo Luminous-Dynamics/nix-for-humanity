@@ -81,6 +81,30 @@ pub struct IrohNode {
 }
 
 impl IrohNode {
+    /// Create a new Iroh node with deterministic node ID from a genesis seed (stub).
+    #[cfg(not(feature = "swarm"))]
+    pub async fn from_genesis(
+        config: SwarmConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> SwarmResult<Self> {
+        let mut rng = genesis.domain(&format!("{label}::iroh_node"));
+        let node_id = format!("{:064x}", rand::Rng::gen::<u64>(&mut rng));
+
+        tracing::warn!(
+            "Iroh node created in STUB mode (genesis-seeded). NodeId: {}",
+            &node_id[..16]
+        );
+
+        Ok(Self {
+            node_id,
+            connections: Arc::new(RwLock::new(HashMap::new())),
+            ticket_manager: TicketManager::new(),
+            config,
+            is_stub: true,
+        })
+    }
+
     /// Create a new Iroh node (stub implementation without feature)
     #[cfg(not(feature = "swarm"))]
     pub async fn new(config: SwarmConfig) -> SwarmResult<Self> {

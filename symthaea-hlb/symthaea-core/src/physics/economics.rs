@@ -61,6 +61,23 @@ impl FuelCosts {
         }
     }
 
+    /// D-He3 aneutronic fusion fuel costs
+    /// He-3 is extremely rare and expensive (lunar mining required for scale)
+    pub fn dhe3_fusion() -> Self {
+        Self {
+            deuterium_usd_kg: 600.0,
+            // He-3 costs ~$15,000/g ($15M/kg) - extremely limited supply
+            // Using tritium field to represent He-3 for cost calculation
+            // Current sources: tritium decay, lunar regolith, gas giant atmospheres
+            tritium_usd_g: 15_000.0, // He-3 at $15k/g
+            // D-He3: 18.3 MeV per reaction (D + He3 → He4 + p)
+            // Slightly better energy per reaction than D-T
+            deuterium_kg_per_mwh: 1.9e-6,
+            // He-3 consumption: ~same mass ratio as D
+            tritium_g_per_mwh: 2.9e-3, // ~2.9 g He-3 per MWh
+        }
+    }
+
     /// Fuel cost per MWh
     pub fn cost_per_mwh(&self) -> f64 {
         self.deuterium_usd_kg * self.deuterium_kg_per_mwh

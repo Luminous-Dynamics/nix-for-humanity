@@ -198,6 +198,64 @@ impl HdcLtcBridge {
         }
     }
 
+    /// Create a bridge with deterministic genesis seeding
+    pub fn from_genesis(config: HdcLtcBridgeConfig, genesis: &symthaea_core::genesis::GenesisSeed) -> Self {
+        let neuron_config = UnifiedConfig {
+            tau_base: config.tau_base,
+            backbone_tau: config.backbone_tau,
+            dimension: HDC_DIMENSION,
+            activation: match config.activation {
+                BridgeActivation::Tanh => UnifiedActivation::Tanh,
+                BridgeActivation::Sigmoid => UnifiedActivation::Sigmoid,
+                BridgeActivation::SiLU => UnifiedActivation::SiLU,
+                BridgeActivation::Identity => UnifiedActivation::Identity,
+            },
+            learning_rate: config.learning_rate,
+            ..UnifiedConfig::default()
+        };
+
+        let network_config = UnifiedNetworkConfig {
+            layer_sizes: config.layer_sizes.clone(),
+            neuron_config,
+            use_layer_binding: config.use_layer_binding,
+            skip_connections: config.skip_connections,
+        };
+
+        let network = HdcLtcUnifiedNetwork::from_genesis(network_config, genesis);
+
+        let input_projection = Self::init_projection_from_genesis(
+            genesis, "bridge::input_projection", config.input_dim, HDC_DIMENSION,
+        );
+        let output_projection = Self::init_projection_from_genesis(
+            genesis, "bridge::output_projection", HDC_DIMENSION, config.output_dim,
+        );
+
+        Self {
+            network,
+            config: config.clone(),
+            input_projection,
+            output_projection,
+            current_output: vec![0.0; config.output_dim],
+            total_steps: 0,
+            state_diversity: 0.0,
+        }
+    }
+
+    /// Initialize a projection matrix from genesis seed
+    fn init_projection_from_genesis(
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+        input_dim: usize,
+        output_dim: usize,
+    ) -> Vec<f32> {
+        use rand::Rng;
+        let mut rng = genesis.domain(label);
+        let scale = (2.0 / (input_dim + output_dim) as f32).sqrt();
+        (0..input_dim * output_dim)
+            .map(|_| (rng.gen::<f32>() * 2.0 - 1.0) * scale)
+            .collect()
+    }
+
     /// Initialize a random projection matrix (stored as flattened vec)
     fn init_projection(input_dim: usize, output_dim: usize, seed: u64) -> Vec<f32> {
         let mut projection = Vec::with_capacity(input_dim * output_dim);

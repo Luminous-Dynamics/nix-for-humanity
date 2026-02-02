@@ -170,6 +170,9 @@ pub struct HybridHandshake {
 
     /// Challenge timeout
     challenge_timeout: Duration,
+
+    /// Optional genesis-seeded RNG for deterministic nonce generation
+    seeded_rng: Option<symthaea_core::genesis::ShakeRng>,
 }
 
 /// A pending trust challenge
@@ -192,16 +195,38 @@ impl HybridHandshake {
             config,
             pending_challenges: std::collections::HashMap::new(),
             challenge_timeout: Duration::from_secs(30),
+            seeded_rng: None,
+        }
+    }
+
+    /// Create a handshake manager with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        config: SwarmConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        Self {
+            config,
+            pending_challenges: std::collections::HashMap::new(),
+            challenge_timeout: Duration::from_secs(30),
+            seeded_rng: Some(genesis.domain(&format!("{label}::handshake"))),
         }
     }
 
     /// Generate a trust challenge for a new peer
     pub fn create_challenge(&mut self, peer_node_id: &str) -> SwarmMessage {
-        // Generate cryptographic nonce
-        let nonce: Vec<u8> = rand::thread_rng()
-            .sample_iter(rand::distributions::Standard)
-            .take(32)
-            .collect();
+        // Generate cryptographic nonce (seeded or random)
+        let nonce: Vec<u8> = if let Some(ref mut rng) = self.seeded_rng {
+            use rand::RngCore;
+            let mut buf = vec![0u8; 32];
+            rng.fill_bytes(&mut buf);
+            buf
+        } else {
+            rand::thread_rng()
+                .sample_iter(rand::distributions::Standard)
+                .take(32)
+                .collect()
+        };
 
         // Store pending challenge
         self.pending_challenges.insert(

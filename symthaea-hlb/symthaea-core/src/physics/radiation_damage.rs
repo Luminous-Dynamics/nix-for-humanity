@@ -452,6 +452,41 @@ impl FusionReaction {
             FusionReaction::DHe3 => 58.0,    // Highest - hardest to achieve
         }
     }
+
+    /// Fraction of reactions that produce neutrons (branching ratio)
+    /// D-D has two branches: ~50% He-3+n, ~50% T+p
+    /// D-T is 100% neutron-producing
+    pub fn neutron_yield_fraction(&self) -> f64 {
+        match self {
+            FusionReaction::DD => 0.5,       // Only He-3+n branch produces neutrons
+            FusionReaction::DT => 1.0,       // 100% neutron yield
+            FusionReaction::DdProton => 0.0, // Proton branch - no neutrons
+            FusionReaction::DHe3 => 0.0,     // Aneutronic
+        }
+    }
+
+    /// Self-shielding factor: fraction of neutrons that escape the core
+    /// Accounts for moderation and absorption within the fusion zone
+    /// Based on typical compact fusion device geometry
+    pub fn self_shielding_factor(&self, core_radius_m: f64) -> f64 {
+        // Mean free path in fusion plasma/liquid metal core
+        // Galinstan has high density (~6400 kg/m³) providing significant moderation
+        let mfp = match self {
+            FusionReaction::DD => 0.15,   // 2.45 MeV neutrons, shorter MFP
+            FusionReaction::DT => 0.25,   // 14.1 MeV neutrons, longer MFP
+            _ => 1.0,                      // No neutrons
+        };
+
+        // Escape probability: exp(-R/λ) for spherical geometry
+        // This is simplified - real transport is more complex
+        let escape_prob = (-core_radius_m / mfp).exp();
+
+        // Also account for isotropic emission (only ~50% directed outward)
+        // and solid angle effects
+        let geometric_factor = 0.5;
+
+        (escape_prob * geometric_factor).max(0.001).min(1.0)
+    }
 }
 
 #[cfg(test)]

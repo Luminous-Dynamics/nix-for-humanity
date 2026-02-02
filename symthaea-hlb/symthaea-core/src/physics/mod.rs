@@ -27,6 +27,8 @@ mod literature_validation;
 mod uncertainty;
 mod manufacturing;
 mod economics;
+mod physics_consciousness_integration;
+mod physics_temporal_trajectory;
 
 pub use standard_model::*;
 pub use hadrons::*;
@@ -52,3 +54,5 @@ pub use literature_validation::*;
 pub use uncertainty::*;
 pub use manufacturing::*;
 pub use economics::*;
+pub use physics_consciousness_integration::*;
+pub use physics_temporal_trajectory::*;

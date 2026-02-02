@@ -189,6 +189,10 @@ struct App {
     whatif_simulator: WhatIfSimulator,
     /// Last what-if result
     last_whatif: Option<WhatIfResult>,
+
+    // === B10: Genesis-seeded RNG for deterministic viz drift ===
+    /// Optional seeded RNG for deterministic Phi drift in local/fallback mode
+    viz_rng: Option<symthaea_core::genesis::ShakeRng>,
 }
 
 /// Command awaiting confirmation
@@ -611,7 +615,19 @@ impl App {
             // B9: What-if simulation
             whatif_simulator: WhatIfSimulator::new(),
             last_whatif: None,
+            // B10: Genesis-seeded viz RNG (None in default; set via from_genesis)
+            viz_rng: None,
         }
+    }
+
+    /// Create an App with deterministic RNG from a genesis seed.
+    fn from_genesis(
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let mut app = Self::new();
+        app.viz_rng = Some(genesis.domain(&format!("{label}::shell_viz")));
+        app
     }
 
     /// Initialize state manager with XDG state directory
@@ -826,7 +842,12 @@ impl App {
                                 timestamp: chrono::Local::now(),
                             });
                             // Fall back to local simulation
-                            let drift = (rand::random::<f64>() - 0.5) * 0.02;
+                            let drift_raw: f64 = if let Some(ref mut rng) = self.viz_rng {
+                                rand::Rng::gen(rng)
+                            } else {
+                                rand::random::<f64>()
+                            };
+                            let drift = (drift_raw - 0.5) * 0.02;
                             let new_phi = (self.context.current_phi + drift).clamp(0.3, 0.95);
                             (new_phi, self.context.current_coherence, new_phi > 0.5)
                         }
@@ -839,7 +860,12 @@ impl App {
             }
         } else {
             // Local mode: Natural Phi drift simulation
-            let drift = (rand::random::<f64>() - 0.5) * 0.02;
+            let drift_raw: f64 = if let Some(ref mut rng) = self.viz_rng {
+                rand::Rng::gen(rng)
+            } else {
+                rand::random::<f64>()
+            };
+            let drift = (drift_raw - 0.5) * 0.02;
             let new_phi = (self.context.current_phi + drift).clamp(0.3, 0.95);
             (new_phi, self.context.current_coherence, new_phi > 0.5)
         };

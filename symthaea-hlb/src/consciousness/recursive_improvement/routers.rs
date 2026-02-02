@@ -141,6 +141,8 @@ pub struct PhiMaximizingRouter {
     q_values: HashMap<ActionType, f64>,
     /// Learning rate
     alpha: f64,
+    /// Optional seeded RNG for deterministic exploration
+    seeded_rng: Option<rand_chacha::ChaCha8Rng>,
 }
 
 impl PhiMaximizingRouter {
@@ -157,7 +159,22 @@ impl PhiMaximizingRouter {
             phi_history: Vec::new(),
             q_values,
             alpha: 0.1,
+            seeded_rng: None,
         }
+    }
+
+    /// Create a deterministic phi-maximizing router from a genesis seed.
+    pub fn from_genesis(
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        use rand::SeedableRng;
+        use rand::Rng;
+        let mut shake = genesis.domain(&format!("{label}::phi_router"));
+        let seed: u64 = shake.gen();
+        let mut router = Self::new();
+        router.seeded_rng = Some(rand_chacha::ChaCha8Rng::seed_from_u64(seed));
+        router
     }
 }
 
@@ -179,12 +196,18 @@ impl ConsciousnessRouter for PhiMaximizingRouter {
     ) -> RoutingDecision {
         // Choose action with highest Q-value (with exploration)
         let epsilon = 0.1;
-        let should_explore = rand::random::<f64>() < epsilon;
+        let (rand_val1, rand_val2) = if let Some(ref mut rng) = self.seeded_rng {
+            use rand::Rng;
+            (rng.gen::<f64>(), rng.gen::<f64>())
+        } else {
+            (rand::random::<f64>(), rand::random::<f64>())
+        };
+        let should_explore = rand_val1 < epsilon;
 
         let action = if should_explore {
             // Random exploration
             let actions = [ActionType::Attend, ActionType::Integrate, ActionType::Generate];
-            let idx = (rand::random::<f64>() * actions.len() as f64) as usize;
+            let idx = (rand_val2 * actions.len() as f64) as usize;
             ConsciousnessAction::new(format!("{:?}", actions[idx % actions.len()]).to_lowercase(), actions[idx % actions.len()])
         } else {
             // Exploit best action

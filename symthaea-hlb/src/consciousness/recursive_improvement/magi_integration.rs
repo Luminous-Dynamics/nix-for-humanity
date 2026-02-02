@@ -38,6 +38,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 use std::time::Instant;
 
 use super::calibration::{BrierScoreTracker, CalibrationConfig, CalibrationSummary};
@@ -48,6 +49,9 @@ use super::types::instant_now;
 use super::world_prediction::{
     ContractRegistry, OutcomeCategory, PredictionDomain, Resolution, ResolutionContract, RiskTier,
     WorldActionContext, WorldPrediction,
+};
+use crate::consciousness::compositionality::{
+    CompositionalityEngine, ComposedPrimitive, CompositionType,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -389,6 +393,11 @@ pub struct WorldGroundedSelfModel {
 
     /// When this model was created
     created_at: Instant,
+
+    /// Optional compositionality engine for composing primitives during improvement.
+    /// When set, the update step can create composed primitives (e.g. fallback
+    /// compositions for weak capability domains) as part of self-improvement.
+    compositionality_engine: Option<Arc<std::sync::Mutex<CompositionalityEngine>>>,
 }
 
 impl WorldGroundedSelfModel {
@@ -411,12 +420,27 @@ impl WorldGroundedSelfModel {
             },
             config,
             created_at: Instant::now(),
+            compositionality_engine: None,
         }
     }
 
     /// Create with default configuration
     pub fn with_defaults() -> Self {
         Self::new(WorldGroundedConfig::default())
+    }
+
+    /// Attach a compositionality engine for primitive composition during improvement.
+    ///
+    /// When set, the MAGI update step can compose primitives (e.g. creating
+    /// fallback or parallel compositions for weak domains). This is opt-in:
+    /// if never called, behaviour is unchanged.
+    pub fn set_compositionality_engine(&mut self, engine: Arc<std::sync::Mutex<CompositionalityEngine>>) {
+        self.compositionality_engine = Some(engine);
+    }
+
+    /// Get a reference to the compositionality engine, if attached.
+    pub fn compositionality_engine(&self) -> Option<&Arc<std::sync::Mutex<CompositionalityEngine>>> {
+        self.compositionality_engine.as_ref()
     }
 
     /// Restore from a persisted snapshot (WARM START)
@@ -483,6 +507,7 @@ impl WorldGroundedSelfModel {
             loop_state,
             config,
             created_at: Instant::now(),
+            compositionality_engine: None,
         }
     }
 
@@ -797,7 +822,11 @@ impl WorldGroundedSelfModel {
     // STEP 6: UPDATE (Improve from experience)
     // ═══════════════════════════════════════════════════════════════════════════
 
-    /// Update capability estimates based on attribution
+    /// Update capability estimates based on attribution.
+    ///
+    /// When a compositionality engine is attached, this also attempts to compose
+    /// primitives for the weak domains -- creating fallback or parallel
+    /// compositions that can strengthen future reasoning.
     pub fn update_from_attribution(&mut self, attribution: &CausalAttribution) {
         // Decrease capability estimates for responsible domains
         for domain in &attribution.responsible_domains {
@@ -805,6 +834,57 @@ impl WorldGroundedSelfModel {
                 *domain,
                 0.4, // Below average performance
                 attribution.confidence,
+            );
+        }
+
+        // If compositionality engine is available, try to compose improvement
+        // primitives for the weak domains.
+        if let Some(engine_arc) = &self.compositionality_engine {
+            if let Ok(mut engine) = engine_arc.lock() {
+                self.compose_improvements_for_attribution(&mut engine, attribution);
+            }
+        }
+    }
+
+    /// Use the compositionality engine to create composed primitives that may
+    /// help with domains identified as weak by a causal attribution.
+    ///
+    /// Strategy: for each pair of responsible domains, create a parallel
+    /// composition so that future reasoning can cross-pollinate.  For single
+    /// weak domains, create a fixed-point (iterative refinement) composition.
+    fn compose_improvements_for_attribution(
+        &self,
+        engine: &mut CompositionalityEngine,
+        attribution: &CausalAttribution,
+    ) {
+        let domains: Vec<String> = attribution
+            .responsible_domains
+            .iter()
+            .map(|d| format!("{:?}", d).to_lowercase())
+            .collect();
+
+        // Parallel compositions for each pair of weak domains
+        if domains.len() >= 2 {
+            for i in 0..domains.len() {
+                for j in (i + 1)..domains.len() {
+                    // Best-effort: ignore errors (primitive may not exist, etc.)
+                    let _ = engine.compose_parallel(&domains[i], &domains[j]);
+                }
+            }
+        }
+
+        // Fixed-point refinement for each weak domain individually
+        for domain_id in &domains {
+            let _ = engine.compose_fixed_point(domain_id, Some(20), Some(0.95));
+        }
+
+        // If there is a strongest and weakest domain, compose a fallback
+        // so the strong domain backs up the weak one.
+        if domains.len() >= 2 {
+            let _ = engine.compose_fallback(
+                &domains[0],
+                domains.last().unwrap(),
+                0.6,
             );
         }
     }

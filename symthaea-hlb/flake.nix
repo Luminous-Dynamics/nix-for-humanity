@@ -88,6 +88,9 @@
           # Note: ort crate uses load-dynamic, so we need the shared lib
           onnxruntime
 
+          # C++ standard library (libstdc++.so.6 for neural bridge tests)
+          stdenv.cc.cc.lib
+
           # Development tools
           cmake
           gnuplot

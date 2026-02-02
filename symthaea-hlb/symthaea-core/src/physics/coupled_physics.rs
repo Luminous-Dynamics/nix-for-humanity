@@ -101,6 +101,32 @@ impl OperatingConditions {
             max_dose_rate: 0.01,
         }
     }
+
+    /// D-He3 aneutronic consumer unit (5 kW)
+    /// Nearly zero neutron production - minimal shielding required
+    pub fn aneutronic_consumer() -> Self {
+        Self {
+            power_kw: 5.0,
+            reaction: FusionReaction::DHe3,
+            ambient_temp_k: 300.0,
+            h_convection: 25.0,
+            target_lifetime_years: 30.0,
+            max_dose_rate: 0.0001, // Much stricter - should be easy to meet
+        }
+    }
+
+    /// D-He3 aneutronic industrial (100 MW)
+    /// Aneutronic but requires higher ignition temperature
+    pub fn aneutronic_industrial() -> Self {
+        Self {
+            power_kw: 100_000.0,
+            reaction: FusionReaction::DHe3,
+            ambient_temp_k: 350.0,
+            h_convection: 20_000.0,
+            target_lifetime_years: 40.0,
+            max_dose_rate: 0.001,
+        }
+    }
 }
 
 /// Temperature-dependent healing rate model
@@ -424,10 +450,25 @@ impl CoupledPhysicsEngine {
         };
 
         // Calculate equilibrium DPA and lifetime
-        let dpa_rate = 1e-8 * conditions.power_kw; // Simplified DPA rate
+        // DPA rate depends on neutron flux at wall, which scales with power/area
+        // Larger reactors have better geometric spreading
+        let power_mw = conditions.power_kw / 1000.0;
+        // Approximate first wall area (scales with power^0.67 for volume scaling)
+        let wall_area_m2 = 4.0 * std::f64::consts::PI * (power_mw.powf(0.33) * 2.0).powi(2);
+        // Neutron wall load (MW/m²) - typically 1-2 MW/m² for fusion
+        let wall_load = power_mw / wall_area_m2.max(1.0);
+        // DPA rate: ~10 DPA/year per MW/m² for steel-like materials
+        let dpa_per_year = wall_load * 10.0;
+        let dpa_rate = dpa_per_year / (365.25 * 24.0 * 3600.0); // Convert to DPA/s
+
         let equilibrium_dpa = dpa_rate / effective_healing.max(1e-15);
 
-        let critical_dpa = 100.0; // HEA critical DPA
+        // Critical DPA depends on material - MAX phase more resistant
+        let critical_dpa = if conditions.power_kw > 10_000.0 {
+            200.0 // MAX phase: more radiation resistant
+        } else {
+            100.0 // HEA
+        };
         let lifetime_years = if equilibrium_dpa < critical_dpa {
             f64::INFINITY
         } else {

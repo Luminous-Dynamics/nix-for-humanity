@@ -369,6 +369,11 @@ impl NeutronShielding {
     }
 
     /// Calculate dose at given distance from unshielded source
+    ///
+    /// This calculation includes:
+    /// - Neutron branching ratio (D-D is only 50% neutron-producing)
+    /// - Self-shielding within the core (moderation and absorption)
+    /// - Geometric escape fraction
     pub fn unshielded_dose(
         &self,
         reaction: FusionReaction,
@@ -378,16 +383,29 @@ impl NeutronShielding {
         let energy = reaction.neutron_energy_mev().unwrap_or(2.45);
         let total_energy = reaction.total_energy_mev();
 
-        // Neutron yield per second
+        // Total fusion reactions per second
         // Power (W) = reactions/s * energy/reaction
         let reactions_per_s = power_kw * 1000.0 / (total_energy * 1.602e-13);
 
-        // Flux at distance (1/r² falloff)
-        let flux = reactions_per_s / (4.0 * std::f64::consts::PI * distance_m.powi(2));
-        let flux_cm2 = flux * 1e-4; // Convert to n/cm²/s
+        // Apply neutron yield fraction (branching ratio)
+        // D-D: only ~50% of reactions produce neutrons (He-3+n branch)
+        // D-T: 100% neutron yield
+        let neutron_yield = reaction.neutron_yield_fraction();
+        let neutrons_per_s = reactions_per_s * neutron_yield;
 
-        // Dose conversion factor (depends on energy)
-        // Fast neutrons: ~10 pSv·cm²/n
+        // Apply self-shielding factor
+        // Accounts for neutrons absorbed/moderated within the core before escaping
+        // Estimate core radius from power (higher power = larger core)
+        let core_radius_m = (power_kw / 50.0).powf(1.0 / 3.0) * 0.1; // ~10cm for 50 kW
+        let self_shielding = reaction.self_shielding_factor(core_radius_m);
+        let escaping_neutrons = neutrons_per_s * self_shielding;
+
+        // Flux at distance (1/r² falloff for point source)
+        let flux = escaping_neutrons / (4.0 * std::f64::consts::PI * distance_m.powi(2));
+        let flux_cm2 = flux * 1e-4; // Convert from n/m²/s to n/cm²/s
+
+        // Dose conversion factor (ICRP-116 values)
+        // Fast neutrons (>1 MeV): ~10 pSv·cm²/n
         // Thermal neutrons: ~2 pSv·cm²/n
         let dcf = if energy > 1.0 { 10e-12 } else { 2e-12 }; // Sv·cm²/n
 
@@ -453,6 +471,9 @@ impl NeutronShielding {
     }
 
     /// Find optimal shielding combination
+    ///
+    /// Uses target dose rate of 0.001 mSv/hr (public safety limit)
+    /// and calculates the minimum thickness required to achieve it.
     pub fn optimize_shielding(
         &self,
         reaction: FusionReaction,
@@ -461,47 +482,77 @@ impl NeutronShielding {
         max_thickness_m: f64,
         max_mass_kg_m2: f64,
     ) -> OptimalShielding {
-        let mut best: Option<(ShieldingAnalysis, f64)> = None;
+        // Target dose rate for public safety
+        let target_dose_msv_hr = 0.001;
+
+        // Get unshielded dose first
+        let unshielded = self.unshielded_dose(reaction, power_kw, distance_m);
+
+        // Required attenuation factor
+        let required_attenuation = target_dose_msv_hr / unshielded.dose_rate_msv_hr;
+
+        let energy = reaction.neutron_energy_mev().unwrap_or(2.45);
+
+        let mut best: Option<(String, f64, f64, f64, f32)> = None; // (name, thickness, mass, dose, quality)
 
         for material in &self.materials {
             let analysis = self.analyze(material, reaction);
+            let macro_xs = material.cross_section.macro_cross_section(energy);
 
-            // Check constraints
-            if analysis.thickness_999 > max_thickness_m {
+            // Calculate required thickness: attenuation = exp(-Σ*x)
+            // x = -ln(attenuation) / Σ
+            let required_thickness = if required_attenuation >= 1.0 {
+                0.0 // No shielding needed
+            } else if required_attenuation <= 0.0 || macro_xs <= 0.0 {
+                f64::INFINITY // Impossible to achieve
+            } else {
+                -required_attenuation.ln() / macro_xs
+            };
+
+            // Use the calculated thickness, capped at max
+            let actual_thickness = required_thickness.min(max_thickness_m);
+
+            // Check mass constraint
+            let mass_per_area = actual_thickness * material.cross_section.density;
+            if mass_per_area > max_mass_kg_m2 {
                 continue;
             }
-            if analysis.areal_density > max_mass_kg_m2 {
-                continue;
-            }
 
-            // Score based on quality and compactness
-            let score = analysis.quality_score as f64
-                * (max_thickness_m / analysis.thickness_999).min(2.0);
+            // Calculate actual dose with this thickness
+            let shielded = self.shielded_dose(reaction, power_kw, distance_m, material, actual_thickness);
 
-            if best.is_none() || score > best.as_ref().unwrap().1 {
-                best = Some((analysis, score));
+            // Score: prioritize meeting target, then minimize thickness
+            let dose_factor = if shielded.dose_rate_msv_hr <= target_dose_msv_hr {
+                1.0 // Meets target
+            } else {
+                target_dose_msv_hr / shielded.dose_rate_msv_hr // Partial credit
+            };
+
+            let thickness_factor = 1.0 - (actual_thickness / max_thickness_m).min(1.0);
+            let quality = analysis.quality_score as f64;
+
+            let score = dose_factor * 0.6 + thickness_factor * 0.2 + quality * 0.2;
+
+            if best.is_none() || score > best.as_ref().unwrap().4 as f64 {
+                best = Some((
+                    material.cross_section.name.clone(),
+                    actual_thickness,
+                    mass_per_area,
+                    shielded.dose_rate_msv_hr,
+                    score as f32,
+                ));
             }
         }
 
-        let (analysis, _) = best.expect("Should find at least one suitable material");
-
-        let final_dose = self.shielded_dose(
-            reaction,
-            power_kw,
-            distance_m,
-            &self.materials.iter()
-                .find(|m| m.cross_section.name == analysis.material)
-                .unwrap(),
-            analysis.thickness_999,
-        );
+        let (name, thickness, mass, dose, quality) = best.expect("Should find at least one material");
 
         OptimalShielding {
-            primary_material: analysis.material.clone(),
-            thickness_m: analysis.thickness_999,
-            mass_per_area: analysis.areal_density,
-            final_dose: final_dose.dose_rate_msv_hr,
-            public_safe: final_dose.public_safe,
-            quality_score: analysis.quality_score,
+            primary_material: name,
+            thickness_m: thickness,
+            mass_per_area: mass,
+            final_dose: dose,
+            public_safe: dose <= target_dose_msv_hr,
+            quality_score: quality,
         }
     }
 }

@@ -84,7 +84,12 @@ impl ContinuousMind {
         }
 
         // Occasional Dream Thought (Random Permutation)
-        if rand::random::<f32>() < 0.1 {
+        let dream_roll: f32 = if let Some(ref mut rng) = self.seeded_rng {
+            rand::Rng::gen(rng)
+        } else {
+            rand::random::<f32>()
+        };
+        if dream_roll < 0.1 {
             let dream_thought = permute_hv(&self.state.current_thought, 1);
             self.state.current_thought = dream_thought.clone();
             return Some(MindOutput {

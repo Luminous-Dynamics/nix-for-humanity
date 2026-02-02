@@ -12,7 +12,9 @@
 //! - **Memory efficient**: Constant memory regardless of sequence length
 
 use ndarray::{Array1, Array2};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use symthaea_core::genesis::GenesisSeed;
 
 /// Minimum allowed tau value to prevent NaN in exp(-dt/tau) calculations.
 /// Values below this threshold would cause numerical instability.
@@ -191,8 +193,6 @@ impl CfCCell {
             config.tau_range.0
         );
 
-        let _rng = rand::thread_rng();
-
         // When backbone is used, w_in takes backbone output (backbone_dim)
         // Otherwise, w_in takes raw input (input_dim)
         let effective_input_dim = if config.use_backbone {
@@ -241,6 +241,87 @@ impl CfCCell {
             for _ in 1..config.backbone_layers {
                 weights.push(Array2::from_shape_fn((config.backbone_dim, config.backbone_dim), |_| {
                     (rand::random::<f32>() - 0.5) * 2.0 * scale
+                }));
+                biases.push(Array1::zeros(config.backbone_dim));
+            }
+
+            (weights, biases)
+        } else {
+            (Vec::new(), Vec::new())
+        };
+
+        let hidden_dim = config.hidden_dim;
+        Self {
+            config,
+            w_in,
+            w_h,
+            w_out,
+            b_h,
+            tau,
+            backbone_weights,
+            backbone_biases,
+            state: Array1::zeros(hidden_dim),
+            steps: 0,
+        }
+    }
+
+    /// Create a new CfC cell with deterministic weight initialization from a genesis seed.
+    ///
+    /// Uses `genesis.domain(label)` to derive a SHAKE-256 RNG stream so that
+    /// identical seeds and labels always produce identical weights.
+    ///
+    /// # Panics
+    /// Panics if `config.tau_range.0` is less than `MIN_TAU` (1e-6).
+    pub fn from_genesis(config: CfCConfig, genesis: &GenesisSeed, label: &str) -> Self {
+        assert!(
+            config.tau_range.0 >= MIN_TAU,
+            "tau_min must be >= {} to prevent numerical instability, got {}",
+            MIN_TAU,
+            config.tau_range.0
+        );
+
+        let mut rng = genesis.domain(label);
+
+        let effective_input_dim = if config.use_backbone {
+            config.backbone_dim
+        } else {
+            config.input_dim
+        };
+
+        let scale = (2.0 / (effective_input_dim + config.hidden_dim) as f32).sqrt();
+
+        let w_in = Array2::from_shape_fn((config.hidden_dim, effective_input_dim), |_| {
+            (rng.gen::<f32>() - 0.5) * 2.0 * scale
+        });
+
+        let w_h = Array2::from_shape_fn((config.hidden_dim, config.hidden_dim), |_| {
+            (rng.gen::<f32>() - 0.5) * 2.0 * scale
+        });
+
+        let w_out = Array2::from_shape_fn((config.hidden_dim, config.hidden_dim), |_| {
+            (rng.gen::<f32>() - 0.5) * 2.0 * scale
+        });
+
+        let b_h = Array1::zeros(config.hidden_dim);
+
+        let (tau_min, tau_max) = config.tau_range;
+        let tau = Array1::from_shape_fn(config.hidden_dim, |_| {
+            let log_tau = tau_min.ln() + rng.gen::<f32>() * (tau_max.ln() - tau_min.ln());
+            log_tau.exp().max(MIN_TAU)
+        });
+
+        let (backbone_weights, backbone_biases) = if config.use_backbone {
+            let mut weights = Vec::new();
+            let mut biases = Vec::new();
+
+            weights.push(Array2::from_shape_fn((config.backbone_dim, config.input_dim), |_| {
+                (rng.gen::<f32>() - 0.5) * 2.0 * scale
+            }));
+            biases.push(Array1::zeros(config.backbone_dim));
+
+            for _ in 1..config.backbone_layers {
+                weights.push(Array2::from_shape_fn((config.backbone_dim, config.backbone_dim), |_| {
+                    (rng.gen::<f32>() - 0.5) * 2.0 * scale
                 }));
                 biases.push(Array1::zeros(config.backbone_dim));
             }
@@ -614,6 +695,46 @@ impl CfCNetwork {
         let scale = (2.0 / (config.hidden_dim + config.output_dim) as f32).sqrt();
         let output_weights = Array2::from_shape_fn((config.output_dim, config.hidden_dim), |_| {
             (rand::random::<f32>() - 0.5) * 2.0 * scale
+        });
+        let output_bias = Array1::zeros(config.output_dim);
+
+        let adam_states = cells.iter().map(|c| {
+            let effective_input_dim = if c.config.use_backbone { c.config.backbone_dim } else { c.config.input_dim };
+            AdamState::new(c.config.hidden_dim, effective_input_dim)
+        }).collect();
+
+        Self {
+            config,
+            cells,
+            output_weights,
+            output_bias,
+            total_steps: 0,
+            adam_states,
+            adam_output: None,
+        }
+    }
+
+    /// Create a new CfC network with deterministic weight initialization from a genesis seed.
+    ///
+    /// Each cell gets a unique domain label `"{label}::cell_{i}"` and the output
+    /// projection uses `"{label}::output"`.
+    pub fn from_genesis(config: CfCNetworkConfig, genesis: &GenesisSeed, label: &str) -> Self {
+        let mut cells = Vec::with_capacity(config.num_layers);
+
+        for i in 0..config.num_layers {
+            let cell_config = CfCConfig {
+                input_dim: if i == 0 { config.input_dim } else { config.hidden_dim },
+                hidden_dim: config.hidden_dim,
+                ..config.cell_config.clone()
+            };
+            let cell_label = format!("{}::cell_{}", label, i);
+            cells.push(CfCCell::from_genesis(cell_config, genesis, &cell_label));
+        }
+
+        let mut rng = genesis.domain(&format!("{}::output", label));
+        let scale = (2.0 / (config.hidden_dim + config.output_dim) as f32).sqrt();
+        let output_weights = Array2::from_shape_fn((config.output_dim, config.hidden_dim), |_| {
+            (rng.gen::<f32>() - 0.5) * 2.0 * scale
         });
         let output_bias = Array1::zeros(config.output_dim);
 

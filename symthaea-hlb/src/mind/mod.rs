@@ -43,6 +43,8 @@ pub struct ContinuousMind {
     intent_classifier: IntentClassifier,
     /// Most recent input text (for classification)
     last_input_text: Option<String>,
+    /// Optional genesis-seeded RNG for deterministic dream processing
+    seeded_rng: Option<symthaea_core::genesis::ShakeRng>,
 }
 
 impl ContinuousMind {
@@ -63,7 +65,19 @@ impl ContinuousMind {
             awaken_time: std::time::Instant::now(),
             shutdown_requested: false,
             last_input_text: None,
+            seeded_rng: None,
         }
+    }
+
+    /// Create a continuous mind with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        config: MindConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let mut mind = Self::new(config);
+        mind.seeded_rng = Some(genesis.domain(&format!("{label}::mind")));
+        mind
     }
 
     /// Add input to the mind

@@ -3,8 +3,10 @@
 //! Provides mechanisms for evolving concepts and knowledge structures
 //! over time through learning and adaptation.
 
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use symthaea_core::genesis::{GenesisSeed, ShakeRng};
 use symthaea_core::hdc::RealHV;
 use symthaea_core::hdc::primitive_system::PrimitiveTier;
 use anyhow::Result;
@@ -119,7 +121,6 @@ impl EvolvingConcept {
 }
 
 /// The primitive evolver
-#[derive(Debug)]
 pub struct PrimitiveEvolver {
     /// Configuration
     config: EvolverConfig,
@@ -133,6 +134,8 @@ pub struct PrimitiveEvolver {
     history: VecDeque<EvolutionSnapshot>,
     /// Statistics
     stats: EvolverStats,
+    /// Optional deterministic RNG from genesis seed
+    rng: Option<ShakeRng>,
 }
 
 /// Statistics for the evolver
@@ -160,6 +163,40 @@ impl PrimitiveEvolver {
             current_generation: 0,
             history: VecDeque::new(),
             stats: EvolverStats::default(),
+            rng: None,
+        }
+    }
+
+    /// Create a new evolver with deterministic RNG from a genesis seed.
+    ///
+    /// All random selections (parent selection, mutation, tournament) will use
+    /// the genesis-seeded RNG instead of `rand::random()`.
+    pub fn from_genesis(config: EvolverConfig, genesis: &GenesisSeed, label: &str) -> Self {
+        Self {
+            config,
+            population: HashMap::new(),
+            next_id: 1,
+            current_generation: 0,
+            history: VecDeque::new(),
+            stats: EvolverStats::default(),
+            rng: Some(genesis.domain(label)),
+        }
+    }
+
+    /// Generate a random f32, using the genesis RNG if available.
+    fn rand_f32(&mut self) -> f32 {
+        match &mut self.rng {
+            Some(rng) => rng.gen::<f32>(),
+            None => rand::random::<f32>(),
+        }
+    }
+
+    /// Generate a random f64, using the genesis RNG if available.
+    #[allow(dead_code)]
+    fn rand_f64(&mut self) -> f64 {
+        match &mut self.rng {
+            Some(rng) => rng.gen::<f64>(),
+            None => rand::random::<f64>(),
         }
     }
 
@@ -242,8 +279,8 @@ impl PrimitiveEvolver {
         // Crossover
         while new_population.len() < self.config.population_size {
             if selected.len() >= 2 {
-                let p1_idx = (rand::random::<f32>() * selected.len() as f32) as usize % selected.len();
-                let p2_idx = (rand::random::<f32>() * selected.len() as f32) as usize % selected.len();
+                let p1_idx = (self.rand_f32() * selected.len() as f32) as usize % selected.len();
+                let p2_idx = (self.rand_f32() * selected.len() as f32) as usize % selected.len();
 
                 if p1_idx != p2_idx {
                     let parent1 = &selected[p1_idx];
@@ -252,7 +289,7 @@ impl PrimitiveEvolver {
                     self.next_id += 1;
 
                     // Mutation
-                    if rand::random::<f32>() < self.config.mutation_rate {
+                    if self.rand_f32() < self.config.mutation_rate {
                         child.mutate(self.config.learning_rate);
                         self.stats.total_mutations += 1;
                     }
@@ -268,7 +305,7 @@ impl PrimitiveEvolver {
     }
 
     /// Select individuals for reproduction
-    fn select(&self) -> Vec<EvolvingConcept> {
+    fn select(&mut self) -> Vec<EvolvingConcept> {
         let mut candidates: Vec<_> = self.population.values().cloned().collect();
         candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -280,7 +317,7 @@ impl PrimitiveEvolver {
         for _ in 0..select_count {
             let mut best: Option<EvolvingConcept> = None;
             for _ in 0..tournament_size {
-                let idx = (rand::random::<f32>() * candidates.len() as f32) as usize % candidates.len();
+                let idx = (self.rand_f32() * candidates.len() as f32) as usize % candidates.len();
                 let candidate = &candidates[idx];
                 if best.as_ref().map_or(true, |b| candidate.fitness > b.fitness) {
                     best = Some(candidate.clone());
@@ -416,6 +453,19 @@ impl PrimitiveEvolver {
     }
 }
 
+impl std::fmt::Debug for PrimitiveEvolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PrimitiveEvolver")
+            .field("config", &self.config)
+            .field("population_size", &self.population.len())
+            .field("next_id", &self.next_id)
+            .field("current_generation", &self.current_generation)
+            .field("stats", &self.stats)
+            .field("has_genesis_rng", &self.rng.is_some())
+            .finish()
+    }
+}
+
 impl Default for PrimitiveEvolver {
     fn default() -> Self {
         Self::new(EvolverConfig::default())
@@ -529,6 +579,9 @@ pub struct PrimitiveEvolution {
 
     /// Baseline Φ
     baseline_phi: f64,
+
+    /// Optional deterministic RNG from genesis seed
+    rng: Option<ShakeRng>,
 }
 
 impl PrimitiveEvolution {
@@ -538,7 +591,21 @@ impl PrimitiveEvolution {
             config,
             population: Vec::new(),
             current_generation: 0,
-            baseline_phi: 0.5, // Default baseline
+            baseline_phi: 0.5,
+            rng: None,
+        };
+        system.initialize_population();
+        Ok(system)
+    }
+
+    /// Create a new evolution system with deterministic RNG from a genesis seed.
+    pub fn from_genesis(config: EvolutionConfig, genesis: &GenesisSeed, label: &str) -> Result<Self> {
+        let mut system = Self {
+            config,
+            population: Vec::new(),
+            current_generation: 0,
+            baseline_phi: 0.5,
+            rng: Some(genesis.domain(label)),
         };
         system.initialize_population();
         Ok(system)
@@ -567,7 +634,7 @@ impl PrimitiveEvolution {
             for i in 0..self.population.len() {
                 // Simple fitness: use tier-based heuristic
                 let tier = self.population[i].tier;
-                self.population[i].fitness = Self::evaluate_tier_fitness(tier);
+                self.population[i].fitness = self.evaluate_tier_fitness(tier);
             }
 
             // Sort by fitness (descending)
@@ -610,8 +677,16 @@ impl PrimitiveEvolution {
         })
     }
 
-    /// Evaluate fitness based on tier (static method to avoid borrow issues)
-    fn evaluate_tier_fitness(tier: PrimitiveTier) -> f64 {
+    /// Generate a random f64, using the genesis RNG if available.
+    fn rand_f64(&mut self) -> f64 {
+        match &mut self.rng {
+            Some(rng) => rng.gen::<f64>(),
+            None => rand::random::<f64>(),
+        }
+    }
+
+    /// Evaluate fitness based on tier
+    fn evaluate_tier_fitness(&mut self, tier: PrimitiveTier) -> f64 {
         // Stub: return tier-based baseline + small random variation
         let tier_base = match tier {
             PrimitiveTier::NSM => 0.5,
@@ -624,7 +699,7 @@ impl PrimitiveEvolution {
             PrimitiveTier::Compositional => 0.62,
             PrimitiveTier::Consciousness => 0.7,
         };
-        tier_base + (rand::random::<f64>() * 0.1)
+        tier_base + (self.rand_f64() * 0.1)
     }
 
     /// Perform one generation of evolution
@@ -641,8 +716,10 @@ impl PrimitiveEvolution {
             // Simple mutation: copy a random parent and mutate
             if let Some(parent) = self.population.first() {
                 let mut child = parent.clone();
-                if rand::random::<f64>() < self.config.mutation_rate {
-                    child.fitness *= 1.0 + (rand::random::<f64>() - 0.5) * 0.2;
+                let r = self.rand_f64();
+                if r < self.config.mutation_rate {
+                    let r2 = self.rand_f64();
+                    child.fitness *= 1.0 + (r2 - 0.5) * 0.2;
                 }
                 new_population.push(child);
             }

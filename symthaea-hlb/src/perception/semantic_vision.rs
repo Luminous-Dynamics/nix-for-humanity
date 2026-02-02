@@ -180,6 +180,8 @@ pub struct OcrSystem {
     char_embeddings: HashMap<char, RealHV>,
     /// Statistics
     stats: OcrStats,
+    /// Optional genesis-seeded RNG for deterministic confidence jitter
+    seeded_rng: Option<symthaea_core::genesis::ShakeRng>,
 }
 
 /// OCR statistics
@@ -223,7 +225,19 @@ impl OcrSystem {
             dimension,
             char_embeddings,
             stats: OcrStats::default(),
+            seeded_rng: None,
         }
+    }
+
+    /// Create an OCR system with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        dimension: usize,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let mut sys = Self::new(dimension);
+        sys.seeded_rng = Some(genesis.domain(&format!("{label}::ocr")));
+        sys
     }
 
     /// Recognize text from image features
@@ -235,7 +249,14 @@ impl OcrSystem {
         let text = self.extract_text_from_features(visual_features);
 
         let char_confidences: Vec<f32> = text.chars()
-            .map(|_| 0.9 + rand::random::<f32>() * 0.1)
+            .map(|_| {
+                let jitter: f32 = if let Some(ref mut rng) = self.seeded_rng {
+                    rand::Rng::gen(rng)
+                } else {
+                    rand::random::<f32>()
+                };
+                0.9 + jitter * 0.1
+            })
             .collect();
 
         let confidence = if char_confidences.is_empty() {
@@ -316,6 +337,29 @@ impl SemanticVision {
 
         Self {
             ocr: OcrSystem::new(dim),
+            config,
+            concept_embeddings,
+            stats: VisionStats::default(),
+        }
+    }
+
+    /// Create a semantic vision system with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        config: VisionConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let dim = config.dimension;
+
+        let mut concept_embeddings = HashMap::new();
+        let mut rng = genesis.domain(&format!("{label}::vision::concepts"));
+        for concept in ["person", "animal", "vehicle", "building", "nature", "object", "text"] {
+            let seed: u64 = rand::Rng::gen(&mut rng);
+            concept_embeddings.insert(concept.to_string(), RealHV::random(dim, seed));
+        }
+
+        Self {
+            ocr: OcrSystem::from_genesis(dim, genesis, label),
             config,
             concept_embeddings,
             stats: VisionStats::default(),

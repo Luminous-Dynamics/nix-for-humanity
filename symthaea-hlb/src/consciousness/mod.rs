@@ -17,6 +17,7 @@
 // ============================================================================
 // Core consciousness modules (self-contained, verified working)
 // ============================================================================
+pub mod compositionality;
 pub mod affective_consciousness;
 pub mod autopoietic_consciousness;
 pub mod consciousness_unification;
@@ -322,6 +323,38 @@ pub use primitive_reasoning::{
     ReasoningChain, TransformationType, TaskType, TierAwareConfig,
     AdaptivePrimitiveSelector, PrimitiveAffinityGraph, PrimitiveExecution,
 };
+pub use compositionality::{
+    CompositionalityEngine, CompositionalityConfig, ComposedPrimitive,
+    CompositionType, CompositionResult, CompositionStats, CompositionMetadata,
+};
+
+// ============================================================================
+// Convenience constructors for optional engines
+// ============================================================================
+
+use crate::hdc::primitive_system::PrimitiveSystem;
+use std::sync::Arc;
+
+/// Create a [`CompositionalityEngine`] from a shared [`PrimitiveSystem`].
+///
+/// This is the recommended entry-point. The engine is opt-in: callers that
+/// don't need compositionality simply never call this function and incur zero
+/// cost.
+///
+/// ```rust,ignore
+/// use symthaea::consciousness::create_compositionality_engine;
+/// use symthaea::hdc::primitive_system::PrimitiveSystem;
+/// use std::sync::Arc;
+///
+/// let ps = Arc::new(PrimitiveSystem::new());
+/// let engine = create_compositionality_engine(ps, None);
+/// ```
+pub fn create_compositionality_engine(
+    primitive_system: Arc<PrimitiveSystem>,
+    config: Option<CompositionalityConfig>,
+) -> CompositionalityEngine {
+    CompositionalityEngine::new(primitive_system, config.unwrap_or_default())
+}
 
 /// A node in the consciousness network
 #[derive(Debug, Clone)]

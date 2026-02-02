@@ -46,10 +46,12 @@
 //! ```
 
 use anyhow::Result;
+use rand::Rng;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 use ndarray::Array1;
+use symthaea_core::genesis::ShakeRng;
 
 use symthaea_core::hdc::predictive_encoder::{PredictiveHdcEncoder, PredictiveEncoderConfig};
 use crate::cfc::CfCNetwork;
@@ -682,7 +684,7 @@ pub struct CycleLearningResult {
 /// - Learning → Behavioral Change (not just compute and discard)
 /// - Q-learning guided strategy selection
 /// - Φ-gated strategy preferences
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ClosedLearningLoop {
     /// Current selected strategy
     pub current_strategy: ResponseStrategy,
@@ -707,6 +709,9 @@ pub struct ClosedLearningLoop {
 
     /// Strategy usage counts
     strategy_counts: [u64; 5],
+
+    /// Optional genesis-seeded RNG for deterministic exploration
+    rng: Option<ShakeRng>,
 }
 
 impl Default for ClosedLearningLoop {
@@ -720,11 +725,20 @@ impl Default for ClosedLearningLoop {
             total_interactions: 0,
             total_reward: 0.0,
             strategy_counts: [0; 5],
+            rng: None,
         }
     }
 }
 
 impl ClosedLearningLoop {
+    /// Create with a genesis-seeded RNG for deterministic exploration.
+    pub fn with_rng(rng: ShakeRng) -> Self {
+        Self {
+            rng: Some(rng),
+            ..Default::default()
+        }
+    }
+
     /// Select strategy based on Q-learning + previous result + Φ
     ///
     /// This is the core of the closed learning loop:
@@ -733,10 +747,14 @@ impl ClosedLearningLoop {
     /// 3. Gate based on consciousness level (Φ)
     pub fn select_strategy(&mut self, phi: f64, _previous_reward: Option<f32>) -> ResponseStrategy {
         // Step 1: Q-learning selection (epsilon-greedy)
-        let explore = rand::random::<f32>() < self.exploration_rate;
+        let (explore_val, variant_val): (f32, u8) = match self.rng.as_mut() {
+            Some(rng) => (rng.gen::<f32>(), rng.gen::<u8>()),
+            None => (rand::random::<f32>(), rand::random::<u8>()),
+        };
+        let explore = explore_val < self.exploration_rate;
         let base_strategy = if explore {
             // Random exploration
-            match rand::random::<u8>() % 5 {
+            match variant_val % 5 {
                 0 => ResponseStrategy::Detailed,
                 1 => ResponseStrategy::Concise,
                 2 => ResponseStrategy::Clarifying,
@@ -3420,6 +3438,14 @@ impl CognitiveLoopService {
         // Initialize adaptive behavior with defaults
         let adaptive_behavior = AdaptiveBehavior::default();
 
+        // Initialize closed learning loop with genesis-seeded RNG when available
+        let closed_learning_loop = if let Some(ref phrase) = config.genesis_phrase {
+            let genesis = symthaea_core::genesis::GenesisSeed::from_phrase(phrase);
+            ClosedLearningLoop::with_rng(genesis.domain("cognitive_loop::exploration"))
+        } else {
+            ClosedLearningLoop::default()
+        };
+
         Ok(Self {
             config,
             encoder,
@@ -3445,7 +3471,7 @@ impl CognitiveLoopService {
             unification_engine: ConsciousnessUnificationEngine::new(),
             cognitive_depth: CognitiveDepth::default(),
             active_inference_bridge: ActiveInferenceBridge::with_defaults(),
-            closed_learning_loop: ClosedLearningLoop::default(),
+            closed_learning_loop,
             // Memory system bridges
             episodic_memory: EpisodicMemoryBridge::default(),
             goal_system: GoalSystemBridge::new(),

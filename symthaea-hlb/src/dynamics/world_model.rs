@@ -22,8 +22,10 @@
 use crate::dynamics::cfc::{CfCNetwork, CfCNetworkConfig, CfCConfig};
 use crate::dynamics::CrystalizedConcept;
 use ndarray::{Array1, Array2};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use symthaea_core::genesis::GenesisSeed;
 
 /// Configuration for the hierarchical world model
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,6 +120,39 @@ impl WorldModelLayer {
         Self {
             level,
             cfc: CfCNetwork::new(cfc_config),
+            state: Array1::zeros(hidden_dim),
+            prediction: Array1::zeros(hidden_dim),
+            prediction_error: Array1::zeros(hidden_dim),
+            time_scale,
+            stats: LayerStats::default(),
+        }
+    }
+
+    /// Create a new world model layer with deterministic initialization from a genesis seed.
+    pub fn from_genesis(
+        level: usize,
+        input_dim: usize,
+        hidden_dim: usize,
+        time_scale: f32,
+        genesis: &GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let cfc_config = CfCNetworkConfig {
+            input_dim,
+            hidden_dim,
+            output_dim: hidden_dim,
+            num_layers: 2,
+            cell_config: CfCConfig {
+                input_dim,
+                hidden_dim,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        Self {
+            level,
+            cfc: CfCNetwork::from_genesis(cfc_config, genesis, label),
             state: Array1::zeros(hidden_dim),
             prediction: Array1::zeros(hidden_dim),
             prediction_error: Array1::zeros(hidden_dim),
@@ -265,6 +300,56 @@ impl HierarchicalCfCWorldModel {
             // Downward: upper -> lower
             let down_proj = Array2::from_shape_fn((lower_dim, upper_dim), |_| {
                 (rand::random::<f32>() - 0.5) * 2.0 * scale
+            });
+            down_projections.push(down_proj);
+        }
+
+        Self {
+            config,
+            layers,
+            up_projections,
+            down_projections,
+            concepts: HashMap::new(),
+            next_concept_id: 1,
+            stats: WorldModelStats::default(),
+        }
+    }
+
+    /// Create a new hierarchical world model with deterministic initialization from a genesis seed.
+    ///
+    /// Each layer gets domain label `"{label}::layer_{i}"` and projections use
+    /// `"{label}::up_{i}"` / `"{label}::down_{i}"`.
+    pub fn from_genesis(config: WorldModelConfig, genesis: &GenesisSeed, label: &str) -> Self {
+        let mut layers = Vec::with_capacity(config.num_levels);
+
+        for i in 0..config.num_levels {
+            let input_dim = config.level_dims[i];
+            let hidden_dim = config.level_dims[i];
+            let time_scale = config.time_scales[i];
+            let layer_label = format!("{}::layer_{}", label, i);
+
+            layers.push(WorldModelLayer::from_genesis(
+                i, input_dim, hidden_dim, time_scale, genesis, &layer_label,
+            ));
+        }
+
+        let mut up_projections = Vec::new();
+        let mut down_projections = Vec::new();
+
+        for i in 0..(config.num_levels - 1) {
+            let lower_dim = config.level_dims[i];
+            let upper_dim = config.level_dims[i + 1];
+            let scale = (2.0 / (lower_dim + upper_dim) as f32).sqrt();
+
+            let mut up_rng = genesis.domain(&format!("{}::up_{}", label, i));
+            let up_proj = Array2::from_shape_fn((upper_dim, lower_dim), |_| {
+                (up_rng.gen::<f32>() - 0.5) * 2.0 * scale
+            });
+            up_projections.push(up_proj);
+
+            let mut down_rng = genesis.domain(&format!("{}::down_{}", label, i));
+            let down_proj = Array2::from_shape_fn((lower_dim, upper_dim), |_| {
+                (down_rng.gen::<f32>() - 0.5) * 2.0 * scale
             });
             down_projections.push(down_proj);
         }

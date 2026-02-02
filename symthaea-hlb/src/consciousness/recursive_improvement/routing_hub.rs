@@ -336,6 +336,8 @@ pub struct ConsciousnessRoutingHub {
     total_decisions: usize,
     /// Primitive routing context (provides task-aware router selection)
     primitive_context: Option<PrimitiveRoutingContext>,
+    /// Optional seeded RNG for deterministic exploration
+    seeded_rng: Option<rand_chacha::ChaCha8Rng>,
 }
 
 impl ConsciousnessRoutingHub {
@@ -357,7 +359,23 @@ impl ConsciousnessRoutingHub {
             history: VecDeque::with_capacity(1000),
             total_decisions: 0,
             primitive_context: None,
+            seeded_rng: None,
         }
+    }
+
+    /// Create a deterministic routing hub from a genesis seed.
+    pub fn from_genesis(
+        config: RoutingHubConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        use rand::SeedableRng;
+        use rand::Rng;
+        let mut shake = genesis.domain(&format!("{label}::routing_hub"));
+        let seed: u64 = shake.gen();
+        let mut hub = Self::new(config);
+        hub.seeded_rng = Some(rand_chacha::ChaCha8Rng::seed_from_u64(seed));
+        hub
     }
 
     /// Set primitive context from adaptive selector
@@ -468,9 +486,15 @@ impl ConsciousnessRoutingHub {
     /// Adaptively select the best router based on performance
     fn route_adaptive(&mut self, target: &LatentConsciousnessState) -> UnifiedRoutingDecision {
         // Exploration vs exploitation
-        if rand::random::<f64>() < self.config.exploration_rate {
+        let (rand_val1, rand_val2) = if let Some(ref mut rng) = self.seeded_rng {
+            use rand::Rng;
+            (rng.gen::<f64>(), rng.gen::<f64>())
+        } else {
+            (rand::random::<f64>(), rand::random::<f64>())
+        };
+        if rand_val1 < self.config.exploration_rate {
             // Explore: random router
-            let idx = (rand::random::<f64>() * 5.0) as usize;
+            let idx = (rand_val2 * 5.0) as usize;
             let router_type = RouterType::all()[idx.min(4)];
             return self.route_single(router_type, target);
         }
