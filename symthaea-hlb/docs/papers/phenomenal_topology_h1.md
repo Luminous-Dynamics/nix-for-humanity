@@ -280,11 +280,18 @@ This nuanced finding suggests:
 ## 7. Data Availability
 
 Concept corpora available at:
-- `data/consciousness_probe/qualia_only.json`
-- `data/consciousness_probe/computation_only.json`
+- `data/consciousness_probe/qualia_only.json` (50 pure qualia)
+- `data/consciousness_probe/computation_only.json` (50 pure computation)
+- `data/consciousness_probe/phenomenal_concepts_expanded.json` (100 phenomenal)
+- `data/consciousness_probe/functional_concepts_expanded.json` (100 functional)
+- `data/consciousness_probe/h1_expanded_200_results.csv` (full results)
 
 Experimental code:
-- `examples/consciousness_probe_refined.rs`
+- `examples/consciousness_probe_refined.rs` (H1 original)
+- `examples/h1_category_breakdown.rs` (category analysis)
+- `examples/h1_robustness.rs` (bootstrap CIs)
+- `examples/h1_expanded_200.rs` (200-concept analysis)
+- `examples/h1_refined_embodied.rs` (refined hypothesis)
 
 ---
 
@@ -297,7 +304,7 @@ Experimental code:
 
 ---
 
-## Appendix A: Full Results
+## Appendix A: Full Results (Original H1)
 
 ### A.1 All Phenomenal Concept Unity Scores
 

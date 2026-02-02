@@ -30,6 +30,28 @@ use crate::consciousness::primitive_consciousness::{
 };
 
 // =============================================================================
+// REGIME TRANSITIONS
+// =============================================================================
+
+/// A regime transition event emitted when a primitive changes stability regime
+#[derive(Debug, Clone)]
+pub enum RegimeTransition {
+    /// Primitive has crystallized (Plastic -> Crystallized)
+    Crystallized {
+        primitive_name: String,
+        encoding: HV16,
+    },
+    /// Primitive has decrystallized (Crystallized -> Plastic)
+    Decrystallized {
+        primitive_name: String,
+    },
+    /// Primitive promoted from Fluid to Plastic
+    Solidified {
+        primitive_name: String,
+    },
+}
+
+// =============================================================================
 // STABILITY REGIME TYPES
 // =============================================================================
 
@@ -293,16 +315,23 @@ impl CfCPrimitive {
     /// - Fluid -> Plastic after `fluid_to_plastic_activations`
     /// - Plastic -> Crystallized after `plastic_to_crystallized_activations`
     /// - Crystallized -> Plastic if idle for `decrystallize_idle_cycles`
-    pub fn update_regime(&mut self, global_cycle: usize, config: &StabilityRegimeConfig) {
+    pub fn update_regime(&mut self, global_cycle: usize, config: &StabilityRegimeConfig) -> Option<RegimeTransition> {
         match self.regime {
             StabilityRegimeType::Fluid => {
                 if self.total_activation_count >= config.fluid_to_plastic_activations {
                     self.regime = StabilityRegimeType::Plastic;
+                    return Some(RegimeTransition::Solidified {
+                        primitive_name: self.primitive.name.clone(),
+                    });
                 }
             }
             StabilityRegimeType::Plastic => {
                 if self.total_activation_count >= config.plastic_to_crystallized_activations {
                     self.regime = StabilityRegimeType::Crystallized;
+                    return Some(RegimeTransition::Crystallized {
+                        primitive_name: self.primitive.name.clone(),
+                        encoding: self.primitive.encoding,
+                    });
                 }
             }
             StabilityRegimeType::Crystallized => {
@@ -312,9 +341,13 @@ impl CfCPrimitive {
                     self.regime = StabilityRegimeType::Plastic;
                     // Reset activation count so it can re-crystallize naturally
                     self.total_activation_count = config.fluid_to_plastic_activations;
+                    return Some(RegimeTransition::Decrystallized {
+                        primitive_name: self.primitive.name.clone(),
+                    });
                 }
             }
         }
+        None
     }
 
     /// Get the effective tau of this neuron for the given input
@@ -409,7 +442,7 @@ impl StabilityRegimeProcessor {
         input: &HV16,
         dt: f32,
         timestamp: f64,
-    ) -> PrimitiveConsciousnessState {
+    ) -> (PrimitiveConsciousnessState, Vec<RegimeTransition>) {
         // 1. Convert input to continuous space
         let continuous_input = input.to_continuous_hv();
 
@@ -417,6 +450,8 @@ impl StabilityRegimeProcessor {
         self.global_cycle += 1;
         let cycle = self.global_cycle;
         let config_clone = self.config.clone();
+
+        let mut transitions = Vec::new();
 
         // 2 & 3. Evolve all primitives, update activation, track counts, transition regimes
         for cfc in self.primitives.values_mut() {
@@ -436,7 +471,9 @@ impl StabilityRegimeProcessor {
             }
 
             // Dynamic regime transitions (and decrystallization)
-            cfc.update_regime(cycle, &config_clone);
+            if let Some(transition) = cfc.update_regime(cycle, &config_clone) {
+                transitions.push(transition);
+            }
 
             cfc.record_history(timestamp, config_clone.history_len);
         }
@@ -501,7 +538,7 @@ impl StabilityRegimeProcessor {
         }
         self.current_state = Some(state.clone());
 
-        state
+        (state, transitions)
     }
 
     /// Estimate phi for the given consciousness state
