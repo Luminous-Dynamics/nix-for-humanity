@@ -3410,6 +3410,9 @@ pub struct CognitiveLoopService {
     /// Frequently-used primitives crystallize, rarely-used stay fluid
     stability_regime: StabilityRegimeProcessor,
 
+    /// Discovery service for finding new primitives seeded by crystallization events
+    discovery_service: PrimitiveDiscoveryService,
+
     /// Neural bridge for projecting pre-computed embeddings (e.g. BGE-M3)
     /// directly into HDC space via a trained linear probe.
     /// Only available when the `neural-bridge` feature is enabled and
@@ -3526,6 +3529,7 @@ impl CognitiveLoopService {
             fep_lr_boost: 1.0,
             coherence_tracker: ConversationCoherenceTracker::new(0.3),
             stability_regime: StabilityRegimeProcessor::new(),
+            discovery_service: PrimitiveDiscoveryService::new(DiscoveryServiceConfig::default()),
             #[cfg(feature = "neural-bridge")]
             neural_bridge: {
                 let probe_path = std::path::Path::new("models/neural_bridge/probe_weights.npy");
@@ -4129,7 +4133,14 @@ impl CognitiveLoopService {
         {
             let hv16_input = real_hv_to_hv16(&encoding_result.hdv);
             let timestamp = self.stats.total_cycles as f64 * delta_t as f64;
-            let _regime_state = self.stability_regime.process_input(&hv16_input, delta_t, timestamp);
+            let (_regime_state, transitions) = self.stability_regime.process_input(&hv16_input, delta_t, timestamp);
+
+            // When primitives crystallize, seed the discovery system to explore neighbors
+            for transition in &transitions {
+                if let RegimeTransition::Crystallized { primitive_name, encoding } = transition {
+                    self.discovery_service.seed_neighbor_exploration(primitive_name, encoding);
+                }
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════════
