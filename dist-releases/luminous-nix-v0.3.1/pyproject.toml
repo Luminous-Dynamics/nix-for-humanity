@@ -82,12 +82,12 @@ cryptography = {version = "0.3.1", optional = true}
 # ML dependencies (from scripts/requirements.txt)
 # NOTE: Some ML packages are disabled due to C++ compilation issues
 # pandas = {version = "0.3.1", optional = true}  # Disabled: pyarrow dependency issue
-numpy = {version = "0.3.1", optional = true}  # Compatible with latest pandas
-nltk = {version = "0.3.1", optional = true}
-# spacy = {version = "0.3.1", optional = true}  # Disabled: blis dependency issue
-transformers = {version = "0.3.1", optional = true}  # Latest: 4.55.0
-torch = {version = "0.3.1", optional = true}  # Compatible with openai-whisper
-scikit-learn = {version = "0.3.1", optional = true}  # Latest: 1.7.1
+numpy = {version = "^1.24.0", optional = true}  # Compatible with latest pandas
+nltk = {version = "^3.8", optional = true}
+# spacy = {version = "^3.0.0", optional = true}  # Disabled: blis dependency issue
+transformers = {version = "^4.36.0", optional = true}
+torch = {version = "^2.6.0", optional = true}
+scikit-learn = {version = "^1.3.0", optional = true}
 sentence-transformers = {version = "0.3.1", optional = true}  # Latest: 3.3.2
 beautifulsoup4 = {version = "0.3.1", optional = true}
 lxml = {version = "0.3.1", optional = true}

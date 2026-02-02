@@ -72,6 +72,44 @@ pub struct HdcLtcBridgeConfig {
     /// Default is HDC_DIMENSION (16,384). Lower values (e.g. 1024, 2048)
     /// trade accuracy for dramatically faster computation.
     pub hdc_dim: usize,
+
+    /// Optional adaptive dimension scaling. When set, the bridge starts
+    /// at `hdc_dim` and scales up/down based on prediction error.
+    pub adaptive_dim: Option<AdaptiveDimConfig>,
+}
+
+/// Configuration for adaptive HDC dimensionality scaling.
+///
+/// Start small (fast) and grow only when prediction error demands it.
+/// This avoids paying the cost of high-dimensional computation until
+/// the task actually requires it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdaptiveDimConfig {
+    /// Minimum HDC dimension (starting point)
+    pub min_dim: usize,
+    /// Maximum HDC dimension (ceiling)
+    pub max_dim: usize,
+    /// If error stays above this, scale up
+    pub upscale_error_threshold: f32,
+    /// If error drops below this, scale down
+    pub downscale_error_threshold: f32,
+    /// Dimension change per resize step
+    pub scale_step: usize,
+    /// Minimum cycles between resizes
+    pub cooldown_cycles: usize,
+}
+
+impl Default for AdaptiveDimConfig {
+    fn default() -> Self {
+        Self {
+            min_dim: 2048,
+            max_dim: 16384,
+            upscale_error_threshold: 0.8,
+            downscale_error_threshold: 0.3,
+            scale_step: 2048,
+            cooldown_cycles: 20,
+        }
+    }
 }
 
 /// Activation function selection for the bridge
@@ -97,6 +135,7 @@ impl Default for HdcLtcBridgeConfig {
             activation: BridgeActivation::Tanh,
             seed: 42,
             hdc_dim: HDC_DIMENSION,
+            adaptive_dim: None,
         }
     }
 }
@@ -152,6 +191,9 @@ pub struct HdcLtcBridge {
 
     /// Running state diversity metric
     state_diversity: f32,
+
+    /// Cycles since the last adaptive dimension resize
+    cycles_since_resize: usize,
 }
 
 impl HdcLtcBridge {
@@ -204,6 +246,7 @@ impl HdcLtcBridge {
             current_output: vec![0.0; config.output_dim],
             total_steps: 0,
             state_diversity: 0.0,
+            cycles_since_resize: 0,
         }
     }
 
@@ -249,6 +292,7 @@ impl HdcLtcBridge {
             current_output: vec![0.0; config.output_dim],
             total_steps: 0,
             state_diversity: 0.0,
+            cycles_since_resize: 0,
         }
     }
 
@@ -359,6 +403,87 @@ impl HdcLtcBridge {
 
         // Normalize to 0-1 using sigmoid
         self.state_diversity = 1.0 / (1.0 + (-variance.sqrt() * 10.0).exp());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ADAPTIVE DIMENSIONALITY
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Check if the HDC dimension should be resized based on current prediction error.
+    ///
+    /// If `adaptive_dim` is None, this is a no-op. Otherwise:
+    /// - High error (above upscale threshold) -> increase dimension by scale_step
+    /// - Low error (below downscale threshold) -> decrease dimension by scale_step
+    /// - Cooldown prevents resizing more than once every N cycles
+    ///
+    /// When resizing occurs, projection matrices are rebuilt at the new dimension.
+    pub fn maybe_resize(&mut self, current_error: f32) {
+        let adaptive = match &self.config.adaptive_dim {
+            Some(a) => a.clone(),
+            None => return,
+        };
+
+        self.cycles_since_resize += 1;
+
+        if self.cycles_since_resize < adaptive.cooldown_cycles {
+            return;
+        }
+
+        let current_dim = self.config.hdc_dim;
+        let new_dim = if current_error > adaptive.upscale_error_threshold {
+            (current_dim + adaptive.scale_step).min(adaptive.max_dim)
+        } else if current_error < adaptive.downscale_error_threshold {
+            current_dim.saturating_sub(adaptive.scale_step).max(adaptive.min_dim)
+        } else {
+            return; // No change needed
+        };
+
+        if new_dim == current_dim {
+            return; // Already at boundary
+        }
+
+        // Rebuild projection matrices at new dimension
+        self.config.hdc_dim = new_dim;
+        self.input_projection = Self::init_projection(
+            self.config.input_dim,
+            new_dim,
+            self.config.seed + 100000 + self.total_steps,
+        );
+        self.output_projection = Self::init_projection(
+            new_dim,
+            self.config.output_dim,
+            self.config.seed + 200000 + self.total_steps,
+        );
+
+        // Rebuild the network at the new dimension
+        let neuron_config = UnifiedConfig {
+            tau_base: self.config.tau_base,
+            backbone_tau: self.config.backbone_tau,
+            dimension: new_dim,
+            activation: match self.config.activation {
+                BridgeActivation::Tanh => UnifiedActivation::Tanh,
+                BridgeActivation::Sigmoid => UnifiedActivation::Sigmoid,
+                BridgeActivation::SiLU => UnifiedActivation::SiLU,
+                BridgeActivation::Identity => UnifiedActivation::Identity,
+            },
+            learning_rate: self.config.learning_rate,
+            ..UnifiedConfig::default()
+        };
+
+        let network_config = UnifiedNetworkConfig {
+            layer_sizes: self.config.layer_sizes.clone(),
+            neuron_config,
+            use_layer_binding: self.config.use_layer_binding,
+            skip_connections: self.config.skip_connections,
+        };
+
+        self.network = HdcLtcUnifiedNetwork::new(network_config, self.config.seed + self.total_steps);
+        self.cycles_since_resize = 0;
+    }
+
+    /// Get the current HDC dimension (may differ from initial if adaptive)
+    pub fn current_hdc_dim(&self) -> usize {
+        self.config.hdc_dim
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -705,5 +830,72 @@ mod tests {
         let config = HdcLtcBridgeConfig::accurate();
         assert!(config.skip_connections);
         assert_eq!(config.layer_sizes, vec![8, 16, 8]);
+    }
+
+    #[test]
+    fn test_adaptive_dim_upscale() {
+        let config = HdcLtcBridgeConfig {
+            hdc_dim: 2048,
+            adaptive_dim: Some(AdaptiveDimConfig {
+                cooldown_cycles: 20,
+                ..AdaptiveDimConfig::default()
+            }),
+            ..HdcLtcBridgeConfig::default()
+        };
+        let mut bridge = HdcLtcBridge::new(config);
+        assert_eq!(bridge.current_hdc_dim(), 2048);
+
+        // Call maybe_resize with high error 25 times (exceeds cooldown of 20)
+        for _ in 0..25 {
+            bridge.maybe_resize(0.9);
+        }
+
+        assert!(bridge.current_hdc_dim() > 2048, "dim should have increased, got {}", bridge.current_hdc_dim());
+    }
+
+    #[test]
+    fn test_adaptive_dim_downscale() {
+        let config = HdcLtcBridgeConfig {
+            hdc_dim: 8192,
+            adaptive_dim: Some(AdaptiveDimConfig {
+                cooldown_cycles: 20,
+                ..AdaptiveDimConfig::default()
+            }),
+            ..HdcLtcBridgeConfig::default()
+        };
+        let mut bridge = HdcLtcBridge::new(config);
+        assert_eq!(bridge.current_hdc_dim(), 8192);
+
+        // Call maybe_resize with low error 25 times
+        for _ in 0..25 {
+            bridge.maybe_resize(0.1);
+        }
+
+        assert!(bridge.current_hdc_dim() < 8192, "dim should have decreased, got {}", bridge.current_hdc_dim());
+    }
+
+    #[test]
+    fn test_adaptive_dim_cooldown() {
+        let config = HdcLtcBridgeConfig {
+            hdc_dim: 4096,
+            adaptive_dim: Some(AdaptiveDimConfig {
+                cooldown_cycles: 20,
+                ..AdaptiveDimConfig::default()
+            }),
+            ..HdcLtcBridgeConfig::default()
+        };
+        let mut bridge = HdcLtcBridge::new(config);
+
+        // Call only 10 times (under cooldown of 20) - should NOT resize
+        for _ in 0..10 {
+            bridge.maybe_resize(0.9);
+        }
+        assert_eq!(bridge.current_hdc_dim(), 4096, "should not resize within cooldown");
+
+        // Call 15 more (total 25, exceeds cooldown) - should resize
+        for _ in 0..15 {
+            bridge.maybe_resize(0.9);
+        }
+        assert!(bridge.current_hdc_dim() > 4096, "should resize after cooldown");
     }
 }

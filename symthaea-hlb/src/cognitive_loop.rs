@@ -181,7 +181,11 @@ impl Default for CognitiveLoopConfig {
         Self {
             encoder_config: PredictiveEncoderConfig::default(),
             cfc_config: CfCConfig::default(),
-            hdc_ltc_config: HdcLtcBridgeConfig::default(),
+            hdc_ltc_config: HdcLtcBridgeConfig {
+                hdc_dim: 2048,
+                adaptive_dim: Some(crate::hdc_ltc_bridge::AdaptiveDimConfig::default()),
+                ..HdcLtcBridgeConfig::default()
+            },
             temporal_backend: TemporalBackend::default(),
             learning_threshold: 0.05,
             buffer_size: 1000,
@@ -3261,6 +3265,13 @@ impl TemporalNetwork {
         }
     }
 
+    /// Adaptively resize HDC dimension based on prediction error (HdcLtc only)
+    fn maybe_resize(&mut self, current_error: f32) {
+        if let Self::HdcLtc(bridge) = self {
+            bridge.maybe_resize(current_error);
+        }
+    }
+
     /// Check if using HdcLtc backend
     fn is_hdc_ltc(&self) -> bool {
         matches!(self, Self::HdcLtc(_))
@@ -3938,6 +3949,9 @@ impl CognitiveLoopService {
 
         // Update state diversity from CfC
         self.stats.ltc_consciousness = self.temporal_network.state_diversity();
+
+        // Adaptive HDC dimension: resize if error demands it
+        self.temporal_network.maybe_resize(prediction_error);
 
         // Update coherence metrics in stats
         self.stats.temporal_coherence = self.coherence_bridge.smoothed_coherence();

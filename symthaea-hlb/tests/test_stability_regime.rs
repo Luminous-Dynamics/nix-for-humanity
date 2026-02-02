@@ -244,3 +244,75 @@ fn test_global_cycle_increments() {
     processor.process_input(&input, 0.1, 0.1);
     assert_eq!(processor.global_cycle(), 2);
 }
+
+#[test]
+fn test_crystallized_primitives_lower_variance() {
+    // Crystallized primitives should produce more stable (lower variance) CfC
+    // outputs than fluid/plastic ones because their high attractor_strength (0.95)
+    // snaps the neuron state back toward a fixed point, while plastic primitives
+    // (attractor_strength 0.5) drift more freely with each input.
+
+    let config = StabilityRegimeConfig::default();
+
+    // --- Crystallized primitive: force regime + warm up with 60 activations ---
+    let prim_c = make_prim("FORCE", PrimitiveTier::Physical);
+    let mut cfc_crystallized = CfCPrimitive::new(prim_c, &config, 42);
+
+    // Warm up: feed the same input 60 times so the primitive would naturally
+    // crystallize (needs 50 activations). We also manually set the regime to
+    // ensure it is Crystallized for the measurement phase.
+    let warmup_input = ContinuousHV::random(16_384, 1001);
+    let crystallized_params = config.params(StabilityRegimeType::Crystallized);
+    for _ in 0..60 {
+        cfc_crystallized.evolve(0.1, &warmup_input, crystallized_params);
+    }
+    cfc_crystallized.regime = StabilityRegimeType::Crystallized;
+    cfc_crystallized.total_activation_count = 60;
+
+    // --- Fresh plastic primitive (no warmup) ---
+    let prim_p = make_prim("PLAN", PrimitiveTier::Strategic);
+    let mut cfc_plastic = CfCPrimitive::new(prim_p, &config, 77);
+    let plastic_params = config.params(StabilityRegimeType::Plastic);
+
+    // --- Measurement phase: feed 10 varied inputs and record activations ---
+    let mut crystallized_activations = Vec::new();
+    let mut plastic_activations = Vec::new();
+
+    for seed in 2000..2010u64 {
+        let probe = ContinuousHV::random(16_384, seed);
+
+        let act_c = cfc_crystallized.evolve(0.1, &probe, crystallized_params);
+        crystallized_activations.push(act_c);
+
+        let act_p = cfc_plastic.evolve(0.1, &probe, plastic_params);
+        plastic_activations.push(act_p);
+    }
+
+    // Compute variance: Var(X) = E[X^2] - E[X]^2
+    let variance = |vals: &[f64]| -> f64 {
+        let n = vals.len() as f64;
+        let mean = vals.iter().sum::<f64>() / n;
+        let mean_sq = vals.iter().map(|v| v * v).sum::<f64>() / n;
+        mean_sq - mean * mean
+    };
+
+    let var_crystallized = variance(&crystallized_activations);
+    let var_plastic = variance(&plastic_activations);
+
+    println!(
+        "Crystallized activations: {:?}\n  variance = {}",
+        crystallized_activations, var_crystallized
+    );
+    println!(
+        "Plastic activations: {:?}\n  variance = {}",
+        plastic_activations, var_plastic
+    );
+
+    assert!(
+        var_crystallized < var_plastic,
+        "Crystallized variance ({:.6}) should be lower than plastic variance ({:.6}). \
+         Crystallized primitives snap back to their attractor, producing more stable outputs.",
+        var_crystallized,
+        var_plastic,
+    );
+}

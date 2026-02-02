@@ -658,6 +658,15 @@ impl ConsciousnessProbeV2 {
         })
     }
 
+    /// Convert a concept text to HV16 via BGE-M3 + probe projection
+    ///
+    /// This is useful for operations that need raw HDC vectors, such as
+    /// binding/bundling experiments (H2 hypothesis testing).
+    pub fn concept_to_hv(&mut self, text: &str) -> Result<HV16> {
+        let packed = self.bridge.encode_to_hdc(text)?;
+        Ok(packed_to_hv16(&packed))
+    }
+
     /// Probe an entire corpus of concepts from their text
     ///
     /// This is the main batch processing entry point.

@@ -44,6 +44,8 @@ use tracing::debug;
 use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot, TemporalBackend};
 use symthaea::language::{LLMOrgan, LLMOrganConfig, LLMQuery, QueryType, OllamaBackend};
 use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot};
+use symthaea::consciousness::{CompositionalityEngine, create_compositionality_engine};
+use symthaea::hdc::primitive_system::PrimitiveSystem;
 
 // Voice output (optional)
 #[cfg(feature = "voice-tts")]
@@ -114,6 +116,9 @@ struct ReplState {
 
     /// Current temporal backend
     temporal_backend: TemporalBackend,
+
+    /// Compositionality engine for interactive primitive composition
+    compositionality: CompositionalityEngine,
 
     /// Tokio runtime for async LLM calls
     runtime: tokio::runtime::Runtime,
@@ -193,6 +198,10 @@ impl ReplState {
             None
         };
 
+        // Initialize compositionality engine
+        let primitive_system = std::sync::Arc::new(PrimitiveSystem::new());
+        let compositionality = create_compositionality_engine(primitive_system, None);
+
         // Build a tokio runtime for async LLM calls
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -211,6 +220,7 @@ impl ReplState {
             cycles_per_input,
             total_interactions: 0,
             temporal_backend,
+            compositionality,
             runtime,
         })
     }
@@ -520,6 +530,9 @@ fn display_banner() {
     println!("    /voice      - Display voice output status");
     println!("    /reset      - Reset cognitive state");
     println!("    /help       - Show this help");
+    println!("    /primitives - List available primitives");
+    println!("    /compositions - List composed primitives");
+    println!("    compose <op> <a> <b> - Compose primitives (sequential|parallel|fallback)");
     println!("    /quit       - Exit the REPL");
     println!("    !<cmd>      - Execute action through Motor Cortex");
     println!();
@@ -668,6 +681,72 @@ fn main() -> Result<()> {
                 {
                     println!("\n  Voice Output Status: Not Available");
                     println!("  Compile with --features voice-tts to enable\n");
+                }
+                continue;
+            }
+            "/primitives" => {
+                println!("\n  Available primitives:");
+                println!("    Any string can be used as a primitive name.");
+                println!("    Base primitives are created on-demand from their name.");
+                let compositions = state.compositionality.get_all_compositions();
+                if !compositions.is_empty() {
+                    println!("\n  Composed primitives (also usable as operands):");
+                    for c in &compositions {
+                        println!("    {}", c.id);
+                    }
+                }
+                println!();
+                continue;
+            }
+            "/compositions" => {
+                let compositions = state.compositionality.get_all_compositions();
+                if compositions.is_empty() {
+                    println!("\n  No compositions yet. Use 'compose' to create some.\n");
+                } else {
+                    println!("\n  Composed Primitives ({}):", compositions.len());
+                    for c in &compositions {
+                        println!("    {} [{}]", c.name, c.id);
+                        println!("      Type:  {:?}", c.composition_type);
+                        println!("      Phi:   {:.4}", c.metadata.expected_phi_contribution);
+                        println!("      Depth: {}", c.metadata.depth);
+                        println!("      Desc:  {}", c.metadata.description);
+                    }
+                    let stats = state.compositionality.get_stats();
+                    println!("\n  Stats: {} total, avg depth {:.1}", stats.total_compositions, stats.avg_depth);
+                    println!();
+                }
+                continue;
+            }
+            _ if input.starts_with("compose ") => {
+                let parts: Vec<&str> = input.split_whitespace().collect();
+                if parts.len() < 4 {
+                    println!("\n  Usage: compose <sequential|parallel|fallback> <prim1> <prim2>\n");
+                    continue;
+                }
+                let op = parts[1];
+                let a = parts[2];
+                let b = parts[3];
+                let result = match op {
+                    "sequential" | "seq" => state.compositionality.compose_sequential(a, b),
+                    "parallel" | "par" => state.compositionality.compose_parallel(a, b),
+                    "fallback" | "fall" => state.compositionality.compose_fallback(a, b, 0.5),
+                    _ => {
+                        println!("\n  Unknown operator '{}'. Use: sequential, parallel, fallback\n", op);
+                        continue;
+                    }
+                };
+                match result {
+                    Ok(composed) => {
+                        println!("\n  Composed: {}", composed.name);
+                        println!("    ID:        {}", composed.id);
+                        println!("    Phi:       {:.4}", composed.metadata.expected_phi_contribution);
+                        println!("    Coherence: {:.4} (depth {})", 1.0 / composed.metadata.depth as f32, composed.metadata.depth);
+                        println!("    Desc:      {}", composed.metadata.description);
+                        println!();
+                    }
+                    Err(e) => {
+                        println!("\n  Composition error: {}\n", e);
+                    }
                 }
                 continue;
             }
