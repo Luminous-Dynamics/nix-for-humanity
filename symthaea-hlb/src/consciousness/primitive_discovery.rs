@@ -748,6 +748,37 @@ impl PrimitiveDiscoveryService {
         true
     }
 
+    /// Seed neighbor exploration from a crystallized primitive's encoding.
+    ///
+    /// When a primitive crystallizes (becomes stable), we use its HDC vector
+    /// to discover nearby variants and compositions. This is lightweight:
+    /// it creates a small set of mutated neighbors and queues them for
+    /// evaluation in the next discovery cycle.
+    pub fn seed_neighbor_exploration(&mut self, primitive_name: &str, encoding: &HV16) {
+        // Generate a few neighbors by flipping small subsets of bits
+        let num_neighbors = 3;
+        for i in 0..num_neighbors {
+            let seed = self.random_u64().wrapping_add(i as u64);
+            // XOR with a sparse random HV to create a neighbor
+            let noise = HV16::random(seed);
+            let neighbor = encoding.bind(&noise);
+
+            let name = format!("{}_NEIGHBOR_{:04x}", primitive_name, seed & 0xFFFF);
+            let phi_score = self.estimate_phi(&neighbor);
+
+            if phi_score >= self.config.min_phi_threshold {
+                let discovery = DiscoveredPrimitive::new(
+                    name,
+                    PrimitiveTier::Compositional,
+                    DiscoverySource::Evolution,
+                    neighbor,
+                    phi_score,
+                );
+                self.pending.push_back(discovery);
+            }
+        }
+    }
+
     /// Record a reasoning trace for pattern detection
     pub fn record_reasoning_trace(&mut self, primitives_used: &[&str], result_encoding: &HV16) {
         self.pattern_detector.record_trace(primitives_used, result_encoding);
