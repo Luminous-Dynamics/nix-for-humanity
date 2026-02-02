@@ -80,6 +80,9 @@ use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
 use crate::consciousness::stability_regime::StabilityRegimeProcessor;
 use symthaea_core::hdc::phi_topology_validation::real_hv_to_hv16;
 
+#[cfg(feature = "neural-bridge")]
+use crate::perception::NeuralBridge;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TEMPORAL BACKEND SELECTION
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3406,6 +3409,13 @@ pub struct CognitiveLoopService {
     /// Stability regime processor: CfC dynamics for primitives
     /// Frequently-used primitives crystallize, rarely-used stay fluid
     stability_regime: StabilityRegimeProcessor,
+
+    /// Neural bridge for projecting pre-computed embeddings (e.g. BGE-M3)
+    /// directly into HDC space via a trained linear probe.
+    /// Only available when the `neural-bridge` feature is enabled and
+    /// probe weights exist on disk.
+    #[cfg(feature = "neural-bridge")]
+    neural_bridge: Option<NeuralBridge>,
 }
 
 impl CognitiveLoopService {
@@ -3516,12 +3526,145 @@ impl CognitiveLoopService {
             fep_lr_boost: 1.0,
             coherence_tracker: ConversationCoherenceTracker::new(0.3),
             stability_regime: StabilityRegimeProcessor::new(),
+            #[cfg(feature = "neural-bridge")]
+            neural_bridge: {
+                let probe_path = std::path::Path::new("models/neural_bridge/probe_weights.npy");
+                if probe_path.exists() {
+                    match NeuralBridge::load(probe_path) {
+                        Ok(nb) => {
+                            tracing::info!(
+                                input_dim = nb.input_dim(),
+                                "Neural bridge loaded from {}",
+                                probe_path.display()
+                            );
+                            Some(nb)
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to load neural bridge: {e}");
+                            None
+                        }
+                    }
+                } else {
+                    tracing::debug!("No probe weights at {}, neural bridge disabled", probe_path.display());
+                    None
+                }
+            },
         })
     }
 
     /// Get the current temporal backend type
     pub fn temporal_backend(&self) -> TemporalBackend {
         self.temporal_network.backend_type()
+    }
+
+    /// Process a pre-computed text embedding through the neural bridge and
+    /// cognitive loop.
+    ///
+    /// Pipeline: embedding (e.g. BGE-M3 768-d) → NeuralBridge linear probe
+    /// → 16384-d HDC vector → compress → CfC temporal processing → CycleResult.
+    ///
+    /// This bypasses the text-based HDC encoder and instead uses a trained
+    /// probe to project dense embeddings directly into HDC space, giving
+    /// the cognitive loop access to rich semantic representations.
+    ///
+    /// # Arguments
+    ///
+    /// * `embedding` - Pre-computed embedding vector (dimension must match
+    ///   the probe's input_dim, e.g. 768 for BGE-M3 or 1024 for BGE-M3
+    ///   dense).
+    ///
+    /// # Returns
+    ///
+    /// * `CycleResult` on success, or an error if the neural bridge is not
+    ///   loaded or the embedding dimension is wrong.
+    #[cfg(feature = "neural-bridge")]
+    pub fn process_text_input(&mut self, embedding: &[f32]) -> Result<CycleResult> {
+        use symthaea_core::hdc::real_hv::RealHV;
+
+        let bridge = self.neural_bridge.as_ref()
+            .ok_or_else(|| anyhow::anyhow!(
+                "Neural bridge not loaded (no probe weights found)"
+            ))?;
+
+        let cycle_start = Instant::now();
+        self.stats.total_cycles += 1;
+
+        // 1. Project embedding → continuous HDC vector (16384-d)
+        let hdc_continuous = bridge.project(embedding)?;
+
+        // 2. Wrap as RealHV so we can reuse compress_for_ltc
+        let hdv = RealHV::from_vec(hdc_continuous);
+
+        // 3. Compress HDC → CfC input dimension via random projection
+        let compressed_state = self.encoder.compress_for_ltc(
+            &hdv,
+            self.config.cfc_config.input_dim,
+        );
+
+        // 4. Convert to ndarray and step the temporal network
+        let input_array = Array1::from_vec(compressed_state.clone());
+        let delta_t = self.config.cfc_config.delta_t;
+        let _ = self.temporal_network.step(&input_array, delta_t);
+
+        // 5. Multi-scale prediction
+        let prediction = self.get_multi_scale_prediction(&input_array);
+
+        // 6. Read CfC output state
+        let output = self.temporal_network.read_state()
+            .map(|arr| arr.to_vec())
+            .unwrap_or_else(|_| vec![0.0; self.config.cfc_config.num_neurons]);
+
+        // 7. Feed prediction back to encoder for next cycle
+        self.encoder.set_prediction(prediction.clone());
+
+        // 8. Compute prediction error against previous prediction
+        let prediction_error = if let Some(ref prev) = self.last_prediction {
+            let n = compressed_state.len().min(prev.len());
+            if n == 0 {
+                0.0
+            } else {
+                compressed_state[..n].iter()
+                    .zip(prev[..n].iter())
+                    .map(|(a, b)| (a - b).powi(2))
+                    .sum::<f32>()
+                    / n as f32
+            }
+        } else {
+            0.0
+        };
+
+        // 9. Store experience
+        self.create_experience(&compressed_state, &prediction, prediction_error);
+
+        // 10. Learning step: consolidate periodically
+        let mut learning_occurred = false;
+        let mut training_loss = None;
+        if self.config.enable_consolidation && self.stats.total_cycles % 50 == 0 {
+            if let Ok(loss) = self.consolidate() {
+                if loss > 0.0 {
+                    learning_occurred = true;
+                    training_loss = Some(loss);
+                }
+            }
+        }
+
+        // 11. Update error history
+        self.error_history.push_back(prediction_error);
+        if self.error_history.len() > 100 {
+            self.error_history.pop_front();
+        }
+        self.stats.avg_prediction_error = self.error_history.iter().sum::<f32>()
+            / self.error_history.len().max(1) as f32;
+
+        Ok(CycleResult {
+            output,
+            prediction_error,
+            attention_state: HashMap::new(), // No text-based attention for embedding input
+            detected_primitives: Vec::new(), // No text primitives for embedding input
+            learning_occurred,
+            training_loss,
+            cycle_time_us: u64::try_from(cycle_start.elapsed().as_micros()).unwrap_or(u64::MAX),
+        })
     }
 
     /// Run one cognitive cycle (the core loop)

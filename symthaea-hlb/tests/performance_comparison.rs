@@ -236,7 +236,7 @@ fn performance_comparison_cfc_vs_hdc_ltc() {
     // At sub-100μs per step (release builds), measurement noise dominates.
     // In debug builds overhead is <15%, but release optimizations shift the baseline.
     // Use abs() since genesis init can sometimes be _faster_ due to cache effects.
-    let threshold = if cfc_random_us < 100.0 { 100.0 } else { 50.0 };
+    let threshold = if cfc_rand_us < 100.0 { 100.0 } else { 50.0 };
     assert!(
         cfc_overhead.abs() < threshold,
         "CfC genesis forward-pass overhead {:.1}% exceeds {}% threshold",

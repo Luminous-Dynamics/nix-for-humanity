@@ -41,7 +41,7 @@ use tracing::{info, warn, Level};
 #[cfg(feature = "voice-tts")]
 use tracing::debug;
 
-use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot, TemporalBackend};
+use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, TemporalBackend};
 use symthaea::language::{LLMOrgan, LLMOrganConfig, LLMQuery, QueryType, OllamaBackend};
 use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot};
 use symthaea::consciousness::{CompositionalityEngine, create_compositionality_engine};
@@ -315,7 +315,7 @@ impl ReplState {
             snapshot.pattern,
         );
 
-        // Generate response using LLM with async backend (Ollama with simulation fallback)
+        // Generate response using LLM with streaming output (tokens appear as they arrive)
         let query = LLMQuery {
             query_type: QueryType::Conversation,
             content: input.to_string(),
@@ -323,7 +323,50 @@ impl ReplState {
             system_prompt: Some(system_prompt),
             params: None,
         };
-        let response = self.runtime.block_on(self.llm.query_async(query));
+
+        // Print the metrics header before streaming begins
+        let phi_bar = create_bar(snapshot.unified_phi, 10);
+        let coherence_bar = create_bar(snapshot.temporal_coherence, 10);
+        let flow_indicator = if snapshot.in_flow { "FLOW" } else { "----" };
+        let depth_char = match snapshot.cognitive_depth {
+            symthaea::cognitive_loop::CognitiveDepth::Reflex => 'R',
+            symthaea::cognitive_loop::CognitiveDepth::Cortical => 'C',
+            symthaea::cognitive_loop::CognitiveDepth::DeepThought => 'D',
+        };
+
+        // Stream tokens to stdout as they arrive
+        let mut first_token = true;
+        let mut on_token = |token: &str| {
+            if first_token {
+                // Print header right before first token
+                print!(
+                    "\n[Phi:{:.2}|{}] [Coh:{:.2}|{}] [{flow_indicator}] [D:{depth_char}]\n\n",
+                    snapshot.unified_phi, phi_bar,
+                    snapshot.temporal_coherence, coherence_bar,
+                );
+                first_token = false;
+            }
+            print!("{}", token);
+            let _ = io::stdout().flush();
+        };
+
+        let response = self.runtime.block_on(
+            self.llm.query_streaming_async(query, &mut on_token)
+        );
+
+        // Print timing after stream completes
+        let elapsed = start.elapsed();
+        if first_token {
+            // No tokens were streamed (empty response or header not yet printed)
+            print!(
+                "\n[Phi:{:.2}|{}] [Coh:{:.2}|{}] [{flow_indicator}] [D:{depth_char}] [{}ms]\n\n{}",
+                snapshot.unified_phi, phi_bar,
+                snapshot.temporal_coherence, coherence_bar,
+                elapsed.as_millis(),
+                response.text,
+            );
+        }
+        println!("\n[{}ms]", elapsed.as_millis());
 
         // Add assistant response to history
         self.history.push(format!("Assistant: {}", response.text));
@@ -333,9 +376,7 @@ impl ReplState {
             self.history.drain(0..10);
         }
 
-        let elapsed = start.elapsed();
-
-        Ok(format_response(&response.text, &snapshot, elapsed.as_millis() as u64))
+        Ok(response.text)
     }
 
     /// Display consciousness metrics
@@ -478,25 +519,6 @@ impl ReplState {
             }
         }
     }
-}
-
-/// Format the response with consciousness metrics header
-fn format_response(text: &str, snapshot: &ConsciousnessSnapshot, elapsed_ms: u64) -> String {
-    let phi_bar = create_bar(snapshot.unified_phi, 10);
-    let coherence_bar = create_bar(snapshot.temporal_coherence, 10);
-
-    let flow_indicator = if snapshot.in_flow { "FLOW" } else { "----" };
-    let depth_char = match snapshot.cognitive_depth {
-        symthaea::cognitive_loop::CognitiveDepth::Reflex => 'R',
-        symthaea::cognitive_loop::CognitiveDepth::Cortical => 'C',
-        symthaea::cognitive_loop::CognitiveDepth::DeepThought => 'D',
-    };
-
-    format!(
-        "[Phi:{:.2}|{}] [Coh:{:.2}|{}] [{flow_indicator}] [D:{depth_char}] [{elapsed_ms}ms]\n\n{text}",
-        snapshot.unified_phi, phi_bar,
-        snapshot.temporal_coherence, coherence_bar,
-    )
 }
 
 /// Create a simple ASCII progress bar
@@ -758,19 +780,14 @@ fn main() -> Result<()> {
             _ => {}
         }
 
-        // Process through cognitive pipeline
+        // Process through cognitive pipeline (streaming output happens inside process())
         match state.process(input) {
-            Ok(response) => {
-                println!("\n{}\n", response);
+            Ok(response_text) => {
+                println!();
 
                 // Voice output if enabled
                 if state.voice_enabled {
-                    // Get text without the metrics header
-                    let text_start = response.find("\n\n").map(|i| i + 2).unwrap_or(0);
-                    let text_only = &response[text_start..];
-
-                    // Speak with consciousness-modulated prosody
-                    state.speak(text_only);
+                    state.speak(&response_text);
                 }
             }
             Err(e) => {

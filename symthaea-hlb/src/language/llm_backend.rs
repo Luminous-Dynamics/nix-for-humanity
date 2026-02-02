@@ -44,6 +44,22 @@ pub trait LLMBackend: Send + Sync {
     /// Check if the backend is available/healthy.
     async fn is_available(&self) -> bool;
 
+    /// Generate a streaming response, calling `on_token` for each token as it arrives.
+    ///
+    /// Returns the full concatenated response. The default implementation falls back
+    /// to the non-streaming `generate` method.
+    async fn generate_streaming(
+        &self,
+        prompt: &str,
+        params: &GenerationParams,
+        on_token: &mut (dyn for<'a> FnMut(&'a str) + Send),
+    ) -> Result<String> {
+        let result = self.generate(prompt, params).await?;
+        let cloned = result.clone();
+        on_token(&cloned);
+        Ok(result)
+    }
+
     /// Get the backend name for logging.
     fn name(&self) -> &str;
 }
@@ -168,6 +184,85 @@ impl LLMBackend for OllamaBackend {
             .map_err(|e| anyhow::anyhow!("Failed to parse Ollama response: {}", e))?;
 
         Ok(ollama_response.response)
+    }
+
+    async fn generate_streaming(
+        &self,
+        prompt: &str,
+        params: &GenerationParams,
+        on_token: &mut (dyn for<'a> FnMut(&'a str) + Send),
+    ) -> Result<String> {
+        let url = format!("{}/api/generate", self.base_url);
+
+        let request_body = OllamaRequest {
+            model: &self.model,
+            prompt,
+            system: params.system_prompt.as_deref(),
+            stream: true,
+            options: OllamaOptions {
+                temperature: params.temperature,
+                num_predict: params.max_tokens,
+            },
+        };
+
+        let response = self.client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("Ollama streaming request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            anyhow::bail!("Ollama returned {}: {}", status, body);
+        }
+
+        // Read chunks as they arrive from the network and process line by line.
+        // Ollama sends one JSON object per line: {"response":"token","done":false}\n
+        let mut full_response = String::new();
+        let mut buffer = Vec::new();
+
+        let mut stream = response;
+        while let Some(chunk) = stream.chunk().await
+            .map_err(|e| anyhow::anyhow!("Failed to read Ollama stream chunk: {}", e))?
+        {
+            buffer.extend_from_slice(&chunk);
+
+            // Process complete lines from the buffer
+            while let Some(newline_pos) = buffer.iter().position(|&b| b == b'\n') {
+                let line_bytes: Vec<u8> = buffer.drain(..=newline_pos).collect();
+                let line = String::from_utf8_lossy(&line_bytes);
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
+                if let Ok(parsed) = serde_json::from_str::<OllamaResponse>(line) {
+                    let token = parsed.response;
+                    if !token.is_empty() {
+                        full_response.push_str(&token);
+                        on_token(&token);
+                    }
+                }
+            }
+        }
+
+        // Process any remaining data in buffer (last line may lack trailing newline)
+        if !buffer.is_empty() {
+            let line = String::from_utf8_lossy(&buffer);
+            let line = line.trim();
+            if !line.is_empty() {
+                if let Ok(parsed) = serde_json::from_str::<OllamaResponse>(line) {
+                    let token = parsed.response;
+                    if !token.is_empty() {
+                        full_response.push_str(&token);
+                        on_token(&token);
+                    }
+                }
+            }
+        }
+
+        Ok(full_response)
     }
 
     async fn is_available(&self) -> bool {

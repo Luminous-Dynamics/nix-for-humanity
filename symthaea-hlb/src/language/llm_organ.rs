@@ -358,6 +358,72 @@ impl LLMOrgan {
         self.query(query)
     }
 
+    /// Streaming async query that calls `on_token` for each token as it arrives.
+    ///
+    /// Falls back to non-streaming if the backend does not support streaming
+    /// or if no backend is configured.
+    pub async fn query_streaming_async(
+        &mut self,
+        query: LLMQuery,
+        on_token: &mut (dyn for<'a> FnMut(&'a str) + Send),
+    ) -> LLMGenerationResult {
+        use super::llm_backend::GenerationParams;
+
+        if let Some(ref backend) = self.backend {
+            let start = std::time::Instant::now();
+            let params = GenerationParams {
+                temperature: query.params.as_ref()
+                    .and_then(|p| p.temperature)
+                    .unwrap_or(self.config.temperature),
+                max_tokens: query.params.as_ref()
+                    .and_then(|p| p.max_length)
+                    .unwrap_or(self.config.max_generation_length),
+                system_prompt: query.system_prompt.clone(),
+            };
+
+            match backend.generate_streaming(&query.content, &params, on_token).await {
+                Ok(text) => {
+                    let generation_time_ms = start.elapsed().as_secs_f64() * 1000.0;
+                    self.stats.queries_processed += 1;
+                    let tokens_generated = text.split_whitespace().count();
+                    self.stats.tokens_generated += tokens_generated as u64;
+
+                    let n = self.stats.queries_processed as f64;
+                    self.stats.avg_generation_time_ms =
+                        (self.stats.avg_generation_time_ms * (n - 1.0) + generation_time_ms) / n;
+
+                    let embedding = self.text_to_embedding(&text);
+
+                    if self.config.memory_enabled {
+                        self.conversation_history.push_back(ConversationMessage::user(&query.content));
+                        self.conversation_history.push_back(ConversationMessage::assistant(&text));
+                        while self.conversation_history.len() > 100 {
+                            self.conversation_history.pop_front();
+                        }
+                    }
+
+                    return LLMGenerationResult {
+                        text,
+                        confidence: 0.9,
+                        tokens_generated,
+                        generation_time_ms,
+                        embedding,
+                        finish_reason: FinishReason::EndOfSequence,
+                    };
+                }
+                Err(e) => {
+                    self.stats.errors += 1;
+                    eprintln!("LLM streaming error, falling back to simulation: {}", e);
+                }
+            }
+        }
+
+        // Fallback: use non-streaming simulation
+        let result = self.query(query);
+        on_token(&result.text);
+        result
+    }
+
     /// Process a query
     pub fn query(&mut self, query: LLMQuery) -> LLMGenerationResult {
         let start = std::time::Instant::now();
