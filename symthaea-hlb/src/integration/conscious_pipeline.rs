@@ -294,10 +294,10 @@ impl ConsciousPipeline {
     }
 
     /// Start a new conversation session
-    pub fn start_session(&mut self) -> String {
-        let session_id = self.memory.start_session();
+    pub fn start_session(&mut self) -> Result<String> {
+        let session_id = self.memory.start_session()?;
         self.session_id = Some(session_id.clone());
-        session_id
+        Ok(session_id)
     }
 
     /// Resume an existing session
@@ -727,7 +727,7 @@ impl ConsciousPipeline {
     ) -> Result<()> {
         // Ensure we have an active session
         if self.session_id.is_none() {
-            self.start_session();
+            self.start_session()?;
         }
 
         // Add user turn (convert f64 to f32 for memory API)
