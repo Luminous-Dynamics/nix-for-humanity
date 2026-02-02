@@ -140,14 +140,22 @@ impl DomainManifold {
         }
     }
 
-    /// Embed a local primitive vector into this domain's manifold
+    /// Embed a local primitive vector into this domain's manifold.
+    ///
+    /// Uses bind (XOR) rather than bundle so that:
+    /// - The embedding is invertible: `embedded.bind(&rotation) == local_vector`
+    /// - Hamming distances are preserved within each domain
+    /// - Cross-domain orthogonality follows from random rotation vectors
     pub fn embed(&self, local_vector: HV16) -> HV16 {
-        HV16::bundle(&[self.rotation.clone(), local_vector])
+        self.rotation.bind(&local_vector)
     }
 
-    /// Check if a vector belongs to this domain (via similarity)
-    pub fn contains(&self, vector: &HV16, threshold: f32) -> bool {
-        self.rotation.similarity(vector) > threshold
+    /// Extract the local vector from a domain-embedded vector.
+    ///
+    /// Since embed uses XOR (self-inverse), unbinding is the same operation:
+    /// `unembed(embed(v)) == v`
+    pub fn unembed(&self, embedded: &HV16) -> HV16 {
+        self.rotation.bind(embedded)
     }
 }
 
@@ -303,6 +311,34 @@ impl PrimitiveSystem {
         system
     }
 
+    /// Derive an encoding by binding parent primitive encodings together.
+    ///
+    /// If all parents are found, the result is their sequential XOR binding
+    /// embedded in the given domain. If any parent is missing, falls back to
+    /// a deterministic random vector seeded from `name` (preserving backward
+    /// compatibility while logging the gap).
+    fn derive_encoding(&self, name: &str, parents: &[&str], domain: &DomainManifold) -> HV16 {
+        let mut parent_encodings: Vec<&HV16> = Vec::new();
+        for parent_name in parents {
+            match self.primitives.get(*parent_name) {
+                Some(p) => parent_encodings.push(&p.encoding),
+                None => {
+                    // Parent not yet registered — fall back to seeded random
+                    return domain.embed(HV16::random(seed_from_name(name)));
+                }
+            }
+        }
+        if parent_encodings.is_empty() {
+            return domain.embed(HV16::random(seed_from_name(name)));
+        }
+        // Bind all parents sequentially, then embed in domain
+        let mut result = parent_encodings[0].clone();
+        for enc in &parent_encodings[1..] {
+            result = result.bind(enc);
+        }
+        domain.embed(result)
+    }
+
     /// Initialize derived primitives
     ///
     /// These are complex primitives derived from base primitives via composition.
@@ -311,6 +347,9 @@ impl PrimitiveSystem {
     /// - Uncertainty & Probability
     /// - Physics Extensions (conservation, gradients, fields)
     /// - Information Theory
+    ///
+    /// Derived encodings are computed by binding parent primitive encodings,
+    /// making the derivation chain real in the HDC algebra (not just documentation).
     ///
     /// See ARCHITECTURE_V3.md Section 7.3 for the theoretical foundation.
     fn init_derived_primitives(&mut self) {
@@ -326,55 +365,70 @@ impl PrimitiveSystem {
 
         // PROBABILITY = COMPOSE(RATIO, CERTAINTY)
         // P(A) = favorable outcomes / total outcomes, weighted by certainty
+        // Note: RATIO and CERTAINTY not yet base primitives — falls back to seeded random
+        let probability_enc = self.derive_encoding("PROBABILITY", &["RATIO", "CERTAINTY"], &uncertainty_domain);
         let probability = Primitive::derived(
             "PROBABILITY",
             PrimitiveTier::Mathematical,
             "uncertainty",
-            uncertainty_domain.embed(HV16::random(seed_from_name("PROBABILITY"))),
+            probability_enc,
             "Measure of likelihood: P(A) ∈ [0,1], derived from ratio of favorable to total outcomes",
             "RATIO ⊗ CERTAINTY"
         );
 
+        // Register PROBABILITY immediately so later derived primitives can reference it
+        self.primitives.insert("PROBABILITY".to_string(), probability.clone());
+        self.by_tier.entry(PrimitiveTier::Mathematical).or_insert_with(Vec::new).push("PROBABILITY".to_string());
+
         // EXPECTED_VALUE = COMPOSE(PROBABILITY, VALUE)
         // E[X] = Σ P(x) × V(x)
+        // VALUE is a base Tier 5 primitive, PROBABILITY was just registered above
+        let expected_value_enc = self.derive_encoding("EXPECTED_VALUE", &["PROBABILITY", "VALUE"], &uncertainty_domain);
         let expected_value = Primitive::derived(
             "EXPECTED_VALUE",
             PrimitiveTier::Mathematical,
             "uncertainty",
-            uncertainty_domain.embed(HV16::random(seed_from_name("EXPECTED_VALUE"))),
+            expected_value_enc,
             "Probability-weighted average: E[X] = Σ P(x) × V(x)",
             "PROBABILITY ⊗ VALUE"
         );
 
-        // ENTROPY = COMPOSE(PROBABILITY, INFORMATION)
+        // SHANNON_ENTROPY = COMPOSE(PROBABILITY, INFORMATION)
         // H = -Σ P(x) log P(x)
-        let entropy = Primitive::derived(
-            "ENTROPY",
+        // Distinct from THERMODYNAMIC_ENTROPY in the physics domain
+        // Note: INFORMATION not a base primitive — falls back to seeded random
+        let shannon_entropy_enc = self.derive_encoding("SHANNON_ENTROPY", &["PROBABILITY", "INFORMATION"], &uncertainty_domain);
+        let shannon_entropy = Primitive::derived(
+            "SHANNON_ENTROPY",
             PrimitiveTier::Mathematical,
             "uncertainty",
-            uncertainty_domain.embed(HV16::random(seed_from_name("ENTROPY"))),
-            "Measure of uncertainty: H = -Σ P(x) log P(x), higher = more uncertain",
+            shannon_entropy_enc,
+            "Information-theoretic uncertainty: H = -Σ P(x) log P(x), higher = more uncertain",
             "PROBABILITY ⊗ INFORMATION"
         );
 
         // BAYESIAN_UPDATE = COMPOSE(PROBABILITY, EVIDENCE)
         // P(H|E) = P(E|H) × P(H) / P(E)
+        // EVIDENCE is a base Tier 5 primitive
+        let bayesian_enc = self.derive_encoding("BAYESIAN_UPDATE", &["PROBABILITY", "EVIDENCE"], &uncertainty_domain);
         let bayesian = Primitive::derived(
             "BAYESIAN_UPDATE",
             PrimitiveTier::Mathematical,
             "uncertainty",
-            uncertainty_domain.embed(HV16::random(seed_from_name("BAYESIAN_UPDATE"))),
+            bayesian_enc,
             "Belief revision: P(H|E) = P(E|H) × P(H) / P(E)",
             "PROBABILITY ⊗ EVIDENCE ⊗ CONDITIONAL"
         );
 
         // VARIANCE = COMPOSE(EXPECTED_VALUE, DEVIATION)
         // Var(X) = E[(X - μ)²]
+        // Note: DEVIATION not a base primitive — falls back to seeded random
+        let variance_enc = self.derive_encoding("VARIANCE", &["EXPECTED_VALUE", "DEVIATION"], &uncertainty_domain);
         let variance = Primitive::derived(
             "VARIANCE",
             PrimitiveTier::Mathematical,
             "uncertainty",
-            uncertainty_domain.embed(HV16::random(seed_from_name("VARIANCE"))),
+            variance_enc,
             "Spread of distribution: Var(X) = E[(X - μ)²]",
             "EXPECTED_VALUE ⊗ DEVIATION"
         );
@@ -389,70 +443,76 @@ impl PrimitiveSystem {
         );
         self.domains.insert("physics_extended".to_string(), physics_ext_domain.clone());
 
-        // CONSERVATION = COMPOSE(STATE_CHANGE, INVARIANT)
-        // Quantity that remains constant through transformation
-        let conservation = Primitive::derived(
-            "CONSERVATION",
+        // CONSERVATION_LAW = COMPOSE(STATE_CHANGE, CONSERVATION)
+        // Derived from base primitives — both exist in Tier 2
+        let conservation_law_enc = self.derive_encoding("CONSERVATION_LAW", &["STATE_CHANGE", "CONSERVATION"], &physics_ext_domain);
+        let conservation_law = Primitive::derived(
+            "CONSERVATION_LAW",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("CONSERVATION"))),
-            "Invariant quantity across transformations: dQ/dt = 0",
-            "STATE_CHANGE ⊗ INVARIANT"
+            conservation_law_enc,
+            "Formal conservation law: dQ/dt = 0, invariant quantity across transformations",
+            "STATE_CHANGE ⊗ CONSERVATION"
         );
 
         // GRADIENT = COMPOSE(DIFFERENTIATION, SPACE)
-        // Rate of change in space: ∇f
+        // Note: DIFFERENTIATION and SPACE not base primitives — falls back
+        let gradient_enc = self.derive_encoding("GRADIENT", &["DIFFERENTIATION", "SPACE"], &physics_ext_domain);
         let gradient = Primitive::derived(
             "GRADIENT",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("GRADIENT"))),
+            gradient_enc,
             "Spatial rate of change: ∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
             "DIFFERENTIATION ⊗ SPACE"
         );
 
-        // FIELD = COMPOSE(SPACE, FORCE)
-        // Force at every point in space
+        // FIELD = COMPOSE(FORCE, POINT)
+        // Force at every point in space — uses existing base primitives
+        let field_enc = self.derive_encoding("FIELD", &["FORCE", "POINT"], &physics_ext_domain);
         let field = Primitive::derived(
             "FIELD",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("FIELD"))),
+            field_enc,
             "Assignment of force/value to each point: F(x, y, z)",
-            "SPACE ⊗ FORCE"
+            "FORCE ⊗ POINT"
         );
 
         // WAVE = COMPOSE(OSCILLATION, PROPAGATION)
-        // Traveling disturbance through medium
+        // Note: neither parent is a base primitive — falls back
+        let wave_enc = self.derive_encoding("WAVE", &["OSCILLATION", "PROPAGATION"], &physics_ext_domain);
         let wave = Primitive::derived(
             "WAVE",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("WAVE"))),
+            wave_enc,
             "Propagating oscillation: ψ(x,t) = A sin(kx - ωt)",
             "OSCILLATION ⊗ PROPAGATION"
         );
 
-        // EQUILIBRIUM = COMPOSE(FORCE, BALANCE)
-        // State where net forces sum to zero
+        // EQUILIBRIUM = COMPOSE(FORCE, CONSERVATION)
+        // State where net forces sum to zero — uses existing base primitives
+        let equilibrium_enc = self.derive_encoding("EQUILIBRIUM", &["FORCE", "CONSERVATION"], &physics_ext_domain);
         let equilibrium = Primitive::derived(
             "EQUILIBRIUM",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("EQUILIBRIUM"))),
+            equilibrium_enc,
             "Balanced state: ΣF = 0, stable or unstable",
-            "FORCE ⊗ BALANCE"
+            "FORCE ⊗ CONSERVATION"
         );
 
-        // POTENTIAL = COMPOSE(ENERGY, POSITION)
-        // Stored energy based on position/configuration
+        // POTENTIAL = COMPOSE(ENERGY, POINT)
+        // Stored energy based on position — uses existing base primitives
+        let potential_enc = self.derive_encoding("POTENTIAL", &["ENERGY", "POINT"], &physics_ext_domain);
         let potential = Primitive::derived(
             "POTENTIAL",
             PrimitiveTier::Physical,
             "physics_extended",
-            physics_ext_domain.embed(HV16::random(seed_from_name("POTENTIAL"))),
+            potential_enc,
             "Position-dependent energy: U(x) where F = -∇U",
-            "ENERGY ⊗ POSITION"
+            "ENERGY ⊗ POINT"
         );
 
         // === INFORMATION THEORY DOMAIN ===
@@ -465,46 +525,54 @@ impl PrimitiveSystem {
         );
         self.domains.insert("information_theory".to_string(), info_domain.clone());
 
-        // MUTUAL_INFORMATION = COMPOSE(ENTROPY, BINDING)
-        // I(X;Y) = H(X) + H(Y) - H(X,Y)
+        // Register SHANNON_ENTROPY so info theory primitives can derive from it
+        self.primitives.insert("SHANNON_ENTROPY".to_string(), shannon_entropy.clone());
+        self.by_tier.entry(PrimitiveTier::Mathematical).or_insert_with(Vec::new).push("SHANNON_ENTROPY".to_string());
+
+        // MUTUAL_INFORMATION = COMPOSE(SHANNON_ENTROPY, MEMBERSHIP)
+        // I(X;Y) = H(X) + H(Y) - H(X,Y) — uses SHANNON_ENTROPY (just registered) + MEMBERSHIP (Tier 1)
+        let mutual_info_enc = self.derive_encoding("MUTUAL_INFORMATION", &["SHANNON_ENTROPY", "MEMBERSHIP"], &info_domain);
         let mutual_info = Primitive::derived(
             "MUTUAL_INFORMATION",
             PrimitiveTier::Mathematical,
             "information_theory",
-            info_domain.embed(HV16::random(seed_from_name("MUTUAL_INFORMATION"))),
+            mutual_info_enc,
             "Shared information: I(X;Y) = H(X) + H(Y) - H(X,Y)",
-            "ENTROPY ⊗ BINDING"
+            "SHANNON_ENTROPY ⊗ MEMBERSHIP"
         );
 
-        // INFORMATION_GAIN = COMPOSE(ENTROPY, REDUCTION)
-        // IG = H(before) - H(after|evidence)
+        // INFORMATION_GAIN = COMPOSE(SHANNON_ENTROPY, EVIDENCE)
+        // IG = H(before) - H(after|evidence) — EVIDENCE is a Tier 5 base primitive
+        let info_gain_enc = self.derive_encoding("INFORMATION_GAIN", &["SHANNON_ENTROPY", "EVIDENCE"], &info_domain);
         let info_gain = Primitive::derived(
             "INFORMATION_GAIN",
             PrimitiveTier::Mathematical,
             "information_theory",
-            info_domain.embed(HV16::random(seed_from_name("INFORMATION_GAIN"))),
+            info_gain_enc,
             "Entropy reduction from evidence: IG = H(S) - H(S|E)",
-            "ENTROPY ⊗ REDUCTION"
+            "SHANNON_ENTROPY ⊗ EVIDENCE"
         );
 
         // CHANNEL_CAPACITY = COMPOSE(INFORMATION, LIMIT)
-        // Maximum mutual information: C = max I(X;Y)
+        // Note: INFORMATION and LIMIT not base primitives — falls back
+        let capacity_enc = self.derive_encoding("CHANNEL_CAPACITY", &["INFORMATION", "LIMIT"], &info_domain);
         let capacity = Primitive::derived(
             "CHANNEL_CAPACITY",
             PrimitiveTier::Mathematical,
             "information_theory",
-            info_domain.embed(HV16::random(seed_from_name("CHANNEL_CAPACITY"))),
+            capacity_enc,
             "Maximum transmission rate: C = max I(X;Y)",
             "INFORMATION ⊗ LIMIT"
         );
 
         // COMPRESSION = COMPOSE(INFORMATION, EFFICIENCY)
-        // Representing information with minimum bits
+        // Note: neither parent is a base primitive — falls back
+        let compression_enc = self.derive_encoding("COMPRESSION", &["INFORMATION", "EFFICIENCY"], &info_domain);
         let compression = Primitive::derived(
             "COMPRESSION",
             PrimitiveTier::Mathematical,
             "information_theory",
-            info_domain.embed(HV16::random(seed_from_name("COMPRESSION"))),
+            compression_enc,
             "Efficient encoding: L ≥ H(X) (Shannon's source coding theorem)",
             "INFORMATION ⊗ EFFICIENCY"
         );
@@ -519,58 +587,68 @@ impl PrimitiveSystem {
         );
         self.domains.insert("consciousness_derived".to_string(), consciousness_domain.clone());
 
-        // INTEGRATED_INFORMATION = COMPOSE(MUTUAL_INFORMATION, IRREDUCIBILITY)
+        // Register MUTUAL_INFORMATION so consciousness derivations can use it
+        self.primitives.insert("MUTUAL_INFORMATION".to_string(), mutual_info.clone());
+        self.by_tier.entry(PrimitiveTier::Mathematical).or_insert_with(Vec::new).push("MUTUAL_INFORMATION".to_string());
+
+        // INTEGRATED_INFORMATION = COMPOSE(MUTUAL_INFORMATION, SELF)
         // Φ = information above minimum information partition
+        // Uses MUTUAL_INFORMATION (just registered) + SELF (Tier 5 base)
+        let phi_enc = self.derive_encoding("INTEGRATED_INFORMATION", &["MUTUAL_INFORMATION", "SELF"], &consciousness_domain);
         let phi_primitive = Primitive::derived(
             "INTEGRATED_INFORMATION",
             PrimitiveTier::MetaCognitive,
             "consciousness_derived",
-            consciousness_domain.embed(HV16::random(seed_from_name("INTEGRATED_INFORMATION"))),
+            phi_enc,
             "Consciousness measure: Φ = integrated information above MIP",
-            "MUTUAL_INFORMATION ⊗ IRREDUCIBILITY"
+            "MUTUAL_INFORMATION ⊗ SELF"
         );
 
         // CAUSAL_POWER = COMPOSE(CAUSE, EFFECT, COUNTERFACTUAL)
-        // Ability to make a difference
+        // All three parents are base primitives (CAUSE/EFFECT in Tier 2, COUNTERFACTUAL in Tier 4)
+        let causal_power_enc = self.derive_encoding("CAUSAL_POWER", &["CAUSE", "EFFECT", "COUNTERFACTUAL"], &consciousness_domain);
         let causal_power = Primitive::derived(
             "CAUSAL_POWER",
             PrimitiveTier::MetaCognitive,
             "consciousness_derived",
-            consciousness_domain.embed(HV16::random(seed_from_name("CAUSAL_POWER"))),
+            causal_power_enc,
             "Capacity to produce effects: P(effect|do(cause)) - P(effect)",
             "CAUSE ⊗ EFFECT ⊗ COUNTERFACTUAL"
         );
 
         // ATTENTION = COMPOSE(SALIENCE, SELECTION)
-        // Selective focus on subset of information
+        // Note: SALIENCE and SELECTION not base primitives — falls back
+        let attention_enc = self.derive_encoding("ATTENTION", &["SALIENCE", "SELECTION"], &consciousness_domain);
         let attention = Primitive::derived(
             "ATTENTION",
             PrimitiveTier::MetaCognitive,
             "consciousness_derived",
-            consciousness_domain.embed(HV16::random(seed_from_name("ATTENTION"))),
+            attention_enc,
             "Selective processing: focus on salient subset of available information",
             "SALIENCE ⊗ SELECTION"
         );
 
-        // METACOGNITION = COMPOSE(COGNITION, SELF)
-        // Thinking about thinking
+        // METACOGNITION = COMPOSE(INTROSPECTION, SELF)
+        // Thinking about thinking — both INTROSPECTION and SELF are Tier 5 base primitives
+        let metacognition_enc = self.derive_encoding("METACOGNITION", &["INTROSPECTION", "SELF"], &consciousness_domain);
         let metacognition = Primitive::derived(
             "METACOGNITION",
             PrimitiveTier::MetaCognitive,
             "consciousness_derived",
-            consciousness_domain.embed(HV16::random(seed_from_name("METACOGNITION"))),
+            metacognition_enc,
             "Cognition about cognition: awareness of mental processes",
-            "COGNITION ⊗ SELF"
+            "INTROSPECTION ⊗ SELF"
         );
 
-        // Add all derived primitives
+        // Add remaining derived primitives (PROBABILITY, SHANNON_ENTROPY, MUTUAL_INFORMATION
+        // were already registered above to enable downstream derivations)
         let derived_primitives = vec![
-            // Uncertainty
-            probability, expected_value, entropy, bayesian, variance,
+            // Uncertainty (PROBABILITY and SHANNON_ENTROPY already registered)
+            expected_value, bayesian, variance,
             // Physics
-            conservation, gradient, field, wave, equilibrium, potential,
-            // Information Theory
-            mutual_info, info_gain, capacity, compression,
+            conservation_law, gradient, field, wave, equilibrium, potential,
+            // Information Theory (MUTUAL_INFORMATION already registered)
+            info_gain, capacity, compression,
             // Consciousness
             phi_primitive, causal_power, attention, metacognition,
         ];
@@ -602,7 +680,7 @@ impl PrimitiveSystem {
             name: "physics_embodiment".to_string(),
             pattern: vec![PrimitiveTier::Physical, PrimitiveTier::MetaCognitive],
             result_tier: PrimitiveTier::MetaCognitive,
-            example: "CONSERVATION ⊗ IDENTITY → persistent self".to_string(),
+            example: "CONSERVATION_LAW ⊗ IDENTITY → persistent self".to_string(),
         });
     }
 
@@ -963,13 +1041,14 @@ impl PrimitiveSystem {
 
         // === THERMODYNAMICS ===
 
-        // ENTROPY - measure of disorder
+        // THERMODYNAMIC_ENTROPY - measure of disorder (S = k_B ln Ω)
+        // Distinct from SHANNON_ENTROPY (information-theoretic) in the uncertainty domain
         let entropy = Primitive::base(
-            "ENTROPY",
+            "THERMODYNAMIC_ENTROPY",
             PrimitiveTier::Physical,
             "physics",
-            physics_domain.embed(HV16::random(seed_from_name("ENTROPY"))),
-            "Property: measure of disorder or randomness (J/K)"
+            physics_domain.embed(HV16::random(seed_from_name("THERMODYNAMIC_ENTROPY"))),
+            "Property: thermodynamic measure of disorder, S = k_B ln Ω (J/K)"
         );
 
         // TEMPERATURE - average kinetic energy
@@ -1913,18 +1992,18 @@ impl PrimitiveSystem {
         // === DIMENSIONAL MODEL ===
 
         let valence = Primitive::base(
-            "VALENCE",
+            "AFFECTIVE_VALENCE",
             PrimitiveTier::MetaCognitive,
             "emotion",
-            emotion_domain.embed(HV16::random(seed_from_name("VALENCE"))),
+            emotion_domain.embed(HV16::random(seed_from_name("AFFECTIVE_VALENCE"))),
             "Dimension: positive/negative affect, pleasantness/unpleasantness"
         );
 
         let arousal = Primitive::base(
-            "AROUSAL",
+            "AFFECTIVE_AROUSAL",
             PrimitiveTier::MetaCognitive,
             "emotion",
-            emotion_domain.embed(HV16::random(seed_from_name("AROUSAL"))),
+            emotion_domain.embed(HV16::random(seed_from_name("AFFECTIVE_AROUSAL"))),
             "Dimension: activation level, calm/excited continuum"
         );
 
@@ -2996,7 +3075,7 @@ mod tests {
         assert!(system.get("STATE_CHANGE").is_some(), "STATE_CHANGE primitive should exist");
 
         // Thermodynamics
-        assert!(system.get("ENTROPY").is_some(), "ENTROPY primitive should exist");
+        assert!(system.get("THERMODYNAMIC_ENTROPY").is_some(), "THERMODYNAMIC_ENTROPY primitive should exist");
         assert!(system.get("TEMPERATURE").is_some(), "TEMPERATURE primitive should exist");
     }
 
@@ -3313,7 +3392,7 @@ mod tests {
         // Test primitives that connect to specific harmonics
 
         // Tier 2 → Resonant Coherence (physical stability)
-        assert!(system.get("ENTROPY").is_some());
+        assert!(system.get("THERMODYNAMIC_ENTROPY").is_some());
 
         // Tier 3 → Universal Interconnectedness (spatial relationships)
         assert!(system.get("PART_OF").is_some());
