@@ -77,7 +77,8 @@ use crate::consciousness::fep_active_inference::{
 use crate::memory::coherence_tracker::ConversationCoherenceTracker;
 
 use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
-use crate::consciousness::stability_regime::StabilityRegimeProcessor;
+use crate::consciousness::stability_regime::{StabilityRegimeProcessor, RegimeTransition};
+use crate::consciousness::primitive_discovery::{PrimitiveDiscoveryService, DiscoveryServiceConfig};
 use symthaea_core::hdc::phi_topology_validation::real_hv_to_hv16;
 
 #[cfg(feature = "neural-bridge")]
