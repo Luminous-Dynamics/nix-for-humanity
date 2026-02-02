@@ -175,7 +175,7 @@ ctrlc = { version = "3.4", optional = true }  # Ctrl+C signal handling
 
 # Shell Sidecar TUI dependencies (optional)
 crossterm = { version = "0.27", optional = true }
-ratatui = { version = "0.29", optional = true }
+ratatui = { version = "0.30", optional = true }
 
 # GUI dependencies (optional) - for symthaea-gui
 eframe = { version = "0.27", optional = true }
