@@ -63,6 +63,9 @@ pub mod multi_modal_integration;
 // Primitive-Consciousness Bridge - connects HDC primitives to consciousness processing
 pub mod primitive_consciousness;
 
+// Stability Regime - CfC neurons for primitives with Crystallized/Plastic/Fluid dynamics
+pub mod stability_regime;
+
 // ============================================================================
 // Modules with external dependencies (cfg-gated)
 // ============================================================================
@@ -318,6 +321,10 @@ pub use primitive_consciousness::{
     PrimitiveConsciousnessState, ActivePrimitive, ActivationReason,
     PrimitiveBinding, ConsciousnessPrimitiveProcessor, ProcessorStats,
     ConsciousnessDecomposer, PrimitiveBindingEngine,
+};
+pub use stability_regime::{
+    StabilityRegimeType, StabilityRegimeConfig, RegimeParams,
+    CfCPrimitive, StabilityRegimeProcessor,
 };
 pub use primitive_reasoning::{
     ReasoningChain, TransformationType, TaskType, TierAwareConfig,
