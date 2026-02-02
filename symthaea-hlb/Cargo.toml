@@ -55,8 +55,8 @@ ndarray = { version = "0.15", features = ["rayon"] }
 nalgebra = "0.33"
 
 # Burn ML Framework (pure Rust) - for semantic encoding
-burn = { version = "0.18", features = ["ndarray"], optional = true }
-burn-ndarray = { version = "0.18", optional = true }
+burn = { version = "0.20", features = ["ndarray"], optional = true }
+burn-ndarray = { version = "0.20", optional = true }
 # ndarray-linalg = "0.16"  # Removed to avoid external BLAS dependency during tests
 
 # Graph structures (for autopoietic consciousness)
@@ -81,7 +81,7 @@ half = { version = "2.6", optional = true }  # f16 support for GPU inference (>=
 # REMOVED: libp2p (declared but never used - 0 integration lines)
 # Architecture: Cortex (Holochain) for trust + Synapse (Iroh) for real-time
 # Iroh 0.95+ has unified the crates - iroh-net is deprecated
-iroh = { version = "0.95", optional = true }
+iroh = { version = "0.96", optional = true }
 
 # Phase 11+: Mycelix Protocol Integration (Deferred to Week 9+)
 uuid = { version = "1.6", features = ["serde", "v4"] }  # Week 3: Enabled for Goal IDs
@@ -91,8 +91,8 @@ uuid = { version = "1.6", features = ["serde", "v4"] }  # Week 3: Enabled for Go
 sha3 = { version = "0.10", optional = true }  # For gradient hashing
 
 # Web Research & Epistemic Verification (Track 6)
-reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
-scraper = "0.18"
+reqwest = { version = "0.13", features = ["json", "rustls"], default-features = false }
+scraper = "0.25"
 html2text = "0.6"
 
 # API server (optional)
@@ -150,7 +150,7 @@ strsim = "0.11"      # Fuzzy string matching for typo tolerance
 
 # Week 12: Perception & Tool Creation
 image = "0.24"       # Image loading and processing
-imageproc = "0.23"   # Computer vision algorithms
+imageproc = "0.26"   # Computer vision algorithms
 tree-sitter = "0.24" # Incremental parsing for code understanding (updated for tree-sitter-nix 0.3.0)
 syn = { version = "2.0", features = ["full", "visit"] }  # Rust syntax parsing (self-analysis)
 ignore = "0.4"       # .gitignore-aware file walking
@@ -178,8 +178,8 @@ crossterm = { version = "0.27", optional = true }
 ratatui = { version = "0.30", optional = true }
 
 # GUI dependencies (optional) - for symthaea-gui
-eframe = { version = "0.27", optional = true }
-egui = { version = "0.27", optional = true }
+eframe = { version = "0.33", optional = true }
+egui = { version = "0.33", optional = true }
 
 # IPC Protocol Enhancements
 rmp-serde = "1.3"            # MessagePack binary protocol (A1)
@@ -536,6 +536,10 @@ harness = false
 name = "neural_bridge"
 harness = false
 required-features = ["neural-bridge"]
+
+[profile.test]
+inherits = "dev"
+opt-level = 1  # HV16 array ops are 10-100x slower at opt-level=0
 
 [profile.release]
 opt-level = 3
