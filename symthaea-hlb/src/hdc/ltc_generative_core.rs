@@ -172,7 +172,7 @@ impl LTCGenerativeCore {
 
         // Cache all primitive embeddings
         for primitive in system.all_primitives() {
-            primitive_embeddings.insert(primitive.name.clone(), primitive.encoding.clone());
+            primitive_embeddings.insert(primitive.name.clone(), primitive.encoding);
         }
 
         Self {
@@ -201,7 +201,7 @@ impl LTCGenerativeCore {
 
         // Initialize context with seed
         self.context.clear();
-        self.context.push_back(seed.clone());
+        self.context.push_back(*seed);
 
         // Decode seed to get starting primitive
         let seed_decoded = self.decoder.decode(seed);
@@ -239,7 +239,7 @@ impl LTCGenerativeCore {
 
             // Update context with new primitive
             if let Some(prim_hv) = self.primitive_embeddings.get(&next_primitive) {
-                self.context.push_back(prim_hv.clone());
+                self.context.push_back(*prim_hv);
                 if self.context.len() > MAX_CONTEXT_LENGTH {
                     self.context.pop_front();
                 }
@@ -501,7 +501,7 @@ impl LTCGenerativeCore {
         self.reset();
         for prim_name in &thought.primitives {
             if let Some(hv) = self.primitive_embeddings.get(prim_name) {
-                self.context.push_back(hv.clone());
+                self.context.push_back(*hv);
             }
         }
 
@@ -571,7 +571,7 @@ impl LTCGenerativeCore {
         let mut total_phi = 0.0;
 
         // Initialize context with seed
-        self.context.push_back(seed.clone());
+        self.context.push_back(*seed);
         if self.context.len() > MAX_CONTEXT_LENGTH {
             self.context.pop_front();
         }

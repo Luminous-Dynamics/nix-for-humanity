@@ -123,7 +123,7 @@ impl HomeManagerBridge {
 
         // Check for nix profile home-manager
         let nix_output = Command::new("nix")
-            .args(&["profile", "list"])
+            .args(["profile", "list"])
             .output();
 
         if let Ok(out) = nix_output {
@@ -317,7 +317,7 @@ impl HomeManagerBridge {
         let prev_id = self.generations[1].id;
 
         let output = Command::new("home-manager")
-            .args(&["switch", "--generation", &prev_id.to_string()])
+            .args(["switch", "--generation", &prev_id.to_string()])
             .output();
 
         match output {
@@ -352,7 +352,7 @@ impl HomeManagerBridge {
     /// Switch to specific generation
     pub fn switch_generation(&mut self, gen_id: u32) -> HomeResult {
         let output = Command::new("home-manager")
-            .args(&["switch", "--generation", &gen_id.to_string()])
+            .args(["switch", "--generation", &gen_id.to_string()])
             .output();
 
         match output {
@@ -387,7 +387,7 @@ impl HomeManagerBridge {
     /// Delete old generations
     pub fn expire_generations(&mut self, keep: usize) -> HomeResult {
         let output = Command::new("home-manager")
-            .args(&["expire-generations", &format!("-{}d", keep)])
+            .args(["expire-generations", &format!("-{}d", keep)])
             .output();
 
         match output {

@@ -178,7 +178,7 @@ impl LTCPacing {
     /// Create pacing from LTC state
     pub fn from_ltc_state(hidden: &[f32], tau: f32) -> Self {
         // Extract features from LTC hidden state
-        let arousal = if hidden.len() > 0 {
+        let arousal = if !hidden.is_empty() {
             hidden.iter().map(|x| x.abs()).sum::<f32>() / hidden.len() as f32
         } else {
             0.5

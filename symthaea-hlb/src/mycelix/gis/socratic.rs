@@ -126,14 +126,11 @@ impl SocraticDefense {
         self.stats.challenges_evaluated += 1;
 
         // 1. Check if belief exists and gather data (immutable access first)
-        let belief_data = match self.beliefs.get(belief_id) {
-            Some(b) => Some((
+        let belief_data = self.beliefs.get(belief_id).map(|b| (
                 b.claim.clone(),
                 b.confidence,
                 b.evidence.clone(),
-            )),
-            None => None,
-        };
+            ));
 
         let (claim, confidence, evidence) = match belief_data {
             Some(data) => data,
@@ -274,8 +271,7 @@ impl SocraticDefense {
             evidence_age: belief.evidence.iter()
                 .filter_map(|e| e.timestamp)
                 .min()
-                .map(|t| SystemTime::now().duration_since(t).ok())
-                .flatten(),
+                .and_then(|t| SystemTime::now().duration_since(t).ok()),
         })
     }
 

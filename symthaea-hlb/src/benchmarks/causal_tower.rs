@@ -1609,9 +1609,9 @@ impl CausalTower {
                 // Bayesian update with semantic prior
                 let prior = semantic_prior;
                 let likelihood = p_forward;
-                let posterior = (prior * likelihood) /
-                    (prior * likelihood + (1.0 - prior) * (1.0 - likelihood));
-                posterior
+
+                (prior * likelihood) /
+                    (prior * likelihood + (1.0 - prior) * (1.0 - likelihood))
             } else {
                 p_forward
             }
@@ -1992,15 +1992,13 @@ impl UltimateEnsemble {
         let features = MetaFeatures::extract(x, y);
 
         // Collect all algorithm results
-        let results = vec![
-            ("EnhancedRECI", self.enhanced_reci.discover(x, y)),
+        let results = [("EnhancedRECI", self.enhanced_reci.discover(x, y)),
             ("RECI", self.reci.discover(x, y)),
             ("IGCI", self.igci.discover(x, y)),
             ("LTC", self.ltc.discover(x, y)),
             ("HDC", self.hdc.discover(x, y)),
             ("LiNGaM", self.lingam.discover(x, y)),
-            ("InfoTheoretic", discover_by_information_theoretic(x, y)),
-        ];
+            ("InfoTheoretic", discover_by_information_theoretic(x, y))];
 
         // Dynamic weights based on data characteristics
         let weights = self.compute_dynamic_weights(&features);

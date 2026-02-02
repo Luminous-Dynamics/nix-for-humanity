@@ -135,7 +135,7 @@ impl ValidationTask {
     pub fn get_inputs(&self, num_cycles: usize) -> Vec<String> {
         match self {
             ValidationTask::SequentialPattern => {
-                let pattern = vec!["install", "configure", "start", "stop"];
+                let pattern = ["install", "configure", "start", "stop"];
                 (0..num_cycles)
                     .map(|i| pattern[i % pattern.len()].to_string())
                     .collect()
@@ -152,11 +152,9 @@ impl ValidationTask {
             }
             ValidationTask::SemanticClusters => {
                 // Clusters of related words
-                let clusters = vec![
-                    vec!["install", "download", "setup", "configure"],
+                let clusters = [vec!["install", "download", "setup", "configure"],
                     vec!["start", "run", "execute", "launch"],
-                    vec!["stop", "kill", "terminate", "halt"],
-                ];
+                    vec!["stop", "kill", "terminate", "halt"]];
                 let mut inputs = Vec::new();
                 for cycle in 0..num_cycles {
                     let cluster = &clusters[cycle / 10 % clusters.len()];
@@ -166,11 +164,9 @@ impl ValidationTask {
             }
             ValidationTask::CausalChains => {
                 // cause -> action -> effect chains
-                let chains = vec![
-                    vec!["need", "install", "have"],
+                let chains = [vec!["need", "install", "have"],
                     vec!["broken", "fix", "working"],
-                    vec!["slow", "optimize", "fast"],
-                ];
+                    vec!["slow", "optimize", "fast"]];
                 let mut inputs = Vec::new();
                 for cycle in 0..num_cycles {
                     let chain = &chains[(cycle / 3) % chains.len()];
@@ -180,8 +176,8 @@ impl ValidationTask {
             }
             ValidationTask::TransferLearning => {
                 // First 50 cycles: train pattern, next 50: test on similar
-                let train_pattern = vec!["install", "configure", "start"];
-                let test_pattern = vec!["download", "setup", "launch"];
+                let train_pattern = ["install", "configure", "start"];
+                let test_pattern = ["download", "setup", "launch"];
                 let mut inputs = Vec::new();
                 for i in 0..num_cycles {
                     if i < num_cycles / 2 {

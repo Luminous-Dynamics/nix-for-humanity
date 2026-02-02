@@ -1865,8 +1865,8 @@ impl ActiveInferenceAgent {
 
         // Update action precision
         let expected = self.model.predict_observation(&self.belief);
-        let expected_phi = expected.get(0).copied().unwrap_or(0.5);
-        let actual_phi = actual_observation.values.get(0).copied().unwrap_or(0.5);
+        let expected_phi = expected.first().copied().unwrap_or(0.5);
+        let actual_phi = actual_observation.values.first().copied().unwrap_or(0.5);
         self.precision.update_from_action(expected_phi, actual_phi, self.timestamp);
     }
 

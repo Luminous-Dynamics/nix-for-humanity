@@ -204,7 +204,7 @@ impl SocialCoherenceField {
 
     /// Calculate collective coherence including local
     pub fn calculate_collective_coherence(&mut self, local_coherence: f32) -> f32 {
-        self.add_contribution(&self.instance_id.clone(), local_coherence as f64);
+        self.add_contribution(self.instance_id.clone(), local_coherence as f64);
         self.field_strength as f32
     }
 
@@ -366,7 +366,7 @@ impl CollectiveLearning {
         let key = format!("{:?}", task);
         self.threshold_observations
             .entry(key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((coherence, success));
     }
 

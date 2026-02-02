@@ -407,9 +407,9 @@ impl DreamEngine {
 
         // Combine into Phi estimate
         // Higher variance + higher integration = higher consciousness
-        let phi = (entropy.max(0.0) * 0.5 + integration * 0.5).clamp(0.0, 1.0);
 
-        phi
+
+        (entropy.max(0.0) * 0.5 + integration * 0.5).clamp(0.0, 1.0)
     }
 }
 

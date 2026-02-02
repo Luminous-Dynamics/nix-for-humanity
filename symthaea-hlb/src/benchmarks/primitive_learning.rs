@@ -191,7 +191,7 @@ impl PrimitiveLearningGate {
 
         // Get HV16 encoding from primitive system
         let hv = if let Some(prim) = self.primitive_system.get(name) {
-            prim.encoding.clone()
+            prim.encoding
         } else {
             // Fallback: hash-based encoding
             HV16::random(Self::name_to_seed(name))

@@ -608,7 +608,7 @@ impl RashomonEngine {
         let conflict_penalty = perspectives
             .iter()
             .flat_map(|p| perspectives.iter().map(move |o| (p, o)))
-            .filter(|(p, o)| std::ptr::eq(*p, *o) == false && p.conflicts_with(o))
+            .filter(|(p, o)| !std::ptr::eq(*p, *o) && p.conflicts_with(o))
             .count() as f32
             / (perspectives.len() * perspectives.len()) as f32;
 

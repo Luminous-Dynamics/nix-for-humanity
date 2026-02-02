@@ -147,12 +147,10 @@ impl AffectiveState {
             } else {
                 EmotionLabel::Melancholic
             }
+        } else if self.arousal > 0.6 {
+            EmotionLabel::Alert
         } else {
-            if self.arousal > 0.6 {
-                EmotionLabel::Alert
-            } else {
-                EmotionLabel::Neutral
-            }
+            EmotionLabel::Neutral
         }
     }
 }

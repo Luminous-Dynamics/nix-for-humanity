@@ -111,12 +111,12 @@ impl FlakeContext {
             return false;
         };
 
-        let current_modified = std::fs::metadata(&path)
+        let current_modified = std::fs::metadata(path)
             .ok()
             .and_then(|m| m.modified().ok());
 
         if current_modified != self.last_modified {
-            if let Err(e) = self.load_from_path(&path) {
+            if let Err(e) = self.load_from_path(path) {
                 self.parse_errors.push(e);
                 return false;
             }
@@ -213,7 +213,7 @@ impl FlakeContext {
             }
             NixValue::Apply(name) => {
                 // e.g., pkgs.firefox -> firefox
-                if let Some(pkg) = name.split('.').last() {
+                if let Some(pkg) = name.split('.').next_back() {
                     packages.insert(pkg.to_string());
                 }
             }

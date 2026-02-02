@@ -76,7 +76,7 @@ impl NixOSCausalAnalyzer {
     pub fn observe(&mut self, variable: &str, value: f64) {
         self.observations
             .entry(variable.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(value);
     }
 
@@ -84,7 +84,7 @@ impl NixOSCausalAnalyzer {
     pub fn observe_batch(&mut self, variable: &str, values: &[f64]) {
         self.observations
             .entry(variable.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .extend_from_slice(values);
     }
 

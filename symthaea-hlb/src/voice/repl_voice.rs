@@ -316,7 +316,7 @@ impl SimpleG2P {
 
             let phonemes = self.word_to_phonemes(word);
 
-            for (_i, &ph) in phonemes.iter().enumerate() {
+            for &ph in phonemes.iter() {
                 // Determine stress from phoneme
                 let stress = if ph.ends_with('1') {
                     1

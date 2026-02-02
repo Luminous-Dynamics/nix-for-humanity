@@ -503,9 +503,9 @@ impl ReplOrchestrator {
             ));
         }
 
-        output.push_str("\n");
+        output.push('\n');
         output.push_str(&result.response);
-        output.push_str("\n");
+        output.push('\n');
 
         output
     }

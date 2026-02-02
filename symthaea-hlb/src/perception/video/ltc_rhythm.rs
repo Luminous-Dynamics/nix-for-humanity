@@ -140,14 +140,13 @@ impl RhythmPrototype {
         // - Velocity shape captures timing differences
         // - Position shape provides baseline consistency
         // - Amplitude/variance handle intensity differences
-        let similarity =
-            0.35 * freq_sim +      // Frequency is king for rhythm
+                // Amplitude characteristics
+
+        0.35 * freq_sim +      // Frequency is king for rhythm
             0.30 * velocity_sim +  // Velocity captures timing
             0.20 * position_sim +  // Position for consistency
             0.10 * var_sim +       // Variance signature
-            0.05 * amp_sim;        // Amplitude characteristics
-
-        similarity
+            0.05 * amp_sim
     }
 
     /// Compute velocity-based trajectory similarity
@@ -512,9 +511,9 @@ impl LtcRhythmDetector {
             let seed = (i as u64).wrapping_mul(0x5851F42D4C957F2D);
             for d in 0..HDC_DIMENSION {
                 let hash = seed.wrapping_mul(d as u64 + 1).wrapping_add(0x14057B7EF767814F);
-                let sign = if hash % 2 == 0 { 1.0 } else { -1.0 };
+                let sign = if hash.is_multiple_of(2) { 1.0 } else { -1.0 };
                 // Sparse: ~10% of dimensions active per feature
-                if hash % 10 == 0 {
+                if hash.is_multiple_of(10) {
                     hdc.values[d] += sign * f;
                 }
             }

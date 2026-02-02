@@ -176,7 +176,7 @@ impl EvolutionCoordinator {
 
         let should_evolve_primitives = match &self.schedule {
             EvolutionSchedule::Interleaved { frequency } => {
-                self.generation % frequency == 0
+                self.generation.is_multiple_of(*frequency)
             }
             EvolutionSchedule::OnPlateau { stall_generations } => {
                 self.detect_plateau(*stall_generations)

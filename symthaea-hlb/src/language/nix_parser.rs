@@ -643,7 +643,7 @@ impl NixConfig {
         }
 
         // No child contains the point, return this node
-        Some(node.clone())
+        Some(*node)
     }
 
     /// Get all named children of a node (excludes syntax tokens like brackets, semicolons)

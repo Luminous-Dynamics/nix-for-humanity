@@ -280,7 +280,7 @@ impl WhatIfSimulator {
             warnings.push("Running services will be restarted if their configuration changed".to_string());
         }
 
-        if args.iter().any(|a| *a == "--upgrade") {
+        if args.contains(&"--upgrade") {
             warnings.push("Channels will be updated first, which may bring in new package versions".to_string());
         }
 

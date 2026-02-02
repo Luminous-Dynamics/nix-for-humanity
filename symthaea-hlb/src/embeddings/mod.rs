@@ -256,7 +256,7 @@ impl HdcBridge {
     fn to_hv16(projected: &[f32]) -> HV16 {
         // Sign threshold: positive -> 1, negative -> 0
         // Then pack into HV16 format
-        let mut bits = vec![0u64; (projected.len() + 63) / 64];
+        let mut bits = vec![0u64; projected.len().div_ceil(64)];
 
         for (i, &val) in projected.iter().enumerate() {
             if val > 0.0 {

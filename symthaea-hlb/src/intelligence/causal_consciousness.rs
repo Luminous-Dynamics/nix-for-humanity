@@ -328,7 +328,7 @@ impl LiveLearningRouter {
     fn adapt_thresholds(&mut self, meta: &MetaFeatures, rule: &str) {
         let lr = self.learning_rate;
 
-        match rule.as_ref() {
+        match rule {
             "high_noise_nonlin" => {
                 // If this rule failed, maybe threshold too low
                 if meta.noise_ratio < self.threshold_adjustments.noise_threshold + 0.1 {

@@ -319,7 +319,7 @@ impl PrimitiveEvolver {
             for _ in 0..tournament_size {
                 let idx = (self.rand_f32() * candidates.len() as f32) as usize % candidates.len();
                 let candidate = &candidates[idx];
-                if best.as_ref().map_or(true, |b| candidate.fitness > b.fitness) {
+                if best.as_ref().is_none_or(|b| candidate.fitness > b.fitness) {
                     best = Some(candidate.clone());
                 }
             }

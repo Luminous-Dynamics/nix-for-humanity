@@ -180,7 +180,7 @@ impl FlakeUpdater {
     /// Check for updates on a specific input
     pub fn check_updates(&mut self, input_name: &str) -> Result<bool, FlakeError> {
         let output = Command::new("nix")
-            .args(&["flake", "update", input_name, "--dry-run"])
+            .args(["flake", "update", input_name, "--dry-run"])
             .current_dir(&self.flake_dir)
             .output()
             .map_err(|e| FlakeError::CommandFailed(e.to_string()))?;
@@ -266,7 +266,7 @@ impl FlakeUpdater {
             .and_then(|i| i.locked_rev.clone());
 
         let output = Command::new("nix")
-            .args(&["flake", "update", input_name])
+            .args(["flake", "update", input_name])
             .current_dir(&self.flake_dir)
             .output()
             .map_err(|e| FlakeError::CommandFailed(e.to_string()))?;
@@ -314,7 +314,7 @@ impl FlakeUpdater {
             .collect();
 
         let output = Command::new("nix")
-            .args(&["flake", "update"])
+            .args(["flake", "update"])
             .current_dir(&self.flake_dir)
             .output()
             .map_err(|e| FlakeError::CommandFailed(e.to_string()))?;

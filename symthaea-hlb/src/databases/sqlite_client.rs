@@ -155,7 +155,7 @@ impl ConsciousnessDatabase for SqliteMemory {
                 record.content,
                 record.valence as f64,
                 record.arousal as f64,
-                record.phi as f64,
+                { record.phi },
                 topics_json,
                 record.metadata,
             ],

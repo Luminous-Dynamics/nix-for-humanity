@@ -268,25 +268,25 @@ impl RealityChecker {
             CorrectionStrategy::ExponentialMovingAverage { alpha } => {
                 // Simple EMA-based bias correction
                 // In production, this would adjust CfC weights
-                let correction = alpha * error;
-                correction
+
+                alpha * error
             }
 
             CorrectionStrategy::GradientDescent { learning_rate } => {
                 // Gradient-based correction
                 // Correction proportional to error
-                let correction = learning_rate * error;
+
                 // In production: lookahead.cfc_mut().adjust_weights(-correction);
-                correction
+                learning_rate * error
             }
 
             CorrectionStrategy::Adaptive { base_rate, max_rate } => {
                 // Adaptive learning rate based on error magnitude
                 let error_ratio = self.error_ema / (self.error_ema + 0.01);
                 let adaptive_rate = base_rate + (max_rate - base_rate) * error_ratio;
-                let correction = adaptive_rate * error;
+
                 // In production: lookahead.cfc_mut().adjust_weights(-correction);
-                correction
+                adaptive_rate * error
             }
         }
     }

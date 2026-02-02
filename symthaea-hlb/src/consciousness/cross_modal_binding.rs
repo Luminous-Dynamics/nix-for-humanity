@@ -101,7 +101,7 @@ impl ModalityChannel {
         if self.temporal_buffer.len() >= self.buffer_capacity {
             self.temporal_buffer.pop_front();
         }
-        self.temporal_buffer.push_back(features.clone());
+        self.temporal_buffer.push_back(features);
         self.features = features;
     }
 
@@ -110,7 +110,7 @@ impl ModalityChannel {
         // For binary HV, attention modulates by probabilistic bit flipping
         // Higher attention = less noise, lower = more noise
         if self.attention >= 0.99 {
-            return self.features.clone();
+            return self.features;
         }
         // Add noise inversely proportional to attention
         let noise_level = (1.0 - self.attention) as f32 * 0.3;
@@ -201,7 +201,7 @@ impl ConvergenceZone {
 
         for modality in &self.source_modalities {
             if let Some(hv) = inputs.get(modality) {
-                vectors.push(hv.clone());
+                vectors.push(*hv);
                 found_count += 1;
             }
         }
@@ -437,7 +437,7 @@ impl CrossModalBinder {
     pub fn add_representation(&mut self, repr: ModalRepresentation) {
         let modality = repr.modality;
 
-        let reps = self.representations.entry(modality).or_insert_with(Vec::new);
+        let reps = self.representations.entry(modality).or_default();
 
         // Maintain max bindings
         if reps.len() >= self.config.max_bindings {

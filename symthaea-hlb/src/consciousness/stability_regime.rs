@@ -25,7 +25,7 @@ use symthaea_core::hdc::HV16;
 
 use crate::dynamics::cfc_coherence::{CfCCoherenceBridge, CoherenceConfig};
 use crate::consciousness::primitive_consciousness::{
-    PrimitiveConsciousnessState, ActivePrimitive, ActivationReason,
+    PrimitiveConsciousnessState, ActivationReason,
     ConsciousnessPrimitiveProcessor,
 };
 

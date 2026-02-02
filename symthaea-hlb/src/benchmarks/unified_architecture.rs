@@ -73,7 +73,7 @@ impl BenchmarkResult {
         let iterations = times_us.len();
         let total_time_us: u64 = times_us.iter().sum();
         let mean_time_us = total_time_us as f64 / iterations as f64;
-        let median_time_us = if iterations % 2 == 0 {
+        let median_time_us = if iterations.is_multiple_of(2) {
             (times_us[iterations / 2 - 1] + times_us[iterations / 2]) as f64 / 2.0
         } else {
             times_us[iterations / 2] as f64

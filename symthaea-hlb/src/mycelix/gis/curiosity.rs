@@ -400,12 +400,12 @@ impl ActiveExplorer {
         };
 
         // Combined score
-        let score = (strategy_base * 0.3 + strategy_learned * 0.3)
+
+
+        (strategy_base * 0.3 + strategy_learned * 0.3)
             * (source_reliability * 0.2 + source_learned * 0.2)
             * latency_penalty
-            * (1.0 + urgency * 0.5);
-
-        score
+            * (1.0 + urgency * 0.5)
     }
 
     /// Execute Socratic decomposition
@@ -582,7 +582,7 @@ impl ActiveExplorer {
         // Update strategy stats
         let strategy_stats = self.strategy_history
             .entry(result.strategy)
-            .or_insert_with(StrategyStats::default);
+            .or_default();
         strategy_stats.record(
             result.success,
             result.confidence,
@@ -592,7 +592,7 @@ impl ActiveExplorer {
         // Update source stats
         let source_stats = self.source_history
             .entry(result.source)
-            .or_insert_with(SourceStats::default);
+            .or_default();
         source_stats.record(
             result.success,
             result.confidence,

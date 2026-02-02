@@ -104,7 +104,7 @@ impl ActivationType {
     pub fn apply(&self, x: f32) -> f32 {
         match self {
             ActivationType::SiLU => x * sigmoid(x),
-            ActivationType::GELU => 0.5 * x * (1.0 + (0.7978845608 * (x + 0.044715 * x.powi(3))).tanh()),
+            ActivationType::GELU => 0.5 * x * (1.0 + (0.797_884_6 * (x + 0.044715 * x.powi(3))).tanh()),
             ActivationType::ReLU => x.max(0.0),
             ActivationType::Tanh => x.tanh(),
             ActivationType::Sigmoid => sigmoid(x),
@@ -117,7 +117,7 @@ impl ActivationType {
     pub fn apply_fast(&self, x: f32) -> f32 {
         match self {
             ActivationType::SiLU => x * fast_sigmoid(x),
-            ActivationType::GELU => 0.5 * x * (1.0 + (0.7978845608 * (x + 0.044715 * x.powi(3))).tanh()),
+            ActivationType::GELU => 0.5 * x * (1.0 + (0.797_884_6 * (x + 0.044715 * x.powi(3))).tanh()),
             ActivationType::ReLU => x.max(0.0),
             ActivationType::Tanh => x.tanh(),
             ActivationType::Sigmoid => fast_sigmoid(x),

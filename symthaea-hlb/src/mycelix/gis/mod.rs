@@ -191,7 +191,7 @@ impl GracefulIgnoranceSystem {
 
             IgnoranceType::KnownUnknown => GracefulResponse::Uncertain {
                 confidence: 0.3,
-                uncertainty_breakdown: detection.uncertainty.clone(),
+                uncertainty_breakdown: detection.uncertainty,
                 caveat: "This is a known unknown - the answer exists but I don't have it".to_string(),
             },
 

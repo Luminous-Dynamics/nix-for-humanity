@@ -840,7 +840,7 @@ impl ReversibilityStudyResults {
             }
         }
 
-        report.push_str("\n");
+        report.push('\n');
 
         // Check for category interaction
         let category_test = self

@@ -552,7 +552,7 @@ impl HolochainCortex {
     /// Vouch for another agent
     pub fn vouch_for(&mut self, agent_key: &AgentPubKey) -> Result<(), CortexError> {
         let local = self.local_agent.as_ref()
-            .ok_or_else(|| CortexError::NoLocalAgent)?
+            .ok_or(CortexError::NoLocalAgent)?
             .clone();
 
         if let Some(info) = self.agent_cache.get_mut(agent_key) {

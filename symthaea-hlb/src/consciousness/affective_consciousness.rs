@@ -83,12 +83,10 @@ impl CoreAffect {
             } else {
                 EmotionCategory::Sadness
             }
+        } else if self.arousal > 0.6 {
+            EmotionCategory::Surprise
         } else {
-            if self.arousal > 0.6 {
-                EmotionCategory::Surprise
-            } else {
-                EmotionCategory::Neutral
-            }
+            EmotionCategory::Neutral
         }
     }
 }

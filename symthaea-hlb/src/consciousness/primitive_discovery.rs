@@ -135,7 +135,7 @@ impl DiscoveredPrimitive {
             self.tier,
             "discovery", // Domain
             domain_hv.bind(&self.encoding),
-            &format!("Discovered primitive via {:?}", self.source),
+            format!("Discovered primitive via {:?}", self.source),
         )
     }
 
@@ -333,7 +333,7 @@ impl PatternDetector {
         // If pattern is significant, record it
         if count >= self.min_occurrences {
             self.detected_patterns.insert(hash, DetectedPattern {
-                encoding: result_encoding.clone(),
+                encoding: *result_encoding,
                 count,
                 context: primitives_used.iter().map(|s| s.to_string()).collect(),
                 suggested_tier: self.infer_tier_hdc(result_encoding, primitives_used),
@@ -351,7 +351,7 @@ impl PatternDetector {
                     name,
                     p.suggested_tier,
                     DiscoverySource::PatternDetection,
-                    p.encoding.clone(),
+                    p.encoding,
                     0.5, // Default phi, needs evaluation
                 )
             })
@@ -401,9 +401,9 @@ impl PatternDetector {
 
             if tier_hvs.len() >= 2 {
                 // Bundle all HVs in this tier to create centroid
-                let mut centroid = tier_hvs[0].clone();
+                let mut centroid = *tier_hvs[0];
                 for hv in &tier_hvs[1..] {
-                    centroid = HV16::bundle(&[centroid.clone(), (*hv).clone()]);
+                    centroid = HV16::bundle(&[centroid, *(*hv)]);
                 }
                 self.tier_centroids.insert(*tier, centroid);
             }

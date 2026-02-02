@@ -67,7 +67,9 @@ impl ConversationCoherenceTracker {
         self.sum_sq_diff += (diff * diff) as f64;
 
         // Degradation detection: EMA dropped below threshold or consecutive drops
-        let degraded = if self.ema_coherence < self.degradation_threshold {
+
+
+        if self.ema_coherence < self.degradation_threshold {
             self.degradation_streak += 1;
             self.degradation_count += 1;
             true
@@ -83,9 +85,7 @@ impl ConversationCoherenceTracker {
         } else {
             self.degradation_streak = 0;
             false
-        };
-
-        degraded
+        }
     }
 
     /// Returns correction urgency in [0.0, 1.0].

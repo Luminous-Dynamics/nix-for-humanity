@@ -254,7 +254,7 @@ impl KeybindingManager {
     }
 
     fn process_emacs(&self, key: KeyEvent) -> EditAction {
-        self.emacs_bindings.get(&key).cloned().unwrap_or_else(|| {
+        self.emacs_bindings.get(&key).cloned().unwrap_or({
             match key {
                 KeyEvent::Char(c) => EditAction::InsertChar(c),
                 _ => EditAction::Noop,
@@ -329,7 +329,7 @@ impl KeybindingManager {
     }
 
     fn process_vim_insert(&self, key: KeyEvent) -> EditAction {
-        self.vim_insert_bindings.get(&key).cloned().unwrap_or_else(|| {
+        self.vim_insert_bindings.get(&key).cloned().unwrap_or({
             match key {
                 KeyEvent::Char(c) => EditAction::InsertChar(c),
                 KeyEvent::Escape => EditAction::EnterNormal,

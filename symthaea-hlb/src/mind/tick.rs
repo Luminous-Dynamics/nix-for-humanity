@@ -175,7 +175,7 @@ impl ContinuousMind {
             return None;
         }
 
-        if self.state.tick % 10 == 0 && !self.working_memory.is_empty() {
+        if self.state.tick.is_multiple_of(10) && !self.working_memory.is_empty() {
             self.stats.outputs_generated += 1;
 
             return Some(MindOutput {

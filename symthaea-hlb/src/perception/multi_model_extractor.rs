@@ -272,7 +272,7 @@ pub fn print_support_summary() {
         };
 
         println!("{:16} │ {:6} │ {:6} │ {:^5} │ {:^6} │ {}",
-                 config.model_id.split('/').last().unwrap_or(&config.model_id),
+                 config.model_id.split('/').next_back().unwrap_or(&config.model_id),
                  config.num_layers,
                  config.hidden_dim,
                  if status.loads { "✓" } else { "-" },

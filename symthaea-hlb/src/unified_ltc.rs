@@ -262,7 +262,7 @@ impl UnifiedLTCConfig {
     /// Create sparse scalar configuration
     pub fn scalar_sparse(num_neurons: usize, input_dim: usize, output_dim: usize, sparsity: f32) -> Self {
         let mut config = Self::scalar(num_neurons, input_dim, output_dim);
-        let mask_row_len = (num_neurons + 63) / 64;
+        let mask_row_len = num_neurons.div_ceil(64);
         config.connectivity = Connectivity::Sparse {
             sparsity,
             mask: vec![0u64; num_neurons * mask_row_len],
@@ -429,7 +429,7 @@ impl UnifiedLTC {
 
         // Update connectivity with generated mask
         let connectivity = if let Some(m) = mask {
-            let mask_row_len = (n + 63) / 64;
+            let mask_row_len = n.div_ceil(64);
             Connectivity::Sparse {
                 sparsity: match &config.connectivity {
                     Connectivity::Sparse { sparsity, .. } => *sparsity,

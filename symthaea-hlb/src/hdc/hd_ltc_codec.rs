@@ -171,6 +171,49 @@ impl HDLTCCodec {
         }
     }
 
+    /// Create a deterministic HD-LTC Codec from a genesis seed.
+    ///
+    /// Uses `genesis.domain(label)` to derive a SHAKE-256 RNG stream so that
+    /// identical seeds and labels always produce identical projection matrices.
+    pub fn from_genesis(
+        config: HDLTCCodecConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        use rand::Rng;
+        let mut rng = genesis.domain(&format!("{label}::hd_ltc_codec"));
+
+        let n = config.ltc_neurons;
+        let d = HDC_DIMENSION;
+
+        let xavier_scale = (6.0 / (n + d) as f32).sqrt();
+
+        let hv_to_ltc_proj: Vec<f32> = (0..(n * d))
+            .map(|_| rng.gen_range(-xavier_scale..xavier_scale))
+            .collect();
+
+        let ltc_to_hv_proj: Vec<f32> = (0..(d * n))
+            .map(|_| rng.gen_range(-xavier_scale..xavier_scale))
+            .collect();
+
+        let hv_to_ltc_bias = vec![0.0; n];
+        let ltc_to_hv_bias = vec![0.0; d];
+
+        Self {
+            config,
+            hv_to_ltc_proj,
+            ltc_to_hv_proj,
+            hv_to_ltc_bias,
+            ltc_to_hv_bias,
+            temporal_context: VecDeque::with_capacity(TEMPORAL_HISTORY),
+            ltc_mean: vec![0.0; n],
+            ltc_var: vec![1.0; n],
+            hv_to_ltc_momentum: vec![0.0; n * d],
+            ltc_to_hv_momentum: vec![0.0; d * n],
+            stats: CodecStats::default(),
+        }
+    }
+
     /// Encode HDC hypervector to LTC neural state
     ///
     /// This is the "inhale" - taking in semantic meaning and preparing for thought.

@@ -233,7 +233,7 @@ impl CurriculumLoader {
         // Simple YAML to JSON conversion for basic cases
         // This handles the subset of YAML we need for curricula
         let json = yaml_to_json(yaml)
-            .map_err(|e| LoadError::YamlError(e))?;
+            .map_err(LoadError::YamlError)?;
         Self::load_from_json(&json)
     }
 

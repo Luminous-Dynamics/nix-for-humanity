@@ -385,8 +385,7 @@ impl ConstraintValidator {
         let mut matched = Vec::new();
 
         for (pattern, constraints) in &self.constraints {
-            if pattern.starts_with('*') {
-                let suffix = &pattern[1..];
+            if let Some(suffix) = pattern.strip_prefix('*') {
                 if path.ends_with(suffix) || path.contains(suffix) {
                     matched.extend(constraints.clone());
                 }
@@ -439,8 +438,8 @@ impl ConstraintValidator {
 
             ConstraintKind::Range { min, max } => {
                 if let Ok(num) = value.trim().parse::<i64>() {
-                    let in_range = min.map_or(true, |m| num >= m)
-                        && max.map_or(true, |m| num <= m);
+                    let in_range = min.is_none_or(|m| num >= m)
+                        && max.is_none_or(|m| num <= m);
                     (in_range, None)
                 } else {
                     (false, Some(Suggestion {

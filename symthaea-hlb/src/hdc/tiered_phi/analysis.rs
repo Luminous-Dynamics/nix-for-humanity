@@ -301,7 +301,7 @@ impl PhiPyramid {
         }
 
         // Partition into clusters and compute average Φ
-        let num_clusters = (n + cluster_size - 1) / cluster_size; // Ceiling division
+        let num_clusters = n.div_ceil(cluster_size); // Ceiling division
         let mut total_phi = 0.0;
         let mut valid_clusters = 0;
 
@@ -848,7 +848,7 @@ impl PhiEntropyAnalyzer {
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         let n = sorted.len();
-        if n % 2 == 0 {
+        if n.is_multiple_of(2) {
             (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
         } else {
             sorted[n / 2]

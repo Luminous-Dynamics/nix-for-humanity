@@ -1728,7 +1728,7 @@ impl PhiModularityAnalyzer {
             let mut sorted: Vec<(usize, f64)> = fiedler.iter().copied().enumerate().collect();
             sorted.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
-            let chunk_size = (n + k - 1) / k;
+            let chunk_size = n.div_ceil(k);
             for (rank, (idx, _)) in sorted.iter().enumerate() {
                 assignments[*idx] = rank / chunk_size;
             }

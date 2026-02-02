@@ -159,7 +159,7 @@ impl PrimitiveConsciousnessState {
             duration: 0,
         };
 
-        self.active_by_tier.entry(tier).or_insert_with(Vec::new).push(active);
+        self.active_by_tier.entry(tier).or_default().push(active);
     }
 
     /// Compute unified encoding from all active primitives
@@ -172,7 +172,7 @@ impl PrimitiveConsciousnessState {
 
         // Collect all encodings for bundling
         let encodings: Vec<HV16> = actives.iter()
-            .map(|a| a.primitive.encoding.clone())
+            .map(|a| a.primitive.encoding)
             .collect();
 
         // Bundle all active primitives
@@ -504,12 +504,12 @@ impl PrimitiveBindingEngine {
     ) -> PrimitiveBinding {
         let result = match binding_type {
             TransformationType::Bind => prim1.encoding.bind(&prim2.encoding),
-            TransformationType::Bundle => HV16::bundle(&[prim1.encoding.clone(), prim2.encoding.clone()]),
+            TransformationType::Bundle => HV16::bundle(&[prim1.encoding, prim2.encoding]),
             TransformationType::Permute => prim1.encoding.permute(1),
             TransformationType::Resonate => {
                 // Resonance amplifies similar patterns
                 let combined = prim1.encoding.bind(&prim2.encoding);
-                HV16::bundle(&[combined, prim1.encoding.clone(), prim2.encoding.clone()])
+                HV16::bundle(&[combined, prim1.encoding, prim2.encoding])
             }
             TransformationType::Abstract => {
                 // Abstract to higher-level - bundle with permutation

@@ -608,7 +608,7 @@ impl KosmicSong {
         }
 
         // Check ignorance type
-        if detection.ignorance_type.is_resolvable() == false {
+        if !detection.ignorance_type.is_resolvable() {
             reasons.push(format!("Unresolvable ignorance: {}", detection.ignorance_type.description()));
         }
 
@@ -748,7 +748,7 @@ impl KosmicSong {
     pub fn resonant_harmony_encoding(&self) -> Option<crate::hdc::HV16> {
         let harmonies_system = SevenHarmonies::new();
         let core_harmony: CoreHarmony = self.resonant_harmony.into();
-        harmonies_system.get(core_harmony).map(|e| e.encoding.clone())
+        harmonies_system.get(core_harmony).map(|e| e.encoding)
     }
 
     // === Private helpers ===

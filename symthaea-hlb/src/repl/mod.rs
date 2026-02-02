@@ -919,8 +919,8 @@ impl ReplSession {
                             self.stats.actions_executed += 1;
                             let output_str = match &outcome.outcome {
                                 ActionOutcome::CommandOutput { stdout, stderr, exit_code } => {
-                                    let stdout_str = String::from_utf8_lossy(&stdout);
-                                    let stderr_str = String::from_utf8_lossy(&stderr);
+                                    let stdout_str = String::from_utf8_lossy(stdout);
+                                    let stderr_str = String::from_utf8_lossy(stderr);
                                     format!(
                                         "Exit code: {}\nStdout: {}\nStderr: {}",
                                         exit_code, stdout_str, stderr_str
@@ -1053,7 +1053,7 @@ impl ReplSession {
             emotional_valence: snapshot.unified_valence,
             emotional_arousal: snapshot.unified_arousal,
             timestamp_ms: uptime,
-            uptime_secs: (uptime / 1000) as u64,
+            uptime_secs: (uptime / 1000),
             total_cycles: self.stats.total_cycles,
             consciousness_level: snapshot.consciousness_level as f64,
             latency_ms: 0,

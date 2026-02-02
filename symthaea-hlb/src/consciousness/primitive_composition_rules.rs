@@ -70,7 +70,7 @@ impl CompositionRule for ConsciousnessRule {
 
     fn compose(&self, hv1: &HV16, hv2: &HV16, _tier1: PrimitiveTier, _tier2: PrimitiveTier) -> HV16 {
         // Bundle first (majority vote preserves both), then bind for uniqueness
-        let bundled = HV16::bundle(&[hv1.clone(), hv2.clone()]);
+        let bundled = HV16::bundle(&[*hv1, *hv2]);
         bundled.bind(&hv1.bind(hv2))
     }
 
@@ -86,7 +86,7 @@ impl CrossTierRule {
     fn tier_distance(tier1: PrimitiveTier, tier2: PrimitiveTier) -> u32 {
         let t1 = tier1 as u32;
         let t2 = tier2 as u32;
-        if t1 > t2 { t1 - t2 } else { t2 - t1 }
+        t1.abs_diff(t2)
     }
 }
 

@@ -943,13 +943,13 @@ impl TieredPhi {
         //
         // Maximum phi ≈ system_info (when partition_info → 0)
         // So normalize by system_info to get relative integration loss
-        let normalized_phi = if system_info > 0.001 {
+
+
+        if system_info > 0.001 {
             (phi / system_info).min(1.0).max(0.0)
         } else {
             0.0
-        };
-
-        normalized_phi
+        }
     }
 
     /// Generate random bipartition mask, avoiding duplicates
@@ -963,9 +963,9 @@ impl TieredPhi {
         let mut attempts = 0;
         loop {
             // Simple PRNG using hash of attempt counter
-            let mut hasher = RandomState::new().build_hasher();
-            (self.stats.total_calculations + attempts).hash(&mut hasher);
-            let random_value = hasher.finish();
+
+
+            let random_value = RandomState::new().hash_one((self.stats.total_calculations + attempts));
 
             // Create bipartition mask (ensure non-trivial)
             // For n >= 63, we use the full u64 range modulo the max value
@@ -1487,7 +1487,7 @@ impl TieredPhi {
                 .iter()
                 .enumerate()
                 .filter(|(i, _)| *i != exclude_idx)
-                .map(|(_, c)| c.clone())
+                .map(|(_, c)| *c)
                 .collect();
 
             // Compute Φ without this component

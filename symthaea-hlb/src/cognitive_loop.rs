@@ -77,6 +77,8 @@ use crate::consciousness::fep_active_inference::{
 use crate::memory::coherence_tracker::ConversationCoherenceTracker;
 
 use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
+use crate::consciousness::stability_regime::StabilityRegimeProcessor;
+use symthaea_core::hdc::phi_topology_validation::real_hv_to_hv16;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TEMPORAL BACKEND SELECTION
@@ -3389,6 +3391,10 @@ pub struct CognitiveLoopService {
 
     /// Conversation coherence tracker for degradation detection
     coherence_tracker: ConversationCoherenceTracker,
+
+    /// Stability regime processor: CfC dynamics for primitives
+    /// Frequently-used primitives crystallize, rarely-used stay fluid
+    stability_regime: StabilityRegimeProcessor,
 }
 
 impl CognitiveLoopService {
@@ -3498,6 +3504,7 @@ impl CognitiveLoopService {
             fep_learning_signal: 0.0,
             fep_lr_boost: 1.0,
             coherence_tracker: ConversationCoherenceTracker::new(0.3),
+            stability_regime: StabilityRegimeProcessor::new(),
         })
     }
 
@@ -3956,6 +3963,17 @@ impl CognitiveLoopService {
 
         // Apply memory context boost to confidence
         self.prediction_confidence = (self.prediction_confidence + memory_context_boost).clamp(0.0, 1.0);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // STABILITY REGIME: Update primitive CfC dynamics
+        // ═══════════════════════════════════════════════════════════════════════
+        // Convert the HDC encoding to HV16 and run through stability regime processor.
+        // Frequently-used primitives crystallize, rarely-used stay fluid.
+        {
+            let hv16_input = real_hv_to_hv16(&encoding_result.hdv);
+            let timestamp = self.stats.total_cycles as f64 * delta_t as f64;
+            let _regime_state = self.stability_regime.process_input(&hv16_input, delta_t, timestamp);
+        }
 
         // ═══════════════════════════════════════════════════════════════════════
         // CLOSED LEARNING LOOP: Update with cycle results

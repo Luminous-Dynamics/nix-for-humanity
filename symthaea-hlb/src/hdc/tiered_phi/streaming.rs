@@ -436,7 +436,7 @@ impl StreamingPhiGradient {
             let remaining: Vec<HV16> = components.iter()
                 .enumerate()
                 .filter(|(j, _)| *j != i)
-                .map(|(_, c)| c.clone())
+                .map(|(_, c)| *c)
                 .collect();
 
             // Use fresh calculator to avoid state contamination

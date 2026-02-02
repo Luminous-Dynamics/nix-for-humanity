@@ -744,7 +744,7 @@ impl ZKEIGRangeProof {
     /// Create a range proof for an EIG score
     pub fn create(eig: f32) -> Option<Self> {
         // EIG must be in [0, 1]
-        if eig < 0.0 || eig > 1.0 {
+        if !(0.0..=1.0).contains(&eig) {
             return None;
         }
 

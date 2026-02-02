@@ -181,7 +181,7 @@ impl Sandbox {
         let start = Instant::now();
 
         let output = Command::new("nixos-rebuild")
-            .args(&[
+            .args([
                 "dry-build",
                 "-I", &format!("nixos-config={}", sandbox_config.display()),
             ])

@@ -1068,7 +1068,7 @@ impl SleepSentinel {
         self.stats.samples_processed += 1;
 
         // Update metrics periodically (every 10 samples for efficiency)
-        if self.sample_count % 10 == 0 && self.frontal_history.len() >= 50 {
+        if self.sample_count.is_multiple_of(10) && self.frontal_history.len() >= 50 {
             self.update_metrics();
         }
 

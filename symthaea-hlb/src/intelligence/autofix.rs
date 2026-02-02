@@ -327,7 +327,7 @@ impl AutoFixer {
                     let fix = Fix::new(format!("Add {} to packages", var_name))
                         .replace(
                             "environment.systemPackages = with pkgs; [",
-                            &format!("environment.systemPackages = with pkgs; [\n    {}", var_name)
+                            format!("environment.systemPackages = with pkgs; [\n    {}", var_name)
                         )
                         .with_confidence(0.6);
 
@@ -350,15 +350,15 @@ impl AutoFixer {
                 // Suggest mkForce
                 let fix = Fix::new(format!("Use mkForce to override {}", option_path))
                     .replace(
-                        &format!("{} =", option_path),
-                        &format!("{} = lib.mkForce", option_path)
+                        format!("{} =", option_path),
+                        format!("{} = lib.mkForce", option_path)
                     )
                     .with_confidence(0.85);
 
-                let alt = Fix::new(format!("Use mkDefault for lower priority"))
+                let alt = Fix::new("Use mkDefault for lower priority".to_string())
                     .replace(
-                        &format!("{} =", option_path),
-                        &format!("{} = lib.mkDefault", option_path)
+                        format!("{} =", option_path),
+                        format!("{} = lib.mkDefault", option_path)
                     )
                     .with_confidence(0.7);
 
@@ -427,7 +427,7 @@ impl AutoFixer {
 
         for (old, new) in &mappings {
             if error.contains(old) {
-                let fix = Fix::new(format!("Replace deprecated option"))
+                let fix = Fix::new("Replace deprecated option".to_string())
                     .replace(*old, *new)
                     .with_confidence(0.95)
                     .safe_to_apply();

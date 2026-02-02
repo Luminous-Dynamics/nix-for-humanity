@@ -98,7 +98,7 @@ fn is_dangerous_program(program: &str) -> bool {
         .and_then(|n| n.to_str())
         .unwrap_or(program);
 
-    DANGEROUS_PROGRAMS.iter().any(|&d| basename == d)
+    DANGEROUS_PROGRAMS.contains(&basename)
 }
 
 /// SafetyGateway ties together fast-path regex safety and slower

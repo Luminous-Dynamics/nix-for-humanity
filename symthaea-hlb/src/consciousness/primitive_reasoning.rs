@@ -151,7 +151,7 @@ impl ReasoningChain {
     /// Create a new reasoning chain starting from a question
     pub fn new(question: HV16) -> Self {
         Self {
-            question: question.clone(),
+            question,
             executions: Vec::new(),
             current_state: question,
             total_phi: 0.0,
@@ -165,16 +165,16 @@ impl ReasoningChain {
         primitive: &Primitive,
         transformation: TransformationType,
     ) -> Result<()> {
-        let input = self.current_state.clone();
+        let input = self.current_state;
 
         // Apply transformation
         let output = match transformation {
             TransformationType::Bind => input.bind(&primitive.encoding),
-            TransformationType::Bundle => HV16::bundle(&[input, primitive.encoding.clone()]),
+            TransformationType::Bundle => HV16::bundle(&[input, primitive.encoding]),
             TransformationType::Permute => input.permute(1),
             TransformationType::Resonate => {
                 let combined = input.bind(&primitive.encoding);
-                HV16::bundle(&[combined, input.clone(), primitive.encoding.clone()])
+                HV16::bundle(&[combined, input, primitive.encoding])
             }
             TransformationType::Abstract => {
                 let elevated = input.permute(2);
@@ -193,7 +193,7 @@ impl ReasoningChain {
         let execution = PrimitiveExecution {
             primitive: primitive.clone(),
             input,
-            output: output.clone(),
+            output,
             transformation,
             phi_contribution,
             timestamp: std::time::SystemTime::now()
@@ -296,7 +296,7 @@ impl AdaptivePrimitiveSelector {
     pub fn update_from_chain(&mut self, chain: &ReasoningChain, task: TaskType) {
         for exec in &chain.executions {
             let key = (exec.primitive.name.clone(), task);
-            let stats = self.stats.entry(key).or_insert_with(PrimitiveTaskStats::default);
+            let stats = self.stats.entry(key).or_default();
 
             stats.usage_count += 1;
             stats.total_phi += exec.phi_contribution;
@@ -312,7 +312,7 @@ impl AdaptivePrimitiveSelector {
     /// Record a single observation for a primitive (evolution_bridge compatibility)
     pub fn record_observation(&mut self, primitive_name: &str, task: TaskType, phi: f64) {
         let key = (primitive_name.to_string(), task);
-        let stats = self.stats.entry(key).or_insert_with(PrimitiveTaskStats::default);
+        let stats = self.stats.entry(key).or_default();
         stats.usage_count += 1;
         stats.total_phi += phi;
         stats.avg_phi = stats.total_phi / stats.usage_count as f64;
@@ -688,13 +688,13 @@ impl PrimitiveReasoner {
         // Find the best matching relation
         let mut best_match: Option<(String, f32)> = None;
 
-        for (_b, strength_ab) in &concept_a.relations {
+        for strength_ab in concept_a.relations.values() {
             // Look for similar relation from C
             for (d, strength_cd) in &concept_c.relations {
                 let similarity = (strength_ab - strength_cd).abs();
                 if similarity < 0.2 {
                     let confidence = 1.0 - similarity;
-                    if best_match.as_ref().map_or(true, |(_, c)| confidence > *c) {
+                    if best_match.as_ref().is_none_or(|(_, c)| confidence > *c) {
                         best_match = Some((d.clone(), confidence));
                     }
                 }

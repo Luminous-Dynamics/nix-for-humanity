@@ -257,7 +257,7 @@ impl ConversationMemory {
         self.turn_count += 1;
 
         // Serialize embedding if provided
-        let embedding_blob: Option<Vec<u8>> = embedding.map(|e| bincode::serialize(&e.values).ok()).flatten();
+        let embedding_blob: Option<Vec<u8>> = embedding.and_then(|e| bincode::serialize(&e.values).ok());
 
         self.conn.execute(
             r#"

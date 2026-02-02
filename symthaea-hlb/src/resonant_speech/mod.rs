@@ -319,7 +319,7 @@ impl ResonantSpeech {
     /// Simplify content for high cognitive load
     fn simplify(&self, content: &str, max_sentences: usize) -> String {
         let sentences: Vec<&str> = content
-            .split(|c| c == '.' || c == '!' || c == '?')
+            .split(['.', '!', '?'])
             .filter(|s| !s.trim().is_empty())
             .take(max_sentences)
             .collect();

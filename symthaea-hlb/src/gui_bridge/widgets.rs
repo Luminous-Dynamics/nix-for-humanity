@@ -437,7 +437,7 @@ impl GenerationTimeline {
                 let parts: Vec<&str> = line.split("->").collect();
                 if parts.len() == 2 {
                     let name = parts[0].trim().split('-').next().unwrap_or("").to_string();
-                    let old_ver = parts[0].trim().split('-').last().unwrap_or("").to_string();
+                    let old_ver = parts[0].trim().split('-').next_back().unwrap_or("").to_string();
                     let new_ver = parts[1].trim().to_string();
                     changes.upgraded.push((name, old_ver, new_ver));
                 }

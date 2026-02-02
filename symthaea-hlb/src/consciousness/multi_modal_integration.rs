@@ -307,7 +307,7 @@ impl MultiModalIntegrator {
         // Update channels with new inputs
         for input in inputs {
             if let Some(channel) = self.channels.get_mut(&input.modality) {
-                channel.update(input.features.clone());
+                channel.update(input.features);
                 channel.attention = (channel.attention + input.confidence * self.config.attention_learning_rate)
                     .min(1.0);
             }
@@ -337,13 +337,13 @@ impl MultiModalIntegrator {
 
         if !amodal_zones.is_empty() {
             let zone_vectors: Vec<HV16> = amodal_zones.iter()
-                .map(|z| z.integrated.clone())
+                .map(|z| z.integrated)
                 .collect();
             self.unified = HV16::bundle(&zone_vectors);
         }
 
         // Add to episodic buffer
-        self.episodic_buffer.add_chunk(self.unified.clone());
+        self.episodic_buffer.add_chunk(self.unified);
 
         // Compute integrated Phi (simplified heuristic)
         let phi = self.compute_integrated_phi();
@@ -395,7 +395,7 @@ impl MultiModalIntegrator {
         self.last_integration = Instant::now();
 
         let result = IntegrationResult {
-            unified_representation: self.unified.clone(),
+            unified_representation: self.unified,
             integrated_phi: phi,
             binding_coherence: coherence,
             attention_weights,
