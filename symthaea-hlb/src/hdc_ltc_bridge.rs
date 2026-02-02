@@ -67,6 +67,11 @@ pub struct HdcLtcBridgeConfig {
 
     /// Random seed for initialization
     pub seed: u64,
+
+    /// HDC dimension for the internal network.
+    /// Default is HDC_DIMENSION (16,384). Lower values (e.g. 1024, 2048)
+    /// trade accuracy for dramatically faster computation.
+    pub hdc_dim: usize,
 }
 
 /// Activation function selection for the bridge
@@ -91,6 +96,7 @@ impl Default for HdcLtcBridgeConfig {
             skip_connections: false,
             activation: BridgeActivation::Tanh,
             seed: 42,
+            hdc_dim: HDC_DIMENSION,
         }
     }
 }
@@ -101,6 +107,7 @@ impl HdcLtcBridgeConfig {
         Self {
             tau_base: 0.05,  // Faster time constant
             layer_sizes: vec![2, 4, 2],  // Smaller network
+            hdc_dim: 2048,   // Reduced dimension for speed
             ..Default::default()
         }
     }
@@ -150,11 +157,13 @@ pub struct HdcLtcBridge {
 impl HdcLtcBridge {
     /// Create a new bridge with given configuration
     pub fn new(config: HdcLtcBridgeConfig) -> Self {
+        let hdc_dim = config.hdc_dim;
+
         // Create the unified network configuration
         let neuron_config = UnifiedConfig {
             tau_base: config.tau_base,
             backbone_tau: config.backbone_tau,
-            dimension: HDC_DIMENSION,
+            dimension: hdc_dim,
             activation: match config.activation {
                 BridgeActivation::Tanh => UnifiedActivation::Tanh,
                 BridgeActivation::Sigmoid => UnifiedActivation::Sigmoid,
@@ -177,12 +186,12 @@ impl HdcLtcBridge {
         // Initialize random projection matrices
         let input_projection = Self::init_projection(
             config.input_dim,
-            HDC_DIMENSION,
+            hdc_dim,
             config.seed + 100000,
         );
 
         let output_projection = Self::init_projection(
-            HDC_DIMENSION,
+            hdc_dim,
             config.output_dim,
             config.seed + 200000,
         );
@@ -200,10 +209,12 @@ impl HdcLtcBridge {
 
     /// Create a bridge with deterministic genesis seeding
     pub fn from_genesis(config: HdcLtcBridgeConfig, genesis: &symthaea_core::genesis::GenesisSeed) -> Self {
+        let hdc_dim = config.hdc_dim;
+
         let neuron_config = UnifiedConfig {
             tau_base: config.tau_base,
             backbone_tau: config.backbone_tau,
-            dimension: HDC_DIMENSION,
+            dimension: hdc_dim,
             activation: match config.activation {
                 BridgeActivation::Tanh => UnifiedActivation::Tanh,
                 BridgeActivation::Sigmoid => UnifiedActivation::Sigmoid,
@@ -224,10 +235,10 @@ impl HdcLtcBridge {
         let network = HdcLtcUnifiedNetwork::from_genesis(network_config, genesis);
 
         let input_projection = Self::init_projection_from_genesis(
-            genesis, "bridge::input_projection", config.input_dim, HDC_DIMENSION,
+            genesis, "bridge::input_projection", config.input_dim, hdc_dim,
         );
         let output_projection = Self::init_projection_from_genesis(
-            genesis, "bridge::output_projection", HDC_DIMENSION, config.output_dim,
+            genesis, "bridge::output_projection", hdc_dim, config.output_dim,
         );
 
         Self {
@@ -276,47 +287,75 @@ impl HdcLtcBridge {
     }
 
     /// Project compressed input to HDC dimension
+    ///
+    /// Uses row-accumulation pattern for cache-friendly access:
+    /// for each input element i, scatter input[i] * projection_row[i] across output.
+    /// Layout: input_projection is [input_dim][HDC_DIMENSION] row-major.
+    #[inline]
     fn project_to_hdc(&self, input: &Array1<f32>) -> ContinuousHV {
-        let input_dim = self.config.input_dim;
-        let mut values = vec![0.0f32; HDC_DIMENSION];
+        let input_dim = self.config.input_dim.min(input.len());
+        let hdc_dim = self.config.hdc_dim;
+        let mut values = vec![0.0f32; hdc_dim];
 
-        for j in 0..HDC_DIMENSION {
-            let mut sum = 0.0f32;
-            for i in 0..input_dim.min(input.len()) {
-                sum += input[i] * self.input_projection[i * HDC_DIMENSION + j];
+        // Row-accumulation: iterate rows (input elements), accumulate into output
+        // Each row is contiguous in memory → cache-friendly
+        for i in 0..input_dim {
+            let x = input[i];
+            if x.abs() < 1e-10 { continue; } // Skip near-zero inputs
+            let row = &self.input_projection[i * hdc_dim..(i + 1) * hdc_dim];
+            for (v, &w) in values.iter_mut().zip(row.iter()) {
+                *v += x * w;
             }
-            values[j] = sum.tanh();  // Bound to [-1, 1]
+        }
+
+        // Apply tanh bounding
+        for v in values.iter_mut() {
+            *v = v.tanh();
         }
 
         ContinuousHV::from_values(values)
     }
 
     /// Project HDC output to compressed dimension
+    ///
+    /// Uses row-accumulation pattern: for each HDC element j, scatter
+    /// hv[j] * projection_row[j] across output.
+    /// Layout: output_projection is [HDC_DIMENSION][output_dim] row-major.
+    #[inline]
     fn project_from_hdc(&self, hv: &ContinuousHV) -> Vec<f32> {
         let output_dim = self.config.output_dim;
+        let hdc_dim = self.config.hdc_dim;
         let mut output = vec![0.0f32; output_dim];
 
-        for i in 0..output_dim {
-            let mut sum = 0.0f32;
-            for j in 0..HDC_DIMENSION {
-                sum += hv.values[j] * self.output_projection[j * output_dim + i];
+        // Row-accumulation: iterate rows (HDC elements), accumulate into output
+        for j in 0..hdc_dim {
+            let x = hv.values[j];
+            if x.abs() < 1e-10 { continue; } // Skip near-zero elements
+            let row = &self.output_projection[j * output_dim..(j + 1) * output_dim];
+            for (o, &w) in output.iter_mut().zip(row.iter()) {
+                *o += x * w;
             }
-            output[i] = sum;
         }
 
         output
     }
 
     /// Update state diversity metric
+    #[inline]
     fn update_diversity(&mut self) {
         let output = self.network.output();
         let values = &output.values;
+        let n = values.len() as f32;
 
-        // Compute variance of output values
-        let mean: f32 = values.iter().sum::<f32>() / values.len() as f32;
-        let variance: f32 = values.iter()
-            .map(|x| (x - mean).powi(2))
-            .sum::<f32>() / values.len() as f32;
+        // Single-pass variance using Welford-like: var = E[x^2] - E[x]^2
+        let mut sum = 0.0f32;
+        let mut sum_sq = 0.0f32;
+        for &v in values.iter() {
+            sum += v;
+            sum_sq += v * v;
+        }
+        let mean = sum / n;
+        let variance = (sum_sq / n - mean * mean).max(0.0);
 
         // Normalize to 0-1 using sigmoid
         self.state_diversity = 1.0 / (1.0 + (-variance.sqrt() * 10.0).exp());
@@ -428,8 +467,9 @@ impl HdcLtcBridge {
 
         // Update output projection (simple gradient descent)
         let hdc_output = self.network.output();
+        let hdc_dim = self.config.hdc_dim;
         for i in 0..output_dim {
-            for j in 0..HDC_DIMENSION {
+            for j in 0..hdc_dim {
                 let grad = errors[i] * hdc_output.values[j];
                 self.output_projection[j * output_dim + i] -= learning_rate * grad;
             }

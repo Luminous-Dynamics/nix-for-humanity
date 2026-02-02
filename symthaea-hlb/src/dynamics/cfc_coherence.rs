@@ -61,7 +61,7 @@ pub struct CoherenceConfig {
 impl Default for CoherenceConfig {
     fn default() -> Self {
         Self {
-            base_learning_rate: 0.01,
+            base_learning_rate: 0.001,
             min_lr_factor: 0.5,
             max_lr_factor: 2.0,
             phi_contribution_weight: 0.2,

@@ -146,6 +146,7 @@ impl ContinuousHV {
     }
 
     /// Get dimension
+    #[inline]
     pub fn dim(&self) -> usize {
         self.values.len()
     }
@@ -159,6 +160,7 @@ impl ContinuousHV {
     /// - Commutative: A⊗B = B⊗A
     /// - Self-inverse: A⊗A ≈ 1
     /// - Preserves similarity: sim(A⊗C, B⊗C) = sim(A, B)
+    #[inline]
     pub fn bind(&self, other: &Self) -> Self {
         assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
@@ -180,20 +182,25 @@ impl ContinuousHV {
     /// - Commutative and associative
     /// - sim(bundle(A,B), A) > 0
     /// - sim(bundle(A,B), B) > 0
+    #[inline]
     pub fn bundle(hvs: &[&Self]) -> Self {
         if hvs.is_empty() {
             return Self::zero(HDC_DIMENSION);
         }
 
         let dim = hvs[0].values.len();
-        let n = hvs.len() as f32;
+        let inv_n = 1.0 / hvs.len() as f32;
 
-        let values: Vec<f32> = (0..dim)
-            .map(|i| {
-                let sum: f32 = hvs.iter().map(|hv| hv.values[i]).sum();
-                sum / n
-            })
-            .collect();
+        // Accumulate row-by-row for better cache locality
+        let mut values = vec![0.0f32; dim];
+        for hv in hvs {
+            for (acc, &v) in values.iter_mut().zip(hv.values.iter()) {
+                *acc += v;
+            }
+        }
+        for v in values.iter_mut() {
+            *v *= inv_n;
+        }
 
         Self { values }
     }
@@ -225,31 +232,36 @@ impl ContinuousHV {
     /// For random vectors: similarity ≈ 0
     /// For identical vectors: similarity = 1
     /// For opposite vectors: similarity = -1
+    #[inline]
     pub fn similarity(&self, other: &Self) -> f32 {
-        assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
+        debug_assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
-        let dot: f32 = self.values
-            .iter()
-            .zip(other.values.iter())
-            .map(|(a, b)| a * b)
-            .sum();
+        let mut dot = 0.0f32;
+        let mut norm_a_sq = 0.0f32;
+        let mut norm_b_sq = 0.0f32;
 
-        let norm_a: f32 = self.values.iter().map(|x| x * x).sum::<f32>().sqrt();
-        let norm_b: f32 = other.values.iter().map(|x| x * x).sum::<f32>().sqrt();
+        for (&a, &b) in self.values.iter().zip(other.values.iter()) {
+            dot += a * b;
+            norm_a_sq += a * a;
+            norm_b_sq += b * b;
+        }
 
-        if norm_a < 1e-10 || norm_b < 1e-10 {
+        let denom = (norm_a_sq * norm_b_sq).sqrt();
+        if denom < 1e-10 {
             return 0.0;
         }
 
-        (dot / (norm_a * norm_b)).clamp(-1.0, 1.0)
+        (dot / denom).clamp(-1.0, 1.0)
     }
 
     /// L2 norm
+    #[inline]
     pub fn norm(&self) -> f32 {
         self.values.iter().map(|x| x * x).sum::<f32>().sqrt()
     }
 
     /// Normalize to unit length
+    #[inline]
     pub fn normalize(&self) -> Self {
         let norm = self.norm();
         if norm < 1e-10 {
@@ -262,6 +274,7 @@ impl ContinuousHV {
     }
 
     /// Scale by constant
+    #[inline]
     pub fn scale(&self, factor: f32) -> Self {
         Self {
             values: self.values.iter().map(|x| x * factor).collect(),
@@ -288,8 +301,9 @@ impl ContinuousHV {
     }
 
     /// Element-wise addition
+    #[inline]
     pub fn add(&self, other: &Self) -> Self {
-        assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
+        debug_assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
         Self {
             values: self.values
@@ -301,8 +315,9 @@ impl ContinuousHV {
     }
 
     /// Element-wise subtraction
+    #[inline]
     pub fn subtract(&self, other: &Self) -> Self {
-        assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
+        debug_assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
         Self {
             values: self.values
@@ -310,6 +325,33 @@ impl ContinuousHV {
                 .zip(other.values.iter())
                 .map(|(a, b)| a - b)
                 .collect(),
+        }
+    }
+
+    /// In-place linear interpolation: self = a * x + b * self
+    /// Avoids two allocations compared to `x.scale(a).add(&self.scale(b))`.
+    #[inline]
+    pub fn lerp_in_place(&mut self, other: &Self, self_weight: f32, other_weight: f32) {
+        debug_assert_eq!(self.values.len(), other.values.len());
+        for (s, &o) in self.values.iter_mut().zip(other.values.iter()) {
+            *s = self_weight * *s + other_weight * o;
+        }
+    }
+
+    /// In-place scale
+    #[inline]
+    pub fn scale_in_place(&mut self, factor: f32) {
+        for v in self.values.iter_mut() {
+            *v *= factor;
+        }
+    }
+
+    /// In-place add
+    #[inline]
+    pub fn add_in_place(&mut self, other: &Self) {
+        debug_assert_eq!(self.values.len(), other.values.len());
+        for (s, &o) in self.values.iter_mut().zip(other.values.iter()) {
+            *s += o;
         }
     }
 

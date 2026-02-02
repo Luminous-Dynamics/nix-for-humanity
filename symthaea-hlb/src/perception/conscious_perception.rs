@@ -53,12 +53,12 @@ use std::time::{Duration, Instant};
 
 use symthaea_core::hdc::causal_mind::{CausalMind, GroundedCausalLearning};
 use crate::perception::{
-    SemanticVision, ImageEmbedding, ImageCaption,
+    SemanticVision, VisionConfig, ImageEmbedding, ImageCaption,
     OcrSystem,
     MultiModalIntegrator, ModalityType,
-    VisualCortex, VisualFeatures,
+    VisualCortex, VisualCortexConfig, VisualFeatures,
 };
-use super::multi_modal::HdcVector;
+use symthaea_core::hdc::RealHV as HdcVector;
 use super::resilience::{
     ResilienceManager, ResilienceConfig, Availability,
     PerceptionCapabilities, ResilientResult, ResilienceStats,
@@ -87,6 +87,9 @@ pub struct ConsciousPerceptionConfig {
 
     /// Enable coherence gating for output filtering
     pub enable_coherence_gating: bool,
+
+    /// Optional genesis phrase for deterministic initialization
+    pub genesis_phrase: Option<String>,
 }
 
 impl Default for ConsciousPerceptionConfig {
@@ -99,6 +102,7 @@ impl Default for ConsciousPerceptionConfig {
             resilience: ResilienceConfig::default(),
             enable_caption_fallback: true,
             enable_coherence_gating: true,
+            genesis_phrase: None,
         }
     }
 }
@@ -224,12 +228,33 @@ impl ConsciousPerception {
     /// Create a new conscious perception system
     pub fn new(config: ConsciousPerceptionConfig) -> Self {
         let resilience = ResilienceManager::new(config.resilience.clone());
+
+        let vision_config = VisionConfig::default();
+        let dim = vision_config.dimension;
+        let cortex_config = VisualCortexConfig::default();
+
+        let (vision, ocr, visual_cortex) = if let Some(ref phrase) = config.genesis_phrase {
+            let genesis = symthaea_core::genesis::GenesisSeed::new(phrase);
+            let label = "perception";
+            (
+                SemanticVision::from_genesis(vision_config, &genesis, label),
+                OcrSystem::from_genesis(dim, &genesis, label),
+                VisualCortex::from_genesis(cortex_config, &genesis, label),
+            )
+        } else {
+            (
+                SemanticVision::new(vision_config),
+                OcrSystem::new(dim),
+                VisualCortex::new(cortex_config),
+            )
+        };
+
         Self {
-            vision: SemanticVision::new(config.cache_size),
-            ocr: OcrSystem::new(),
+            vision,
+            ocr,
             integrator: MultiModalIntegrator::new(),
             causal_mind: CausalMind::new(),
-            visual_cortex: VisualCortex::new(),
+            visual_cortex,
             resilience,
             stats: PerceptionStats::default(),
             config,

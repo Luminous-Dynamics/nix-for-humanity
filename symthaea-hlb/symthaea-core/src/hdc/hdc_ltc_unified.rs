@@ -126,6 +126,7 @@ pub enum UnifiedActivation {
 
 impl UnifiedActivation {
     /// Apply activation element-wise to a hypervector
+    #[inline]
     pub fn apply(&self, hv: &ContinuousHV) -> ContinuousHV {
         let values: Vec<f32> = match self {
             UnifiedActivation::Tanh => {
@@ -148,6 +149,7 @@ impl UnifiedActivation {
     }
 
     /// Compute derivative for backpropagation
+    #[inline]
     pub fn derivative(&self, x: f32) -> f32 {
         match self {
             UnifiedActivation::Tanh => {
@@ -287,6 +289,7 @@ impl HdcLtcUnifiedNeuron {
     /// Compute the equilibrium state x_∞ for given input
     ///
     /// x_∞ = f(W⊗x + U⊗u) where f is the activation function
+    #[inline]
     fn compute_equilibrium(&self, input: &ContinuousHV) -> ContinuousHV {
         // HDC binding: W⊗x (state transformation via binding, not matrix mul)
         let transformed_state = self.weight_hv.bind(&self.state);
@@ -304,6 +307,7 @@ impl HdcLtcUnifiedNeuron {
     /// Compute effective time constant τ(||x||, u)
     ///
     /// Time constant adapts to both state complexity and input
+    #[inline]
     fn compute_tau(&self, input: &ContinuousHV) -> f32 {
         let state_norm = self.state.norm();
 
@@ -322,19 +326,38 @@ impl HdcLtcUnifiedNeuron {
     /// Compute gating/interpolation factor σ for closed-form solution
     ///
     /// σ determines how much to interpolate between current and equilibrium state
+    #[inline]
     fn compute_gating(&self, input: &ContinuousHV, dt: f32) -> f32 {
         let tau = self.compute_tau(input);
 
-        // Gate weight applied to combined state+input
-        let state_input_bundle = ContinuousHV::bundle(&[&self.state, input]);
-        let gate_activation = state_input_bundle.similarity(&self.gate_weight)
-            + self.gate_bias.values.iter().sum::<f32>() / self.config.dimension as f32;
+        // Fused bundle + similarity: avoid allocating a 16384-element bundle vector.
+        // bundle([state, input]) = (state + input) / 2
+        // similarity(bundle, gate_weight) = dot(bundle, gw) / (||bundle|| * ||gw||)
+        // We compute dot((state+input)/2, gw) and norms inline.
+        let dim = self.config.dimension;
+        let inv_dim = 1.0 / dim as f32;
+        let mut dot = 0.0f32;
+        let mut bundle_norm_sq = 0.0f32;
+        let mut gw_norm_sq = 0.0f32;
+        let mut bias_sum = 0.0f32;
+
+        for i in 0..dim {
+            let b = (self.state.values[i] + input.values[i]) * 0.5;
+            let g = self.gate_weight.values[i];
+            dot += b * g;
+            bundle_norm_sq += b * b;
+            gw_norm_sq += g * g;
+            bias_sum += self.gate_bias.values[i];
+        }
+
+        let denom = (bundle_norm_sq * gw_norm_sq).sqrt();
+        let sim = if denom < 1e-10 { 0.0 } else { dot / denom };
+        let gate_activation = sim + bias_sum * inv_dim;
 
         // Sigmoid gating with steepness control
         let sigma_base = 1.0 / (1.0 + (-gate_activation * self.config.gating_steepness).exp());
 
         // Time-scaled gating: larger dt → more interpolation toward equilibrium
-        // This is the key insight from CfC: σ(dt) = 1 - exp(-dt/τ) × (1-σ_base)
         let decay = (-dt / tau).exp();
         let sigma = 1.0 - decay * (1.0 - sigma_base);
 
@@ -412,6 +435,7 @@ impl HdcLtcUnifiedNeuron {
     /// ## Complexity
     ///
     /// O(D) where D is hypervector dimension - independent of Δt!
+    #[inline]
     pub fn evolve_closed_form(&mut self, dt: f32, input: &ContinuousHV) {
         // Compute equilibrium state
         let x_inf = self.compute_equilibrium(input);
@@ -419,10 +443,8 @@ impl HdcLtcUnifiedNeuron {
         // Compute adaptive gating factor
         let sigma = self.compute_gating(input, dt);
 
-        // Closed-form interpolation: x' = σ × x_∞ + (1-σ) × x
-        let weighted_equilibrium = x_inf.scale(sigma);
-        let weighted_current = self.state.scale(1.0 - sigma);
-        self.state = weighted_equilibrium.add(&weighted_current);
+        // Closed-form interpolation: x' = (1-σ) × x + σ × x_∞ (in-place, zero allocs)
+        self.state.lerp_in_place(&x_inf, 1.0 - sigma, sigma);
 
         self.apply_state_bounds();
         self.update_stats(dt);
@@ -535,14 +557,17 @@ impl HdcLtcUnifiedNeuron {
     }
 
     /// Apply soft state bounds to prevent numerical explosion
+    #[inline]
     fn apply_state_bounds(&mut self) {
         let norm = self.state.norm();
         if norm > 5.0 {
-            self.state = self.state.normalize().scale(5.0);
+            let scale = 5.0 / norm;
+            self.state.scale_in_place(scale);
         }
     }
 
     /// Update running statistics
+    #[inline]
     fn update_stats(&mut self, dt: f32) {
         self.total_time += dt as f64;
         self.update_count += 1;
@@ -1179,14 +1204,24 @@ impl HdcLtcUnifiedNetwork {
     }
 
     /// Cache layer output
+    #[inline]
     fn cache_layer_output(&mut self, layer_idx: usize) {
-        let outputs: Vec<ContinuousHV> = self.layers[layer_idx]
-            .iter()
-            .map(|n| n.state().clone())
-            .collect();
+        let neurons = &self.layers[layer_idx];
+        let inv_n = 1.0 / neurons.len() as f32;
 
-        let refs: Vec<&ContinuousHV> = outputs.iter().collect();
-        self.layer_outputs[layer_idx] = ContinuousHV::bundle(&refs);
+        // Direct accumulation avoids cloning + intermediate Vec
+        let output = &mut self.layer_outputs[layer_idx];
+        for v in output.values.iter_mut() {
+            *v = 0.0;
+        }
+        for neuron in neurons {
+            for (o, &s) in output.values.iter_mut().zip(neuron.state().values.iter()) {
+                *o += s;
+            }
+        }
+        for v in output.values.iter_mut() {
+            *v *= inv_n;
+        }
     }
 
     /// Compute input for a layer

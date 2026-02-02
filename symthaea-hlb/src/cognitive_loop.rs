@@ -130,7 +130,7 @@ impl Default for CfCConfig {
         Self {
             num_neurons: 256,
             input_dim: 256,  // Must match num_neurons for train_step compatibility
-            learning_rate: 0.01,
+            learning_rate: 0.001,
             delta_t: 0.02,  // 50Hz base rate
             // Multi-scale prediction: t+1, t+5, t+10 steps
             prediction_horizons: vec![0.02, 0.1, 0.2],
@@ -3715,7 +3715,7 @@ impl CognitiveLoopService {
                 if let Some(ref fe) = self.fep_agent.last_fe_components {
                     let fe_boost = (fe.total.abs() as f32 / 2.0).clamp(0.0, 1.5);
                     self.fep_lr_boost =
-                        (self.fep_lr_boost * (1.0 + fe_boost * 0.5)).clamp(1.0, 5.0);
+                        (self.fep_lr_boost * (1.0 + fe_boost * 0.5)).clamp(1.0, 2.0);
                 }
             }
             1 => {
@@ -3744,7 +3744,7 @@ impl CognitiveLoopService {
         // Surprise-gated learning rate boost: when FEP detects surprise, accelerate adaptation
         if is_surprised {
             let surprise_boost = (self.fep_agent.current_free_energy() as f32 / 3.0).clamp(0.1, 0.5);
-            self.fep_lr_boost = (self.fep_lr_boost + surprise_boost).clamp(1.0, 5.0);
+            self.fep_lr_boost = (self.fep_lr_boost + surprise_boost).clamp(1.0, 2.0);
         } else {
             // Decay boost back toward 1.0 when not surprised
             self.fep_lr_boost = (self.fep_lr_boost * 0.95).max(1.0);
@@ -3823,7 +3823,7 @@ impl CognitiveLoopService {
         let degraded = self.coherence_tracker.record_turn(coherence);
         if degraded {
             // Coherence degradation → boost learning rate to accelerate recovery
-            self.fep_lr_boost = (self.fep_lr_boost * 1.3).clamp(1.0, 5.0);
+            self.fep_lr_boost = (self.fep_lr_boost * 1.3).clamp(1.0, 2.0);
             let urgency = self.coherence_tracker.correction_urgency();
             // Feed urgency as a high-error observation to drive FEP learning
             let urgent_obs = Observation::from_consciousness_state(
@@ -3885,7 +3885,8 @@ impl CognitiveLoopService {
         let base_lr = self.combined_learning_rate();
         let adaptive_lr = self.adaptive_behavior.effective_learning_rate(base_lr);
         let flow_lr = self.flow_state.effective_learning_multiplier(adaptive_lr);
-        let effective_lr = self.curiosity_drive.effective_learning_rate(flow_lr) * self.fep_lr_boost;
+        let effective_lr = (self.curiosity_drive.effective_learning_rate(flow_lr) * self.fep_lr_boost)
+            .clamp(0.0, 0.05); // Hard cap: prevent weight explosion from compounding multipliers
 
         // 11. Learn if error is significant AND we have a previous state AND not paused
         let (learning_occurred, training_loss) = if prediction_error > self.config.learning_threshold

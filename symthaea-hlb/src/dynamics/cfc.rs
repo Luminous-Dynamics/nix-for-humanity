@@ -137,15 +137,20 @@ impl ActivationType {
     }
 }
 
-/// Mean squared error between two arrays
+/// Mean squared error between two arrays.
+/// If lengths differ, computes MSE over the shorter prefix (truncated comparison).
+/// This handles the common case where output_dim != target_dim.
 fn mse_loss(output: &Array1<f32>, target: &Array1<f32>) -> f32 {
-    if output.len() != target.len() || output.is_empty() {
-        return f32::MAX;
+    let n = output.len().min(target.len());
+    if n == 0 {
+        return 0.0;
     }
-    output.iter()
+    let mse = output.iter()
         .zip(target.iter())
+        .take(n)
         .map(|(o, t)| (o - t).powi(2))
-        .sum::<f32>() / output.len() as f32
+        .sum::<f32>() / n as f32;
+    if mse.is_finite() { mse } else { 1.0 }
 }
 
 /// A single Closed-form Continuous-time cell
@@ -384,7 +389,10 @@ impl CfCCell {
         let decay: Array1<f32> = self.tau.mapv(|t| (-dt / t.max(MIN_TAU)).exp());
 
         // Update state using closed-form solution
-        let new_state = &h_inf + &((&self.state - &h_inf) * &decay);
+        let mut new_state = &h_inf + &((&self.state - &h_inf) * &decay);
+
+        // Clamp hidden state to prevent accumulation-driven divergence
+        new_state.mapv_inplace(|x| if x.is_finite() { x.clamp(-10.0, 10.0) } else { 0.0 });
 
         self.state = new_state.clone();
         self.steps += 1;
@@ -927,6 +935,15 @@ impl CfCNetwork {
         }
 
         let avg_loss = total_loss / inputs.len() as f32;
+
+        // Clamp all weights to prevent divergence
+        self.clamp_all_weights();
+
+        // If loss is non-finite, the network has diverged — return a bounded error
+        if !avg_loss.is_finite() {
+            return Ok(1.0); // Saturated but finite sentinel
+        }
+
         Ok(avg_loss)
     }
 
@@ -960,10 +977,17 @@ impl CfCNetwork {
             self.update_cell_weights(cell_idx, input, target, dt, learning_rate, epsilon, baseline_loss);
         }
 
+        // Clamp all weights to prevent divergence
+        self.clamp_all_weights();
+
         // Recompute loss after updates
         self.reset_states_only();
         let final_output = self.forward(input, dt);
         let final_loss = mse_loss(&final_output, target);
+
+        if !final_loss.is_finite() {
+            return Ok(1.0); // Saturated but finite sentinel
+        }
 
         Ok(final_loss)
     }
@@ -1068,6 +1092,35 @@ impl CfCNetwork {
             let grad = (loss_pos - baseline_loss) / epsilon;
             self.cells[cell_idx].w_h[[r, c]] -= lr * grad;
         }
+    }
+
+    /// Clamp all network weights to [-2, 2] to prevent divergence.
+    /// Also replaces any NaN/Inf values with 0.0.
+    fn clamp_all_weights(&mut self) {
+        let clamp_val = |x: &mut f32| {
+            if !x.is_finite() {
+                *x = 0.0;
+            } else {
+                *x = x.clamp(-2.0, 2.0);
+            }
+        };
+
+        for cell in &mut self.cells {
+            cell.w_in.iter_mut().for_each(&clamp_val);
+            cell.w_h.iter_mut().for_each(&clamp_val);
+            cell.b_h.iter_mut().for_each(&clamp_val);
+            cell.tau.mapv_inplace(|t| t.clamp(MIN_TAU, 100.0));
+            // Also clamp backbone weights if present
+            for w in &mut cell.backbone_weights {
+                w.iter_mut().for_each(&clamp_val);
+            }
+            for b in &mut cell.backbone_biases {
+                b.iter_mut().for_each(&clamp_val);
+            }
+        }
+
+        self.output_weights.iter_mut().for_each(&clamp_val);
+        self.output_bias.iter_mut().for_each(&clamp_val);
     }
 
     /// Reset cell hidden states without resetting step counters

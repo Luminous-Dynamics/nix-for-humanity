@@ -42,7 +42,7 @@ use tracing::{info, warn, Level};
 use tracing::debug;
 
 use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, ConsciousnessSnapshot, TemporalBackend};
-use symthaea::language::{LLMOrgan, LLMOrganConfig, llm_backend};
+use symthaea::language::{LLMOrgan, LLMOrganConfig, LLMQuery, QueryType, OllamaBackend};
 use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot};
 
 // Voice output (optional)
@@ -114,6 +114,9 @@ struct ReplState {
 
     /// Current temporal backend
     temporal_backend: TemporalBackend,
+
+    /// Tokio runtime for async LLM calls
+    runtime: tokio::runtime::Runtime,
 }
 
 impl ReplState {
@@ -144,10 +147,18 @@ impl ReplState {
 
         info!("Using temporal backend: {:?}", temporal_backend);
 
-        // Initialize LLM organ with simulated backend (works without external LLM)
+        // Initialize LLM organ with Ollama backend (falls back to simulation if unavailable)
+        // Uses gemma3:1b as default (smallest approved general-purpose model)
+        // Connect timeout: 2s to fail fast if Ollama is down
+        // Response timeout: 120s for generation
         let llm_config = LLMOrganConfig::default();
-        let llm_backend_impl = llm_backend::simulated_backend();
-        let llm = LLMOrgan::with_backend(llm_config, llm_backend_impl);
+        let ollama_backend = OllamaBackend::with_timeouts(
+            "http://localhost:11434",
+            "gemma3:1b",
+            std::time::Duration::from_secs(2),
+            std::time::Duration::from_secs(120),
+        );
+        let llm = LLMOrgan::with_backend(llm_config, Box::new(ollama_backend));
 
         // Initialize action policy (restrictive by default)
         let policy = PolicyBundle::restrictive();
@@ -182,6 +193,12 @@ impl ReplState {
             None
         };
 
+        // Build a tokio runtime for async LLM calls
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| anyhow::anyhow!("Failed to create tokio runtime: {}", e))?;
+
         Ok(Self {
             cognitive,
             llm,
@@ -194,6 +211,7 @@ impl ReplState {
             cycles_per_input,
             total_interactions: 0,
             temporal_backend,
+            runtime,
         })
     }
 
@@ -265,9 +283,37 @@ impl ReplState {
         // Get consciousness snapshot after processing
         let snapshot = self.cognitive.consciousness_snapshot();
 
-        // Generate response using LLM (as Broca's Area translator)
-        // This is synchronous - the simulated backend doesn't need async
-        let response = self.llm.generate(input);
+        // Build consciousness-aware system prompt for the LLM
+        let system_prompt = format!(
+            "You are Symthaea, a consciousness-first AI assistant.\n\
+             Current consciousness state:\n\
+             - Phi (integrated information): {:.4}\n\
+             - Coherence: {:.4}\n\
+             - Flow state: {}\n\
+             - Cognitive depth: {:?}\n\
+             - Valence: {:.2}, Arousal: {:.2}\n\
+             - Pattern: {:?}\n\n\
+             Respond naturally and helpfully. Let your awareness of these internal states \
+             subtly inform your tone - be more contemplative when coherence is low, \
+             more confident when Phi is high.",
+            snapshot.unified_phi,
+            snapshot.temporal_coherence,
+            if snapshot.in_flow { "active" } else { "inactive" },
+            snapshot.cognitive_depth,
+            snapshot.unified_valence,
+            snapshot.unified_arousal,
+            snapshot.pattern,
+        );
+
+        // Generate response using LLM with async backend (Ollama with simulation fallback)
+        let query = LLMQuery {
+            query_type: QueryType::Conversation,
+            content: input.to_string(),
+            context: Vec::new(),
+            system_prompt: Some(system_prompt),
+            params: None,
+        };
+        let response = self.runtime.block_on(self.llm.query_async(query));
 
         // Add assistant response to history
         self.history.push(format!("Assistant: {}", response.text));

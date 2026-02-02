@@ -76,12 +76,43 @@ impl VisualCortex {
         for layer in 0..config.layers {
             let num_filters = 2usize.pow((layer + 2) as u32).min(64);
             let filters: Vec<RealHV> = (0..num_filters)
-                .map(|_| RealHV::random(dim))
+                .map(|i| RealHV::random(dim, (layer * 1000 + i) as u64))
                 .collect();
             layer_filters.push(filters);
         }
 
         // Initialize attention weights
+        let attention_weights = vec![1.0 / config.layers as f32; config.layers];
+
+        Self {
+            config,
+            layer_filters,
+            attention_weights,
+            stats: VisualCortexStats::default(),
+        }
+    }
+
+    /// Create a visual cortex with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        config: VisualCortexConfig,
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        let dim = config.dimension;
+        let mut rng = genesis.domain(&format!("{label}::visual_cortex"));
+
+        let mut layer_filters = Vec::with_capacity(config.layers);
+        for _layer in 0..config.layers {
+            let num_filters = 2usize.pow((_layer + 2) as u32).min(64);
+            let filters: Vec<RealHV> = (0..num_filters)
+                .map(|_| {
+                    let seed: u64 = rand::Rng::gen(&mut rng);
+                    RealHV::random(dim, seed)
+                })
+                .collect();
+            layer_filters.push(filters);
+        }
+
         let attention_weights = vec![1.0 / config.layers as f32; config.layers];
 
         Self {
@@ -152,7 +183,7 @@ impl VisualCortex {
         if filter_outputs.is_empty() {
             input.clone()
         } else {
-            filter_outputs[0].bundle(&filter_outputs[1..])
+            RealHV::bundle(&filter_outputs)
         }
     }
 
@@ -165,8 +196,8 @@ impl VisualCortex {
         // Weighted sum based on attention weights
         let mut result = RealHV::zeros(self.config.dimension);
         for (feat, &weight) in layer_features.iter().zip(self.attention_weights.iter()) {
-            let weighted = feat.clone().scale(weight);
-            result = result.bundle(&[weighted]);
+            let weighted = feat.scale(weight);
+            result = RealHV::bundle(&[result, weighted]);
         }
 
         result

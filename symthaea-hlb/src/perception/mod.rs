@@ -124,7 +124,18 @@ pub use modern_embeddings::{
 
 // Multi-modal integration (conditionally compiled)
 #[cfg(feature = "full_perception")]
+pub mod visual_cortex;
+#[cfg(feature = "full_perception")]
+pub mod semantic_vision;
+#[cfg(feature = "full_perception")]
 pub mod multi_modal;
+
+#[cfg(feature = "full_perception")]
+pub use visual_cortex::{VisualCortex, VisualCortexConfig, FeatureExtractionResult};
+#[cfg(feature = "full_perception")]
+pub use semantic_vision::{SemanticVision, VisionConfig, VisualFeatures, ImageEmbedding, ImageCaption, OcrSystem};
+#[cfg(feature = "full_perception")]
+pub use multi_modal::{MultiModalIntegrator, ModalityType};
 
 #[cfg(feature = "full_perception")]
 pub mod conscious_perception;

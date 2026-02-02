@@ -108,6 +108,29 @@ impl OllamaBackend {
             client,
         }
     }
+
+    /// Create with custom URL, model, and connect timeout.
+    ///
+    /// The connect timeout controls how long to wait for the initial TCP connection.
+    /// The response timeout controls the total request duration.
+    pub fn with_timeouts(
+        base_url: &str,
+        model: &str,
+        connect_timeout: std::time::Duration,
+        response_timeout: std::time::Duration,
+    ) -> Self {
+        let client = reqwest::Client::builder()
+            .connect_timeout(connect_timeout)
+            .timeout(response_timeout)
+            .build()
+            .unwrap_or_default();
+
+        Self {
+            base_url: base_url.to_string(),
+            model: model.to_string(),
+            client,
+        }
+    }
 }
 
 #[async_trait::async_trait]

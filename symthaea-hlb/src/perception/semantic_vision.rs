@@ -213,12 +213,12 @@ impl OcrSystem {
     pub fn new(dimension: usize) -> Self {
         // Initialize character embeddings
         let mut char_embeddings = HashMap::new();
-        for c in ('a'..='z').chain('A'..='Z').chain('0'..='9') {
-            char_embeddings.insert(c, RealHV::random(dimension));
+        for (i, c) in ('a'..='z').chain('A'..='Z').chain('0'..='9').enumerate() {
+            char_embeddings.insert(c, RealHV::random(dimension, i as u64));
         }
         // Add common punctuation
-        for c in [' ', '.', ',', '!', '?', '-', ':', ';', '\'', '"'] {
-            char_embeddings.insert(c, RealHV::random(dimension));
+        for (i, c) in [' ', '.', ',', '!', '?', '-', ':', ';', '\'', '"'].iter().enumerate() {
+            char_embeddings.insert(*c, RealHV::random(dimension, (1000 + i) as u64));
         }
 
         Self {
@@ -331,8 +331,8 @@ impl SemanticVision {
 
         // Initialize common concept embeddings
         let mut concept_embeddings = HashMap::new();
-        for concept in ["person", "animal", "vehicle", "building", "nature", "object", "text"] {
-            concept_embeddings.insert(concept.to_string(), RealHV::random(dim));
+        for (i, concept) in ["person", "animal", "vehicle", "building", "nature", "object", "text"].iter().enumerate() {
+            concept_embeddings.insert(concept.to_string(), RealHV::random(dim, (2000 + i) as u64));
         }
 
         Self {
@@ -440,7 +440,7 @@ impl SemanticVision {
 
         // Find most similar concepts
         let mut concept_scores: Vec<_> = self.concept_embeddings.iter()
-            .map(|(name, emb)| (name.clone(), embedding.embedding.cosine_similarity(emb)))
+            .map(|(name, emb)| (name.clone(), embedding.embedding.similarity(emb)))
             .collect();
 
         concept_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
