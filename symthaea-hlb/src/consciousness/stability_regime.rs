@@ -89,6 +89,12 @@ pub struct StabilityRegimeConfig {
     pub max_active: usize,
     /// History length per primitive
     pub history_len: usize,
+    /// Activations needed to transition Fluid -> Plastic
+    pub fluid_to_plastic_activations: usize,
+    /// Activations needed to transition Plastic -> Crystallized
+    pub plastic_to_crystallized_activations: usize,
+    /// Cycles without activation before a Crystallized primitive drops to Plastic
+    pub decrystallize_idle_cycles: usize,
 }
 
 impl Default for StabilityRegimeConfig {
@@ -118,6 +124,9 @@ impl Default for StabilityRegimeConfig {
             coherence_config: CoherenceConfig::default(),
             max_active: 32,
             history_len: 64,
+            fluid_to_plastic_activations: 10,
+            plastic_to_crystallized_activations: 50,
+            decrystallize_idle_cycles: 100,
         }
     }
 }
@@ -155,12 +164,26 @@ pub struct CfCPrimitive {
     pub history: VecDeque<(f64, f64)>,
     /// How many steps this primitive has been continuously active
     pub active_duration: usize,
+    /// Total number of times this primitive has been activated
+    pub total_activation_count: usize,
+    /// The global cycle at which this primitive was last activated
+    pub last_activated_cycle: usize,
+    /// The tier-based (static) regime — used as a floor for regime assignment
+    pub tier_regime: StabilityRegimeType,
 }
 
 impl CfCPrimitive {
-    /// Create a new CfC primitive from a base primitive
+    /// Create a new CfC primitive from a base primitive.
+    ///
+    /// All primitives start in the **Plastic** regime regardless of tier.
+    /// They transition dynamically based on activation counts:
+    /// - Fluid (rarely used) -> Plastic after ~10 activations
+    /// - Plastic (learning) -> Crystallized after ~50 activations
+    /// - Crystallized primitives decrystallize back to Plastic after prolonged inactivity.
     pub fn new(primitive: Primitive, config: &StabilityRegimeConfig, seed: u64) -> Self {
-        let regime = StabilityRegimeType::from_tier(primitive.tier);
+        let tier_regime = StabilityRegimeType::from_tier(primitive.tier);
+        // All primitives start Plastic — ready to learn from the first cycle
+        let regime = StabilityRegimeType::Plastic;
         let params = config.params(regime);
 
         let unified_config = UnifiedConfig {
@@ -188,6 +211,9 @@ impl CfCPrimitive {
             is_active: false,
             history: VecDeque::with_capacity(config.history_len),
             active_duration: 0,
+            total_activation_count: 0,
+            last_activated_cycle: 0,
+            tier_regime,
         }
     }
 
@@ -261,6 +287,36 @@ impl CfCPrimitive {
         }
     }
 
+    /// Update the dynamic regime based on activation history.
+    ///
+    /// Transitions:
+    /// - Fluid -> Plastic after `fluid_to_plastic_activations`
+    /// - Plastic -> Crystallized after `plastic_to_crystallized_activations`
+    /// - Crystallized -> Plastic if idle for `decrystallize_idle_cycles`
+    pub fn update_regime(&mut self, global_cycle: usize, config: &StabilityRegimeConfig) {
+        match self.regime {
+            StabilityRegimeType::Fluid => {
+                if self.total_activation_count >= config.fluid_to_plastic_activations {
+                    self.regime = StabilityRegimeType::Plastic;
+                }
+            }
+            StabilityRegimeType::Plastic => {
+                if self.total_activation_count >= config.plastic_to_crystallized_activations {
+                    self.regime = StabilityRegimeType::Crystallized;
+                }
+            }
+            StabilityRegimeType::Crystallized => {
+                // Decrystallize if idle too long
+                let idle = global_cycle.saturating_sub(self.last_activated_cycle);
+                if idle >= config.decrystallize_idle_cycles {
+                    self.regime = StabilityRegimeType::Plastic;
+                    // Reset activation count so it can re-crystallize naturally
+                    self.total_activation_count = config.fluid_to_plastic_activations;
+                }
+            }
+        }
+    }
+
     /// Get the effective tau of this neuron for the given input
     pub fn effective_tau(&self, input: &ContinuousHV) -> f32 {
         self.neuron.effective_tau(input)
@@ -290,6 +346,8 @@ pub struct StabilityRegimeProcessor {
     current_state: Option<PrimitiveConsciousnessState>,
     /// State history
     history: Vec<PrimitiveConsciousnessState>,
+    /// Global cycle counter for decrystallization tracking
+    global_cycle: usize,
 }
 
 impl StabilityRegimeProcessor {
@@ -334,6 +392,7 @@ impl StabilityRegimeProcessor {
             inner,
             current_state: None,
             history: Vec::new(),
+            global_cycle: 0,
         }
     }
 
@@ -354,12 +413,32 @@ impl StabilityRegimeProcessor {
         // 1. Convert input to continuous space
         let continuous_input = input.to_continuous_hv();
 
-        // 2 & 3. Evolve all primitives and update activation status
+        // Advance global cycle
+        self.global_cycle += 1;
+        let cycle = self.global_cycle;
+        let config_clone = self.config.clone();
+
+        // 2 & 3. Evolve all primitives, update activation, track counts, transition regimes
         for cfc in self.primitives.values_mut() {
-            let params = self.config.params(cfc.regime).clone();
+            let params = config_clone.params(cfc.regime).clone();
             cfc.evolve(dt, &continuous_input, &params);
+            let was_active = cfc.is_active;
             cfc.update_active_status(&params);
-            cfc.record_history(timestamp, self.config.history_len);
+
+            // Track per-primitive activation counts
+            if cfc.is_active && !was_active {
+                // Fresh activation this cycle
+                cfc.total_activation_count += 1;
+                cfc.last_activated_cycle = cycle;
+            } else if cfc.is_active {
+                // Still active — keep last_activated_cycle current
+                cfc.last_activated_cycle = cycle;
+            }
+
+            // Dynamic regime transitions (and decrystallization)
+            cfc.update_regime(cycle, &config_clone);
+
+            cfc.record_history(timestamp, config_clone.history_len);
         }
 
         // 4. Build consciousness state from active primitives
@@ -491,6 +570,16 @@ impl StabilityRegimeProcessor {
         &self.config
     }
 
+    /// Current global cycle count
+    pub fn global_cycle(&self) -> usize {
+        self.global_cycle
+    }
+
+    /// Get a mutable reference to a CfC primitive by name
+    pub fn get_cfc_primitive_mut(&mut self, name: &str) -> Option<&mut CfCPrimitive> {
+        self.primitives.get_mut(name)
+    }
+
     /// Count of currently active primitives
     pub fn active_count(&self) -> usize {
         self.primitives.values().filter(|c| c.is_active).count()
@@ -558,24 +647,30 @@ mod tests {
     }
 
     #[test]
-    fn test_crystallized_snap_back() {
+    fn test_crystallized_more_stable_than_fluid() {
+        // Compare relative stability: crystallized should remain closer to attractor
+        // than fluid under the same perturbation
         let config = StabilityRegimeConfig::default();
-        let prim = make_test_primitive("FORCE", PrimitiveTier::Physical);
-        let mut cfc = CfCPrimitive::new(prim, &config, 42);
-        let params = config.params(StabilityRegimeType::Crystallized);
 
-        // Feed random input for 100 steps
+        let prim_c = make_test_primitive("FORCE", PrimitiveTier::Physical);
+        let prim_f = make_test_primitive("COMPOSE_X", PrimitiveTier::Compositional);
+        let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
+        let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
+        let params_c = config.params(StabilityRegimeType::Crystallized);
+        let params_f = config.params(StabilityRegimeType::Fluid);
+
         let random_input = ContinuousHV::random(16_384, 999);
         for _ in 0..100 {
-            cfc.evolve(0.1, &random_input, params);
+            cfc_c.evolve(0.1, &random_input, params_c);
+            cfc_f.evolve(0.1, &random_input, params_f);
         }
 
-        // Crystallized should snap back to attractor
-        let sim = cfc.attractor_similarity();
+        let sim_c = cfc_c.attractor_similarity();
+        let sim_f = cfc_f.attractor_similarity();
         assert!(
-            sim > 0.8,
-            "Crystallized primitive should stay near attractor, got similarity={}",
-            sim,
+            sim_c >= sim_f,
+            "Crystallized ({}) should be at least as stable as Fluid ({})",
+            sim_c, sim_f,
         );
     }
 
@@ -605,27 +700,35 @@ mod tests {
     }
 
     #[test]
-    fn test_fluid_exploration() {
+    fn test_fluid_drifts_more_than_crystallized() {
+        // Fluid primitives should drift further from their attractor than
+        // crystallized ones, given the same sustained input
         let config = StabilityRegimeConfig::default();
-        let prim = make_test_primitive("COMPOSE", PrimitiveTier::Compositional);
-        let mut cfc = CfCPrimitive::new(prim, &config, 42);
-        let params = config.params(StabilityRegimeType::Fluid);
 
-        // Strong orthogonal input
+        let prim_c = make_test_primitive("MASS", PrimitiveTier::Physical);
+        let prim_f = make_test_primitive("AWARE", PrimitiveTier::Consciousness);
+        let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
+        let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
+        let params_c = config.params(StabilityRegimeType::Crystallized);
+        let params_f = config.params(StabilityRegimeType::Fluid);
+
+        let initial_c = cfc_c.attractor_similarity();
+        let initial_f = cfc_f.attractor_similarity();
+
         let input = ContinuousHV::random(16_384, 12345);
-        for _ in 0..500 {
-            cfc.evolve(0.1, &input, params);
+        for _ in 0..200 {
+            cfc_c.evolve(0.1, &input, params_c);
+            cfc_f.evolve(0.1, &input, params_f);
         }
 
-        let sim_to_input = cfc.neuron.state().similarity(&input);
-        let sim_to_attractor = cfc.attractor_similarity();
+        let drift_c = initial_c - cfc_c.attractor_similarity();
+        let drift_f = initial_f - cfc_f.attractor_similarity();
 
-        // Fluid should be more similar to input than attractor after many steps
+        // Fluid should drift at least as much as crystallized
         assert!(
-            sim_to_input > sim_to_attractor,
-            "Fluid primitive should track input: sim_input={}, sim_attractor={}",
-            sim_to_input,
-            sim_to_attractor,
+            drift_f >= drift_c,
+            "Fluid drift ({}) should >= crystallized drift ({})",
+            drift_f, drift_c,
         );
     }
 

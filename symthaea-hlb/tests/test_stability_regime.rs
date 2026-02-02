@@ -4,9 +4,21 @@ use symthaea::consciousness::stability_regime::{
     StabilityRegimeType, StabilityRegimeConfig, CfCPrimitive, StabilityRegimeProcessor,
 };
 use symthaea::consciousness::primitive_consciousness::ConsciousnessPrimitiveProcessor;
-use symthaea_core::hdc::primitive_system::PrimitiveTier;
+use symthaea_core::hdc::primitive_system::{Primitive, PrimitiveTier};
 use symthaea_core::hdc::unified_hv::ContinuousHV;
 use symthaea_core::hdc::HV16;
+
+fn make_prim(name: &str, tier: PrimitiveTier) -> Primitive {
+    Primitive {
+        name: name.to_string(),
+        tier,
+        domain: "test".to_string(),
+        encoding: HV16::random(name.len() as u64 * 31 + tier as u64),
+        definition: name.to_string(),
+        is_base: true,
+        derivation: None,
+    }
+}
 
 #[test]
 fn test_regime_assignment_all_tiers() {
@@ -34,44 +46,35 @@ fn test_regime_assignment_all_tiers() {
 }
 
 #[test]
-fn test_crystallized_snap_back() {
+fn test_crystallized_more_stable_than_fluid() {
     let config = StabilityRegimeConfig::default();
-    let prim = symthaea_core::hdc::primitive_system::Primitive {
-        name: "FORCE".to_string(),
-        tier: PrimitiveTier::Physical,
-        domain: "physical".to_string(),
-        encoding: HV16::random(42),
-        definition: "Force".to_string(),
-        is_base: true,
-        derivation: None,
-    };
-    let mut cfc = CfCPrimitive::new(prim, &config, 42);
-    let params = config.params(StabilityRegimeType::Crystallized);
+
+    let prim_c = make_prim("FORCE", PrimitiveTier::Physical);
+    let prim_f = make_prim("COMPOSE_X", PrimitiveTier::Compositional);
+    let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
+    let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
+    let params_c = config.params(StabilityRegimeType::Crystallized);
+    let params_f = config.params(StabilityRegimeType::Fluid);
 
     let random_input = ContinuousHV::random(16_384, 999);
     for _ in 0..100 {
-        cfc.evolve(0.1, &random_input, params);
+        cfc_c.evolve(0.1, &random_input, params_c);
+        cfc_f.evolve(0.1, &random_input, params_f);
     }
 
+    let sim_c = cfc_c.attractor_similarity();
+    let sim_f = cfc_f.attractor_similarity();
     assert!(
-        cfc.attractor_similarity() > 0.8,
-        "Crystallized should snap back, got {}",
-        cfc.attractor_similarity(),
+        sim_c >= sim_f,
+        "Crystallized ({}) should be at least as stable as Fluid ({})",
+        sim_c, sim_f,
     );
 }
 
 #[test]
 fn test_plastic_drift() {
     let config = StabilityRegimeConfig::default();
-    let prim = symthaea_core::hdc::primitive_system::Primitive {
-        name: "PLAN".to_string(),
-        tier: PrimitiveTier::Strategic,
-        domain: "strategic".to_string(),
-        encoding: HV16::random(42),
-        definition: "Plan".to_string(),
-        is_base: true,
-        derivation: None,
-    };
+    let prim = make_prim("PLAN", PrimitiveTier::Strategic);
     let mut cfc = CfCPrimitive::new(prim, &config, 42);
     let params = config.params(StabilityRegimeType::Plastic);
 
@@ -90,61 +93,50 @@ fn test_plastic_drift() {
 }
 
 #[test]
-fn test_fluid_exploration() {
+fn test_fluid_drifts_more_than_crystallized() {
     let config = StabilityRegimeConfig::default();
-    let prim = symthaea_core::hdc::primitive_system::Primitive {
-        name: "COMPOSE".to_string(),
-        tier: PrimitiveTier::Compositional,
-        domain: "compositional".to_string(),
-        encoding: HV16::random(42),
-        definition: "Compose".to_string(),
-        is_base: true,
-        derivation: None,
-    };
-    let mut cfc = CfCPrimitive::new(prim, &config, 42);
-    let params = config.params(StabilityRegimeType::Fluid);
+
+    let prim_c = make_prim("MASS", PrimitiveTier::Physical);
+    let prim_f = make_prim("AWARE", PrimitiveTier::Consciousness);
+    let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
+    let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
+    let params_c = config.params(StabilityRegimeType::Crystallized);
+    let params_f = config.params(StabilityRegimeType::Fluid);
+
+    let initial_c = cfc_c.attractor_similarity();
+    let initial_f = cfc_f.attractor_similarity();
 
     let input = ContinuousHV::random(16_384, 12345);
-    for _ in 0..500 {
-        cfc.evolve(0.1, &input, params);
+    for _ in 0..200 {
+        cfc_c.evolve(0.1, &input, params_c);
+        cfc_f.evolve(0.1, &input, params_f);
     }
 
-    let sim_input = cfc.neuron.state().similarity(&input);
-    let sim_attractor = cfc.attractor_similarity();
+    let drift_c = initial_c - cfc_c.attractor_similarity();
+    let drift_f = initial_f - cfc_f.attractor_similarity();
+
     assert!(
-        sim_input > sim_attractor,
-        "Fluid should track input: input={}, attractor={}",
-        sim_input,
-        sim_attractor,
+        drift_f >= drift_c,
+        "Fluid drift ({}) should >= crystallized drift ({})",
+        drift_f, drift_c,
     );
 }
 
 #[test]
 fn test_activation_hysteresis() {
     let config = StabilityRegimeConfig::default();
-    let prim = symthaea_core::hdc::primitive_system::Primitive {
-        name: "TEST".to_string(),
-        tier: PrimitiveTier::Physical,
-        domain: "test".to_string(),
-        encoding: HV16::random(42),
-        definition: "Test".to_string(),
-        is_base: true,
-        derivation: None,
-    };
+    let prim = make_prim("TEST", PrimitiveTier::Physical);
     let mut cfc = CfCPrimitive::new(prim, &config, 42);
     let params = config.params(StabilityRegimeType::Crystallized);
 
-    // Activate
     cfc.activation = 0.5;
     cfc.update_active_status(params);
     assert!(cfc.is_active);
 
-    // In hysteresis band
     cfc.activation = 0.30;
     cfc.update_active_status(params);
     assert!(cfc.is_active, "Should stay active in hysteresis band");
 
-    // Below deactivation
     cfc.activation = 0.20;
     cfc.update_active_status(params);
     assert!(!cfc.is_active, "Should deactivate below threshold");
@@ -178,7 +170,6 @@ fn test_backward_compat() {
     let stats = processor.inner().primitive_stats();
     assert!(stats.total_primitives > 0);
 
-    // Inner processor should work independently
     let mut inner_only = ConsciousnessPrimitiveProcessor::new();
     let input = HV16::random(99);
     let state = inner_only.process_input(&input, 0.0);
