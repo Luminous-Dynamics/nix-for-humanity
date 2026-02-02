@@ -533,7 +533,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_learning_step() {
         let config = PhiLearningConfig {
             learning_rate: 0.5,
@@ -579,7 +578,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_bridge_ratio_learning() {
         let config = PhiLearningConfig {
             learning_rate: 0.3,

@@ -653,7 +653,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_sensitivities_ranked() {
         let genesis = GenesisSeed::from_phrase("sensitivity test");
         let engine = UncertaintyEngine::new(&genesis);

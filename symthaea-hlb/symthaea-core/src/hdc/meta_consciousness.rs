@@ -636,7 +636,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_predict_my_future() {
         let config = MetaConfig::default();
         let mut meta = MetaConsciousness::new(4, config);
@@ -656,7 +655,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_meta_learning() {
         let config = MetaConfig {
             meta_learning_enabled: true,

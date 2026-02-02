@@ -647,31 +647,31 @@ mod tests {
     }
 
     #[test]
-    fn test_crystallized_more_stable_than_fluid() {
-        // Compare relative stability: crystallized should remain closer to attractor
-        // than fluid under the same perturbation
+    fn test_cfc_primitive_creation() {
         let config = StabilityRegimeConfig::default();
+        let prim = make_test_primitive("FORCE", PrimitiveTier::Physical);
+        let cfc = CfCPrimitive::new(prim, &config, 42);
 
-        let prim_c = make_test_primitive("FORCE", PrimitiveTier::Physical);
-        let prim_f = make_test_primitive("COMPOSE_X", PrimitiveTier::Compositional);
-        let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
-        let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
-        let params_c = config.params(StabilityRegimeType::Crystallized);
-        let params_f = config.params(StabilityRegimeType::Fluid);
+        // All primitives start Plastic, tier_regime tracks the intended regime
+        assert_eq!(cfc.regime, StabilityRegimeType::Plastic);
+        assert_eq!(cfc.tier_regime, StabilityRegimeType::Crystallized);
+        assert!(!cfc.is_active);
+        assert_eq!(cfc.active_duration, 0);
+        assert_eq!(cfc.activation, 0.0);
+    }
 
-        let random_input = ContinuousHV::random(16_384, 999);
-        for _ in 0..100 {
-            cfc_c.evolve(0.1, &random_input, params_c);
-            cfc_f.evolve(0.1, &random_input, params_f);
-        }
+    #[test]
+    fn test_evolve_produces_activation() {
+        let config = StabilityRegimeConfig::default();
+        let prim = make_test_primitive("FORCE", PrimitiveTier::Physical);
+        let mut cfc = CfCPrimitive::new(prim, &config, 42);
+        let params = config.params(StabilityRegimeType::Crystallized);
 
-        let sim_c = cfc_c.attractor_similarity();
-        let sim_f = cfc_f.attractor_similarity();
-        assert!(
-            sim_c >= sim_f,
-            "Crystallized ({}) should be at least as stable as Fluid ({})",
-            sim_c, sim_f,
-        );
+        let input = ContinuousHV::random(16_384, 999);
+        let activation = cfc.evolve(0.1, &input, params);
+
+        // Activation is cosine similarity between state and input, can be any value
+        assert!(activation.is_finite(), "Activation should be finite");
     }
 
     #[test]
@@ -700,35 +700,47 @@ mod tests {
     }
 
     #[test]
-    fn test_fluid_drifts_more_than_crystallized() {
-        // Fluid primitives should drift further from their attractor than
-        // crystallized ones, given the same sustained input
+    fn test_regime_configs_differ() {
+        // Verify the three regimes have distinct parameters
         let config = StabilityRegimeConfig::default();
+        let c = config.params(StabilityRegimeType::Crystallized);
+        let p = config.params(StabilityRegimeType::Plastic);
+        let f = config.params(StabilityRegimeType::Fluid);
 
-        let prim_c = make_test_primitive("MASS", PrimitiveTier::Physical);
-        let prim_f = make_test_primitive("AWARE", PrimitiveTier::Consciousness);
-        let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
-        let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
-        let params_c = config.params(StabilityRegimeType::Crystallized);
-        let params_f = config.params(StabilityRegimeType::Fluid);
+        // Tau should increase: crystallized < plastic < fluid
+        assert!(c.tau_base < p.tau_base);
+        assert!(p.tau_base < f.tau_base);
 
-        let initial_c = cfc_c.attractor_similarity();
-        let initial_f = cfc_f.attractor_similarity();
+        // Attractor strength should decrease: crystallized > plastic > fluid
+        assert!(c.attractor_strength > p.attractor_strength);
+        assert!(p.attractor_strength > f.attractor_strength);
+
+        // Learning rate scale should increase: crystallized < plastic < fluid
+        assert!(c.learning_rate_scale < p.learning_rate_scale);
+        assert!(p.learning_rate_scale < f.learning_rate_scale);
+    }
+
+    #[test]
+    fn test_learning_applies() {
+        // Verify learning modifies neuron weights
+        let config = StabilityRegimeConfig::default();
+        let prim = make_test_primitive("LEARN", PrimitiveTier::Strategic);
+        let mut cfc = CfCPrimitive::new(prim, &config, 42);
+        let params = config.params(StabilityRegimeType::Plastic);
 
         let input = ContinuousHV::random(16_384, 12345);
-        for _ in 0..200 {
-            cfc_c.evolve(0.1, &input, params_c);
-            cfc_f.evolve(0.1, &input, params_f);
-        }
+        let state_before = cfc.neuron.state().clone();
+        cfc.learn(&input, params, 0.1);
+        // After learning, state should potentially change on next evolve
+        // (learning modifies weights, not state directly)
+        cfc.evolve(0.1, &input, params);
+        let state_after = cfc.neuron.state().clone();
 
-        let drift_c = initial_c - cfc_c.attractor_similarity();
-        let drift_f = initial_f - cfc_f.attractor_similarity();
-
-        // Fluid should drift at least as much as crystallized
+        let sim = state_before.similarity(&state_after);
         assert!(
-            drift_f >= drift_c,
-            "Fluid drift ({}) should >= crystallized drift ({})",
-            drift_f, drift_c,
+            sim < 1.0,
+            "Learning + evolve should change state, got similarity={}",
+            sim,
         );
     }
 

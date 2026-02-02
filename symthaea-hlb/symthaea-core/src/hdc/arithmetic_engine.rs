@@ -2821,7 +2821,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_number_construction() {
         let primitives = PrimitiveSystem::new();
 
@@ -2836,7 +2835,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_successor() {
         let primitives = PrimitiveSystem::new();
 
@@ -2849,7 +2847,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_addition() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2866,7 +2863,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multiplication() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2883,7 +2879,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_subtraction() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2900,7 +2895,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_power() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2916,7 +2910,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_factorial() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2932,7 +2925,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_theorem_commutativity() {
         let mut prover = TheoremProver::new();
 
@@ -2944,7 +2936,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_theorem_associativity() {
         let mut prover = TheoremProver::new();
 
@@ -2955,7 +2946,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_theorem_distributive() {
         let mut prover = TheoremProver::new();
 
@@ -2970,7 +2960,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_caching() {
         let mut engine = ArithmeticEngine::new();
 
@@ -2986,7 +2975,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_phi_accumulation() {
         let mut engine = ArithmeticEngine::new();
 
@@ -3009,7 +2997,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_deep_path() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3025,7 +3012,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_fast_path() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3040,7 +3026,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_semantics_always_present() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3057,7 +3042,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_multiply() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3075,7 +3059,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_power() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3093,7 +3076,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_factorial() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3111,7 +3093,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_stats() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3131,7 +3112,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_abstract_proof_validity() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3147,7 +3127,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_hybrid_configurable_threshold() {
         // Create with custom config - lower threshold for more deep computations
         let config = HybridConfig {
@@ -3174,7 +3153,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_force_deep_mode() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3189,7 +3167,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_division() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3208,7 +3185,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_modulo() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3226,7 +3202,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_gcd() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3255,7 +3230,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_primality() {
         let mut engine = HybridArithmeticEngine::new();
 
@@ -3283,7 +3257,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_proof_exploration() {
         let mut discovery = MathDiscovery::new();
 
@@ -3298,7 +3271,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_conjecture_generation() {
         let mut discovery = MathDiscovery::new();
 
@@ -3313,7 +3285,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_discovery_engine_access() {
         let mut discovery = MathDiscovery::new();
 
@@ -3332,7 +3303,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_reasoning_bridge_creation() {
         let bridge = MathReasoningBridge::new();
         assert!(bridge.assertions().is_empty());
@@ -3342,7 +3312,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_assert_equality() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3359,7 +3328,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_assert_divisibility() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3376,7 +3344,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_assert_primality() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3391,7 +3358,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_assert_coprime() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3408,7 +3374,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_prove_theorem_commutativity() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3427,7 +3392,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_transitive_divisibility() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3445,7 +3409,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_gcd_properties() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3462,7 +3425,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multi_step_proof() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3480,7 +3442,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_query_by_relation() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3503,7 +3464,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_query_involving() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3521,7 +3481,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_total_phi_accumulation() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3537,7 +3496,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_highest_phi_assertion() {
         let mut bridge = MathReasoningBridge::new();
 
@@ -3558,7 +3516,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_expr_constant() {
         let primitives = PrimitiveSystem::new();
         let expr = SymbolicExpr::constant(5, &primitives);
@@ -3569,7 +3526,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_expr_variable() {
         let primitives = PrimitiveSystem::new();
         let x = SymbolicExpr::variable("x", &primitives);
@@ -3580,7 +3536,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_addition() {
         let primitives = PrimitiveSystem::new();
         let x = SymbolicExpr::variable("x", &primitives);
@@ -3594,7 +3549,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_multiplication() {
         let primitives = PrimitiveSystem::new();
         let x = SymbolicExpr::variable("x", &primitives);
@@ -3608,7 +3562,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_evaluation() {
         let primitives = PrimitiveSystem::new();
         let mut engine = HybridArithmeticEngine::new();
@@ -3632,7 +3585,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_simplify_like_terms() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3654,7 +3606,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_constant_folding() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3672,7 +3623,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_multiply_by_zero() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3689,7 +3639,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_multiply_by_one() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3706,7 +3655,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_add_zero() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3723,7 +3671,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_expand_distribution() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3743,7 +3690,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_polynomial_creation() {
         let primitives = PrimitiveSystem::new();
 
@@ -3756,7 +3702,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_polynomial_evaluation() {
         let primitives = PrimitiveSystem::new();
         let mut engine = HybridArithmeticEngine::new();
@@ -3771,7 +3716,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_polynomial_addition() {
         let primitives = PrimitiveSystem::new();
         let algebra = SymbolicAlgebra::new();
@@ -3787,7 +3731,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_polynomial_multiplication() {
         let primitives = PrimitiveSystem::new();
         let algebra = SymbolicAlgebra::new();
@@ -3803,7 +3746,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_linear_equation_solver() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3819,7 +3761,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_quadratic_equation_solver() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3838,7 +3779,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_symbolic_algebra_stats() {
         let primitives = PrimitiveSystem::new();
         let mut algebra = SymbolicAlgebra::new();
@@ -3861,7 +3801,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_addition_commutative() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_addition_commutative(3, 5);
@@ -3881,7 +3820,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_multiplication_commutative() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_multiplication_commutative(4, 6);
@@ -3901,7 +3839,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_associativity() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_associativity(2, 3, 4, "+");
@@ -3922,7 +3859,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_distributive() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_distributive(2, 3, 4);
@@ -3943,7 +3879,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_divisibility_true() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_divisibility(3, 12);
@@ -3959,7 +3894,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_divisibility_false() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_divisibility(5, 12);
@@ -3973,7 +3907,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_proof_steps() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_addition_commutative(2, 7);
@@ -3989,7 +3922,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_best_path_selection() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_multiplication_commutative(5, 3);
@@ -4014,7 +3946,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_verifier_stats() {
         let mut verifier = MultiPathVerifier::new();
 
@@ -4034,7 +3965,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_division_by_zero() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_divisibility(0, 10);
@@ -4046,7 +3976,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_identity_cases() {
         let mut verifier = MultiPathVerifier::new();
 
@@ -4068,7 +3997,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_large_numbers() {
         let mut verifier = MultiPathVerifier::new();
 
@@ -4090,7 +4018,6 @@ mod tests {
     #[test]
 
 
-    #[ignore = "slow in debug builds"]
     fn test_multipath_phi_measurement() {
         let mut verifier = MultiPathVerifier::new();
         let result = verifier.verify_distributive(3, 4, 5);

@@ -622,7 +622,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_phi_gradient() {
         let mut adaptive = AdaptiveTopology::new(32, HDC_DIMENSION, 42);
         adaptive.set_mode(CognitiveMode::PhiGuided);

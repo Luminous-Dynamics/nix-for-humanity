@@ -895,7 +895,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_phi_analysis() {
         let connectome = CElegansConnectome::new();
         let analyzer = CElegansAnalyzer::new(256);

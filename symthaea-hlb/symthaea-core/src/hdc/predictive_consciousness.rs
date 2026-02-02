@@ -818,7 +818,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_prediction_error_reduction() {
         let mut pc = PredictiveConsciousness::new(100, PredictiveConfig::default());
 

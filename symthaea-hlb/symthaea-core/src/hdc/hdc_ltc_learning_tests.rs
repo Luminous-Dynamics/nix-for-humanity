@@ -1194,7 +1194,6 @@ mod benchmarks {
     use super::*;
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn run_learning_benchmarks() {
         let patterns: Vec<ContinuousHV> = (0..10)
             .map(|i| random_pattern(100 + i))

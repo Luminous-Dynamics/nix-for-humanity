@@ -631,7 +631,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_simulate() {
         let config = DynamicsConfig::default();
         let mut dynamics = ConsciousnessDynamics::new(4, config);
@@ -674,7 +673,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_find_attractors() {
         let config = DynamicsConfig {
             dt: 0.05,  // Larger step for faster test
@@ -707,7 +705,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_predict() {
         let config = DynamicsConfig::default();
         let mut dynamics = ConsciousnessDynamics::new(4, config);

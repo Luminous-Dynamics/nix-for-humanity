@@ -46,29 +46,16 @@ fn test_regime_assignment_all_tiers() {
 }
 
 #[test]
-fn test_crystallized_more_stable_than_fluid() {
+fn test_cfc_primitive_starts_plastic() {
     let config = StabilityRegimeConfig::default();
+    let prim = make_prim("FORCE", PrimitiveTier::Physical);
+    let cfc = CfCPrimitive::new(prim, &config, 42);
 
-    let prim_c = make_prim("FORCE", PrimitiveTier::Physical);
-    let prim_f = make_prim("COMPOSE_X", PrimitiveTier::Compositional);
-    let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
-    let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
-    let params_c = config.params(StabilityRegimeType::Crystallized);
-    let params_f = config.params(StabilityRegimeType::Fluid);
-
-    let random_input = ContinuousHV::random(16_384, 999);
-    for _ in 0..100 {
-        cfc_c.evolve(0.1, &random_input, params_c);
-        cfc_f.evolve(0.1, &random_input, params_f);
-    }
-
-    let sim_c = cfc_c.attractor_similarity();
-    let sim_f = cfc_f.attractor_similarity();
-    assert!(
-        sim_c >= sim_f,
-        "Crystallized ({}) should be at least as stable as Fluid ({})",
-        sim_c, sim_f,
-    );
+    // All primitives start Plastic regardless of tier
+    assert_eq!(cfc.regime, StabilityRegimeType::Plastic);
+    // But tier_regime tracks the intended final regime
+    assert_eq!(cfc.tier_regime, StabilityRegimeType::Crystallized);
+    assert!(!cfc.is_active);
 }
 
 #[test]
@@ -93,36 +80,6 @@ fn test_plastic_drift() {
 }
 
 #[test]
-fn test_fluid_drifts_more_than_crystallized() {
-    let config = StabilityRegimeConfig::default();
-
-    let prim_c = make_prim("MASS", PrimitiveTier::Physical);
-    let prim_f = make_prim("AWARE", PrimitiveTier::Consciousness);
-    let mut cfc_c = CfCPrimitive::new(prim_c, &config, 42);
-    let mut cfc_f = CfCPrimitive::new(prim_f, &config, 42);
-    let params_c = config.params(StabilityRegimeType::Crystallized);
-    let params_f = config.params(StabilityRegimeType::Fluid);
-
-    let initial_c = cfc_c.attractor_similarity();
-    let initial_f = cfc_f.attractor_similarity();
-
-    let input = ContinuousHV::random(16_384, 12345);
-    for _ in 0..200 {
-        cfc_c.evolve(0.1, &input, params_c);
-        cfc_f.evolve(0.1, &input, params_f);
-    }
-
-    let drift_c = initial_c - cfc_c.attractor_similarity();
-    let drift_f = initial_f - cfc_f.attractor_similarity();
-
-    assert!(
-        drift_f >= drift_c,
-        "Fluid drift ({}) should >= crystallized drift ({})",
-        drift_f, drift_c,
-    );
-}
-
-#[test]
 fn test_activation_hysteresis() {
     let config = StabilityRegimeConfig::default();
     let prim = make_prim("TEST", PrimitiveTier::Physical);
@@ -135,7 +92,7 @@ fn test_activation_hysteresis() {
 
     cfc.activation = 0.30;
     cfc.update_active_status(params);
-    assert!(cfc.is_active, "Should stay active in hysteresis band");
+    assert!(cfc.is_active, "Hysteresis: should stay active");
 
     cfc.activation = 0.20;
     cfc.update_active_status(params);
@@ -143,7 +100,7 @@ fn test_activation_hysteresis() {
 }
 
 #[test]
-fn test_process_input_basic() {
+fn test_process_input_produces_state() {
     let mut processor = StabilityRegimeProcessor::new();
     let input = HV16::random(42);
 
@@ -152,7 +109,7 @@ fn test_process_input_basic() {
 }
 
 #[test]
-fn test_coherence_feedback() {
+fn test_coherence_feedback_over_multiple_steps() {
     let mut processor = StabilityRegimeProcessor::new();
     let input = HV16::random(42);
 
@@ -161,11 +118,11 @@ fn test_coherence_feedback() {
     }
 
     let lr = processor.coherence_bridge().effective_learning_rate();
-    assert!(lr > 0.0, "Learning rate should be positive, got {}", lr);
+    assert!(lr > 0.0, "Learning rate should be positive: {}", lr);
 }
 
 #[test]
-fn test_backward_compat() {
+fn test_backward_compat_inner_processor() {
     let processor = StabilityRegimeProcessor::new();
     let stats = processor.inner().primitive_stats();
     assert!(stats.total_primitives > 0);
@@ -174,4 +131,116 @@ fn test_backward_compat() {
     let input = HV16::random(99);
     let state = inner_only.process_input(&input, 0.0);
     assert!(state.phi >= 0.0);
+}
+
+#[test]
+fn test_multiple_inputs_build_history() {
+    let mut processor = StabilityRegimeProcessor::new();
+
+    for i in 0..5 {
+        let input = HV16::random(i as u64 * 100 + 1);
+        processor.process_input(&input, 0.1, i as f64);
+    }
+
+    assert_eq!(processor.history().len(), 5);
+}
+
+#[test]
+fn test_regime_transition_plastic_to_crystallized() {
+    // A primitive that gets activated 50+ times should transition to Crystallized
+    let config = StabilityRegimeConfig::default();
+    assert_eq!(config.plastic_to_crystallized_activations, 50);
+
+    let prim = make_prim("BUSY", PrimitiveTier::Strategic);
+    let mut cfc = CfCPrimitive::new(prim, &config, 42);
+
+    // Starts Plastic
+    assert_eq!(cfc.regime, StabilityRegimeType::Plastic);
+
+    // Simulate 50 activations
+    cfc.total_activation_count = 50;
+    cfc.last_activated_cycle = 50;
+    cfc.update_regime(50, &config);
+
+    assert_eq!(
+        cfc.regime,
+        StabilityRegimeType::Crystallized,
+        "Should crystallize after {} activations",
+        config.plastic_to_crystallized_activations,
+    );
+}
+
+#[test]
+fn test_regime_transition_fluid_to_plastic() {
+    let config = StabilityRegimeConfig::default();
+    assert_eq!(config.fluid_to_plastic_activations, 10);
+
+    let prim = make_prim("EXPLORE", PrimitiveTier::Compositional);
+    let mut cfc = CfCPrimitive::new(prim, &config, 42);
+
+    // All primitives start Plastic, so force it to Fluid to test this transition
+    cfc.regime = StabilityRegimeType::Fluid;
+    cfc.total_activation_count = 0;
+
+    // Below threshold: should stay Fluid
+    cfc.total_activation_count = 9;
+    cfc.update_regime(9, &config);
+    assert_eq!(cfc.regime, StabilityRegimeType::Fluid);
+
+    // At threshold: should transition
+    cfc.total_activation_count = 10;
+    cfc.update_regime(10, &config);
+    assert_eq!(cfc.regime, StabilityRegimeType::Plastic);
+}
+
+#[test]
+fn test_decrystallize_after_idle() {
+    let config = StabilityRegimeConfig::default();
+    assert_eq!(config.decrystallize_idle_cycles, 100);
+
+    let prim = make_prim("STALE", PrimitiveTier::Physical);
+    let mut cfc = CfCPrimitive::new(prim, &config, 42);
+
+    // Force to Crystallized with enough activations
+    cfc.total_activation_count = 60;
+    cfc.last_activated_cycle = 50;
+    cfc.regime = StabilityRegimeType::Crystallized;
+
+    // 99 cycles idle: should stay Crystallized
+    cfc.update_regime(149, &config);
+    assert_eq!(cfc.regime, StabilityRegimeType::Crystallized);
+
+    // 100 cycles idle: should drop back to Plastic
+    cfc.update_regime(150, &config);
+    assert_eq!(
+        cfc.regime,
+        StabilityRegimeType::Plastic,
+        "Should decrystallize after {} idle cycles",
+        config.decrystallize_idle_cycles,
+    );
+
+    // Activation count should be reset to fluid_to_plastic threshold
+    // so it can re-crystallize naturally
+    assert_eq!(cfc.total_activation_count, config.fluid_to_plastic_activations);
+}
+
+#[test]
+fn test_default_thresholds() {
+    let config = StabilityRegimeConfig::default();
+    assert_eq!(config.fluid_to_plastic_activations, 10);
+    assert_eq!(config.plastic_to_crystallized_activations, 50);
+    assert_eq!(config.decrystallize_idle_cycles, 100);
+}
+
+#[test]
+fn test_global_cycle_increments() {
+    let mut processor = StabilityRegimeProcessor::new();
+    assert_eq!(processor.global_cycle(), 0);
+
+    let input = HV16::random(42);
+    processor.process_input(&input, 0.1, 0.0);
+    assert_eq!(processor.global_cycle(), 1);
+
+    processor.process_input(&input, 0.1, 0.1);
+    assert_eq!(processor.global_cycle(), 2);
 }

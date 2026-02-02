@@ -663,7 +663,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_capacity() {
         // Use higher beta for sharper attention with many patterns
         let mut hopfield = ModernHopfieldNetwork::new(10.0);

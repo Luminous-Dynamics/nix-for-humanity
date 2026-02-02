@@ -739,7 +739,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow in debug builds"]
     fn test_baseline_learning() {
         let config = EpistemicConfig {
             personalized_baseline: true,

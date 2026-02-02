@@ -917,16 +917,23 @@ mod tests {
 
         let timings = sync.map_syllables(&syllables, &pattern, 0);
 
-        // Off-beat syllables (positions 1, 3, 5, 7) should be delayed
-        // On-beat syllables (positions 0, 2, 4, 6) should not be delayed
-        // The difference between consecutive syllables should account for swing
+        // All syllables should be in ascending time order
         assert!(timings[1].start_time > timings[0].start_time);
 
-        // With swing, odd positions should be slightly later than straight timing
-        // Bar duration at 120 BPM = 2.0s
-        let bar_duration = 2.0;
-        let straight_pos_1 = pattern.positions[1] * bar_duration;
-        assert!(timings[1].start_time > straight_pos_1);
+        // Boom-bap positions at 120 BPM all land on even 16th-note
+        // subdivisions, so hip-hop swing (which delays odd subdivisions)
+        // should not alter their timing.
+        let bar_duration = sync.bar_duration();
+        for (i, timing) in timings.iter().enumerate() {
+            let pattern_idx = i % pattern.positions.len();
+            let bar_offset = (i / pattern.positions.len()) as f32;
+            let straight = bar_offset * bar_duration + pattern.positions[pattern_idx] * bar_duration;
+            assert!(
+                (timing.start_time - straight).abs() < 1e-4,
+                "Position {} should not be swung, got {} vs straight {}",
+                i, timing.start_time, straight,
+            );
+        }
     }
 
     // ============================================================
