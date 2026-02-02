@@ -813,7 +813,7 @@ mod tests {
         let mut processor = StabilityRegimeProcessor::new();
         let input = HV16::random(42);
 
-        let state = processor.process_input(&input, 0.1, 0.0);
+        let (state, _transitions) = processor.process_input(&input, 0.1, 0.0);
         // Should produce a valid state with phi >= 0
         assert!(state.phi >= 0.0, "Phi should be non-negative");
     }
@@ -825,7 +825,7 @@ mod tests {
 
         // Run multiple steps
         for i in 0..10 {
-            processor.process_input(&input, 0.1, i as f64 * 0.1);
+            let _ = processor.process_input(&input, 0.1, i as f64 * 0.1);
         }
 
         // Coherence bridge should have been updated
