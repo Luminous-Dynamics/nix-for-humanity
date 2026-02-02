@@ -62,15 +62,31 @@ use std::collections::HashMap;
 pub struct HSICTest {
     /// Kernel bandwidth (auto-tuned if None)
     sigma: Option<f64>,
+    /// Optional seeded RNG for deterministic permutation tests
+    seeded_rng: Option<rand::rngs::StdRng>,
 }
 
 impl HSICTest {
     pub fn new() -> Self {
-        Self { sigma: None }
+        Self { sigma: None, seeded_rng: None }
     }
 
     pub fn with_bandwidth(sigma: f64) -> Self {
-        Self { sigma: Some(sigma) }
+        Self { sigma: Some(sigma), seeded_rng: None }
+    }
+
+    /// Create an HSIC test with deterministic RNG from a genesis seed.
+    pub fn from_genesis(
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+    ) -> Self {
+        use rand::SeedableRng;
+        let mut shake = genesis.domain(&format!("{label}::hsic"));
+        let seed: u64 = rand::Rng::gen(&mut shake);
+        Self {
+            sigma: None,
+            seeded_rng: Some(rand::rngs::StdRng::seed_from_u64(seed)),
+        }
     }
 
     /// Compute HSIC statistic between two variables
@@ -108,18 +124,32 @@ impl HSICTest {
     /// Test if two variables are independent
     ///
     /// Returns: (is_independent, p_value_estimate)
-    pub fn test_independence(&self, x: &[f64], y: &[f64], threshold: f64) -> (bool, f64) {
+    pub fn test_independence(&mut self, x: &[f64], y: &[f64], threshold: f64) -> (bool, f64) {
         let hsic = self.compute(x, y);
 
         // Permutation-based p-value estimation
         let n_perms = 100;
         let mut null_hsics = Vec::with_capacity(n_perms);
-        let mut rng = rand::thread_rng();
 
-        for _ in 0..n_perms {
-            let mut y_perm: Vec<f64> = y.to_vec();
-            y_perm.shuffle(&mut rng);
-            null_hsics.push(self.compute(x, &y_perm));
+        // Pre-generate all permutations to avoid borrow conflict with self.compute()
+        let mut permutations: Vec<Vec<f64>> = Vec::with_capacity(n_perms);
+        {
+            let mut fallback_rng;
+            let rng: &mut dyn rand::RngCore = if let Some(ref mut seeded) = self.seeded_rng {
+                seeded
+            } else {
+                fallback_rng = rand::thread_rng();
+                &mut fallback_rng
+            };
+            for _ in 0..n_perms {
+                let mut y_perm: Vec<f64> = y.to_vec();
+                y_perm.shuffle(rng);
+                permutations.push(y_perm);
+            }
+        }
+
+        for y_perm in &permutations {
+            null_hsics.push(self.compute(x, y_perm));
         }
 
         let p_value = null_hsics.iter()
@@ -185,6 +215,16 @@ impl HSICTest {
 impl Default for HSICTest {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Clone for HSICTest {
+    fn clone(&self) -> Self {
+        // seeded_rng is not Clone, so recreate as unseeded on clone
+        Self {
+            sigma: self.sigma,
+            seeded_rng: None,
+        }
     }
 }
 
@@ -671,6 +711,24 @@ impl CausalConsciousness {
             adaptive: LiveLearningRouter::new(seed + 1000),
             attention: CausalAttention::new(seed + 2000),
             ltc_bridge: CausalLTCBridge::new(n_ltc_levels, seed + 3000),
+        }
+    }
+
+    /// Create a deterministic causal consciousness system from a genesis seed.
+    pub fn from_genesis(
+        genesis: &symthaea_core::genesis::GenesisSeed,
+        label: &str,
+        n_ltc_levels: usize,
+    ) -> Self {
+        use rand::Rng;
+        let mut rng = genesis.domain(&format!("{label}::causal_consciousness"));
+        let seed: u64 = rng.gen();
+        Self {
+            discovery: CausalDiscoveryEngine::with_ensemble_size(seed, 5),
+            hsic: HSICTest::from_genesis(genesis, &format!("{label}::hsic")),
+            adaptive: LiveLearningRouter::new(seed.wrapping_add(1000)),
+            attention: CausalAttention::new(seed.wrapping_add(2000)),
+            ltc_bridge: CausalLTCBridge::new(n_ltc_levels, seed.wrapping_add(3000)),
         }
     }
 
@@ -1189,7 +1247,7 @@ mod tests {
 
     #[test]
     fn test_hsic() {
-        let hsic = HSICTest::new();
+        let mut hsic = HSICTest::new();
 
         // Independent variables
         let x: Vec<f64> = (0..100).map(|i| i as f64).collect();

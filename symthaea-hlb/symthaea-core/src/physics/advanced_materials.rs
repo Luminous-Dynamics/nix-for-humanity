@@ -457,7 +457,7 @@ mod tests {
         let (_, materials, radiation) = setup();
 
         let damage = radiation.calculate_damage(14.1, 1e14, 22);
-        let (best, analysis) = materials.best_max_phase(&damage)
+        let (_best, analysis) = materials.best_max_phase(&damage)
             .expect("Should find best MAX phase");
 
         assert!(analysis.lcf_score > 0.4, "Best MAX phase should have decent LCF score");
@@ -468,7 +468,7 @@ mod tests {
         let (_, materials, radiation) = setup();
 
         let damage = radiation.calculate_damage(14.1, 1e14, 22);
-        let (best, analysis) = materials.best_nano_laminate(&damage)
+        let (_best, analysis) = materials.best_nano_laminate(&damage)
             .expect("Should find best nano-laminate");
 
         assert!(analysis.lcf_score > 0.5, "Best nano-laminate should have good LCF score");

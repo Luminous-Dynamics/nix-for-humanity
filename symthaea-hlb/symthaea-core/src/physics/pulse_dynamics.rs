@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn test_damage_model() {
-        let mut model = DamageModel::new(1e14, 1e-8, 100.0);
+        let model = DamageModel::new(1e14, 1e-8, 100.0);
 
         // High healing rate should result in low equilibrium
         let profile = PulseProfile::pulsed(100.0, 0.1, 10.0); // 1% duty

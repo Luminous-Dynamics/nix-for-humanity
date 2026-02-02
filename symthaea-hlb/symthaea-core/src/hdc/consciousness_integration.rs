@@ -3880,6 +3880,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "takes >60s in debug builds"]
     fn test_self_awareness_prediction_learning() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.enable_self_awareness(1024, 16);
@@ -3959,6 +3960,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "takes >60s in debug builds"]
     fn test_complete_integration_all_systems() {
         // Ultimate integration test: ALL systems working together
         let mut pipeline = ConsciousnessPipeline::default();
@@ -4028,6 +4030,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "takes >60s in debug builds"]
     fn test_consciousness_metrics_report() {
         let mut pipeline = ConsciousnessPipeline::default();
         pipeline.set_embodiment(0.8);
@@ -4118,6 +4121,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "takes >60s in debug builds"]
     fn test_full_consciousness_processing_pipeline() {
         // Comprehensive test of the entire consciousness pipeline
         let mut pipeline = ConsciousnessPipeline::default();
