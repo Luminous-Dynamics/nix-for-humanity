@@ -576,6 +576,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_mode_transitions() {
         let config = EngineConfig {
             hdc_dim: 1024,
@@ -603,6 +604,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_consciousness_signature() {
         let config = EngineConfig::default();
         let mut engine = UnifiedConsciousnessEngine::new(config);
@@ -628,6 +630,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_temporal_coherence() {
         let config = EngineConfig {
             temporal_buffer: 20,

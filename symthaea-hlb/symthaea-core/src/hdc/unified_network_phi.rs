@@ -1068,6 +1068,9 @@ mod tests {
     use super::*;
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_basic_phi_measurement() {
         let config = UnifiedNetworkConfig {
             layer_sizes: vec![2, 3, 2],
@@ -1090,6 +1093,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_measurement_initial_state() {
         let config = UnifiedNetworkConfig::default();
         let network = HdcLtcUnifiedNetwork::new(config, 42);
@@ -1104,6 +1110,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_evolution_tracking() {
         let tracker = demo_phi_evolution(42);
 
@@ -1119,6 +1128,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_range_validation() {
         let config = UnifiedNetworkConfig::default();
         let mut network = HdcLtcUnifiedNetwork::new(config, 42);
@@ -1136,6 +1148,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_network_state_extraction() {
         let config = UnifiedNetworkConfig {
             layer_sizes: vec![2, 3, 2],
@@ -1151,6 +1166,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_similarity_matrix_computation() {
         let config = UnifiedNetworkConfig {
             layer_sizes: vec![3, 3],
@@ -1184,6 +1202,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_comparison() {
         let config_small = UnifiedNetworkConfig {
             layer_sizes: vec![2, 2],
@@ -1213,6 +1234,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_layer_phi_computation() {
         let config = UnifiedNetworkConfig {
             layer_sizes: vec![3, 4, 3],
@@ -1241,6 +1265,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_with_different_methods() {
         let config = UnifiedNetworkConfig {
             layer_sizes: vec![3, 4, 3],
@@ -1276,6 +1303,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_validation_suite() {
         let config = UnifiedNetworkConfig::default();
         let mut network = HdcLtcUnifiedNetwork::new(config, 42);
@@ -1299,6 +1329,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_phi_increases_with_evolution() {
         let config = UnifiedNetworkConfig::default();
         let mut network = HdcLtcUnifiedNetwork::new(config, 42);

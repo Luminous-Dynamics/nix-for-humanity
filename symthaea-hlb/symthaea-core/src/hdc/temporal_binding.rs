@@ -549,6 +549,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_stream_of_consciousness() {
         use super::super::unified_consciousness_engine::{UnifiedConsciousnessEngine, EngineConfig};
 

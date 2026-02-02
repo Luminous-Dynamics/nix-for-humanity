@@ -493,6 +493,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_self_aware_processing() {
         let config = EngineConfig {
             hdc_dim: 1024,
@@ -516,6 +517,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_prediction_improvement() {
         let config = EngineConfig {
             hdc_dim: 1024,

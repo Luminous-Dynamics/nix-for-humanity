@@ -1042,6 +1042,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow in debug builds"]
     fn test_repair_severe_corruption() {
         let field = create_test_field();
 

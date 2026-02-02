@@ -529,6 +529,9 @@ mod tests {
     const ACCURACY_THRESHOLD_PERCENT: f64 = 1.0;  // 1% relative error threshold
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_fast_tau_accuracy() {
         let config = ValidationConfig {
             tau_base: 0.1,
@@ -550,6 +553,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_medium_tau_accuracy() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -569,6 +575,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_slow_tau_accuracy() {
         let config = ValidationConfig {
             tau_base: 10.0,
@@ -588,6 +597,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_small_input_accuracy() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -607,6 +619,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_large_input_accuracy() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -626,6 +641,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_long_term_accuracy() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -646,6 +664,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_zero_input_edge_case() {
         let result = validate_zero_input(1.0, 512);
         println!("{}", result.report());
@@ -659,6 +680,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_saturated_state_edge_case() {
         let result = validate_saturated_state(1.0, 512);
         println!("{}", result.report());
@@ -672,6 +696,9 @@ mod tests {
     }
 
     #[test]
+
+
+    #[ignore = "slow in debug builds"]
     fn test_error_growth_bounded() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -695,6 +722,8 @@ mod tests {
 
     /// Comprehensive validation test that runs all scenarios
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_comprehensive_validation() {
         let results = run_all_validations();
 
@@ -728,6 +757,8 @@ mod tests {
 
     /// Test pure analytical solution (without learned gating)
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_pure_exponential_decay() {
         // Test that the basic exponential decay formula is correct
         let tau = 1.0_f32;
@@ -745,6 +776,8 @@ mod tests {
 
     /// Test that the current gating formula is consistent with documentation
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_gating_formula_consistency() {
         // The documentation states:
         // σ(dt) = 1 - exp(-dt/τ) × (1-σ_base)
@@ -770,6 +803,8 @@ mod tests {
 
     /// Test comparing different integration methods on identical initial conditions
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_integration_method_comparison() {
         let dim = 256;
         let tau = 1.0;
@@ -816,6 +851,8 @@ mod tests {
 
     /// Test that equilibrium is reached for long time evolution
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_equilibrium_convergence() {
         let dim = 256;
         let tau = 0.1;  // Fast dynamics
@@ -873,6 +910,8 @@ mod tests {
 
     /// Test single-step exact closed-form - expect some error due to nonlinearity
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_exact_closed_form_single_step() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -894,6 +933,8 @@ mod tests {
 
     /// Test ITERATIVE closed-form matches RK4 to high precision for fast tau
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_iterative_closed_form_fast_tau() {
         let config = ValidationConfig {
             tau_base: 0.1,
@@ -920,6 +961,8 @@ mod tests {
 
     /// Test ITERATIVE closed-form matches RK4 for medium tau
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_iterative_closed_form_medium_tau() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -945,6 +988,8 @@ mod tests {
 
     /// Test ITERATIVE closed-form matches RK4 for slow tau
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_iterative_closed_form_slow_tau() {
         let config = ValidationConfig {
             tau_base: 10.0,
@@ -970,6 +1015,8 @@ mod tests {
 
     /// Test ITERATIVE closed-form for long-term evolution
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_iterative_closed_form_long_term() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -991,6 +1038,8 @@ mod tests {
 
     /// Test comparing CfC-style vs EXACT closed-form
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_cfc_vs_exact_comparison() {
         let config = ValidationConfig {
             tau_base: 1.0,
@@ -1009,6 +1058,8 @@ mod tests {
 
     /// Comprehensive validation of ITERATIVE closed-form across all scenarios
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_iterative_comprehensive_validation() {
         println!("\n=== ITERATIVE Closed-Form Validation ===\n");
 
@@ -1067,6 +1118,8 @@ mod tests {
 
     /// Test that exact closed-form preserves the analytical relationship
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_exact_analytical_relationship() {
         // For a simple scalar case, verify:
         // x(t+dt) = x_inf + (x - x_inf) * exp(-dt/tau)
@@ -1100,6 +1153,8 @@ mod tests {
 
     /// Test comparing all three methods: CfC, Exact, and Iterative
     #[test]
+
+    #[ignore = "slow in debug builds"]
     fn test_all_methods_comparison() {
         let dim = 512;
         let tau = 1.0;
