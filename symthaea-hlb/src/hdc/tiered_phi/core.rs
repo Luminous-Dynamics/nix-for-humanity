@@ -965,7 +965,7 @@ impl TieredPhi {
             // Simple PRNG using hash of attempt counter
 
 
-            let random_value = RandomState::new().hash_one((self.stats.total_calculations + attempts));
+            let random_value = RandomState::new().hash_one(self.stats.total_calculations + attempts);
 
             // Create bipartition mask (ensure non-trivial)
             // For n >= 63, we use the full u64 range modulo the max value
