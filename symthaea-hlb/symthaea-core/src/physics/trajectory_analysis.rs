@@ -1,12 +1,16 @@
-//! # Phase 2: Temporal Trajectory Binding
+//! # Trajectory Analysis
 //!
-//! Binds physics simulation states across time to create "trajectory consciousness" -
-//! a measure of how coherently a design evolves through operational states.
+//! Analyzes how a fusion reactor design evolves through operational states over time.
+//! Uses temporal binding to create a unified trajectory representation.
 //!
-//! ## Conceptual Foundation
+//! ## What This Measures (Engineering Metrics)
 //!
-//! A fusion reactor design isn't just a static point in design space - it's a trajectory
-//! through operational states over its lifetime:
+//! - **Trajectory Coherence**: How smoothly does the design evolve?
+//! - **State Transitions**: How predictable are operational changes?
+//! - **Stability**: Variance in integration metrics over time
+//! - **Trend**: Is the design improving or degrading?
+//!
+//! ## Architecture
 //!
 //! ```text
 //!   Time →
@@ -29,27 +33,26 @@
 //!        Unified Trajectory Vector
 //! ```
 //!
-//! ## Metrics
+//! ## Note on Naming
 //!
-//! - **Trajectory Coherence**: How smoothly does the design evolve?
-//! - **Anticipation Match**: How predictable are state transitions?
-//! - **Narrative Unity**: Does the trajectory form a coherent "story"?
-//! - **Temporal Integration**: Past-present-future binding strength
+//! This module was previously named "physics_temporal_trajectory" with
+//! "trajectory consciousness" metrics. The metrics measure engineering
+//! properties (coherence, stability, trend), not consciousness.
 
 use crate::genesis::GenesisSeed;
 use crate::hdc::real_hv::RealHV;
 use crate::hdc::temporal_binding::{
     TemporalBindingConfig, TemporalBindingEngine, StreamHealth,
 };
-use super::physics_consciousness_integration::{
-    PhysicsConsciousnessEngine, EncodedPhysicsState, ConsciousnessMetrics,
+use super::design_integration::{
+    DesignIntegrationEngine, EncodedPhysicsState, IntegrationMetrics,
 };
 use super::coupled_physics::{CoupledSimulationResult, OperatingConditions, CoupledPhysicsEngine};
 use super::standard_model::PHYSICS_DIM;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-/// Configuration for physics trajectory binding
+/// Configuration for trajectory analysis
 #[derive(Clone, Debug)]
 pub struct TrajectoryConfig {
     /// Window size (number of states to keep in memory)
@@ -65,8 +68,8 @@ pub struct TrajectoryConfig {
 impl Default for TrajectoryConfig {
     fn default() -> Self {
         Self {
-            window_size: 50,  // ~50 operational cycles
-            decay_rate: 0.05, // Slower decay for design trajectories
+            window_size: 50,
+            decay_rate: 0.05,
             anticipation_weight: 0.2,
             dim: PHYSICS_DIM,
         }
@@ -82,21 +85,21 @@ pub struct TrajectoryState {
     pub result: CoupledSimulationResult,
     /// Encoded as HDC vector
     pub encoded: EncodedPhysicsState,
-    /// Consciousness metrics for this state
-    pub metrics: ConsciousnessMetrics,
+    /// Integration metrics for this state
+    pub metrics: IntegrationMetrics,
     /// Temporal binding with previous states
     pub temporal_binding: f32,
     /// Anticipation match (how well predicted)
     pub anticipation_match: f32,
-    /// Narrative continuity
+    /// Continuity with previous state
     pub continuity: f32,
 }
 
 /// Summary metrics for an entire trajectory
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TrajectoryMetrics {
-    /// Overall trajectory consciousness
-    pub trajectory_consciousness: f32,
+    /// Overall trajectory quality score
+    pub trajectory_quality: f32,
     /// How smoothly the design evolves
     pub coherence: f32,
     /// Past-present binding strength
@@ -105,44 +108,44 @@ pub struct TrajectoryMetrics {
     pub future_binding: f32,
     /// Narrative length (states integrated)
     pub narrative_length: usize,
-    /// Mean state consciousness
-    pub mean_state_consciousness: f32,
-    /// Variance in state consciousness
-    pub consciousness_variance: f32,
-    /// Maximum consciousness reached
-    pub peak_consciousness: f32,
-    /// Minimum consciousness reached
-    pub valley_consciousness: f32,
+    /// Mean state integration
+    pub mean_integration: f32,
+    /// Variance in integration
+    pub integration_variance: f32,
+    /// Maximum integration reached
+    pub peak_integration: f32,
+    /// Minimum integration reached
+    pub valley_integration: f32,
 }
 
 impl TrajectoryMetrics {
     /// Check if trajectory is healthy
     pub fn is_healthy(&self) -> bool {
-        self.coherence > 0.5 && self.trajectory_consciousness > 0.3
+        self.coherence > 0.5 && self.trajectory_quality > 0.3
     }
 
     /// Summary string
     pub fn summary(&self) -> String {
         format!(
-            "Trajectory[C={:.3}, coherence={:.3}, states={}, range={:.3}-{:.3}]",
-            self.trajectory_consciousness,
+            "Trajectory[quality={:.3}, coherence={:.3}, states={}, range={:.3}-{:.3}]",
+            self.trajectory_quality,
             self.coherence,
             self.narrative_length,
-            self.valley_consciousness,
-            self.peak_consciousness
+            self.valley_integration,
+            self.peak_integration
         )
     }
 }
 
-/// Physics trajectory binding engine
+/// Trajectory analysis engine
 ///
 /// Binds a sequence of physics states into a unified trajectory representation
 /// that captures the design's evolution through operational space.
-pub struct PhysicsTrajectoryEngine {
+pub struct TrajectoryAnalysisEngine {
     /// Temporal binding engine (uses RealHV internally)
     temporal: TemporalBindingEngine,
-    /// Physics consciousness engine
-    consciousness: PhysicsConsciousnessEngine,
+    /// Design integration engine
+    integration: DesignIntegrationEngine,
     /// History of trajectory states
     history: VecDeque<TrajectoryState>,
     /// Configuration
@@ -151,15 +154,18 @@ pub struct PhysicsTrajectoryEngine {
     step: usize,
     /// Running trajectory vector (accumulated)
     trajectory_vector: RealHV,
-    /// Running mean consciousness
-    consciousness_sum: f32,
-    /// Running max consciousness
-    consciousness_max: f32,
-    /// Running min consciousness
-    consciousness_min: f32,
+    /// Running sum for mean calculation
+    integration_sum: f32,
+    /// Running max integration
+    integration_max: f32,
+    /// Running min integration
+    integration_min: f32,
 }
 
-impl PhysicsTrajectoryEngine {
+// Backwards compatibility alias
+pub type PhysicsTrajectoryEngine = TrajectoryAnalysisEngine;
+
+impl TrajectoryAnalysisEngine {
     /// Create from genesis seed
     pub fn from_genesis(genesis: &GenesisSeed) -> Self {
         Self::with_config(genesis, TrajectoryConfig::default())
@@ -176,14 +182,14 @@ impl PhysicsTrajectoryEngine {
 
         Self {
             temporal: TemporalBindingEngine::new(temporal_config),
-            consciousness: PhysicsConsciousnessEngine::from_genesis(genesis),
+            integration: DesignIntegrationEngine::from_genesis(genesis),
             history: VecDeque::new(),
             config,
             step: 0,
             trajectory_vector: RealHV::zero(PHYSICS_DIM),
-            consciousness_sum: 0.0,
-            consciousness_max: f32::NEG_INFINITY,
-            consciousness_min: f32::INFINITY,
+            integration_sum: 0.0,
+            integration_max: f32::NEG_INFINITY,
+            integration_min: f32::INFINITY,
         }
     }
 
@@ -192,8 +198,8 @@ impl PhysicsTrajectoryEngine {
         self.step += 1;
 
         // Encode the physics state
-        let encoded = self.consciousness.encode_simulation(result);
-        let metrics = self.consciousness.compute_metrics(result);
+        let encoded = self.integration.encode_simulation(result);
+        let metrics = self.integration.compute_metrics(result);
 
         // Convert ContinuousHV to RealHV for temporal binding
         let state_vector = continuous_to_real(&encoded.unified_state);
@@ -207,10 +213,10 @@ impl PhysicsTrajectoryEngine {
             .scale((1.0 - lr) as f32)
             .add(&moment.bound_experience.scale(lr as f32));
 
-        // Update consciousness statistics
-        self.consciousness_sum += metrics.overall_consciousness;
-        self.consciousness_max = self.consciousness_max.max(metrics.overall_consciousness);
-        self.consciousness_min = self.consciousness_min.min(metrics.overall_consciousness);
+        // Update statistics
+        self.integration_sum += metrics.overall_integration;
+        self.integration_max = self.integration_max.max(metrics.overall_integration);
+        self.integration_min = self.integration_min.min(metrics.overall_integration);
 
         // Create trajectory state
         let state = TrajectoryState {
@@ -249,10 +255,10 @@ impl PhysicsTrajectoryEngine {
 
     /// Get trajectory metrics summary
     pub fn trajectory_metrics(&self) -> TrajectoryMetrics {
-        let integration = self.temporal.integration_summary();
+        let temporal_integration = self.temporal.integration_summary();
 
-        let mean_consciousness = if self.step > 0 {
-            self.consciousness_sum / self.step as f32
+        let mean_integration = if self.step > 0 {
+            self.integration_sum / self.step as f32
         } else {
             0.0
         };
@@ -260,29 +266,29 @@ impl PhysicsTrajectoryEngine {
         // Compute variance
         let variance = if self.history.len() > 1 {
             let sum_sq: f32 = self.history.iter()
-                .map(|s| (s.metrics.overall_consciousness - mean_consciousness).powi(2))
+                .map(|s| (s.metrics.overall_integration - mean_integration).powi(2))
                 .sum();
             sum_sq / self.history.len() as f32
         } else {
             0.0
         };
 
-        // Trajectory consciousness: combines temporal coherence with mean state consciousness
-        let trajectory_consciousness =
-            0.5 * integration.coherence as f32 +
-            0.3 * mean_consciousness +
-            0.2 * (1.0 - variance.sqrt().min(1.0));  // Stability bonus
+        // Trajectory quality: combines temporal coherence with mean integration
+        let trajectory_quality =
+            0.5 * temporal_integration.coherence as f32 +
+            0.3 * mean_integration +
+            0.2 * (1.0 - variance.sqrt().min(1.0));
 
         TrajectoryMetrics {
-            trajectory_consciousness,
-            coherence: integration.coherence as f32,
-            past_binding: integration.past_binding as f32,
-            future_binding: integration.future_binding as f32,
+            trajectory_quality,
+            coherence: temporal_integration.coherence as f32,
+            past_binding: temporal_integration.past_binding as f32,
+            future_binding: temporal_integration.future_binding as f32,
             narrative_length: self.history.len(),
-            mean_state_consciousness: mean_consciousness,
-            consciousness_variance: variance,
-            peak_consciousness: if self.consciousness_max.is_finite() { self.consciousness_max } else { 0.0 },
-            valley_consciousness: if self.consciousness_min.is_finite() { self.consciousness_min } else { 0.0 },
+            mean_integration,
+            integration_variance: variance,
+            peak_integration: if self.integration_max.is_finite() { self.integration_max } else { 0.0 },
+            valley_integration: if self.integration_min.is_finite() { self.integration_min } else { 0.0 },
         }
     }
 
@@ -302,7 +308,7 @@ impl PhysicsTrajectoryEngine {
     }
 
     /// Compare this trajectory to another
-    pub fn similarity_to(&self, other: &PhysicsTrajectoryEngine) -> f32 {
+    pub fn similarity_to(&self, other: &TrajectoryAnalysisEngine) -> f32 {
         self.trajectory_vector.similarity(&other.trajectory_vector)
     }
 
@@ -311,8 +317,8 @@ impl PhysicsTrajectoryEngine {
         self.history.iter().rev().take(n).collect()
     }
 
-    /// Get consciousness trend (positive = improving)
-    pub fn consciousness_trend(&self) -> f32 {
+    /// Get integration trend (positive = improving)
+    pub fn integration_trend(&self) -> f32 {
         if self.history.len() < 2 {
             return 0.0;
         }
@@ -326,7 +332,7 @@ impl PhysicsTrajectoryEngine {
 
         for (i, state) in self.history.iter().enumerate() {
             let x = i as f32;
-            let y = state.metrics.overall_consciousness;
+            let y = state.metrics.overall_integration;
             sum_x += x;
             sum_y += y;
             sum_xy += x * y;
@@ -340,7 +346,6 @@ impl PhysicsTrajectoryEngine {
 
 /// Convert ContinuousHV to RealHV (both are f32-based)
 fn continuous_to_real(continuous: &crate::hdc::unified_hv::ContinuousHV) -> RealHV {
-    // Both types use Vec<f32> internally, so direct conversion is possible
     RealHV::from_vec(continuous.values.clone())
 }
 
@@ -349,8 +354,8 @@ fn continuous_to_real(continuous: &crate::hdc::unified_hv::ContinuousHV) -> Real
 pub struct TrajectoryComparison {
     /// Similarity between trajectory vectors
     pub vector_similarity: f32,
-    /// Difference in trajectory consciousness
-    pub consciousness_delta: f32,
+    /// Difference in trajectory quality
+    pub quality_delta: f32,
     /// Which trajectory is healthier
     pub healthier: &'static str,
     /// Metrics for trajectory A
@@ -361,16 +366,16 @@ pub struct TrajectoryComparison {
 
 /// Compare two trajectories
 pub fn compare_trajectories(
-    engine_a: &PhysicsTrajectoryEngine,
-    engine_b: &PhysicsTrajectoryEngine,
+    engine_a: &TrajectoryAnalysisEngine,
+    engine_b: &TrajectoryAnalysisEngine,
 ) -> TrajectoryComparison {
     let metrics_a = engine_a.trajectory_metrics();
     let metrics_b = engine_b.trajectory_metrics();
 
     let vector_similarity = engine_a.trajectory_vector.similarity(&engine_b.trajectory_vector);
-    let consciousness_delta = metrics_a.trajectory_consciousness - metrics_b.trajectory_consciousness;
+    let quality_delta = metrics_a.trajectory_quality - metrics_b.trajectory_quality;
 
-    let healthier = if metrics_a.trajectory_consciousness > metrics_b.trajectory_consciousness {
+    let healthier = if metrics_a.trajectory_quality > metrics_b.trajectory_quality {
         "A"
     } else {
         "B"
@@ -378,7 +383,7 @@ pub fn compare_trajectories(
 
     TrajectoryComparison {
         vector_similarity,
-        consciousness_delta,
+        quality_delta,
         healthier,
         metrics_a,
         metrics_b,
@@ -390,10 +395,10 @@ mod tests {
     use super::*;
     use crate::physics::FusionReaction;
 
-    fn setup() -> (GenesisSeed, CoupledPhysicsEngine, PhysicsTrajectoryEngine) {
-        let genesis = GenesisSeed::from_phrase("trajectory test 2024");
+    fn setup() -> (GenesisSeed, CoupledPhysicsEngine, TrajectoryAnalysisEngine) {
+        let genesis = GenesisSeed::from_phrase("trajectory analysis test");
         let physics = CoupledPhysicsEngine::from_genesis(&genesis);
-        let trajectory = PhysicsTrajectoryEngine::from_genesis(&genesis);
+        let trajectory = TrajectoryAnalysisEngine::from_genesis(&genesis);
         (genesis, physics, trajectory)
     }
 
@@ -406,11 +411,11 @@ mod tests {
         let state = trajectory.process(&result);
 
         assert_eq!(state.step, 1);
-        assert!(state.metrics.overall_consciousness > 0.0);
+        assert!(state.metrics.overall_integration > 0.0);
 
         println!("\nSingle state processed:");
         println!("  Step: {}", state.step);
-        println!("  Consciousness: {:.4}", state.metrics.overall_consciousness);
+        println!("  Integration: {:.4}", state.metrics.overall_integration);
         println!("  Temporal binding: {:.4}", state.temporal_binding);
         println!("  Continuity: {:.4}", state.continuity);
     }
@@ -423,7 +428,6 @@ mod tests {
         println!("TRAJECTORY EVOLUTION TEST");
         println!("========================================\n");
 
-        // Evolve through power ramp-up
         let powers = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
 
         for power in powers {
@@ -434,16 +438,16 @@ mod tests {
             let result = physics.simulate(&conditions);
             let state = trajectory.process(&result);
 
-            println!("  {:>5.0} kW: C={:.4}, binding={:.4}, continuity={:.4}",
+            println!("  {:>5.0} kW: I={:.4}, binding={:.4}, continuity={:.4}",
                      power,
-                     state.metrics.overall_consciousness,
+                     state.metrics.overall_integration,
                      state.temporal_binding,
                      state.continuity);
         }
 
         let metrics = trajectory.trajectory_metrics();
         println!("\n{}", metrics.summary());
-        println!("  Trend: {:.4}", trajectory.consciousness_trend());
+        println!("  Trend: {:.4}", trajectory.integration_trend());
 
         assert!(metrics.narrative_length == 10);
         assert!(metrics.coherence > 0.0);
@@ -455,14 +459,14 @@ mod tests {
         let physics = CoupledPhysicsEngine::from_genesis(&genesis);
 
         // Trajectory A: Steady low power
-        let mut traj_a = PhysicsTrajectoryEngine::from_genesis(&genesis);
+        let mut traj_a = TrajectoryAnalysisEngine::from_genesis(&genesis);
         for _ in 0..10 {
             let result = physics.simulate(&OperatingConditions::consumer());
             traj_a.process(&result);
         }
 
         // Trajectory B: Ramping power
-        let mut traj_b = PhysicsTrajectoryEngine::from_genesis(&genesis);
+        let mut traj_b = TrajectoryAnalysisEngine::from_genesis(&genesis);
         for i in 0..10 {
             let conditions = OperatingConditions {
                 power_kw: 5.0 + i as f64 * 5.0,
@@ -477,18 +481,15 @@ mod tests {
         println!("\n========================================");
         println!("TRAJECTORY COMPARISON");
         println!("========================================");
-        println!("Steady (A) consciousness: {:.4}", comparison.metrics_a.trajectory_consciousness);
-        println!("Ramping (B) consciousness: {:.4}", comparison.metrics_b.trajectory_consciousness);
+        println!("Steady (A) quality: {:.4}", comparison.metrics_a.trajectory_quality);
+        println!("Ramping (B) quality: {:.4}", comparison.metrics_b.trajectory_quality);
         println!("Vector similarity: {:.4}", comparison.vector_similarity);
         println!("Healthier trajectory: {}", comparison.healthier);
         println!("========================================\n");
 
-        // Trajectories should have different consciousness metrics
-        // Note: Vector similarity may be high for short trajectories since
-        // they accumulate slowly, but the consciousness metrics will differ
         assert!(
-            (comparison.metrics_a.trajectory_consciousness - comparison.metrics_b.trajectory_consciousness).abs() > 0.001,
-            "Trajectories should have different consciousness values"
+            (comparison.metrics_a.trajectory_quality - comparison.metrics_b.trajectory_quality).abs() > 0.001,
+            "Trajectories should have different quality values"
         );
     }
 
@@ -506,9 +507,8 @@ mod tests {
             (FusionReaction::DT, "D-T"),
             (FusionReaction::DHe3, "D-He3"),
         ] {
-            let mut trajectory = PhysicsTrajectoryEngine::from_genesis(&genesis);
+            let mut trajectory = TrajectoryAnalysisEngine::from_genesis(&genesis);
 
-            // Run trajectory at constant 5 kW
             for _ in 0..15 {
                 let conditions = OperatingConditions {
                     power_kw: 5.0,
@@ -533,10 +533,9 @@ mod tests {
         println!("STREAM HEALTH EVOLUTION");
         println!("========================================\n");
 
-        // Need several states before stream is "flowing"
         for i in 0..20 {
             let conditions = OperatingConditions {
-                power_kw: 5.0 + (i as f64 * 0.1).sin() * 2.0,  // Small oscillation
+                power_kw: 5.0 + (i as f64 * 0.1).sin() * 2.0,
                 ..OperatingConditions::consumer()
             };
             let result = physics.simulate(&conditions);
@@ -551,7 +550,6 @@ mod tests {
         let final_health = trajectory.stream_health();
         println!("\nFinal: {}", final_health);
 
-        // After 20 states, stream should be flowing
         assert!(final_health.is_flowing, "Stream should be flowing after 20 states");
     }
 }
