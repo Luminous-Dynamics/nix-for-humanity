@@ -3438,6 +3438,25 @@ impl TemporalNetwork {
             Self::HdcLtc(_) => TemporalBackend::HdcLtcUnified,
         }
     }
+
+    /// Project input directly to HDC space, bypassing CfC temporal dynamics.
+    ///
+    /// Returns `None` for CfC backend (no HDC projection available).
+    /// Returns `Some(Vec<f32>)` for HdcLtc backend with the raw HDC vector.
+    fn project_to_hdc_vec(&self, input: &[f32]) -> Option<Vec<f32>> {
+        match self {
+            Self::CfC(_) => None,
+            Self::HdcLtc(bridge) => Some(bridge.project_to_hdc_vec(input)),
+        }
+    }
+
+    /// Get HDC dimension (returns None for CfC backend)
+    fn hdc_dim(&self) -> Option<usize> {
+        match self {
+            Self::CfC(_) => None,
+            Self::HdcLtc(bridge) => Some(bridge.hdc_dim()),
+        }
+    }
 }
 
 /// The Cognitive Loop Service
@@ -4504,6 +4523,56 @@ impl CognitiveLoopService {
     /// Get CfC state dimension
     pub fn cfc_state_dim(&self) -> usize {
         self.config.cfc_config.num_neurons
+    }
+
+    /// Get HDC bridge dimension (returns None if using CfC backend)
+    ///
+    /// This is the dimension of HDC vectors used by the HdcLtcBridge.
+    /// Typically 16384 (HDC_DIMENSION) but can be smaller for fast configs.
+    pub fn hdc_bridge_dim(&self) -> Option<usize> {
+        self.temporal_network.hdc_dim()
+    }
+
+    /// Project an embedding directly to HDC space, bypassing CfC temporal dynamics.
+    ///
+    /// This returns the pure semantic HDC representation before any temporal
+    /// state accumulation occurs. Useful for:
+    /// - Semantic similarity comparisons (cosine similarity of HDC vectors)
+    /// - Debugging whether semantic structure is preserved
+    /// - Comparing HDC-direct clustering vs CfC-output clustering
+    ///
+    /// # Arguments
+    /// * `embedding` - The input embedding (e.g., from BGE-M3 or mock embeddings)
+    ///
+    /// # Returns
+    /// * `Ok(Vec<f32>)` - The HDC vector (before CfC processing)
+    /// * `Err` - If using CfC backend (no HDC projection available)
+    pub fn project_embedding_to_hdc(&self, embedding: &[f32]) -> Result<Vec<f32>> {
+        // The HdcLtcBridge expects input of size config.input_dim (default 256).
+        // We need to compress the embedding to that dimension first.
+        let input_dim = self.config.cfc_config.input_dim;
+
+        // Simple downsampling: take evenly spaced values
+        let compressed = if embedding.len() <= input_dim {
+            // Pad if shorter
+            let mut v = embedding.to_vec();
+            v.resize(input_dim, 0.0);
+            v
+        } else {
+            // Downsample by strided selection
+            let step = embedding.len() / input_dim;
+            embedding.iter()
+                .step_by(step)
+                .take(input_dim)
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+
+        // Project to HDC space (bypasses CfC temporal processing)
+        self.temporal_network.project_to_hdc_vec(&compressed)
+            .ok_or_else(|| anyhow::anyhow!(
+                "HDC projection not available (using CfC backend, not HdcLtcBridge)"
+            ))
     }
 
     /// Check if loop is learning (error trend negative)

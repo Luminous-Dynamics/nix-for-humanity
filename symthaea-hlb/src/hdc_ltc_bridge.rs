@@ -699,6 +699,56 @@ impl HdcLtcBridge {
             avg_weight_norm: network_stats.avg_weight_norm,
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HDC-DIRECT ACCESS (bypasses temporal CfC processing)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Project input directly to HDC space, bypassing CfC temporal dynamics.
+    ///
+    /// This returns the pure semantic HDC representation before any temporal
+    /// state accumulation occurs. Useful for:
+    /// - Semantic similarity comparisons (cosine similarity of HDC vectors)
+    /// - Debugging whether semantic structure is preserved
+    /// - Comparing HDC-direct clustering vs CfC-output clustering
+    ///
+    /// The returned vector has `hdc_dim` dimensions (default 16,384).
+    pub fn project_to_hdc_vec(&self, input: &[f32]) -> Vec<f32> {
+        let input_dim = self.config.input_dim.min(input.len());
+        let hdc_dim = self.config.hdc_dim;
+        let mut values = vec![0.0f32; hdc_dim];
+
+        // Row-accumulation: iterate rows (input elements), accumulate into output
+        // Use 1e-6 threshold instead of 1e-10 to be less aggressive about skipping
+        for i in 0..input_dim {
+            let x = input[i];
+            if x.abs() < 1e-6 { continue; } // Skip near-zero inputs
+            let row_start = i * hdc_dim;
+            let row_end = (i + 1) * hdc_dim;
+
+            // Bounds check to avoid panic
+            if row_end > self.input_projection.len() {
+                break;
+            }
+
+            let row = &self.input_projection[row_start..row_end];
+            for (v, &w) in values.iter_mut().zip(row.iter()) {
+                *v += x * w;
+            }
+        }
+
+        // Apply tanh bounding (same as internal project_to_hdc)
+        for v in values.iter_mut() {
+            *v = v.tanh();
+        }
+
+        values
+    }
+
+    /// Get the HDC dimension used by this bridge
+    pub fn hdc_dim(&self) -> usize {
+        self.config.hdc_dim
+    }
 }
 
 /// Statistics from the HDC-LTC bridge
