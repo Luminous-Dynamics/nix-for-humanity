@@ -1,3 +1,5 @@
+"""Search command with persistent caching for fast repeat queries."""
+
 import json
 import subprocess
 from typing import Any
@@ -49,7 +51,7 @@ def _search_json(q: str) -> list[dict[str, str]]:
 @click.command()
 @click.argument("query", nargs=-1, required=True)
 @click.option("--json", "as_json", is_flag=True, help="Output JSON")
-def search(query: tuple[str, ...], as_json: bool):
+def search(query: tuple[str, ...], as_json: bool) -> None:
     """Search nixpkgs for packages."""
     q = " ".join(query)
 
