@@ -225,6 +225,8 @@ qdrant = []   # Vector database for large-scale memory
 datalog = []  # Datalog reasoning engine
 lance = []    # LanceDB vector storage
 duck = []     # DuckDB analytical queries
+# Data loading (deferred - requires system HDF5 library)
+hdf5 = []     # HDF5 file loading for C-Mod plasma data (add hdf5 crate when ready)
 # Swarm Intelligence - Hybrid Iroh + Holochain
 swarm = ["iroh"]  # Real-time P2P tensor streaming via Iroh 0.95+
 # Desktop integration features
@@ -540,6 +542,10 @@ harness = false
 name = "neural_bridge"
 harness = false
 required-features = ["neural-bridge"]
+
+[[bench]]
+name = "hdc_benchmarks"
+harness = false
 
 [profile.test]
 inherits = "dev"
