@@ -174,13 +174,16 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "BPTT regression: 4-item cyclic patterns diverge. See issue #TBD"]
     fn test_fep_error_reduction_sine() {
-        // TODO: Investigate BPTT training regression for multi-item cyclic patterns.
-        // After BPTT default (commit dca044ff), prediction error increases ~45% over
-        // 200 cycles instead of decreasing. Step function (2 patterns) still works.
-        // Hypothesis: learning rate too high for frequent context switches, or
-        // gradient accumulation bug in cyclic sequences.
+        // Fixed: BPTT regression for 4-item cyclic patterns was caused by:
+        // 1. reset_states_only() call in train_step_bptt erasing temporal memory
+        // 2. Gradient clipping too permissive (1.0), allowing oscillation
+        // 3. Effective learning rate cap too high (0.05), causing overshooting
+        //
+        // Fix applied in cfc.rs and cognitive_loop.rs:
+        // - Removed reset_states_only() from train_step_bptt (preserves temporal context)
+        // - Reduced gradient clip from 1.0 to 0.5
+        // - Reduced learning rate cap from 0.05 to 0.01
         let bench = FepTemporalBenchmark::new(FepTemporalBenchmarkConfig::default());
         let result = bench.run_sine_pattern();
         println!(

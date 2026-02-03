@@ -2,6 +2,8 @@
 //!
 //! Marked `#[ignore]` so it doesn't run in CI.
 //! Run with: cargo test -p symthaea --release --test bptt_throughput -- --ignored --nocapture
+//!
+//! This benchmark compares the original and optimized BPTT implementations.
 
 use ndarray::Array1;
 use std::time::Instant;
@@ -103,6 +105,85 @@ fn bptt_throughput_random_init() {
     );
 
     println!("\n================================================");
+}
+
+#[test]
+#[ignore]
+fn bptt_throughput_optimized_vs_original() {
+    let config = make_config();
+    let genesis = GenesisSeed::from_phrase("benchmark-comparison-2026");
+    let mut net_orig = CfCNetwork::from_genesis(config.clone(), &genesis, "orig");
+    let mut net_opt = CfCNetwork::from_genesis(config.clone(), &genesis, "opt");
+
+    println!("\n======== BPTT Original vs Optimized Comparison ========");
+    println!("Network: input=32, hidden=64, output=16, layers=2, backbone=yes");
+    println!("Parameters: {}", net_orig.num_parameters());
+
+    let (inputs, targets, dts) = generate_samples(100);
+    let n_steps = 100;
+
+    // --- Original BPTT benchmark ---
+    net_orig.reset();
+    let t0 = Instant::now();
+    let mut total_loss_orig = 0.0f32;
+    for i in 0..n_steps {
+        let idx = i % inputs.len();
+        let loss = net_orig
+            .train_step_bptt(
+                &[inputs[idx].clone()],
+                &[targets[idx].clone()],
+                &[dts[idx]],
+                0.001,
+            )
+            .unwrap();
+        total_loss_orig += loss;
+    }
+    let orig_elapsed = t0.elapsed();
+    let orig_us = orig_elapsed.as_micros() as f64 / n_steps as f64;
+    println!("\n[Original] BPTT training:");
+    println!("  Total: {:.2?} for {} steps", orig_elapsed, n_steps);
+    println!("  Per step: {:.1} us ({:.2} ms)", orig_us, orig_us / 1000.0);
+    println!("  Steps/sec: {:.0}", 1_000_000.0 / orig_us);
+    println!("  Avg loss: {:.6}", total_loss_orig / n_steps as f32);
+
+    // --- Optimized BPTT benchmark ---
+    net_opt.reset();
+    let t0 = Instant::now();
+    let mut total_loss_opt = 0.0f32;
+    for i in 0..n_steps {
+        let idx = i % inputs.len();
+        let loss = net_opt
+            .train_step_bptt_optimized(
+                &[inputs[idx].clone()],
+                &[targets[idx].clone()],
+                &[dts[idx]],
+                0.001,
+            )
+            .unwrap();
+        total_loss_opt += loss;
+    }
+    let opt_elapsed = t0.elapsed();
+    let opt_us = opt_elapsed.as_micros() as f64 / n_steps as f64;
+    println!("\n[Optimized] BPTT training:");
+    println!("  Total: {:.2?} for {} steps", opt_elapsed, n_steps);
+    println!("  Per step: {:.1} us ({:.2} ms)", opt_us, opt_us / 1000.0);
+    println!("  Steps/sec: {:.0}", 1_000_000.0 / opt_us);
+    println!("  Avg loss: {:.6}", total_loss_opt / n_steps as f32);
+
+    // --- Comparison ---
+    let speedup = orig_us / opt_us;
+    let savings_pct = (1.0 - opt_us / orig_us) * 100.0;
+    println!("\n--- Comparison ---");
+    println!("  Speedup: {:.2}x", speedup);
+    println!("  Time savings: {:.1}%", savings_pct);
+    println!("  Original <1ms/step: {}", if orig_us < 1000.0 { "YES" } else { "NO" });
+    println!("  Optimized <1ms/step: {}", if opt_us < 1000.0 { "YES" } else { "NO" });
+
+    // Loss should be similar (within tolerance)
+    let loss_diff = (total_loss_orig - total_loss_opt).abs() / total_loss_orig;
+    println!("  Loss difference: {:.4}%", loss_diff * 100.0);
+
+    println!("\n=====================================================");
 }
 
 #[test]

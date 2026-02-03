@@ -70,6 +70,7 @@ mod types;
 mod hyperfeel;
 mod holochain;
 mod service;
+mod federated_cfc;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
@@ -104,6 +105,11 @@ pub use handshake::{HybridHandshake, HandshakeResult, HandshakeError, SwarmMessa
 
 // Network Service - high-level swarm integration
 pub use service::{NetworkService, ServiceStats, PeerEvent, SwarmBridge, CollectiveConsciousness};
+
+// Federated CfC Learning - trust-weighted gradient aggregation
+pub use federated_cfc::{
+    FederatedAggregator, GradientMessage, DifferentialPrivacyConfig,
+};
 
 // ============================================================================
 // SWARM NODE - Main Entry Point

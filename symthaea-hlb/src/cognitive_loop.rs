@@ -4300,7 +4300,7 @@ impl CognitiveLoopService {
         // Apply semantic memory modulation: boost learning when similar inputs had high error
         let semantic_modulated_lr = flow_lr * semantic_lr_factor;
         let effective_lr = (self.curiosity_drive.effective_learning_rate(semantic_modulated_lr) * self.fep_lr_boost)
-            .clamp(0.0, 0.05); // Hard cap: prevent weight explosion from compounding multipliers
+            .clamp(0.0, 0.01); // Hard cap: reduced from 0.05 to 0.01 to prevent oscillation with cyclic patterns
 
         // 11. Learn if error is significant AND we have a previous state AND not paused
         let (learning_occurred, training_loss) = if prediction_error > self.config.learning_threshold

@@ -234,6 +234,10 @@ pub mod hdc_ltc_bridge;
 // Dynamics: attractor networks, temporal evolution
 pub mod dynamics;
 
+// Two-Track Architecture: HDC semantics + CfC temporal
+// Combines HDC for semantic meaning with CfC for temporal patterns
+pub mod two_track;
+
 // ============================================================================
 // Modules with Known Import Issues (Conditionally Compiled)
 // Many of these have internal structural issues that need fixing

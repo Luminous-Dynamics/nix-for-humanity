@@ -110,6 +110,7 @@ pub enum NormalizationMode {
 ///
 /// The projection matrix is initialized from a seed for reproducibility,
 /// ensuring aligned encoding between primitives and input embeddings.
+#[derive(Debug)]
 pub struct HdcBridge {
     /// Configuration
     config: BridgeConfig,
