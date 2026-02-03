@@ -10,7 +10,7 @@
 //! Unlike heuristic ensembles that vote on features, this architecture builds
 //! generative models and asks counterfactual questions.
 
-use super::{CausalDirection, CausalDiscoveryResult, CausalFeatures};
+use crate::hdc::{CausalDirection, CausalDiscoveryResult, CausalFeatures};
 
 /// Helper function to create a CausalDiscoveryResult with all required fields
 fn make_result(direction: CausalDirection, p_forward: f64, confidence: f64) -> CausalDiscoveryResult {
