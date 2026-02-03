@@ -84,16 +84,16 @@ flask-cors = {version = "^6.0.1", optional = true}
 flask-limiter = {version = "^3.12", optional = true}
 aiohttp = {version = "^3.13.3", optional = true}
 aiohttp-cors = {version = "^0.8.1", optional = true}
-fastapi = {version = "^0.116.1", optional = true}
+fastapi = {version = ">=0.116.1", optional = true}
 uvicorn = {version = "^0.35.0", optional = true}
 sse-starlette = {version = "^2.2.1", optional = true}
 pydantic = {version = "^2.11.7", optional = true}
 
 # ML/AI (opt-in)
-numpy = {version = "^2.4.2", optional = true}
+numpy = {version = ">=1.24", optional = true}
 nltk = {version = "^3.8", optional = true}
 transformers = {version = "^4.50.0", optional = true}
-torch = {version = "^2.10.0", optional = true}
+torch = {version = ">=2.9.1", optional = true}
 scikit-learn = {version = "^1.8.0", optional = true}
 sentence-transformers = {version = "^2.2.0", optional = true}
 redis = {version = "^5.0.0", optional = true}
@@ -125,7 +125,7 @@ astor = {version = "^0.8.1", optional = true}
 glances = {version = "^4.3.1", optional = true}
 py3nvml = {version = "^0.2.7", optional = true}
 gpustat = {version = "^1.1.1", optional = true}
-vllm = {version = ">=0.11.2", optional = true, python = ">=3.13,<3.14"}
+vllm = {version = ">=0.14.1", optional = true, python = ">=3.13,<3.14"}
 adam-atan2 = {version = "^0.0.3", optional = true}
 einops = {version = "^0.8.1", optional = true}
 coolname = {version = "^2.2.0", optional = true}
