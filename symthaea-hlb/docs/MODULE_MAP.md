@@ -58,6 +58,21 @@
 
 ---
 
+## Canonical HDC Source (symthaea-core)
+
+The core HDC primitives are defined in `symthaea-core/` and re-exported by `src/hdc/mod.rs`:
+
+| Module | Location | Purpose |
+|--------|----------|---------|
+| `binary_hv` | symthaea-core | HV16: 16,384-bit binary hypervectors |
+| `real_hv` | symthaea-core | RealHV: 2,048-dim real-valued vectors |
+| `primitive_system` | symthaea-core | 202 ontological primitives across 9 tiers |
+| `unified_hv` | symthaea-core | Unified hypervector interface |
+
+This consolidation ensures a single source of truth for HDC operations shared across phi-lab and symthaea-hlb.
+
+---
+
 ## Data Flow Architecture
 
 ```
