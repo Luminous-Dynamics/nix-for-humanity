@@ -76,6 +76,7 @@ use crate::consciousness::fep_active_inference::{
     EnhancedFEPBridge, MotorCommandType,
 };
 use crate::memory::coherence_tracker::ConversationCoherenceTracker;
+use crate::memory::semantic_memory::SemanticMemory;
 
 use crate::hdc_ltc_bridge::{HdcLtcBridge, HdcLtcBridgeConfig};
 use crate::consciousness::stability_regime::{StabilityRegimeProcessor, RegimeTransition};
@@ -3187,6 +3188,25 @@ pub struct LoopStats {
 
     /// Training cycles that fell back to SPSA
     pub spsa_fallback_steps: u64,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SEMANTIC MEMORY STATS (HDC-based similarity lookup for CfC context)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Semantic Memory: Number of queries that found similar entries
+    pub semantic_hits: u64,
+
+    /// Semantic Memory: Number of queries that found no similar entries
+    pub semantic_misses: u64,
+
+    /// Semantic Memory: Current learning rate factor from semantic context
+    pub semantic_lr_factor: f32,
+
+    /// Semantic Memory: Average prediction error of retrieved similar entries
+    pub semantic_avg_retrieved_error: f32,
+
+    /// Semantic Memory: Total entries stored
+    pub semantic_entries_stored: u64,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3583,6 +3603,11 @@ pub struct CognitiveLoopService {
     /// Discovery service for finding new primitives seeded by crystallization events
     discovery_service: PrimitiveDiscoveryService,
 
+    /// Semantic Memory: HDC-based similarity lookup for CfC contextual learning
+    /// Stores (HDC vector, prediction error) pairs and retrieves similar past inputs
+    /// to modulate learning rate - high error on similar inputs → boost learning
+    semantic_memory: SemanticMemory,
+
     /// Neural bridge for projecting pre-computed embeddings (e.g. BGE-M3)
     /// directly into HDC space via a trained linear probe.
     /// Only available when the `neural-bridge` feature is enabled and
@@ -3724,6 +3749,9 @@ impl CognitiveLoopService {
             coherence_tracker: ConversationCoherenceTracker::new(0.3),
             stability_regime: StabilityRegimeProcessor::new(),
             discovery_service: PrimitiveDiscoveryService::new(DiscoveryServiceConfig::default()),
+            // Semantic memory: HDC-based similarity lookup for CfC context
+            // 1000 entries, 0.3 similarity threshold
+            semantic_memory: SemanticMemory::with_threshold(1000, 0.3),
             #[cfg(feature = "neural-bridge")]
             neural_bridge: {
                 let probe_path = std::path::Path::new("models/neural_bridge/probe_weights.npy");
@@ -3993,6 +4021,21 @@ impl CognitiveLoopService {
             self.config.cfc_config.input_dim
         );
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // 2a. SEMANTIC MEMORY: HDC-based similarity lookup for CfC context
+        // ═══════════════════════════════════════════════════════════════════════
+        // Project to HDC space and find similar past inputs.
+        // Use their prediction errors to modulate learning rate:
+        // - High error on similar inputs → boost learning (we struggled before)
+        // - Low error on similar inputs → reduce learning (familiar territory)
+        //
+        // For HdcLtc backend: use the native HDC projection
+        // For CfC backend: use the compressed state as the semantic vector
+
+        let semantic_hdc = self.temporal_network.project_to_hdc_vec(&compressed_state)
+            .unwrap_or_else(|| compressed_state.clone());
+        let semantic_lr_factor = self.semantic_memory.compute_lr_factor(&semantic_hdc, 3);
+
         // 3. Convert to ndarray for CfC
         let input_array = Array1::from_vec(compressed_state.clone());
 
@@ -4250,11 +4293,13 @@ impl CognitiveLoopService {
         self.unification_engine.update_phi(unified_phi);
 
         // Get adaptive learning rate (respects pause_learning and all modulations)
-        // Include flow state boost and curiosity novelty bonus
+        // Include flow state boost, curiosity novelty bonus, and semantic context
         let base_lr = self.combined_learning_rate();
         let adaptive_lr = self.adaptive_behavior.effective_learning_rate(base_lr);
         let flow_lr = self.flow_state.effective_learning_multiplier(adaptive_lr);
-        let effective_lr = (self.curiosity_drive.effective_learning_rate(flow_lr) * self.fep_lr_boost)
+        // Apply semantic memory modulation: boost learning when similar inputs had high error
+        let semantic_modulated_lr = flow_lr * semantic_lr_factor;
+        let effective_lr = (self.curiosity_drive.effective_learning_rate(semantic_modulated_lr) * self.fep_lr_boost)
             .clamp(0.0, 0.05); // Hard cap: prevent weight explosion from compounding multipliers
 
         // 11. Learn if error is significant AND we have a previous state AND not paused
@@ -4408,6 +4453,25 @@ impl CognitiveLoopService {
         };
 
         self.closed_learning_loop.update(cycle_learning_result);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SEMANTIC MEMORY: Store this cycle's HDC vector + prediction error
+        // ═══════════════════════════════════════════════════════════════════════
+        // This enables future cycles to find semantically similar inputs and
+        // use their prediction errors to modulate learning rate.
+        self.semantic_memory.store_with_timestamp(
+            semantic_hdc,
+            prediction_error,
+            None, // Category could be derived from detected_primitives if desired
+            self.stats.total_cycles as u64,
+        );
+
+        // Update semantic memory stats in loop stats
+        self.stats.semantic_hits = self.semantic_memory.stats().semantic_hits;
+        self.stats.semantic_misses = self.semantic_memory.stats().semantic_misses;
+        self.stats.semantic_lr_factor = semantic_lr_factor;
+        self.stats.semantic_avg_retrieved_error = self.semantic_memory.stats().avg_retrieved_error;
+        self.stats.semantic_entries_stored = self.semantic_memory.stats().total_stored;
 
         CycleResult {
             output,
