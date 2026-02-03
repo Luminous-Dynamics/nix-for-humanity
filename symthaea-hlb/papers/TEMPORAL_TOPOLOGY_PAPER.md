@@ -35,9 +35,14 @@ The Temporal Topology paper serves as a "Trojan Horse" - presenting empirical fi
 
 All data originates from the same Symthaea codebase:
 
-- **260 Φ measurements**: `src/hdc/phi_real.rs`
+- **260 λ₂ measurements**: `src/hdc/phi_real.rs` (note: file name is a misnomer—computes algebraic connectivity, not IIT Φ)
 - **19 topologies**: `src/hdc/consciousness_topology_generators.rs`
 - **Validation**: `examples/tier_3_exotic_topologies.rs`
+
+> **METRIC CLARIFICATION**: The measurements labeled "Φ" in the codebase are actually λ₂
+> (algebraic connectivity / Fiedler value), a spectral graph metric. This is **NOT** IIT's
+> integrated information (Φ), which requires computing minimum information partition and is
+> computationally intractable for n > 12. See `docs/METRIC_DEFINITIONS.md` for details.
 
 The difference is in framing and emphasis, not data.
 

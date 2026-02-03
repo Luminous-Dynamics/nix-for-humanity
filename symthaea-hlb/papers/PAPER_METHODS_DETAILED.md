@@ -93,11 +93,18 @@ We evaluated 19 distinct topologies across five categories:
 - Quantum Superposition: Weighted combinations of Ring+Star+Random
 - Fractal (Sierpiński): Self-similar hierarchical structure
 
-### 2.3 Integrated Information (Φ) Calculation
+### 2.3 Spectral Integration Metric (λ₂)
+
+> **IMPORTANT METRIC CLARIFICATION**: This section computes λ₂ (algebraic connectivity /
+> Fiedler value), a spectral graph metric—**NOT** IIT's integrated information (Φ).
+> While λ₂ correlates with network integration properties, it does NOT measure consciousness
+> in the IIT sense. True IIT Φ requires computing minimum information partition (MIP), which
+> is computationally intractable for n > 12 nodes. See `docs/METRIC_DEFINITIONS.md` for the
+> critical distinction between λ₂ and IIT Φ (empirical correlation r = 0.097).
 
 #### 2.3.1 Algebraic Connectivity Method
 
-We approximated integrated information using algebraic connectivity of the similarity graph, following established connections between network topology and information integration⁴:
+We computed spectral integration using algebraic connectivity of the similarity graph. While this captures network topology properties related to integration⁴, it is a structural proxy—not a measurement of phenomenal consciousness:
 
 **Step 1** (Similarity Matrix Construction):
 ```
@@ -116,12 +123,17 @@ L = D - A  [graph Laplacian, D = diag(sum(A))]
 Algebraic connectivity = λ₂ (Fiedler value)
 ```
 
-**Step 4** (Φ Normalization):
+**Step 4** (λ₂ Normalization):
 ```
-Φ = (λ₂ - λ₂_min) / (λ₂_max - λ₂_min)
+λ₂_norm = (λ₂ - λ₂_min) / (λ₂_max - λ₂_min)
 ```
 
 Where λ₂_min = 0 (disconnected graph) and λ₂_max is determined empirically from the topology class.
+
+> **Note**: In earlier versions of this codebase, λ₂_norm was labeled "Φ" in some files
+> (e.g., `phi_real.rs`). This naming was unfortunate as it conflates spectral connectivity
+> with IIT's integrated information. The metric should be understood as spectral integration,
+> not consciousness measurement.
 
 #### 2.3.2 Validation Methods
 
@@ -140,7 +152,7 @@ p(bit=1) = 1 / (1 + exp(-z_i))  where z_i = (h_i - μ) / σ
 
 - **Samples per configuration**: 10 independent instantiations
 - **Seed management**: Sequential seeds (0-9) per topology
-- **Total measurements**: 260 Φ calculations across all topologies and dimensional sweeps
+- **Total measurements**: 260 λ₂ calculations across all topologies and dimensional sweeps
 
 #### 2.4.2 Dimensional Sweep Protocol
 
@@ -149,7 +161,7 @@ For hypercube dimensional analysis (1D-7D):
 1. **Dimension Range**: k ∈ {1, 2, 3, 4, 5, 6, 7}
 2. **Vertices**: n = 2^k (2, 4, 8, 16, 32, 64, 128)
 3. **Samples**: 10 per dimension
-4. **Total**: 70 Φ measurements
+4. **Total**: 70 λ₂ measurements
 
 #### 2.4.3 Statistical Analysis
 
@@ -180,7 +192,7 @@ For hypercube dimensional analysis (1D-7D):
 | Topology generation | <1 ms | ~10 ms |
 | Similarity matrix | ~10 ms | ~200 ms |
 | Eigenvalue decomposition | ~5 ms | ~500 ms |
-| Total Φ calculation | ~20 ms | ~800 ms |
+| Total λ₂ calculation | ~20 ms | ~800 ms |
 
 ### 2.6 Reproducibility Package
 
@@ -193,9 +205,9 @@ All code, data, and analysis scripts are available at:
 **Package Contents**:
 - `src/hdc/` - Hypervector implementations
 - `src/hdc/consciousness_topology_generators.rs` - All 19 topology generators
-- `src/hdc/phi_real.rs` - Φ calculation implementation
+- `src/hdc/phi_real.rs` - λ₂ calculation implementation (note: file name is a misnomer)
 - `examples/` - Runnable validation scripts
-- `data/` - Raw Φ measurements (CSV)
+- `data/` - Raw λ₂ measurements (CSV)
 - `figures/` - Publication figures (PNG + PDF)
 
 **To reproduce**:
@@ -259,11 +271,11 @@ fn hypercube(k: usize) -> Topology {
 For dimensional sweep analysis, we fit:
 
 ```
-Φ(k) = Φ_max - A × exp(-α × k)
+λ₂(k) = λ₂_max - A × exp(-α × k)
 ```
 
 **Parameters** (least squares fit to 2D-7D data):
-- Φ_max = 0.500 ± 0.001
+- λ₂_max = 0.500 ± 0.001
 - A = 0.004 ± 0.001
 - α = 0.31 ± 0.02
 
