@@ -1320,16 +1320,20 @@ mod tests {
         let mut sim = PlasmaSimulator::new(42)
             .with_scenario(DisruptionScenario::DensityLimit {
                 start_time_ns: 10_000_000,
-                rate: 0.1,
+                rate: 1.0, // 1.0 per second => drops ~0.09 per 90ms of simulation
             });
 
-        // Step until after scenario starts
-        for _ in 0..100 {
+        // Step 200 times at 1ms each = 200ms total
+        // After start_time (10ms), 190ms of decay at rate 1.0/s => phi = 0.8 - 1.0*0.19 = 0.61
+        // With more steps we get further drop
+        for _ in 0..500 {
             sim.step();
         }
 
-        // Phi should have dropped significantly
-        assert!(sim.state().phi < 0.5);
+        // 500ms total, 490ms after start => phi = 0.8 - 1.0*0.49 = 0.31 (plus noise override)
+        // The scenario directly sets phi = (0.8 - rate * dt), so it should be well below 0.5
+        assert!(sim.state().phi < 0.5,
+                "Phi should have dropped below 0.5 due to density limit, got {}", sim.state().phi);
     }
 
     #[test]

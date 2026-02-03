@@ -112,6 +112,20 @@ pub enum TemporalBackend {
     HdcLtcUnified,
 }
 
+/// Training method selection for the cognitive loop
+///
+/// Controls how the temporal network is trained each cycle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TrainingMethod {
+    /// Always use BPTT (analytical gradients)
+    Bptt,
+    /// Always use SPSA (perturbation-based)
+    Spsa,
+    /// Use BPTT by default, fall back to SPSA when BPTT diverges
+    #[default]
+    BpttWithSpsaFallback,
+}
+
 /// Configuration for CfC in the cognitive loop
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfCConfig {
@@ -178,6 +192,9 @@ pub struct CognitiveLoopConfig {
     /// When set, all HDC vectors and network weights are derived from this
     /// phrase via SHAKE-256, making the system fully reproducible.
     pub genesis_phrase: Option<String>,
+
+    /// Training method for the temporal network
+    pub training_method: TrainingMethod,
 }
 
 impl Default for CognitiveLoopConfig {
@@ -197,6 +214,7 @@ impl Default for CognitiveLoopConfig {
             target_frequency: 50.0, // 50 Hz
             max_cycles_before_reset: 100000,
             genesis_phrase: None,
+            training_method: TrainingMethod::default(),
         }
     }
 }
@@ -3155,6 +3173,12 @@ pub struct LoopStats {
 
     /// Active goals count
     pub active_goals_count: usize,
+
+    /// Training cycles that used BPTT
+    pub bptt_steps: u64,
+
+    /// Training cycles that fell back to SPSA
+    pub spsa_fallback_steps: u64,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3199,7 +3223,7 @@ impl TemporalNetwork {
         }
     }
 
-    /// Train step
+    /// Train step (delegates to BPTT by default for CfC)
     fn train_step(
         &mut self,
         input: &Array1<f32>,
@@ -3209,6 +3233,38 @@ impl TemporalNetwork {
     ) -> Result<f32> {
         match self {
             Self::CfC(cfc) => cfc.train_step(input, target, dt, learning_rate),
+            Self::HdcLtc(bridge) => bridge.train_step(input, target, dt, learning_rate),
+        }
+    }
+
+    /// Train step using BPTT (analytical gradients).
+    /// For HdcLtc this falls through to the default train_step.
+    fn train_step_bptt(
+        &mut self,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+        learning_rate: f32,
+    ) -> Result<f32> {
+        match self {
+            Self::CfC(cfc) => cfc.train_step_bptt(
+                &[input.clone()], &[target.clone()], &[dt], learning_rate,
+            ),
+            Self::HdcLtc(bridge) => bridge.train_step(input, target, dt, learning_rate),
+        }
+    }
+
+    /// Train step using SPSA (perturbation-based gradients).
+    /// For HdcLtc this falls through to the default train_step.
+    fn train_step_spsa(
+        &mut self,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+        learning_rate: f32,
+    ) -> Result<f32> {
+        match self {
+            Self::CfC(cfc) => cfc.train_step_spsa(input, target, dt, learning_rate),
             Self::HdcLtc(bridge) => bridge.train_step(input, target, dt, learning_rate),
         }
     }
@@ -4060,25 +4116,47 @@ impl CognitiveLoopService {
         {
             self.stats.learning_cycles += 1;
 
-            // Use CfC's analytical gradient training with fully-adaptive LR
-            let result = if let Some(ref prev) = previous_state {
-                let prev_array = Array1::from_vec(prev.clone());
-                let target_array = Array1::from_vec(compressed_state.clone());
-                self.temporal_network.train_step(
-                    &prev_array,
-                    &target_array,
-                    delta_t,
-                    effective_lr  // Use adaptive learning rate
+            // Train the temporal network using the configured method
+            let (input_array, target_array, lr) = if let Some(ref prev) = previous_state {
+                (
+                    Array1::from_vec(prev.clone()),
+                    Array1::from_vec(compressed_state.clone()),
+                    effective_lr,
                 )
             } else {
                 // First cycle: bootstrap with self-prediction
                 let current_array = Array1::from_vec(compressed_state.clone());
-                self.temporal_network.train_step(
-                    &current_array,
-                    &current_array,
-                    delta_t,
-                    effective_lr * 0.1
-                )
+                (current_array.clone(), current_array, effective_lr * 0.1)
+            };
+
+            let result = match self.config.training_method {
+                TrainingMethod::Spsa => {
+                    self.stats.spsa_fallback_steps += 1;
+                    self.temporal_network.train_step_spsa(&input_array, &target_array, delta_t, lr)
+                }
+                TrainingMethod::Bptt => {
+                    self.stats.bptt_steps += 1;
+                    self.temporal_network.train_step_bptt(&input_array, &target_array, delta_t, lr)
+                }
+                TrainingMethod::BpttWithSpsaFallback => {
+                    let old_loss = self.stats.avg_training_loss;
+                    let bptt_result = self.temporal_network.train_step_bptt(
+                        &input_array, &target_array, delta_t, lr,
+                    );
+                    match bptt_result {
+                        Ok(loss) if loss.is_finite() && (old_loss <= 0.0 || loss < old_loss * 2.0) => {
+                            self.stats.bptt_steps += 1;
+                            Ok(loss)
+                        }
+                        _ => {
+                            // BPTT diverged (NaN/inf or loss spiked) — fall back to SPSA
+                            self.stats.spsa_fallback_steps += 1;
+                            self.temporal_network.train_step_spsa(
+                                &input_array, &target_array, delta_t, lr,
+                            )
+                        }
+                    }
+                }
             };
 
             match result {

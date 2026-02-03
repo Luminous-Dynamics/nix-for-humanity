@@ -494,6 +494,10 @@ required-features = ["magi_loop"]
 name = "modern_embeddings_demo"
 required-features = ["neural-bridge"]
 
+# End-to-end pipeline demo (no required features)
+[[example]]
+name = "full_pipeline"
+
 # Neuroscience validation examples (no required features)
 [[example]]
 name = "meditation_phi_analysis"
