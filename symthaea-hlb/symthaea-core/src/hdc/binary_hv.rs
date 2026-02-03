@@ -520,15 +520,22 @@ impl HV16 {
 
     /// Hamming similarity (0.0 = opposite, 1.0 = identical)
     ///
-    /// Counts matching bits and normalizes to [0, 1]
+    /// Counts matching bits and normalizes to [0, 1].
     ///
-    /// Properties:
-    /// - sim(A, A) = 1.0 (perfect match)
-    /// - sim(A, random) ≈ 0.5 (expected for random vectors)
-    /// - sim(A, NOT A) = 0.0 (opposite)
+    /// **IMPORTANT**: This is NOT cosine similarity in [-1, 1]. The neutral/
+    /// orthogonal baseline is 0.5, not 0.0. To test orthogonality, check that
+    /// `(sim - 0.5).abs() < threshold`, NOT `sim < threshold`.
+    ///
+    /// # Interpretation
+    /// - 1.0 = identical vectors (all bits match)
+    /// - 0.5 = orthogonal/unrelated (random expectation)
+    /// - 0.0 = opposite vectors (all bits differ, i.e., bitwise NOT)
+    ///
+    /// With 16,384-bit vectors, the standard deviation for random pairs is
+    /// ~0.008, so `|sim - 0.5| > 0.03` indicates correlation (~4σ).
     ///
     /// # Performance
-    /// - O(2048) with popcount
+    /// - O(DIM) with popcount
     /// - ~10-20ns with SIMD (AVX2+POPCNT), ~160ns scalar
     /// - 200x faster than cosine similarity on Vec<f32>
     ///
@@ -1476,5 +1483,240 @@ mod tests {
         // Safe version should be similar or faster (no stack allocation overhead)
         let ratio = safe_time.as_nanos() as f64 / orig_time.as_nanos() as f64;
         assert!(ratio < 2.0, "bundle_safe should not be >2x slower, got {:.2}x", ratio);
+    }
+
+    // =========================================================================
+    // PROPERTY-BASED TESTS: HDC Algebraic Properties
+    // =========================================================================
+    // These tests verify the fundamental algebraic properties of HDC operations.
+    // Failure here indicates a bug in the core implementation.
+
+    /// Test: XOR binding forms an Abelian group under HV16
+    #[test]
+    fn test_bind_abelian_group_properties() {
+        let a = HV16::random(100);
+        let b = HV16::random(101);
+        let c = HV16::random(102);
+
+        // Identity: A ⊗ 0 = A
+        assert_eq!(a.bind(&HV16::zero()), a, "Identity: A ⊗ 0 = A");
+
+        // Self-inverse: A ⊗ A = 0
+        assert_eq!(a.bind(&a), HV16::zero(), "Self-inverse: A ⊗ A = 0");
+
+        // Commutativity: A ⊗ B = B ⊗ A
+        assert_eq!(a.bind(&b), b.bind(&a), "Commutativity: A ⊗ B = B ⊗ A");
+
+        // Associativity: (A ⊗ B) ⊗ C = A ⊗ (B ⊗ C)
+        assert_eq!(
+            a.bind(&b).bind(&c),
+            a.bind(&b.bind(&c)),
+            "Associativity: (A ⊗ B) ⊗ C = A ⊗ (B ⊗ C)"
+        );
+
+        // Inverse recovery: (A ⊗ B) ⊗ B = A
+        assert_eq!(a.bind(&b).bind(&b), a, "Inverse recovery: (A ⊗ B) ⊗ B = A");
+
+        // Double inverse: (A ⊗ B) ⊗ A = B
+        assert_eq!(a.bind(&b).bind(&a), b, "Double inverse: (A ⊗ B) ⊗ A = B");
+    }
+
+    /// Test: Bind preserves Hamming distance (is an isometry)
+    #[test]
+    fn test_bind_preserves_distance() {
+        let a = HV16::random(200);
+        let b = HV16::random(201);
+        let key = HV16::random(202);
+
+        let dist_original = a.hamming_distance(&b);
+        let dist_bound = a.bind(&key).hamming_distance(&b.bind(&key));
+
+        assert_eq!(
+            dist_original, dist_bound,
+            "Bind preserves Hamming distance: d(A,B) = d(A⊗K, B⊗K)"
+        );
+    }
+
+    /// Test: Similarity bounds are always respected
+    #[test]
+    fn test_similarity_bounds() {
+        // Test with many random pairs
+        for seed in 0..100 {
+            let a = HV16::random(seed);
+            let b = HV16::random(seed + 1000);
+
+            let sim = a.similarity(&b);
+            assert!(
+                sim >= 0.0 && sim <= 1.0,
+                "Similarity must be in [0,1], got {} for seeds {}, {}",
+                sim, seed, seed + 1000
+            );
+        }
+
+        // Self-similarity
+        let v = HV16::random(42);
+        assert_eq!(v.similarity(&v), 1.0, "Self-similarity must be 1.0");
+
+        // Inverse similarity
+        let inv = v.invert();
+        assert_eq!(v.similarity(&inv), 0.0, "Similarity with inverse must be 0.0");
+    }
+
+    /// Test: Random vectors concentrate around 0.5 similarity (statistical property)
+    #[test]
+    fn test_random_orthogonality_concentration() {
+        let n_pairs = 100;
+        let mut similarities = Vec::with_capacity(n_pairs);
+
+        for i in 0..n_pairs {
+            let a = HV16::random(i as u64 * 2);
+            let b = HV16::random(i as u64 * 2 + 1);
+            similarities.push(a.similarity(&b));
+        }
+
+        let mean: f32 = similarities.iter().sum::<f32>() / n_pairs as f32;
+        let variance: f32 = similarities.iter()
+            .map(|s| (s - mean).powi(2))
+            .sum::<f32>() / n_pairs as f32;
+        let std_dev = variance.sqrt();
+
+        // For 16,384-bit vectors, expected mean ≈ 0.5, std_dev ≈ 0.008
+        assert!(
+            (mean - 0.5).abs() < 0.02,
+            "Mean similarity should be ~0.5, got {:.4}", mean
+        );
+        assert!(
+            std_dev < 0.02,
+            "Std dev should be small (~0.008), got {:.4}", std_dev
+        );
+    }
+
+    /// Test: Bundle is idempotent with single input
+    #[test]
+    fn test_bundle_single_input() {
+        let a = HV16::random(300);
+        let bundled = HV16::bundle(&[a]);
+        assert_eq!(bundled, a, "Bundle of single vector should equal that vector");
+    }
+
+    /// Test: Bundle similarity to constituents
+    #[test]
+    fn test_bundle_similarity_properties() {
+        let a = HV16::random(400);
+        let b = HV16::random(401);
+        let c = HV16::random(402);
+
+        let bundle = HV16::bundle(&[a, b, c]);
+
+        // Bundle should be similar to all constituents (>0.5 for odd count)
+        let sim_a = bundle.similarity(&a);
+        let sim_b = bundle.similarity(&b);
+        let sim_c = bundle.similarity(&c);
+
+        // With 3 inputs, majority vote gives ~2/3 overlap with each
+        // Actual similarity can vary based on random alignment, allow 0.55-0.80
+        assert!(sim_a > 0.55 && sim_a < 0.80, "Bundle~A should be ~0.67, got {:.3}", sim_a);
+        assert!(sim_b > 0.55 && sim_b < 0.80, "Bundle~B should be ~0.67, got {:.3}", sim_b);
+        assert!(sim_c > 0.55 && sim_c < 0.80, "Bundle~C should be ~0.67, got {:.3}", sim_c);
+    }
+
+    /// Test: Permute is self-inverse with complementary amounts
+    #[test]
+    fn test_permute_inverse() {
+        let a = HV16::random(500);
+
+        // permute(n) followed by permute(DIM - n) should recover original
+        for n in [1, 7, 100, 1000, 8192] {
+            let permuted = a.permute(n);
+            let recovered = permuted.permute(HV16::DIM - n);
+            assert_eq!(recovered, a, "permute({}) then permute({}) should recover original", n, HV16::DIM - n);
+        }
+    }
+
+    /// Test: Permute preserves Hamming weight (popcount)
+    #[test]
+    fn test_permute_preserves_popcount() {
+        let a = HV16::random(600);
+        let original_popcount = a.popcount();
+
+        for n in [1, 7, 100, 1000, 8192] {
+            let permuted = a.permute(n);
+            assert_eq!(
+                permuted.popcount(), original_popcount,
+                "Permute({}) should preserve popcount", n
+            );
+        }
+    }
+
+    /// Test: Invert is self-inverse
+    #[test]
+    fn test_invert_self_inverse() {
+        let a = HV16::random(700);
+        let double_inverted = a.invert().invert();
+        assert_eq!(double_inverted, a, "Invert should be self-inverse");
+    }
+
+    /// Test: Distributivity - bind distributes over majority-vote bundle
+    ///
+    /// For binary HDC with XOR bind and majority-vote bundle (ODD count):
+    /// k ⊗ maj(a, b, c) = maj(k⊗a, k⊗b, k⊗c)
+    ///
+    /// Proof: At each bit i, if k[i]=0 both sides equal maj(a,b,c)[i].
+    /// If k[i]=1, left = NOT maj(a,b,c)[i], right = maj(NOT a, NOT b, NOT c)[i]
+    /// = NOT maj(a,b,c)[i]. QED.
+    ///
+    /// NOTE: This does NOT hold for even-count bundles where XOR is used!
+    /// k ⊗ (a ⊕ b) = k ⊕ a ⊕ b ≠ (k ⊕ a) ⊕ (k ⊕ b) = a ⊕ b
+    #[test]
+    fn test_bind_bundle_distributivity_majority() {
+        let a = HV16::random(800);
+        let b = HV16::random(801);
+        let c = HV16::random(803);
+        let k = HV16::random(802);
+
+        // With 3 inputs (odd count), bundle uses majority vote
+        // XOR distributes over majority: k ⊗ maj(a,b,c) = maj(k⊗a, k⊗b, k⊗c)
+        let left3 = k.bind(&HV16::bundle(&[a, b, c]));
+        let right3 = HV16::bundle(&[k.bind(&a), k.bind(&b), k.bind(&c)]);
+        assert_eq!(left3, right3, "Bind distributes over 3-element majority bundle");
+
+        // Test with 5 elements too
+        let d = HV16::random(804);
+        let e = HV16::random(805);
+        let left5 = k.bind(&HV16::bundle(&[a, b, c, d, e]));
+        let right5 = HV16::bundle(&[k.bind(&a), k.bind(&b), k.bind(&c), k.bind(&d), k.bind(&e)]);
+        assert_eq!(left5, right5, "Bind distributes over 5-element majority bundle");
+    }
+
+    /// Test: 2-element bundle (AND-like) distributivity behavior
+    ///
+    /// For 2 elements, bundle uses majority vote which acts like AND:
+    /// - (1,1) → count=2 → 1
+    /// - (1,0) → count=0 → 0
+    /// - (0,1) → count=0 → 0
+    /// - (0,0) → count=-2 → 0
+    ///
+    /// Bind (XOR) does NOT distribute over AND:
+    /// k ⊗ (a ∧ b) ≠ (k ⊗ a) ∧ (k ⊗ b) in general
+    #[test]
+    fn test_even_bundle_bind_non_distributivity() {
+        let a = HV16::random(810);
+        let b = HV16::random(811);
+        let k = HV16::random(812);
+
+        // 2-element bundle acts like AND (majority vote with 2 inputs)
+        let left = k.bind(&HV16::bundle(&[a, b]));
+        let right = HV16::bundle(&[k.bind(&a), k.bind(&b)]);
+
+        // XOR does NOT distribute over AND, so these should differ
+        // (with high probability for random vectors)
+        assert_ne!(left, right, "2-element AND-like bundle does NOT satisfy bind distributivity");
+
+        // Verify that 2-element bundle is indeed AND-like
+        // bundle([a,b]) should have ~25% density (intersection of two ~50% vectors)
+        let bundle_ab = HV16::bundle(&[a, b]);
+        let density = bundle_ab.popcount() as f64 / HV16::DIM as f64;
+        assert!(density > 0.15 && density < 0.35,
+            "2-element bundle density should be ~0.25 (AND-like), got {:.3}", density);
     }
 }

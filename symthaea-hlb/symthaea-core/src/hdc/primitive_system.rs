@@ -70,9 +70,26 @@ use once_cell::sync::Lazy;
 
 /// Global cached instance of PrimitiveSystem.
 ///
-/// Since PrimitiveSystem is immutable after construction and expensive to build
-/// (initializing hundreds of primitives across 5+ tiers), we cache a single instance.
-/// This provides O(1) access instead of O(n) reconstruction on every use.
+/// # Lazy Initialization
+///
+/// The system uses `once_cell::sync::Lazy` for optimal deferred initialization:
+/// - **Zero startup cost**: No primitives are created until first access
+/// - **Single initialization**: Built exactly once, then cached forever
+/// - **Thread-safe**: Safe for concurrent access from multiple threads
+///
+/// # Memory Usage
+///
+/// When initialized, the system contains ~200 primitives across 9 tiers.
+/// Each primitive stores a 16,384-bit HV16 encoding (~2KB), plus metadata.
+/// Total memory: ~500KB for the complete ontological primitive system.
+///
+/// # Design Rationale
+///
+/// Per-primitive lazy initialization was considered but rejected because:
+/// 1. Most use cases access multiple primitives for reasoning/composition
+/// 2. Derived primitives depend on base primitives (complex dependency graph)
+/// 3. System-level lazy already provides zero startup cost
+/// 4. Added complexity would outweigh marginal memory savings
 static GLOBAL_PRIMITIVE_SYSTEM: Lazy<PrimitiveSystem> = Lazy::new(PrimitiveSystem::new);
 
 /// Generate a deterministic seed from a string name.
@@ -95,9 +112,10 @@ pub fn seed_from_name(name: &str) -> u64 {
 }
 
 /// Primitive tier in the hierarchy
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum PrimitiveTier {
     /// Tier 0: NSM (implemented in vocabulary.rs)
+    #[default]
     NSM,
     /// Tier 1: Mathematical & Logical
     Mathematical,
@@ -302,10 +320,8 @@ impl PrimitiveSystem {
         system.init_tier4_strategic();
         system.init_tier5_metacognitive();
 
-        // Initialize derived primitives (uncertainty, physics extensions, information theory)
-        system.init_derived_primitives();
-
         // Initialize gap analysis additions (comprehensive ontology)
+        // These add domain-specific primitives that may be referenced by derivations
         system.init_biological_primitives();
         system.init_emotional_primitives();
         system.init_ecological_primitives();
@@ -314,9 +330,14 @@ impl PrimitiveSystem {
         system.init_linguistic_primitives();
         system.init_social_moral_primitives();
 
-        // Initialize Tier 8: Consciousness-specific primitives
+        // Initialize Tier 9: Consciousness-specific primitives
         // Qualia, attention, memory operations, and agency
+        // MUST come before init_derived_primitives so SALIENCE/SELECTION exist
         system.init_consciousness_primitives();
+
+        // Initialize derived primitives (uncertainty, physics extensions, information theory)
+        // These reference primitives from all tiers, so call LAST
+        system.init_derived_primitives();
 
         system
     }
@@ -325,28 +346,46 @@ impl PrimitiveSystem {
     ///
     /// If all parents are found, the result is their sequential XOR binding
     /// embedded in the given domain. If any parent is missing, falls back to
-    /// a deterministic random vector seeded from `name` (preserving backward
-    /// compatibility while logging the gap).
+    /// a deterministic random vector seeded from `name`.
+    ///
+    /// NOTE: In debug builds, missing parents are logged to help identify
+    /// registration ordering issues. The fallback exists because the current
+    /// initialization order has derived primitives (Tier 1) initialized before
+    /// consciousness base primitives (Tier 9) they may reference.
     fn derive_encoding(&self, name: &str, parents: &[&str], domain: &DomainManifold) -> HV16 {
+        if parents.is_empty() {
+            return domain.embed(HV16::random(seed_from_name(name)));
+        }
+
         let mut parent_encodings: Vec<&HV16> = Vec::new();
         for parent_name in parents {
             match self.primitives.get(*parent_name) {
                 Some(p) => parent_encodings.push(&p.encoding),
                 None => {
-                    // Parent not yet registered — fall back to seeded random
+                    // Parent not yet registered — fall back to seeded random.
+                    // This can happen when derived primitives reference parents
+                    // from higher tiers that aren't initialized yet.
+                    #[cfg(debug_assertions)]
+                    eprintln!(
+                        "derive_encoding: '{}' parent '{}' not found (primitives count: {}), using seeded fallback",
+                        name, parent_name, self.primitives.len()
+                    );
                     return domain.embed(HV16::random(seed_from_name(name)));
                 }
             }
         }
-        if parent_encodings.is_empty() {
-            return domain.embed(HV16::random(seed_from_name(name)));
-        }
-        // Bind all parents sequentially, then embed in domain
+        // Bind all parents sequentially.
+        // NOTE: We do NOT re-embed in the domain because parent encodings are
+        // already embedded in their respective domains. Re-embedding would add
+        // an extra rotation that breaks the algebraic relationship:
+        //   derived ⊗ parent1 should recover parent2
+        // If we embedded, we'd get:
+        //   domain.rotation ⊗ (parent1 ⊗ parent2) ⊗ parent1 = domain.rotation ⊗ parent2 ≠ parent2
         let mut result = parent_encodings[0].clone();
         for enc in &parent_encodings[1..] {
             result = result.bind(enc);
         }
-        domain.embed(result)
+        result
     }
 
     /// Initialize derived primitives
@@ -402,6 +441,9 @@ impl PrimitiveSystem {
             "Probability-weighted average: E[X] = Σ P(x) × V(x)",
             "PROBABILITY ⊗ VALUE"
         );
+        // Register immediately so VARIANCE can reference it
+        self.primitives.insert("EXPECTED_VALUE".to_string(), expected_value.clone());
+        self.by_tier.entry(PrimitiveTier::Mathematical).or_insert_with(Vec::new).push("EXPECTED_VALUE".to_string());
 
         // SHANNON_ENTROPY = COMPOSE(PROBABILITY, INFORMATION)
         // H = -Σ P(x) log P(x)
@@ -627,7 +669,8 @@ impl PrimitiveSystem {
         );
 
         // ATTENTION = COMPOSE(SALIENCE, SELECTION)
-        // Note: SALIENCE and SELECTION not base primitives — falls back
+        // SALIENCE and SELECTION are registered in init_consciousness_primitives(),
+        // which now runs BEFORE this function (see new() ordering).
         let attention_enc = self.derive_encoding("ATTENTION", &["SALIENCE", "SELECTION"], &consciousness_domain);
         let attention = Primitive::derived(
             "ATTENTION",
@@ -650,11 +693,11 @@ impl PrimitiveSystem {
             "INTROSPECTION ⊗ SELF"
         );
 
-        // Add remaining derived primitives (PROBABILITY, SHANNON_ENTROPY, MUTUAL_INFORMATION
-        // were already registered above to enable downstream derivations)
+        // Add remaining derived primitives (PROBABILITY, SHANNON_ENTROPY, MUTUAL_INFORMATION,
+        // EXPECTED_VALUE were already registered above to enable downstream derivations)
         let derived_primitives = vec![
-            // Uncertainty (PROBABILITY and SHANNON_ENTROPY already registered)
-            expected_value, bayesian, variance,
+            // Uncertainty (PROBABILITY, SHANNON_ENTROPY, EXPECTED_VALUE already registered)
+            bayesian, variance,
             // Physics
             conservation_law, gradient, field, wave, equilibrium, potential,
             // Information Theory (MUTUAL_INFORMATION already registered)
@@ -880,6 +923,49 @@ impl PrimitiveSystem {
             "Recursive: m × 0 = 0, m × S(n) = m × n + m"
         );
 
+        // === FOUNDATIONAL MATHEMATICAL PRIMITIVES ===
+        // These are base concepts needed by derived primitives in later tiers
+
+        let ratio = Primitive::base(
+            "RATIO",
+            PrimitiveTier::Mathematical,
+            "mathematics",
+            math_domain.embed(HV16::random(seed_from_name("RATIO"))),
+            "Relation: proportional comparison of two quantities (a/b)"
+        );
+
+        let information = Primitive::base(
+            "INFORMATION",
+            PrimitiveTier::Mathematical,
+            "mathematics",
+            math_domain.embed(HV16::random(seed_from_name("INFORMATION"))),
+            "Quantity: reduction in uncertainty (bits)"
+        );
+
+        let deviation = Primitive::base(
+            "DEVIATION",
+            PrimitiveTier::Mathematical,
+            "mathematics",
+            math_domain.embed(HV16::random(seed_from_name("DEVIATION"))),
+            "Measure: distance from a central or expected value"
+        );
+
+        let limit = Primitive::base(
+            "LIMIT",
+            PrimitiveTier::Mathematical,
+            "mathematics",
+            math_domain.embed(HV16::random(seed_from_name("LIMIT"))),
+            "Bound: supremum or constraint on a quantity"
+        );
+
+        let efficiency = Primitive::base(
+            "EFFICIENCY",
+            PrimitiveTier::Mathematical,
+            "mathematics",
+            math_domain.embed(HV16::random(seed_from_name("EFFICIENCY"))),
+            "Ratio: useful output to total input"
+        );
+
         // === REGISTER ALL PRIMITIVES ===
 
         self.domains.insert("mathematics".to_string(), math_domain);
@@ -889,6 +975,7 @@ impl PrimitiveSystem {
             set, membership, union, intersection, empty_set,
             not, and, or, implies, iff, equals, true_const, false_const,
             zero, one, successor, addition, multiplication,
+            ratio, information, deviation, limit, efficiency,
         ] {
             let name = primitive.name.clone();
             let tier = primitive.tier;
@@ -1081,6 +1168,41 @@ impl PrimitiveSystem {
             "Principle: certain quantities remain constant over time"
         );
 
+        // === FOUNDATIONAL PHYSICAL PRIMITIVES ===
+        // Base concepts needed by derived physics/information primitives
+
+        let differentiation = Primitive::base(
+            "DIFFERENTIATION",
+            PrimitiveTier::Physical,
+            "physics",
+            physics_domain.embed(HV16::random(seed_from_name("DIFFERENTIATION"))),
+            "Operation: rate of change of a quantity with respect to another"
+        );
+
+        let space = Primitive::base(
+            "SPACE",
+            PrimitiveTier::Physical,
+            "physics",
+            physics_domain.embed(HV16::random(seed_from_name("SPACE"))),
+            "Continuum: spatial extent in which objects exist and move"
+        );
+
+        let oscillation = Primitive::base(
+            "OSCILLATION",
+            PrimitiveTier::Physical,
+            "physics",
+            physics_domain.embed(HV16::random(seed_from_name("OSCILLATION"))),
+            "Process: repetitive variation about a central value"
+        );
+
+        let propagation = Primitive::base(
+            "PROPAGATION",
+            PrimitiveTier::Physical,
+            "physics",
+            physics_domain.embed(HV16::random(seed_from_name("PROPAGATION"))),
+            "Process: transmission of a disturbance through a medium or field"
+        );
+
         // === REGISTER ALL TIER 2 PRIMITIVES ===
 
         self.domains.insert("physics".to_string(), physics_domain);
@@ -1092,6 +1214,7 @@ impl PrimitiveSystem {
             velocity, acceleration, momentum,
             cause, effect, state_change,
             entropy, temperature, conservation,
+            differentiation, space, oscillation, propagation,
         ] {
             let name = primitive.name.clone();
             let tier = primitive.tier;
@@ -1821,6 +1944,15 @@ impl PrimitiveSystem {
             "Measure: importance or worth of a state/action"
         );
 
+        // CERTAINTY - state of complete knowledge
+        let certainty = Primitive::base(
+            "CERTAINTY",
+            PrimitiveTier::MetaCognitive,
+            "epistemic",
+            epistemic_domain.embed(HV16::random(seed_from_name("CERTAINTY"))),
+            "State: complete confidence in a proposition's truth value"
+        );
+
         // === REGISTER ALL TIER 5 PRIMITIVES ===
 
         self.domains.insert("metacognition".to_string(), metacognition_domain);
@@ -1832,7 +1964,7 @@ impl PrimitiveSystem {
             self_prim, identity, meta_belief, introspection,
             homeostasis, setpoint, regulation, feedback,
             repair, restore, adapt, learn,
-            know, uncertain, confidence, evidence,
+            know, uncertain, confidence, evidence, certainty,
             resource, allocate, consume, produce,
             reward, goal, value,
         ] {
@@ -2806,6 +2938,14 @@ impl PrimitiveSystem {
             "Activation level of experience - calm to excited"
         );
 
+        let selection = Primitive::base(
+            "SELECTION",
+            PrimitiveTier::Consciousness,
+            "consciousness",
+            consciousness_domain.embed(HV16::random(seed_from_name("SELECTION"))),
+            "Process: choosing one option from a set of alternatives"
+        );
+
         // Register domain
         self.domains.insert("consciousness".to_string(), consciousness_domain);
 
@@ -2814,7 +2954,7 @@ impl PrimitiveSystem {
             // Qualia
             quale, phenomenal_binding, subjective_time, sentience,
             // Attention
-            attend, salience, binding_window, awareness,
+            attend, salience, binding_window, awareness, selection,
             // Memory operations
             remember, forget, consolidate, recognize,
             // Agency
@@ -3436,5 +3576,282 @@ mod tests {
         assert!(summary.contains("Geometric"));
         assert!(summary.contains("Strategic"));
         assert!(summary.contains("MetaCognitive"));
+    }
+
+    // =========================================================================
+    // DERIVATION CHAIN INTEGRATION TESTS
+    // =========================================================================
+    //
+    // These tests verify that derived primitives have the expected algebraic
+    // relationships with their parent primitives via XOR binding.
+    //
+    // For a derived primitive D = P1 ⊗ P2:
+    // - D ⊗ P1 should have high similarity to P2
+    // - D ⊗ P2 should have high similarity to P1
+    // =========================================================================
+
+    #[test]
+    fn test_attention_derives_from_salience_selection() {
+        let system = PrimitiveSystem::new();
+
+        let attention = system.get("ATTENTION").expect("ATTENTION should exist");
+        let salience = system.get("SALIENCE").expect("SALIENCE should exist");
+        let selection = system.get("SELECTION").expect("SELECTION should exist");
+
+        // If ATTENTION = SALIENCE ⊗ SELECTION, then:
+        // ATTENTION ⊗ SALIENCE should be similar to SELECTION
+        let unbound = attention.encoding.bind(&salience.encoding);
+        let sim_to_selection = unbound.similarity(&selection.encoding);
+
+        // For proper derivation, similarity should be very high (>0.95)
+        // If derivation fell back to random, it would be ~0.5
+        assert!(
+            sim_to_selection > 0.90,
+            "ATTENTION⊗SALIENCE should recover SELECTION (sim={:.3}, expected >0.90). \
+             If ~0.5, ATTENTION used random fallback instead of derivation.",
+            sim_to_selection
+        );
+
+        // Similarly, ATTENTION ⊗ SELECTION should recover SALIENCE
+        let unbound2 = attention.encoding.bind(&selection.encoding);
+        let sim_to_salience = unbound2.similarity(&salience.encoding);
+        assert!(
+            sim_to_salience > 0.90,
+            "ATTENTION⊗SELECTION should recover SALIENCE (sim={:.3}, expected >0.90)",
+            sim_to_salience
+        );
+    }
+
+    #[test]
+    fn test_probability_derivation_chain() {
+        let system = PrimitiveSystem::new();
+
+        let probability = system.get("PROBABILITY").expect("PROBABILITY should exist");
+        let ratio = system.get("RATIO").expect("RATIO should exist");
+        let certainty = system.get("CERTAINTY").expect("CERTAINTY should exist");
+
+        // PROBABILITY = RATIO ⊗ CERTAINTY
+        // Unbinding should recover the other parent
+        let unbound = probability.encoding.bind(&ratio.encoding);
+        let sim_to_certainty = unbound.similarity(&certainty.encoding);
+
+        // Also check the reverse unbinding
+        let unbound2 = probability.encoding.bind(&certainty.encoding);
+        let sim_to_ratio = unbound2.similarity(&ratio.encoding);
+
+        // For proper derivation, similarity should be very high (>0.90)
+        // If derivation fell back to random, it would be ~0.5
+        assert!(
+            sim_to_certainty > 0.90,
+            "PROBABILITY⊗RATIO should recover CERTAINTY (sim={:.3}). \
+             If ~0.5, PROBABILITY used random fallback instead of derivation.",
+            sim_to_certainty
+        );
+        assert!(
+            sim_to_ratio > 0.90,
+            "PROBABILITY⊗CERTAINTY should recover RATIO (sim={:.3})",
+            sim_to_ratio
+        );
+    }
+
+    #[test]
+    fn test_expected_value_derivation_chain() {
+        let system = PrimitiveSystem::new();
+
+        let expected_value = system.get("EXPECTED_VALUE").expect("EXPECTED_VALUE should exist");
+        let probability = system.get("PROBABILITY").expect("PROBABILITY should exist");
+        let value = system.get("VALUE").expect("VALUE should exist");
+
+        // EXPECTED_VALUE = PROBABILITY ⊗ VALUE
+        // Unbinding should recover the other parent
+        let unbound = expected_value.encoding.bind(&probability.encoding);
+        let sim_to_value = unbound.similarity(&value.encoding);
+
+        // For proper derivation, similarity should be very high (>0.90)
+        // If derivation fell back to random, it would be ~0.5
+        assert!(
+            sim_to_value > 0.90,
+            "EXPECTED_VALUE⊗PROBABILITY should recover VALUE (sim={:.3})",
+            sim_to_value
+        );
+    }
+
+    #[test]
+    fn test_certainty_uncertain_relationship() {
+        let system = PrimitiveSystem::new();
+
+        // UNCERTAIN and CERTAINTY are both base primitives (not derived)
+        // They should be nearly orthogonal (independent random vectors ~0.5 similarity)
+        let uncertain = system.get("UNCERTAIN").expect("UNCERTAIN should exist");
+        let certainty = system.get("CERTAINTY").expect("CERTAINTY should exist");
+
+        let sim = uncertain.encoding.similarity(&certainty.encoding);
+        // Both are independently seeded randoms, so should be ~0.5 (orthogonal)
+        assert!(
+            sim > 0.40 && sim < 0.60,
+            "UNCERTAIN and CERTAINTY are independent randoms, should be ~0.5 orthogonal (sim={:.3})",
+            sim
+        );
+    }
+
+    #[test]
+    fn test_derived_primitives_not_random() {
+        let system = PrimitiveSystem::new();
+
+        // Test several ACTUAL derived primitives to ensure they're not just random vectors
+        // Random vectors would have ~0.5 similarity to their declared parents
+        // NOTE: Only test primitives that are actually derived in init_derived_primitives!
+
+        let test_cases = [
+            ("FIELD", vec!["FORCE", "POINT"]),
+            ("EQUILIBRIUM", vec!["FORCE", "CONSERVATION"]),
+            ("SHANNON_ENTROPY", vec!["PROBABILITY", "INFORMATION"]),
+        ];
+
+        for (derived_name, parent_names) in test_cases {
+            let derived = system.get(derived_name);
+            if derived.is_none() {
+                // Skip if this derived primitive doesn't exist in this version
+                continue;
+            }
+            let derived = derived.unwrap();
+
+            // Get parent encodings
+            let parents: Vec<_> = parent_names
+                .iter()
+                .filter_map(|name| system.get(name))
+                .collect();
+
+            if parents.len() < 2 {
+                // Skip if parents don't exist
+                continue;
+            }
+
+            // Compute expected derivation: P1 ⊗ P2
+            let expected = parents[0].encoding.bind(&parents[1].encoding);
+
+            let sim = derived.encoding.similarity(&expected);
+            assert!(
+                sim > 0.90,
+                "{} should be derived from {:?} (sim={:.3}, expected >0.90). \
+                 Low similarity suggests random fallback was used.",
+                derived_name, parent_names, sim
+            );
+        }
+    }
+
+    #[test]
+    fn test_derivation_chain_transitivity() {
+        // Test that multi-level derivations work correctly
+        // VARIANCE = EXPECTED_VALUE ⊗ DEVIATION
+        // EXPECTED_VALUE = PROBABILITY ⊗ VALUE
+        // So VARIANCE ⊗ EXPECTED_VALUE should recover DEVIATION
+        let system = PrimitiveSystem::new();
+
+        let variance = system.get("VARIANCE");
+        let expected_value = system.get("EXPECTED_VALUE");
+        let deviation = system.get("DEVIATION");
+
+        if let (Some(variance), Some(expected_value), Some(deviation)) = (variance, expected_value, deviation) {
+            // VARIANCE ⊗ EXPECTED_VALUE should recover DEVIATION
+            let unbound = variance.encoding.bind(&expected_value.encoding);
+            let sim = unbound.similarity(&deviation.encoding);
+
+            assert!(
+                sim > 0.90,
+                "VARIANCE⊗EXPECTED_VALUE should recover DEVIATION (sim={:.3})",
+                sim
+            );
+        }
+    }
+
+    // =========================================================================
+    // DERIVATION QUALITY BENCHMARK
+    // =========================================================================
+
+    /// Benchmark test: measures derivation quality across all derived primitives
+    ///
+    /// This test quantifies how well the derive_encoding function works by:
+    /// 1. Finding all primitives with a documented derivation (e.g., "A ⊗ B")
+    /// 2. For each, computing the expected encoding from parents
+    /// 3. Measuring similarity between actual and expected encodings
+    ///
+    /// Results are printed to help assess system health.
+    #[test]
+    fn test_benchmark_derivation_quality() {
+        let system = PrimitiveSystem::new();
+
+        // Collect all derived primitives with their documented derivation
+        let mut derived_count = 0;
+        let mut success_count = 0;
+        let mut total_similarity: f32 = 0.0;
+        let mut failures: Vec<(String, f32)> = Vec::new();
+
+        for (name, primitive) in system.primitives.iter() {
+            if primitive.is_base || primitive.derivation.is_none() {
+                continue;
+            }
+
+            let derivation = primitive.derivation.as_ref().unwrap();
+
+            // Parse derivation string like "A ⊗ B" or "APPLY(A, B)"
+            // For now, only handle "X ⊗ Y" format
+            if !derivation.contains(" ⊗ ") {
+                continue;
+            }
+
+            let parts: Vec<&str> = derivation.split(" ⊗ ").collect();
+            if parts.len() != 2 {
+                continue;
+            }
+
+            let parent1_name = parts[0].trim();
+            let parent2_name = parts[1].trim();
+
+            // Get parent primitives
+            let parent1 = system.get(parent1_name);
+            let parent2 = system.get(parent2_name);
+
+            if let (Some(p1), Some(p2)) = (parent1, parent2) {
+                derived_count += 1;
+
+                // Expected encoding: parent1 ⊗ parent2
+                let expected = p1.encoding.bind(&p2.encoding);
+                let similarity = primitive.encoding.similarity(&expected);
+                total_similarity += similarity;
+
+                if similarity > 0.90 {
+                    success_count += 1;
+                } else {
+                    failures.push((name.clone(), similarity));
+                }
+            }
+        }
+
+        // Print benchmark results
+        if derived_count > 0 {
+            let avg_similarity = total_similarity / derived_count as f32;
+            println!("\n=== DERIVATION QUALITY BENCHMARK ===");
+            println!("Total derived primitives tested: {}", derived_count);
+            println!("Successfully derived (sim > 0.90): {} ({:.1}%)",
+                     success_count, 100.0 * success_count as f32 / derived_count as f32);
+            println!("Average similarity to expected: {:.3}", avg_similarity);
+
+            if !failures.is_empty() {
+                println!("\nFailed derivations:");
+                for (name, sim) in &failures {
+                    println!("  {} - similarity: {:.3}", name, sim);
+                }
+            }
+            println!("=====================================\n");
+
+            // Assert at least 90% success rate
+            let success_rate = success_count as f32 / derived_count as f32;
+            assert!(
+                success_rate >= 0.90,
+                "Derivation success rate {:.1}% is below 90% threshold. {} of {} primitives failed.",
+                success_rate * 100.0, failures.len(), derived_count
+            );
+        }
     }
 }

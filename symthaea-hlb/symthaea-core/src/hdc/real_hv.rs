@@ -42,7 +42,7 @@ use serde::{Deserialize, Serialize};
 
 /// SIMD-optimized dot product using 8-wide accumulation
 #[inline(always)]
-fn simd_dot_product(a: &[f32], b: &[f32]) -> f32 {
+pub fn simd_dot_product(a: &[f32], b: &[f32]) -> f32 {
     debug_assert_eq!(a.len(), b.len());
 
     // Process in chunks of 8 for optimal SIMD utilization
@@ -76,7 +76,7 @@ fn simd_dot_product(a: &[f32], b: &[f32]) -> f32 {
 
 /// SIMD-optimized squared norm
 #[inline(always)]
-fn simd_norm_squared(v: &[f32]) -> f32 {
+pub fn simd_norm_squared(v: &[f32]) -> f32 {
     const CHUNK_SIZE: usize = 8;
 
     let chunks = v.chunks_exact(CHUNK_SIZE);
@@ -101,7 +101,7 @@ fn simd_norm_squared(v: &[f32]) -> f32 {
 
 /// SIMD-optimized element-wise multiply (for bind)
 #[inline(always)]
-fn simd_elementwise_mul(a: &[f32], b: &[f32], out: &mut [f32]) {
+pub fn simd_elementwise_mul(a: &[f32], b: &[f32], out: &mut [f32]) {
     debug_assert_eq!(a.len(), b.len());
     debug_assert_eq!(a.len(), out.len());
 
@@ -125,7 +125,7 @@ fn simd_elementwise_mul(a: &[f32], b: &[f32], out: &mut [f32]) {
 
 /// SIMD-optimized element-wise add
 #[inline(always)]
-fn simd_elementwise_add(a: &[f32], b: &[f32], out: &mut [f32]) {
+pub fn simd_elementwise_add(a: &[f32], b: &[f32], out: &mut [f32]) {
     debug_assert_eq!(a.len(), b.len());
     debug_assert_eq!(a.len(), out.len());
 
@@ -148,7 +148,7 @@ fn simd_elementwise_add(a: &[f32], b: &[f32], out: &mut [f32]) {
 
 /// SIMD-optimized scalar multiply
 #[inline(always)]
-fn simd_scale(v: &[f32], scalar: f32, out: &mut [f32]) {
+pub fn simd_scale(v: &[f32], scalar: f32, out: &mut [f32]) {
     debug_assert_eq!(v.len(), out.len());
 
     const CHUNK_SIZE: usize = 8;
@@ -401,12 +401,24 @@ impl RealHV {
 
     /// Compute cosine similarity with another vector
     ///
-    /// Returns a value in [-1, 1] where:
+    /// Returns a value in **[-1, 1]** where:
     /// - 1.0 = identical vectors
-    /// - 0.0 = orthogonal vectors
+    /// - 0.0 = orthogonal vectors (random expectation)
     /// - -1.0 = opposite vectors
     ///
-    /// For random vectors, expected similarity ≈ 0.0 (not 0.5 like binary!)
+    /// # Comparison with HV16 (Binary)
+    ///
+    /// **IMPORTANT**: `RealHV::similarity()` and `HV16::similarity()` have DIFFERENT
+    /// ranges and baselines:
+    ///
+    /// | Type   | Range     | Orthogonal | Identical | Opposite |
+    /// |--------|-----------|------------|-----------|----------|
+    /// | RealHV | [-1, 1]   | 0.0        | 1.0       | -1.0     |
+    /// | HV16   | [0, 1]    | 0.5        | 1.0       | 0.0      |
+    ///
+    /// To test orthogonality:
+    /// - RealHV: `sim.abs() < threshold`
+    /// - HV16: `(sim - 0.5).abs() < threshold`
     ///
     /// # Example
     /// ```ignore
@@ -643,5 +655,55 @@ mod tests {
         assert!(sim_a > 0.4, "Bundle should be similar to component A");
         assert!(sim_b > 0.4, "Bundle should be similar to component B");
         assert!(sim_c > 0.4, "Bundle should be similar to component C");
+    }
+
+    /// Test: Explicit comparison of RealHV vs HV16 similarity semantics
+    ///
+    /// This test documents and validates the different similarity conventions.
+    #[test]
+    fn test_similarity_convention_comparison_with_binary() {
+        use crate::hdc::binary_hv::HV16;
+
+        println!("\n🔬 SIMILARITY CONVENTION COMPARISON: RealHV vs HV16");
+        println!("{}", "=".repeat(70));
+
+        // Create equivalent random pairs
+        let real_a = RealHV::random(2048, 42);
+        let real_b = RealHV::random(2048, 43);
+        let bin_a = HV16::random(42);
+        let bin_b = HV16::random(43);
+
+        let real_sim = real_a.similarity(&real_b);
+        let bin_sim = bin_a.similarity(&bin_b);
+
+        println!("\n📊 Random vector similarity:");
+        println!("   RealHV: {:.4} (expected: ~0.0)", real_sim);
+        println!("   HV16:   {:.4} (expected: ~0.5)", bin_sim);
+
+        // Self-similarity
+        let real_self = real_a.similarity(&real_a);
+        let bin_self = bin_a.similarity(&bin_a);
+
+        println!("\n📊 Self-similarity:");
+        println!("   RealHV: {:.4} (expected: 1.0)", real_self);
+        println!("   HV16:   {:.4} (expected: 1.0)", bin_self);
+
+        println!("\n📐 Summary of conventions:");
+        println!("   | Property      | RealHV | HV16  |");
+        println!("   |---------------|--------|-------|");
+        println!("   | Range         | [-1,1] | [0,1] |");
+        println!("   | Identical     |   1.0  |  1.0  |");
+        println!("   | Orthogonal    |   0.0  |  0.5  |");
+        println!("   | Opposite      |  -1.0  |  0.0  |");
+        println!("{}", "=".repeat(70));
+
+        // Validate conventions
+        assert_eq!(real_self, 1.0, "RealHV self-similarity should be 1.0");
+        assert_eq!(bin_self, 1.0, "HV16 self-similarity should be 1.0");
+
+        assert!(real_sim.abs() < 0.15,
+            "RealHV random vectors should be near-orthogonal (|sim| < 0.15), got {:.4}", real_sim);
+        assert!((bin_sim - 0.5).abs() < 0.05,
+            "HV16 random vectors should be ~0.5 (|sim - 0.5| < 0.05), got {:.4}", bin_sim);
     }
 }
