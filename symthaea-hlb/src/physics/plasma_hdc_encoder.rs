@@ -1162,6 +1162,7 @@ mod tests {
     // -------------------------------------------------------------------------
 
     #[test]
+    #[ignore = "performance test - run with cargo test --release --ignored"]
     fn test_streaming_performance_10ms_budget() {
         let mut buffer = PlasmaStateBuffer::new(100, 42);
 
@@ -1196,6 +1197,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "performance test - run with cargo test --release --ignored"]
     fn test_window_encoding_performance() {
         let mut encoder = PlasmaHdcEncoder::new(42);
 

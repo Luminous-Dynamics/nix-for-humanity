@@ -1747,6 +1747,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "performance test - run with cargo test --release --ignored"]
     fn test_benchmark() {
         let encoder = CModHdcEncoder::default_encoder();
         let normalizer = SensorNormalizer::default();
