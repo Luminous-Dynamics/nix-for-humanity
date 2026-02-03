@@ -104,8 +104,8 @@ fn test_process_input_produces_state() {
     let mut processor = StabilityRegimeProcessor::new();
     let input = HV16::random(42);
 
-    let (state, _transitions) = processor.process_input(&input, 0.1, 0.0);
-    assert!(state.phi >= 0.0);
+    let (prim_state, _transitions) = processor.process_input(&input, 0.1, 0.0);
+    assert!(prim_state.phi >= 0.0);
 }
 
 #[test]
