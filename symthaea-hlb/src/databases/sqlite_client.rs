@@ -1,8 +1,69 @@
-//! SQLite-Backed Persistent Memory
+//! SQLite-Backed Persistent Memory Storage
 //!
-//! Real persistence for Symthaea's consciousness - memories survive restarts!
+//! Production-ready persistent storage for Symthaea's consciousness system.
+//! Memories survive process restarts, enabling true continuity of experience.
 //!
-//! Uses rusqlite with bundled SQLite for zero external dependencies.
+//! # Features
+//!
+//! - **Zero dependencies**: Uses rusqlite with bundled SQLite
+//! - **ACID transactions**: Reliable storage with crash recovery
+//! - **HDC-native**: Binary hypervector encodings stored efficiently as BLOBs
+//! - **Indexed**: Timestamps, memory types, and phi values for fast filtering
+//!
+//! # Quick Start
+//!
+//! ```rust,ignore
+//! use symthaea::databases::{SqliteMemory, ConsciousnessDatabase, MemoryRecord, MemoryType};
+//! use symthaea::hdc::HV16;
+//!
+//! // Create persistent database
+//! let db = SqliteMemory::new("./data/memories.db")?;
+//!
+//! // Or use in-memory for testing
+//! let test_db = SqliteMemory::in_memory()?;
+//!
+//! // Store a memory
+//! let record = MemoryRecord {
+//!     id: "unique-id".to_string(),
+//!     memory_type: MemoryType::Episodic,
+//!     encoding: HV16::random(42),
+//!     content: "First conversation with user".to_string(),
+//!     timestamp_ms: 1704067200000,
+//!     valence: 0.7,
+//!     arousal: 0.5,
+//!     phi: 0.65,
+//!     topics: vec!["greeting".to_string()],
+//!     metadata: "{}".to_string(),
+//! };
+//! db.store(record).await?;
+//!
+//! // Search for similar memories
+//! let results = db.search_similar(&HV16::random(42), 10).await?;
+//! println!("Found {} similar memories", results.len());
+//! ```
+//!
+//! # Schema
+//!
+//! The database uses a single `memories` table:
+//!
+//! | Column | Type | Description |
+//! |--------|------|-------------|
+//! | id | TEXT PRIMARY KEY | Unique identifier |
+//! | encoding | BLOB | 2048-byte HV16 hypervector |
+//! | timestamp_ms | INTEGER | Unix timestamp in milliseconds |
+//! | memory_type | TEXT | "episodic", "semantic", "procedural", "working" |
+//! | content | TEXT | Human-readable content |
+//! | valence | REAL | Emotional valence (-1.0 to 1.0) |
+//! | arousal | REAL | Emotional arousal (0.0 to 1.0) |
+//! | phi | REAL | Integrated information value |
+//! | topics | TEXT | JSON array of topic strings |
+//! | metadata | TEXT | JSON object for extensibility |
+//!
+//! # Thread Safety
+//!
+//! The database uses `Mutex<Connection>` for thread-safe access. While this
+//! serializes database operations, SQLite in WAL mode can handle concurrent
+//! reads efficiently.
 
 use super::{ConsciousnessDatabase, DbResult, DatabaseError, MemoryRecord, MemoryType, SearchResult};
 use symthaea_core::hdc::binary_hv::HV16;
@@ -10,18 +71,70 @@ use async_trait::async_trait;
 use rusqlite::{Connection, params};
 use std::sync::Mutex;
 use std::path::Path;
-use crate::infrastructure::lock_guard::ResilientMutex; // SAFETY: Prevent cascading failures
+use crate::infrastructure::lock_guard::ResilientMutex;
 
-/// SQLite-backed persistent memory database
+/// SQLite-backed persistent memory database.
+///
+/// Provides durable storage for consciousness memories using an embedded SQLite
+/// database. Implements [`ConsciousnessDatabase`] for the standard memory API.
+///
+/// # Thread Safety
+///
+/// Uses a `Mutex<Connection>` internally, making it safe to share across threads
+/// via `Arc<SqliteMemory>`. Operations are serialized at the database level.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use symthaea::databases::SqliteMemory;
+/// use std::sync::Arc;
+///
+/// // Create shared database for multi-threaded access
+/// let db = Arc::new(SqliteMemory::new("./memories.db")?);
+///
+/// // Clone Arc for different threads
+/// let db_clone = Arc::clone(&db);
+/// tokio::spawn(async move {
+///     let count = db_clone.count().await?;
+///     println!("Memory count: {}", count);
+/// });
+/// ```
 pub struct SqliteMemory {
-    /// Database connection (Mutex for thread-safe access)
+    /// Database connection protected by mutex for thread-safe access.
     conn: Mutex<Connection>,
-    /// Database path (for logging)
+
+    /// Path to the database file (":memory:" for in-memory databases).
     path: String,
 }
 
 impl SqliteMemory {
-    /// Create a new SQLite memory at the given path
+    /// Create a new SQLite memory database at the given file path.
+    ///
+    /// Creates the database file and parent directories if they don't exist.
+    /// If the database already exists, it opens and validates the schema.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the SQLite database file
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DatabaseError::ConnectionFailed`] if:
+    /// - Parent directory cannot be created
+    /// - Database file cannot be opened/created
+    /// - Schema initialization fails
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use symthaea::databases::SqliteMemory;
+    ///
+    /// // Create in a specific directory
+    /// let db = SqliteMemory::new("./data/consciousness/memories.db")?;
+    ///
+    /// // Create in temp directory
+    /// let temp_db = SqliteMemory::new(std::env::temp_dir().join("test.db"))?;
+    /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> DbResult<Self> {
         let path_str = path.as_ref().to_string_lossy().to_string();
 
@@ -47,7 +160,27 @@ impl SqliteMemory {
         Ok(db)
     }
 
-    /// Create an in-memory database (for testing)
+    /// Create an in-memory database for testing or ephemeral storage.
+    ///
+    /// The database exists only for the lifetime of the `SqliteMemory` instance.
+    /// All data is lost when the instance is dropped. Useful for unit tests
+    /// and temporary sessions.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use symthaea::databases::{SqliteMemory, ConsciousnessDatabase};
+    ///
+    /// #[tokio::test]
+    /// async fn test_memory_operations() {
+    ///     let db = SqliteMemory::in_memory().unwrap();
+    ///
+    ///     // Test operations...
+    ///     assert_eq!(db.count().await.unwrap(), 0);
+    ///
+    ///     // Database automatically cleaned up when `db` goes out of scope
+    /// }
+    /// ```
     pub fn in_memory() -> DbResult<Self> {
         let conn = Connection::open_in_memory().map_err(|e| {
             DatabaseError::ConnectionFailed(format!("SQLite in-memory failed: {}", e))
@@ -62,7 +195,9 @@ impl SqliteMemory {
         Ok(db)
     }
 
-    /// Initialize the database schema
+    /// Initialize the database schema.
+    ///
+    /// Creates the `memories` table and indexes if they don't exist.
     fn initialize_schema(&self) -> DbResult<()> {
         let conn = self.conn.lock_resilient("sqlite");
 
@@ -90,23 +225,26 @@ impl SqliteMemory {
         Ok(())
     }
 
-    /// Serialize HV16 to bytes (2048 bytes = 16,384 bits)
+    /// Serialize HV16 to bytes (2048 bytes = 16,384 bits).
+    #[doc(hidden)]
     fn hv_to_bytes(hv: &HV16) -> Vec<u8> {
-        hv.0.to_vec()  // Access inner array directly
+        hv.0.to_vec()
     }
 
-    /// Deserialize bytes to HV16
+    /// Deserialize bytes to HV16.
+    #[doc(hidden)]
     fn bytes_to_hv(bytes: &[u8]) -> HV16 {
         if bytes.len() >= HV16::BYTES {
             let mut arr = [0u8; HV16::BYTES];
             arr.copy_from_slice(&bytes[..HV16::BYTES]);
-            HV16(arr)  // Use tuple struct constructor
+            HV16(arr)
         } else {
             HV16::zero()
         }
     }
 
-    /// Convert MemoryType to string
+    /// Convert MemoryType to database string representation.
+    #[doc(hidden)]
     fn memory_type_to_str(mt: MemoryType) -> &'static str {
         match mt {
             MemoryType::Episodic => "episodic",
@@ -116,7 +254,8 @@ impl SqliteMemory {
         }
     }
 
-    /// Convert string to MemoryType
+    /// Convert database string to MemoryType.
+    #[doc(hidden)]
     fn str_to_memory_type(s: &str) -> MemoryType {
         match s {
             "episodic" => MemoryType::Episodic,

@@ -1,13 +1,112 @@
-//! HDC - Hyperdimensional Computing Module
+//! Hyperdimensional Computing (HDC) Module
 //!
-//! Core HDC/VSA primitives and consciousness-related computations.
-//! Re-exports fundamental types from symthaea-core for unified API.
+//! This module provides the core HDC/VSA (Vector Symbolic Architecture) primitives
+//! and consciousness-related computations for Symthaea. It re-exports fundamental
+//! types from `symthaea-core` and adds local extensions for consciousness-specific
+//! computations.
 //!
-//! # Architecture
-//! This module provides:
-//! - Re-exports from symthaea-core for basic HDC operations
-//! - Local extensions for consciousness-specific computations
-//! - Unified API for HDC operations across the library
+//! # Overview
+//!
+//! Hyperdimensional Computing (HDC) is a brain-inspired computing paradigm that
+//! represents information as high-dimensional vectors (hypervectors). Key properties:
+//!
+//! - **High dimensionality**: 16,384 dimensions (2^14) by default
+//! - **Holographic**: Information distributed across all dimensions
+//! - **Noise-tolerant**: Robust to corruption and partial information
+//! - **Efficient**: Binary operations enable SIMD acceleration
+//!
+//! # Core Types
+//!
+//! ## Binary Hypervectors ([`HV16`])
+//!
+//! The primary type for efficient HDC operations. 16,384-bit vectors (2KB) with:
+//! - 32x memory reduction vs `Vec<f32>`
+//! - 200x faster operations via SIMD (XOR, popcount)
+//! - Deterministic random generation from seeds
+//!
+//! ```rust,ignore
+//! use symthaea::hdc::HV16;
+//!
+//! let a = HV16::random(42);  // Deterministic from seed
+//! let b = HV16::random(43);
+//!
+//! // Bind: create associations (XOR)
+//! let bound = a.bind(&b);
+//!
+//! // Bundle: create prototypes (majority vote)
+//! let prototype = HV16::bundle(&[a, b]);
+//!
+//! // Similarity: 0.0 = opposite, 0.5 = random, 1.0 = identical
+//! let sim = a.similarity(&b);
+//! ```
+//!
+//! ## Continuous Hypervectors ([`ContinuousHV`])
+//!
+//! Real-valued hypervectors for applications requiring gradient computation
+//! or finer-grained similarity measurements.
+//!
+//! ## HDC-LTC Unified Neurons ([`HdcLtcUnifiedNeuron`])
+//!
+//! Revolutionary architecture where neuron state IS a hypervector, enabling:
+//! - O(1) temporal jumps via closed-form solution
+//! - Binding-based weight application (no matrix multiply)
+//! - Natural integration with phi measurement
+//!
+//! # Fundamental Operations
+//!
+//! | Operation | Symbol | Purpose | Properties |
+//! |-----------|--------|---------|------------|
+//! | **Bind**  | `bind()` | Create associations | Commutative, self-inverse |
+//! | **Bundle** | `bundle()` | Create prototypes | Preserves similarity |
+//! | **Permute** | `permute()` | Encode sequences | Order-sensitive |
+//!
+//! # Module Organization
+//!
+//! - **Core types**: [`HV16`], [`ContinuousHV`], [`BinaryHV`], [`RealHV`]
+//! - **Operations**: [`simd_ops`] for accelerated computation
+//! - **Encoding**: [`text_encoder`], [`semantic_encoder`], [`semantic_decoder`]
+//! - **Consciousness**: [`tiered_phi`], [`phi`], [`consciousness`] submodules
+//! - **Networks**: [`HdcLtcUnifiedNeuron`], [`reservoir`], [`cincinnati_ltc`]
+//!
+//! # Examples
+//!
+//! ## Encoding Text
+//!
+//! ```rust,ignore
+//! use symthaea::hdc::{TextEncoder, TextEncoderConfig, HV16};
+//!
+//! let encoder = TextEncoder::new(TextEncoderConfig::default());
+//! let hello = encoder.encode("hello");
+//! let world = encoder.encode("world");
+//!
+//! // Similar words have higher similarity
+//! let greeting = encoder.encode("hi");
+//! assert!(hello.similarity(&greeting) > hello.similarity(&world));
+//! ```
+//!
+//! ## Graph Encoding
+//!
+//! ```rust,ignore
+//! use symthaea::hdc::HV16;
+//!
+//! // Create unique basis vectors for nodes
+//! let node_a = HV16::basis(0);
+//! let node_b = HV16::basis(1);
+//! let node_c = HV16::basis(2);
+//!
+//! // Encode edges as bindings
+//! let edge_ab = node_a.bind(&node_b);
+//! let edge_bc = node_b.bind(&node_c);
+//!
+//! // Node representation = bundle of incident edges
+//! let node_b_repr = HV16::bundle(&[edge_ab, edge_bc]);
+//! ```
+//!
+//! # See Also
+//!
+//! - [`symthaea_core::hdc`] - Core HDC primitives
+//! - [`crate::consciousness`] - Phi measurement and IIT
+//! - [`crate::unified_ltc`] - Liquid Time-Constant networks
 
 #![allow(unused_imports)]
 
@@ -43,7 +142,7 @@ pub use symthaea_core::hdc::native_similarity;
 // Re-export sensorimotor contingencies (enactivist perception)
 pub use symthaea_core::hdc::sensorimotor_contingencies;
 
-// Re-export HDC_DIMENSION at module level for convenience
+/// Convenient alias for the standard HDC dimension (16,384).
 pub const HDC_DIM: usize = symthaea_core::hdc::unified_hv::HDC_DIMENSION;
 
 // Phi engine types from symthaea-core
@@ -143,24 +242,32 @@ pub use symthaea_core::hdc::text_encoder::{TextEncoder, TextEncoderConfig};
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCAL MODULES - Subdirectory modules (stable)
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/// HDC arithmetic operations (addition, multiplication in HDC space).
 pub mod arithmetic;
+
+/// Consciousness-specific HDC computations.
 pub mod consciousness;
+
+/// Tiered phi computation with performance tiers.
 pub mod tiered_phi;
+
+/// Phi measurement utilities.
 pub mod phi;
 
-// HDC-LTC neurons with CfC closed-form predict_forward
+/// HDC-LTC neurons with CfC closed-form predict_forward.
 pub mod hdc_ltc_neuron;
 
-// Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling
+/// Phenomenal Binding Study - Research Direction 2: HDC binding vs bundling.
 pub mod phenomenal_binding_study;
 
-// Binding Reversibility Study - H2 Revised: Testing binding via reversibility
+/// Binding Reversibility Study - H2 Revised: Testing binding via reversibility.
 pub mod binding_reversibility_study;
 
-// HD-LTC codec: bidirectional translation between HDC and LTC spaces
+/// HD-LTC codec: bidirectional translation between HDC and LTC spaces.
 pub mod hd_ltc_codec;
 
-// LTC generative core: generative thought engine using HD-LTC codec
+/// LTC generative core: generative thought engine using HD-LTC codec.
 pub mod ltc_generative_core;
 
 // ═══════════════════════════════════════════════════════════════════════════════
