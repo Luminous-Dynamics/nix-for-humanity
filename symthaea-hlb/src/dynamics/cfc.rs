@@ -1366,6 +1366,66 @@ impl CfCNetwork {
             cell.scale_tau(scale);
         }
     }
+
+    // =========================================================================
+    // Weight serialization for async training (background thread weight swap)
+    // =========================================================================
+
+    /// Extract all learnable weights into a flat `Vec<f32>`.
+    pub fn get_weights(&self) -> Vec<f32> {
+        let mut buf = Vec::new();
+        for cell in &self.cells {
+            buf.extend(cell.w_in.iter());
+            buf.extend(cell.w_h.iter());
+            buf.extend(cell.b_h.iter());
+            buf.extend(cell.tau.iter());
+            for bw in &cell.backbone_weights {
+                buf.extend(bw.iter());
+            }
+            for bb in &cell.backbone_biases {
+                buf.extend(bb.iter());
+            }
+        }
+        buf.extend(self.output_weights.iter());
+        buf.extend(self.output_bias.iter());
+        buf
+    }
+
+    /// Restore learnable weights from a flat slice produced by [`get_weights`].
+    pub fn set_weights(&mut self, weights: &[f32]) {
+        let mut pos = 0;
+        for cell in &mut self.cells {
+            let n = cell.w_in.len();
+            cell.w_in.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+            pos += n;
+            let n = cell.w_h.len();
+            cell.w_h.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+            pos += n;
+            let n = cell.b_h.len();
+            cell.b_h.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+            pos += n;
+            let n = cell.tau.len();
+            cell.tau.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+            pos += n;
+            for bw in &mut cell.backbone_weights {
+                let n = bw.len();
+                bw.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+                pos += n;
+            }
+            for bb in &mut cell.backbone_biases {
+                let n = bb.len();
+                bb.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+                pos += n;
+            }
+        }
+        let n = self.output_weights.len();
+        self.output_weights.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+        pos += n;
+        let n = self.output_bias.len();
+        self.output_bias.as_slice_mut().unwrap().copy_from_slice(&weights[pos..pos + n]);
+        pos += n;
+        assert_eq!(pos, weights.len(), "weight count mismatch");
+    }
 }
 
 #[cfg(test)]
