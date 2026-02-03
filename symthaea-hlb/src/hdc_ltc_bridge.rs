@@ -30,6 +30,7 @@ use symthaea_core::hdc::hdc_ltc_unified::{
     HdcLtcUnifiedNetwork, UnifiedNetworkConfig, UnifiedConfig, UnifiedActivation,
 };
 use symthaea_core::hdc::unified_hv::{ContinuousHV, HDC_DIMENSION};
+use symthaea_core::genesis::GenesisSeed;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -194,6 +195,9 @@ pub struct HdcLtcBridge {
 
     /// Cycles since the last adaptive dimension resize
     cycles_since_resize: usize,
+
+    /// Optional genesis seed for deterministic re-initialization (e.g. during resize)
+    genesis: Option<GenesisSeed>,
 }
 
 impl HdcLtcBridge {
@@ -247,6 +251,7 @@ impl HdcLtcBridge {
             total_steps: 0,
             state_diversity: 0.0,
             cycles_since_resize: 0,
+            genesis: None,
         }
     }
 
@@ -293,6 +298,7 @@ impl HdcLtcBridge {
             total_steps: 0,
             state_diversity: 0.0,
             cycles_since_resize: 0,
+            genesis: Some(genesis.clone()),
         }
     }
 
@@ -444,16 +450,32 @@ impl HdcLtcBridge {
 
         // Rebuild projection matrices at new dimension
         self.config.hdc_dim = new_dim;
-        self.input_projection = Self::init_projection(
-            self.config.input_dim,
-            new_dim,
-            self.config.seed + 100000 + self.total_steps,
-        );
-        self.output_projection = Self::init_projection(
-            new_dim,
-            self.config.output_dim,
-            self.config.seed + 200000 + self.total_steps,
-        );
+        if let Some(ref genesis) = self.genesis {
+            let resize_label = format!("bridge::resize_{}", self.total_steps);
+            self.input_projection = Self::init_projection_from_genesis(
+                genesis,
+                &format!("{}::input", resize_label),
+                self.config.input_dim,
+                new_dim,
+            );
+            self.output_projection = Self::init_projection_from_genesis(
+                genesis,
+                &format!("{}::output", resize_label),
+                new_dim,
+                self.config.output_dim,
+            );
+        } else {
+            self.input_projection = Self::init_projection(
+                self.config.input_dim,
+                new_dim,
+                self.config.seed + 100000 + self.total_steps,
+            );
+            self.output_projection = Self::init_projection(
+                new_dim,
+                self.config.output_dim,
+                self.config.seed + 200000 + self.total_steps,
+            );
+        }
 
         // Rebuild the network at the new dimension
         let neuron_config = UnifiedConfig {
@@ -477,7 +499,11 @@ impl HdcLtcBridge {
             skip_connections: self.config.skip_connections,
         };
 
-        self.network = HdcLtcUnifiedNetwork::new(network_config, self.config.seed + self.total_steps);
+        if let Some(ref genesis) = self.genesis {
+            self.network = HdcLtcUnifiedNetwork::from_genesis(network_config, genesis);
+        } else {
+            self.network = HdcLtcUnifiedNetwork::new(network_config, self.config.seed + self.total_steps);
+        }
         self.cycles_since_resize = 0;
     }
 

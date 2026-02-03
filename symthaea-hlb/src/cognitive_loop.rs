@@ -49,6 +49,7 @@ use anyhow::Result;
 use rand::Rng;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, VecDeque};
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use ndarray::Array1;
 use symthaea_core::genesis::ShakeRng;
@@ -195,6 +196,12 @@ pub struct CognitiveLoopConfig {
 
     /// Training method for the temporal network
     pub training_method: TrainingMethod,
+
+    /// When true, BPTT/SPSA training runs on a background thread so that
+    /// inference never blocks on training.  The main loop sends (input, target)
+    /// samples over a channel and receives updated weights via non-blocking
+    /// `try_recv` at the top of each cycle.
+    pub async_training: bool,
 }
 
 impl Default for CognitiveLoopConfig {
@@ -215,6 +222,7 @@ impl Default for CognitiveLoopConfig {
             max_cycles_before_reset: 100000,
             genesis_phrase: None,
             training_method: TrainingMethod::default(),
+            async_training: true,
         }
     }
 }
@@ -3182,6 +3190,92 @@ pub struct LoopStats {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ASYNC TRAINING — Background thread for BPTT/SPSA so inference never blocks
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// A single training sample sent from the inference thread to the trainer.
+struct TrainingSample {
+    input: Array1<f32>,
+    target: Array1<f32>,
+    dt: f32,
+    learning_rate: f32,
+    method: TrainingMethod,
+    avg_loss: f32,
+}
+
+/// Handle held by `CognitiveLoopService` to communicate with the background
+/// training thread.  Dropping it causes the background thread to exit.
+///
+/// The `Mutex<Receiver>` makes this struct `Sync` so that `CognitiveLoopService`
+/// can implement `MetricsProvider: Send + Sync`.  In practice the mutex is
+/// uncontended because `cycle()` is the only reader.
+struct AsyncTrainerHandle {
+    sample_tx: mpsc::SyncSender<TrainingSample>,
+    weights_rx: std::sync::Mutex<mpsc::Receiver<Vec<f32>>>,
+    updates_applied: u64,
+}
+
+impl AsyncTrainerHandle {
+    fn spawn(mut network: CfCNetwork) -> Self {
+        let (sample_tx, sample_rx) = mpsc::sync_channel::<TrainingSample>(4);
+        let (weights_tx, weights_rx) = mpsc::channel::<Vec<f32>>();
+
+        std::thread::Builder::new()
+            .name("symthaea-trainer".into())
+            .spawn(move || {
+                let mut steps_since_publish: u32 = 0;
+                while let Ok(sample) = sample_rx.recv() {
+                    let result = match sample.method {
+                        TrainingMethod::Spsa => {
+                            network.train_step_spsa(&sample.input, &sample.target, sample.dt, sample.learning_rate)
+                        }
+                        TrainingMethod::Bptt => {
+                            network.train_step_bptt(&[sample.input], &[sample.target], &[sample.dt], sample.learning_rate)
+                        }
+                        TrainingMethod::BpttWithSpsaFallback => {
+                            let bptt = network.train_step_bptt(
+                                &[sample.input.clone()], &[sample.target.clone()],
+                                &[sample.dt], sample.learning_rate,
+                            );
+                            match bptt {
+                                Ok(loss) if loss.is_finite() && (sample.avg_loss <= 0.0 || loss < sample.avg_loss * 2.0) => Ok(loss),
+                                _ => network.train_step_spsa(&sample.input, &sample.target, sample.dt, sample.learning_rate),
+                            }
+                        }
+                    };
+                    steps_since_publish += 1;
+                    if steps_since_publish >= 4 && result.is_ok() {
+                        let _ = weights_tx.send(network.get_weights());
+                        steps_since_publish = 0;
+                    }
+                }
+            })
+            .expect("failed to spawn trainer thread");
+
+        Self { sample_tx, weights_rx: std::sync::Mutex::new(weights_rx), updates_applied: 0 }
+    }
+
+    fn apply_latest_weights(&mut self, network: &mut CfCNetwork) -> bool {
+        let mut latest: Option<Vec<f32>> = None;
+        let rx = self.weights_rx.get_mut().unwrap();
+        while let Ok(w) = rx.try_recv() {
+            latest = Some(w);
+        }
+        if let Some(w) = latest {
+            network.set_weights(&w);
+            self.updates_applied += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn send(&self, sample: TrainingSample) {
+        let _ = self.sample_tx.try_send(sample);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TEMPORAL NETWORK WRAPPER
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -3476,6 +3570,10 @@ pub struct CognitiveLoopService {
     /// probe weights exist on disk.
     #[cfg(feature = "neural-bridge")]
     neural_bridge: Option<NeuralBridge>,
+
+    /// Background training thread handle (when `config.async_training` is true
+    /// and the backend is CfC).  `None` for synchronous training or HdcLtc backend.
+    async_trainer: Option<AsyncTrainerHandle>,
 }
 
 impl CognitiveLoopService {
@@ -3487,10 +3585,20 @@ impl CognitiveLoopService {
         let temporal_network = match config.temporal_backend {
             TemporalBackend::CfC => {
                 // Create CfC network with input_dim and num_neurons
-                let cfc = CfCNetwork::new_with_input(
-                    config.cfc_config.input_dim,
-                    config.cfc_config.num_neurons
-                );
+                let cfc = if let Some(ref phrase) = config.genesis_phrase {
+                    let genesis = symthaea_core::genesis::GenesisSeed::from_phrase(phrase);
+                    let net_config = crate::dynamics::cfc::CfCNetworkConfig {
+                        input_dim: config.cfc_config.input_dim,
+                        hidden_dim: config.cfc_config.num_neurons,
+                        ..Default::default()
+                    };
+                    CfCNetwork::from_genesis(net_config, &genesis, "cognitive_loop::cfc")
+                } else {
+                    CfCNetwork::new_with_input(
+                        config.cfc_config.input_dim,
+                        config.cfc_config.num_neurons,
+                    )
+                };
                 TemporalNetwork::CfC(cfc)
             }
             TemporalBackend::HdcLtcUnified => {
@@ -3531,6 +3639,16 @@ impl CognitiveLoopService {
             ClosedLearningLoop::with_rng(genesis.domain("cognitive_loop::exploration"))
         } else {
             ClosedLearningLoop::default()
+        };
+
+        // Spawn background training thread when async_training is enabled and backend is CfC
+        let async_trainer = if config.async_training {
+            match &temporal_network {
+                TemporalNetwork::CfC(cfc) => Some(AsyncTrainerHandle::spawn(cfc.clone())),
+                _ => None,
+            }
+        } else {
+            None
         };
 
         Ok(Self {
@@ -3610,6 +3728,7 @@ impl CognitiveLoopService {
                     None
                 }
             },
+            async_trainer,
         })
     }
 
@@ -3742,6 +3861,15 @@ impl CognitiveLoopService {
     pub fn cycle(&mut self, input: &str) -> CycleResult {
         let cycle_start = Instant::now();
         self.stats.total_cycles += 1;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // PHASE -1: Ingest background-trained weights (non-blocking)
+        // ═══════════════════════════════════════════════════════════════════════
+        if let Some(ref mut trainer) = self.async_trainer {
+            if let TemporalNetwork::CfC(ref mut cfc) = self.temporal_network {
+                trainer.apply_latest_weights(cfc);
+            }
+        }
 
         // ═══════════════════════════════════════════════════════════════════════
         // PHASE 0: Thalamic Routing (Cognitive Depth Selection)
@@ -4116,8 +4244,8 @@ impl CognitiveLoopService {
         {
             self.stats.learning_cycles += 1;
 
-            // Train the temporal network using the configured method
-            let (input_array, target_array, lr) = if let Some(ref prev) = previous_state {
+            // Build training sample
+            let (train_input, train_target, lr) = if let Some(ref prev) = previous_state {
                 (
                     Array1::from_vec(prev.clone()),
                     Array1::from_vec(compressed_state.clone()),
@@ -4129,42 +4257,56 @@ impl CognitiveLoopService {
                 (current_array.clone(), current_array, effective_lr * 0.1)
             };
 
-            let result = match self.config.training_method {
-                TrainingMethod::Spsa => {
-                    self.stats.spsa_fallback_steps += 1;
-                    self.temporal_network.train_step_spsa(&input_array, &target_array, delta_t, lr)
-                }
-                TrainingMethod::Bptt => {
-                    self.stats.bptt_steps += 1;
-                    self.temporal_network.train_step_bptt(&input_array, &target_array, delta_t, lr)
-                }
-                TrainingMethod::BpttWithSpsaFallback => {
-                    let old_loss = self.stats.avg_training_loss;
-                    let bptt_result = self.temporal_network.train_step_bptt(
-                        &input_array, &target_array, delta_t, lr,
-                    );
-                    match bptt_result {
-                        Ok(loss) if loss.is_finite() && (old_loss <= 0.0 || loss < old_loss * 2.0) => {
-                            self.stats.bptt_steps += 1;
-                            Ok(loss)
-                        }
-                        _ => {
-                            // BPTT diverged (NaN/inf or loss spiked) — fall back to SPSA
-                            self.stats.spsa_fallback_steps += 1;
-                            self.temporal_network.train_step_spsa(
-                                &input_array, &target_array, delta_t, lr,
-                            )
+            // ─── Async path: send sample to background thread (never blocks) ───
+            if let Some(ref trainer) = self.async_trainer {
+                trainer.send(TrainingSample {
+                    input: train_input,
+                    target: train_target,
+                    dt: delta_t,
+                    learning_rate: lr,
+                    method: self.config.training_method,
+                    avg_loss: self.stats.avg_training_loss,
+                });
+                // Loss arrives later via weight updates; mark learning in-flight.
+                (true, None)
+            } else {
+                // ─── Sync path: train inline (original behaviour) ───
+                let result = match self.config.training_method {
+                    TrainingMethod::Spsa => {
+                        self.stats.spsa_fallback_steps += 1;
+                        self.temporal_network.train_step_spsa(&train_input, &train_target, delta_t, lr)
+                    }
+                    TrainingMethod::Bptt => {
+                        self.stats.bptt_steps += 1;
+                        self.temporal_network.train_step_bptt(&train_input, &train_target, delta_t, lr)
+                    }
+                    TrainingMethod::BpttWithSpsaFallback => {
+                        let old_loss = self.stats.avg_training_loss;
+                        let bptt_result = self.temporal_network.train_step_bptt(
+                            &train_input, &train_target, delta_t, lr,
+                        );
+                        match bptt_result {
+                            Ok(loss) if loss.is_finite() && (old_loss <= 0.0 || loss < old_loss * 2.0) => {
+                                self.stats.bptt_steps += 1;
+                                Ok(loss)
+                            }
+                            _ => {
+                                self.stats.spsa_fallback_steps += 1;
+                                self.temporal_network.train_step_spsa(
+                                    &train_input, &train_target, delta_t, lr,
+                                )
+                            }
                         }
                     }
-                }
-            };
+                };
 
-            match result {
-                Ok(loss) => {
-                    self.update_loss_stats(loss);
-                    (true, Some(loss))
+                match result {
+                    Ok(loss) => {
+                        self.update_loss_stats(loss);
+                        (true, Some(loss))
+                    }
+                    Err(_) => (false, None),
                 }
-                Err(_) => (false, None),
             }
         } else {
             (false, None)
