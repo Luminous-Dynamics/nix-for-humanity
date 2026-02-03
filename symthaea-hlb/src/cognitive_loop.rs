@@ -4659,6 +4659,30 @@ impl CognitiveLoopService {
         self.coherence_bridge.smoothed_coherence()
     }
 
+    // ========== Semantic Memory Accessors ==========
+
+    /// Get semantic memory statistics
+    ///
+    /// Returns stats about the HDC-based content-addressable memory including:
+    /// - Total entries stored
+    /// - Hit/miss counts and rates
+    /// - Average retrieved error
+    pub fn semantic_memory_stats(&self) -> &crate::memory::semantic_memory::SemanticMemoryStats {
+        self.semantic_memory.stats()
+    }
+
+    // ========== Stability Regime Accessors ==========
+
+    /// Get reference to the stability regime processor
+    ///
+    /// Provides access to CfC dynamics for primitives:
+    /// - Regime distribution (Crystallized/Plastic/Fluid)
+    /// - Active primitive counts
+    /// - Coherence bridge from stability regime
+    pub fn stability_regime(&self) -> &StabilityRegimeProcessor {
+        &self.stability_regime
+    }
+
     // ========== Prediction Confidence Methods ==========
 
     /// Update prediction confidence based on consciousness state and prediction accuracy

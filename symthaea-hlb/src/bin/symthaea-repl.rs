@@ -45,6 +45,7 @@ use symthaea::cognitive_loop::{CognitiveLoopService, CognitiveLoopConfig, Tempor
 use symthaea::language::{LLMOrgan, LLMOrganConfig, LLMQuery, QueryType, OllamaBackend};
 use symthaea::action::{ActionIR, DestructivenessLevel, PolicyBundle, SandboxRoot};
 use symthaea::consciousness::{CompositionalityEngine, create_compositionality_engine};
+use symthaea::consciousness::stability_regime::StabilityRegimeType;
 use symthaea::hdc::primitive_system::PrimitiveSystem;
 
 // Voice output (optional)
@@ -547,7 +548,10 @@ fn display_banner() {
 "#);
 
     println!("  Commands:");
-    println!("    /metrics    - Display consciousness metrics");
+    println!("    /status     - Quick status: Phi, coherence, stability, prediction error");
+    println!("    /memory     - Semantic memory stats (entries, hits/misses, avg error)");
+    println!("    /regime     - Stability regime distribution and transitions");
+    println!("    /metrics    - Display full consciousness metrics");
     println!("    /stats      - Display loop statistics");
     println!("    /voice      - Display voice output status");
     println!("    /reset      - Reset cognitive state");
@@ -661,6 +665,72 @@ fn main() -> Result<()> {
                 println!("    Avg training loss:  {:.4}", stats.avg_training_loss);
                 println!("    Cycles/second:      {:.1}", stats.cycles_per_second);
                 println!("    Avg cycle time:     {:.0}us", stats.avg_cycle_time_us);
+                println!();
+                continue;
+            }
+            "/status" => {
+                let snapshot = state.cognitive.consciousness_snapshot();
+                let regime = state.cognitive.stability_regime();
+                let regime_dist = regime.active_by_regime();
+
+                // Determine current stability regime (most active)
+                let current_regime = if regime_dist.is_empty() {
+                    "None".to_string()
+                } else {
+                    let mut regimes: Vec<_> = regime_dist.iter().collect();
+                    regimes.sort_by(|a, b| b.1.cmp(a.1));
+                    format!("{:?}", regimes[0].0)
+                };
+
+                println!("\n  Quick Status:");
+                println!("    Unified Phi:        {:.4}", snapshot.unified_phi);
+                println!("    Coherence:          {:.4}", snapshot.temporal_coherence);
+                println!("    Stability Regime:   {} ({} active primitives)", current_regime, regime.active_count());
+                println!("    Prediction Error:   {:.4}", snapshot.prediction_error);
+                println!("    Pattern:            {:?} ({:.0}% confidence)", snapshot.pattern, snapshot.pattern_confidence * 100.0);
+                println!("    Flow State:         {}", if snapshot.in_flow { "IN FLOW" } else { "inactive" });
+                println!();
+                continue;
+            }
+            "/memory" => {
+                let mem_stats = state.cognitive.semantic_memory_stats();
+                let hit_rate = mem_stats.hit_rate() * 100.0;
+
+                println!("\n  Semantic Memory Stats:");
+                println!("    Entries Stored:     {}", mem_stats.total_stored);
+                println!("    Total Queries:      {}", mem_stats.total_queries);
+                println!("    Hits:               {}", mem_stats.semantic_hits);
+                println!("    Misses:             {}", mem_stats.semantic_misses);
+                println!("    Hit Rate:           {:.1}%", hit_rate);
+                println!("    Avg Hit Similarity: {:.4}", mem_stats.avg_hit_similarity);
+                println!("    Avg Retrieved Err:  {:.4}", mem_stats.avg_retrieved_error);
+                println!("    Evictions:          {}", mem_stats.evictions);
+                println!();
+                continue;
+            }
+            "/regime" => {
+                let regime = state.cognitive.stability_regime();
+                let regime_dist = regime.active_by_regime();
+
+                println!("\n  Stability Regime Distribution:");
+                println!("    Active Primitives:  {}", regime.active_count());
+                println!("    Global Cycle:       {}", regime.global_cycle());
+
+                // Count by regime
+                let crystallized = regime_dist.get(&StabilityRegimeType::Crystallized).copied().unwrap_or(0);
+                let plastic = regime_dist.get(&StabilityRegimeType::Plastic).copied().unwrap_or(0);
+                let fluid = regime_dist.get(&StabilityRegimeType::Fluid).copied().unwrap_or(0);
+
+                println!("\n    Regime Counts (active):");
+                println!("      Crystallized:     {} (stable, fast tau)", crystallized);
+                println!("      Plastic:          {} (learning, moderate tau)", plastic);
+                println!("      Fluid:            {} (exploratory, slow tau)", fluid);
+
+                // Show coherence from stability regime's bridge
+                let coherence = regime.coherence_bridge().smoothed_coherence();
+                let phi_contrib = regime.coherence_bridge().phi_contribution();
+                println!("\n    Regime Coherence:   {:.4}", coherence);
+                println!("    Phi Contribution:   {:.4}", phi_contrib);
                 println!();
                 continue;
             }
