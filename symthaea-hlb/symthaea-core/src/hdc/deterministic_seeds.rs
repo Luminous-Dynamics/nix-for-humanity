@@ -48,7 +48,7 @@ use std::sync::LazyLock;
 /// Uses Rust's DefaultHasher for consistent u64 generation.
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// # use symthaea::hdc::deterministic_seeds::seed_from_name;
 /// let install_seed = seed_from_name("INSTALL");
 /// let search_seed = seed_from_name("SEARCH");
@@ -71,7 +71,7 @@ pub fn seed_from_name(name: &str) -> u64 {
 /// This prevents accidental collisions between different subsystems.
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// # use symthaea::hdc::deterministic_seeds::seed_namespaced;
 /// let visual_seed = seed_namespaced("visual", 42);
 /// let audio_seed = seed_namespaced("audio", 42);

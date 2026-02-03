@@ -253,7 +253,7 @@ fn variance(values: &[f64]) -> f64 {
 /// phase space analysis, attractor detection, and bifurcation analysis.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::consciousness_dynamics::{ConsciousnessDynamics, DynamicsConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

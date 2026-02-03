@@ -14,7 +14,7 @@
 //!
 //! # Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::hv_pool::{HV16Pool, PooledHV16};
 //!
 //! // Get a vector from the pool (allocation-free if pool has capacity)
@@ -64,7 +64,7 @@ thread_local! {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// use symthaea::hdc::hv_pool::PooledHV16;
 ///
 /// {

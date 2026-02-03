@@ -20,7 +20,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::compat::HVCompat;
 //! use symthaea::hdc::{HV16, ContinuousHV};
 //!

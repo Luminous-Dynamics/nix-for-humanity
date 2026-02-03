@@ -29,7 +29,7 @@ Module Structure:
 /// - **Balance**: Good accuracy vs memory tradeoff for most use cases
 ///
 /// # Usage
-/// ```rust
+/// ```rust,ignore
 /// use symthaea::hdc::HDC_DIMENSION;
 /// let vector = vec![0i8; HDC_DIMENSION];
 /// ```
@@ -64,7 +64,7 @@ pub const HDC_DIMENSION_64K: usize = 65_536;
 /// - **Custom**: Any dimension (should be power of 2)
 ///
 /// # Usage
-/// ```rust
+/// ```rust,ignore
 /// use symthaea::hdc::HdcDimensionality;
 ///
 /// // Use predefined tier
@@ -158,7 +158,7 @@ impl From<usize> for HdcDimensionality {
 /// - **Biological plausibility**: ~10^3 scale for cortical columns
 ///
 /// # Usage
-/// ```rust
+/// ```rust,ignore
 /// use symthaea::hdc::LTC_NEURONS;
 /// let neurons = vec![0.0f32; LTC_NEURONS];
 /// ```

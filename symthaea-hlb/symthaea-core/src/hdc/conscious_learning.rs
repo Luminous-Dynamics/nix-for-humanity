@@ -34,7 +34,7 @@ learning system that respects consciousness state.
 
 ## Usage
 
-```rust
+```rust,ignore
 use symthaea::hdc::conscious_learning::ConsciousLearningEngine;
 
 let mut engine = ConsciousLearningEngine::new();

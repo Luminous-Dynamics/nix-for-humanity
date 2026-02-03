@@ -54,7 +54,7 @@
 //! To maintain orthogonality with 250+ primitives in 16K-dimensional space,
 //! we use **hierarchical binding**:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // Each domain gets a rotation in HV16 space
 //! MATH_MANIFOLD = random_hv16();
 //! ZERO = MATH_MANIFOLD ⊗ ZERO_LOCAL;
@@ -75,13 +75,23 @@ use once_cell::sync::Lazy;
 /// This provides O(1) access instead of O(n) reconstruction on every use.
 static GLOBAL_PRIMITIVE_SYSTEM: Lazy<PrimitiveSystem> = Lazy::new(PrimitiveSystem::new);
 
-/// Generate a deterministic seed from a string name
-/// This ensures primitives always get the same encoding across runs
+/// Generate a deterministic seed from a string name.
+///
+/// Uses FNV-1a (64-bit) which is stable across Rust versions and platforms,
+/// unlike `DefaultHasher` whose algorithm is explicitly not guaranteed stable.
+/// This ensures primitives always get the same encoding across runs,
+/// compiler versions, and target architectures.
 pub fn seed_from_name(name: &str) -> u64 {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    name.hash(&mut hasher);
-    hasher.finish()
+    // FNV-1a 64-bit: well-known, stable, no dependencies
+    const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x100000001b3;
+
+    let mut hash = FNV_OFFSET_BASIS;
+    for byte in name.as_bytes() {
+        hash ^= *byte as u64;
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
 }
 
 /// Primitive tier in the hierarchy
@@ -2885,7 +2895,11 @@ impl PrimitiveSystem {
         Some(p1.encoding.similarity(&p2.encoding))
     }
 
-    /// Validate that all primitives in a tier are sufficiently orthogonal
+    /// Validate that all primitives in a tier are sufficiently orthogonal.
+    ///
+    /// Returns pairs whose similarity deviates from 0.5 (random baseline) by
+    /// more than `threshold`. With 16,384-bit vectors, expected deviation from
+    /// 0.5 is ~0.008 (1σ) for random pairs, so threshold=0.03 ≈ 4σ.
     pub fn validate_tier_orthogonality(&self, tier: PrimitiveTier, threshold: f32) -> Vec<(String, String, f32)> {
         let mut violations = Vec::new();
         let primitives = self.get_tier(tier);
@@ -2893,7 +2907,8 @@ impl PrimitiveSystem {
         for i in 0..primitives.len() {
             for j in (i+1)..primitives.len() {
                 let sim = primitives[i].encoding.similarity(&primitives[j].encoding);
-                if sim > threshold {
+                let deviation = (sim - 0.5).abs();
+                if deviation > threshold {
                     violations.push((
                         primitives[i].name.clone(),
                         primitives[j].name.clone(),
@@ -3001,9 +3016,11 @@ mod tests {
         let sim = system.check_orthogonality("SET", "NOT");
         assert!(sim.is_some(), "Should be able to check orthogonality");
 
-        // They should be in different domains, so should be fairly orthogonal
+        // With 16,384-bit vectors, similarity() returns fraction of matching bits
+        // in [0, 1]. Random/orthogonal pairs concentrate around 0.5.
         if let Some(similarity) = sim {
-            assert!(similarity < 0.7, "Different domain primitives should be fairly orthogonal");
+            assert!((similarity - 0.5).abs() < 0.03,
+                "Cross-domain primitives should be near-orthogonal (sim ≈ 0.5), got {}", similarity);
         }
     }
 
@@ -3011,12 +3028,13 @@ mod tests {
     fn test_tier_validation() {
         let system = PrimitiveSystem::new();
 
-        // Check that Tier 1 primitives are sufficiently orthogonal
-        let violations = system.validate_tier_orthogonality(PrimitiveTier::Mathematical, 0.9);
+        // With bind-based embedding and 16,384 dimensions, all within-tier
+        // primitive pairs should have |similarity - 0.5| < 0.03 (~4σ threshold).
+        let violations = system.validate_tier_orthogonality(PrimitiveTier::Mathematical, 0.03);
 
-        // Should have few or no violations
-        assert!(violations.len() < system.count_tier(PrimitiveTier::Mathematical) / 2,
-            "Most primitives should be orthogonal");
+        // Zero violations expected — any violation indicates a seeding collision
+        assert!(violations.is_empty(),
+            "All Tier 1 primitives should be orthogonal (|sim - 0.5| < 0.03), violations: {:?}", violations);
     }
 
     #[test]
@@ -3029,10 +3047,12 @@ mod tests {
         assert!(math.is_some(), "Mathematics domain should exist");
         assert!(logic.is_some(), "Logic domain should exist");
 
-        // Domains should have different rotations
+        // Domain rotations are independent random 16K-bit vectors, so near-orthogonal
+        // similarity() returns [0,1] where 0.5 = random baseline
         if let (Some(m), Some(l)) = (math, logic) {
             let sim = m.rotation.similarity(&l.rotation);
-            assert!(sim < 0.8, "Different domains should have different rotations");
+            assert!((sim - 0.5).abs() < 0.03,
+                "Domain rotations should be near-orthogonal (sim ≈ 0.5), got {}", sim);
         }
     }
 
@@ -3105,12 +3125,9 @@ mod tests {
     fn test_tier2_orthogonality() {
         let system = PrimitiveSystem::new();
 
-        // Check that Tier 2 primitives are sufficiently orthogonal
-        let violations = system.validate_tier_orthogonality(PrimitiveTier::Physical, 0.9);
-
-        // Should have few violations
-        assert!(violations.len() < system.count_tier(PrimitiveTier::Physical) / 2,
-            "Most Tier 2 primitives should be orthogonal");
+        let violations = system.validate_tier_orthogonality(PrimitiveTier::Physical, 0.03);
+        assert!(violations.is_empty(),
+            "All Tier 2 primitives should be orthogonal (|sim - 0.5| < 0.03), violations: {:?}", violations);
     }
 
     // ========================================================================
@@ -3156,11 +3173,9 @@ mod tests {
     fn test_tier3_orthogonality() {
         let system = PrimitiveSystem::new();
 
-        // Check that Tier 3 primitives are sufficiently orthogonal
-        let violations = system.validate_tier_orthogonality(PrimitiveTier::Geometric, 0.9);
-
-        assert!(violations.len() < system.count_tier(PrimitiveTier::Geometric) / 2,
-            "Most Tier 3 primitives should be orthogonal");
+        let violations = system.validate_tier_orthogonality(PrimitiveTier::Geometric, 0.03);
+        assert!(violations.is_empty(),
+            "All Tier 3 primitives should be orthogonal (|sim - 0.5| < 0.03), violations: {:?}", violations);
     }
 
     // ========================================================================
@@ -3220,10 +3235,9 @@ mod tests {
     fn test_tier4_orthogonality() {
         let system = PrimitiveSystem::new();
 
-        let violations = system.validate_tier_orthogonality(PrimitiveTier::Strategic, 0.9);
-
-        assert!(violations.len() < system.count_tier(PrimitiveTier::Strategic) / 2,
-            "Most Tier 4 primitives should be orthogonal");
+        let violations = system.validate_tier_orthogonality(PrimitiveTier::Strategic, 0.03);
+        assert!(violations.is_empty(),
+            "All Tier 4 primitives should be orthogonal (|sim - 0.5| < 0.03), violations: {:?}", violations);
     }
 
     // ========================================================================
@@ -3298,10 +3312,9 @@ mod tests {
     fn test_tier5_orthogonality() {
         let system = PrimitiveSystem::new();
 
-        let violations = system.validate_tier_orthogonality(PrimitiveTier::MetaCognitive, 0.9);
-
-        assert!(violations.len() < system.count_tier(PrimitiveTier::MetaCognitive) / 2,
-            "Most Tier 5 primitives should be orthogonal");
+        let violations = system.validate_tier_orthogonality(PrimitiveTier::MetaCognitive, 0.03);
+        assert!(violations.is_empty(),
+            "All Tier 5 primitives should be orthogonal (|sim - 0.5| < 0.03), violations: {:?}", violations);
     }
 
     // ========================================================================

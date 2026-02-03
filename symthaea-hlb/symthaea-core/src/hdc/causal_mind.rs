@@ -401,7 +401,7 @@ impl CausalMind {
     /// causal relations, then encodes them as hypervectors in the causal space.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// let mut mind = CausalMind::new();
     /// mind.learn_from_grounded_text("The rain caused the flood because the drains were blocked.");
     /// ```

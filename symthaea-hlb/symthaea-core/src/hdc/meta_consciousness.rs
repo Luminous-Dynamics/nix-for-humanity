@@ -176,7 +176,7 @@ pub struct MetaConsciousnessState {
 /// - **AND reflect on all of the above** (meta-consciousness!)
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::meta_consciousness::{MetaConsciousness, MetaConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

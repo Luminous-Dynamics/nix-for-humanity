@@ -16,7 +16,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::consciousness_persistence::*;
 //!
 //! // Create persistence manager

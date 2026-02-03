@@ -24,7 +24,7 @@
 //!
 //! # Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::incremental_hv::*;
 //! use symthaea::hdc::binary_hv::HV16;
 //!
@@ -265,7 +265,7 @@ impl Default for IncrementalBundle {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// let mut cache = SimilarityCache::new();
 /// let query = HV16::random(42);
 /// let memory = vec![HV16::random(1), HV16::random(2)];

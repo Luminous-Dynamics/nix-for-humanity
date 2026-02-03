@@ -22,7 +22,7 @@
 //!
 //! ## Performance Model (from Session 7)
 //!
-//! ```
+//! ```ignore
 //! Naive search:    O(n) × 30µs per comparison
 //! SimHash LSH:     O(k) × 30µs where k = n × 0.109 (10.9% candidates)
 //!
@@ -88,7 +88,7 @@ const PARALLEL_THRESHOLD: usize = 50;
 /// ## Compatibility
 ///
 /// Drop-in replacement for `simd_find_most_similar()`:
-/// ```rust
+/// ```rust,ignore
 /// // Old:
 /// let result = simd_find_most_similar(query, targets);
 ///
@@ -220,7 +220,7 @@ pub fn adaptive_find_top_k(query: &HV16, targets: &[HV16], k: usize) -> Vec<(usi
 ///
 /// ## The Problem with Single-Query LSH
 ///
-/// ```rust
+/// ```rust,ignore
 /// // Naive approach (wasteful!):
 /// for query in queries {
 ///     let index = build_lsh_index(targets);  // Build every time!
@@ -234,7 +234,7 @@ pub fn adaptive_find_top_k(query: &HV16, targets: &[HV16], k: usize) -> Vec<(usi
 ///
 /// ## The Batch-Aware Solution
 ///
-/// ```rust
+/// ```rust,ignore
 /// // Build once, reuse for all queries:
 /// let index = build_lsh_index(targets);  // Build once: 1ms
 /// for query in queries {

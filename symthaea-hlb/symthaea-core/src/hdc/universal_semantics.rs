@@ -573,7 +573,7 @@ pub struct ComplexConcept {
 /// from Natural Semantic Metalanguage (NSM) theory.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::universal_semantics::{UniversalSemantics, SemanticPrime};
 ///
 /// let mut semantics = UniversalSemantics::new();

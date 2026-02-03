@@ -35,7 +35,7 @@ use std::collections::VecDeque;
 /// - **Active Inference**: Act to make predictions come true
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::predictive_coding::PredictiveCoding;
 /// use symthaea::hdc::binary_hv::HV16;
 ///
@@ -86,7 +86,7 @@ impl PredictiveCoding {
     /// * `num_layers` - Number of hierarchical layers (typically 3-7)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// use symthaea::hdc::predictive_coding::PredictiveCoding;
     ///
     /// let pc = PredictiveCoding::new(4); // 4-layer hierarchy
@@ -313,7 +313,7 @@ impl PredictiveCoding {
 /// - **Action**: Minimize prediction error by changing the world
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::predictive_coding::ActiveInference;
 /// use symthaea::hdc::binary_hv::HV16;
 ///

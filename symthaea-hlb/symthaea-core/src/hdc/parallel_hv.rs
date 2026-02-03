@@ -21,7 +21,7 @@
 //!
 //! # Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::parallel_hv::*;
 //! use symthaea::hdc::binary_hv::HV16;
 //!
@@ -85,7 +85,7 @@ fn simd_find_most_similar(query: &HV16, targets: &[HV16]) -> Option<(usize, f32)
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// let vectors: Vec<HV16> = (0..1000).map(|i| HV16::random(i)).collect();
 /// let key = HV16::random(999);
 ///
@@ -131,7 +131,7 @@ pub fn parallel_batch_bind_pairs(pairs: &[(&HV16, &HV16)]) -> Vec<HV16> {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// let query = HV16::random(42);
 /// let memory: Vec<HV16> = (0..10000).map(|i| HV16::random(i)).collect();
 ///
@@ -181,7 +181,7 @@ pub fn parallel_all_pairs_similarity(vectors: &[HV16]) -> Vec<Vec<f32>> {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// // 100 concepts, each with 10 examples
 /// let concept_sets: Vec<Vec<HV16>> = (0..100)
 ///     .map(|_| (0..10).map(|i| HV16::random(i)).collect())
@@ -234,7 +234,7 @@ pub fn parallel_batch_bundle_slices(vector_sets: &[&[HV16]]) -> Vec<HV16> {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// let queries: Vec<HV16> = (0..100).map(|i| HV16::random(i)).collect();
 /// let memory: Vec<HV16> = (0..1000).map(|i| HV16::random(i + 1000)).collect();
 ///

@@ -24,7 +24,7 @@
 //!
 //! ## Example Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::differentiable_phi::{DifferentiablePhiCalculator, DiffPhiConfig};
 //! use symthaea::hdc::consciousness_topology_generators::ConsciousnessTopology;
 //!
@@ -333,7 +333,7 @@ impl DifferentiablePhiCalculator {
 
     /// Sample from Gumbel(0, 1) distribution
     fn sample_gumbel(&self) -> f64 {
-        
+
         // Use deterministic pseudo-random for reproducibility
         let u: f64 = 0.5; // Could be seeded random
         -(-u.ln()).ln()

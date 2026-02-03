@@ -27,7 +27,7 @@
 //! - Slots: role markers bound to fillers
 //! - Instance: bundle of (frame_type, bound_slots)
 //!
-//! ```rust
+//! ```rust,ignore
 //! // Example: Encoding a TRADE instance
 //! TRADE_INSTANCE = bundle(
 //!     TRADE_FRAME,

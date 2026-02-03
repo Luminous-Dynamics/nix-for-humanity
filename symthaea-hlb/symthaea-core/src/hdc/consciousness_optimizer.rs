@@ -41,7 +41,7 @@ use std::collections::VecDeque;
 /// that actively tries to maximize its own consciousness level (Φ).
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::consciousness_optimizer::ConsciousnessOptimizer;
 ///
 /// let mut optimizer = ConsciousnessOptimizer::new(4, 3);

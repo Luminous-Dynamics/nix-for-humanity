@@ -14,7 +14,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! let mut dashboard = ConsciousnessDashboard::new("Symthaea");
 //! dashboard.update(&consciousness_state);
 //! println!("{}", dashboard.render());

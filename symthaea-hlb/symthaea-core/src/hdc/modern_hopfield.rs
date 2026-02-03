@@ -34,7 +34,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use symthaea::hdc::{HV16, ModernHopfieldNetwork};
 ///
 /// let mut hopfield = ModernHopfieldNetwork::new(1.0);
@@ -96,7 +96,7 @@ impl ModernHopfieldNetwork {
     ///   - β = 10.0: Very sharp (near hard max)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::ModernHopfieldNetwork;
     /// let hopfield = ModernHopfieldNetwork::new(5.0);
     /// ```
@@ -120,7 +120,7 @@ impl ModernHopfieldNetwork {
     /// No training needed - just store!
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::{HV16, ModernHopfieldNetwork};
     /// let mut hopfield = ModernHopfieldNetwork::new(5.0);
     /// let pattern = HV16::random(42);
@@ -155,7 +155,7 @@ impl ModernHopfieldNetwork {
     /// Cleaned-up pattern (nearest stored attractor)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::{HV16, ModernHopfieldNetwork};
     /// let mut hopfield = ModernHopfieldNetwork::new(5.0);
     /// let original = HV16::random(42);

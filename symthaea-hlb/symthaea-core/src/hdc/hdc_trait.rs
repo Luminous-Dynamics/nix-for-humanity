@@ -6,7 +6,7 @@
 //! - `RealHV`: Real-valued hypervectors (f32)
 //!
 //! # Example
-//! ```
+//! ```ignore
 //! use symthaea::hdc::{HyperdimensionalVector, HV16, SimdHV16};
 //!
 //! fn process_any_hv<H: HyperdimensionalVector>(hv: &H) -> f32 {

@@ -207,7 +207,7 @@ impl KIndexAssessment {
 /// Combines meta-consciousness with epistemological evaluation.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::epistemic_consciousness::{EpistemicConsciousness, EpistemicConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

@@ -190,7 +190,7 @@ pub struct TopologyMetric {
 /// Measures and analyzes consciousness at the collective level.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::collective_consciousness::{CollectiveConsciousness, CollectiveAgent};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

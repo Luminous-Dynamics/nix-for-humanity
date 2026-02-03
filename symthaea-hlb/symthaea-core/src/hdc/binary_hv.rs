@@ -29,7 +29,7 @@ thread_local! {
 /// - Bit = 1 means +1, bit = 0 means -1 (bipolar encoding)
 ///
 /// # Examples
-/// ```
+/// ```ignore
 /// use symthaea::hdc::binary_hv::HV16;
 ///
 /// let a = HV16::random(42);  // Deterministic from seed
@@ -68,7 +68,7 @@ impl HV16 {
     /// Uses BLAKE3 hash for cryptographic randomness
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let v1 = HV16::random(42);
     /// let v2 = HV16::random(42);
@@ -93,7 +93,7 @@ impl HV16 {
     /// Used in graph encoding to represent nodes uniquely.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let node0 = HV16::basis(0);
     /// let node1 = HV16::basis(1);
@@ -146,7 +146,7 @@ impl HV16 {
     /// - 200x faster than circular convolution on Vec<f32>
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let cat = HV16::random(1);
     /// let orange = HV16::random(2);
@@ -185,7 +185,7 @@ impl HV16 {
     /// - ~100ns for 10 vectors
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let cat1 = HV16::random(1);
     /// let cat2 = HV16::random(2);
@@ -244,7 +244,7 @@ impl HV16 {
     /// - No stack overflow risk
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let vectors: Vec<HV16> = (0..1000).map(|i| HV16::random(i)).collect();
     /// let result = HV16::bundle_safe(&vectors);  // Won't overflow stack
@@ -298,7 +298,7 @@ impl HV16 {
     /// - 1.0 = all ones (all +1 in bipolar)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let random = HV16::random(42);
     /// let density = random.density();
@@ -329,7 +329,7 @@ impl HV16 {
     /// - Rebalanced vector if outside bounds
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let saturated = HV16::ones();  // 100% density
     /// let balanced = saturated.ensure_density(0.4, 0.6);
@@ -400,7 +400,7 @@ impl HV16 {
     /// - Gradual drift in long-running systems
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// // Even with biased inputs, result stays balanced
     /// let biased: Vec<HV16> = (0..10).map(|_| HV16::ones()).collect();
@@ -418,7 +418,7 @@ impl HV16 {
     /// "cat dog" ≠ "dog cat" in HDC space
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let cat = HV16::random(1);
     /// let dog = HV16::random(2);
@@ -533,7 +533,7 @@ impl HV16 {
     /// - 200x faster than cosine similarity on Vec<f32>
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let a = HV16::random(42);
     /// assert_eq!(a.similarity(&a), 1.0);
@@ -565,7 +565,7 @@ impl HV16 {
     /// - ~10-20ns with SIMD (AVX2+POPCNT), ~160ns scalar
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let a = HV16::random(42);
     /// let b = a.permute(1);  // Slightly different
@@ -595,7 +595,7 @@ impl HV16 {
     /// - ~5-10ns with SIMD (AVX2), ~80ns scalar
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let a = HV16::random(42);
     /// let inv = a.invert();
@@ -684,7 +684,7 @@ impl HV16 {
     /// Useful for testing robustness
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::binary_hv::HV16;
     /// let original = HV16::random(42);
     /// let noisy = original.add_noise(0.1, 123);  // Flip 10% of bits

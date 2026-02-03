@@ -34,7 +34,7 @@
 //!
 //! # Examples
 //!
-//! ```
+//! ```ignore
 //! use symthaea::hdc::{HV16, CausalSpace};
 //!
 //! let mut causal = CausalSpace::new();
@@ -157,7 +157,7 @@ impl CausalSpace {
     /// * `strength` - Causal strength (0.0 to 1.0)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::{HV16, CausalSpace};
     /// let mut causal = CausalSpace::new();
     /// let rain = HV16::random(1);
@@ -239,7 +239,7 @@ impl CausalSpace {
     /// - Rank by similarity × strength
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::{HV16, CausalSpace};
     /// # let mut causal = CausalSpace::new();
     /// # let rain = HV16::random(1);

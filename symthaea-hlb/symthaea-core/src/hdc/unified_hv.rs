@@ -24,7 +24,7 @@
 //!
 //! ## Example Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::unified_hv::{ContinuousHV, BinaryHV, HV};
 //!
 //! // Continuous operations

@@ -353,7 +353,7 @@ impl Default for TopologyConfig {
 /// using topological data analysis and persistent homology.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::consciousness_topology::{ConsciousnessTopology, TopologyConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

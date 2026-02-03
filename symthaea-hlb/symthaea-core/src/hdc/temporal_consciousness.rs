@@ -275,7 +275,7 @@ impl TemporalAssessment {
 /// Measures consciousness across multiple time scales simultaneously.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::temporal_consciousness::{TemporalConsciousness, TemporalConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

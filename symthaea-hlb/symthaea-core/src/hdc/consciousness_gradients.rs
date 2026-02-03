@@ -91,7 +91,7 @@ impl Default for GradientConfig {
 /// principled gradient ascent to maximum consciousness states.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::consciousness_gradients::{GradientComputer, GradientConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

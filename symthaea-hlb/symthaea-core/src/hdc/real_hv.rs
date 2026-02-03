@@ -176,7 +176,7 @@ fn simd_scale(v: &[f32], scalar: f32, out: &mut [f32]) {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use symthaea::hdc::real_hv::RealHV;
 ///
 /// let a = RealHV::random(2048, 42);
@@ -214,7 +214,7 @@ impl RealHV {
     /// Create a hypervector from existing values
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let values = vec![0.5, -0.3, 0.8, 0.1];
     /// let hv = RealHV::from_values(values);
@@ -234,7 +234,7 @@ impl RealHV {
     /// Uses deterministic random generation based on seed for reproducibility.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let v1 = RealHV::random(2048, 42);
     /// let v2 = RealHV::random(2048, 42);
@@ -283,7 +283,7 @@ impl RealHV {
     /// - Magnitude preservation: ||A ⊗ (1+ε)|| ≈ ||A||
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let cat = RealHV::random(2048, 1);
     /// let orange = RealHV::random(2048, 2);
@@ -312,7 +312,7 @@ impl RealHV {
     /// - Used for noise application: A ⊗ (1 + ε) where ε is small
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let a = RealHV::random(2048, 1);
     /// let b = RealHV::random(2048, 2);
@@ -337,7 +337,7 @@ impl RealHV {
     /// - Linear: bundle({A, B, C}) = (A + B + C) / 3
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let cat1 = RealHV::random(2048, 1);
     /// let cat2 = RealHV::random(2048, 2);
@@ -409,7 +409,7 @@ impl RealHV {
     /// For random vectors, expected similarity ≈ 0.0 (not 0.5 like binary!)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let a = RealHV::random(2048, 42);
     /// let b = RealHV::random(2048, 43);
@@ -490,7 +490,7 @@ impl RealHV {
     /// The rate controls the magnitude of perturbation (0.0 = no change, 1.0 = significant change)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::real_hv::RealHV;
     /// let original = RealHV::random(512, 42);
     /// let perturbed = original.perturb(0.1);

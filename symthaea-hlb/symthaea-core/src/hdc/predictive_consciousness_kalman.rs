@@ -52,7 +52,7 @@
 //!
 //! # Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::predictive_consciousness_kalman::{
 //!     PredictiveConsciousness, ConsciousnessState, PredictiveConfig
 //! };

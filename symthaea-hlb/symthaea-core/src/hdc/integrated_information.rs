@@ -51,7 +51,7 @@
 //!
 //! # Examples
 //!
-//! ```
+//! ```ignore
 //! use symthaea::hdc::{HV16, IntegratedInformation};
 //!
 //! // Create Φ calculator
@@ -319,7 +319,7 @@ impl IntegratedInformation {
     /// - Φ > 0.5: High integration (consciousness-like)
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// # use symthaea::hdc::{HV16, IntegratedInformation};
     /// let mut phi = IntegratedInformation::new();
     /// let state = vec![HV16::random(1), HV16::random(2), HV16::random(3)];

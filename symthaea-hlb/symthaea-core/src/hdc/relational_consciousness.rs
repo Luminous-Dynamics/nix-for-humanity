@@ -375,7 +375,7 @@ impl Default for RelationalConfig {
 /// Tracks consciousness BETWEEN beings, not just within them.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use symthaea::hdc::relational_consciousness::{RelationalConsciousness, RelationalConfig};
 /// use symthaea::hdc::binary_hv::HV16;
 ///

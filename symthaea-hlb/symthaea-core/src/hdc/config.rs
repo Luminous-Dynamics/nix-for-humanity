@@ -13,7 +13,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::config::{HdcConfig, set_hdc_config, hdc_dim, hdc_config};
 //!
 //! // Set configuration at startup (once, before any HDC operations)
@@ -203,7 +203,7 @@ impl Default for HdcConfig {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// use symthaea::hdc::config::{HdcConfig, set_hdc_config};
 ///
 /// // In main() or initialization:

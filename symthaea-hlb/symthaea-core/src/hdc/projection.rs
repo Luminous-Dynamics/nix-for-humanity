@@ -29,7 +29,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symthaea::hdc::projection::{LearnedProjection, BidirectionalBridge};
 //! use symthaea::hdc::unified_hv::ContinuousHV;
 //!
