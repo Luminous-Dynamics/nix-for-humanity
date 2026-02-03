@@ -1,0 +1,98 @@
+name: Symthaea HLB CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "symthaea-hlb/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "symthaea-hlb/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: symthaea-hlb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            symthaea-hlb/target
+          key: ${{ runner.os }}-cargo-check-${{ hashFiles('symthaea-hlb/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-check-
+      - run: cargo check --lib --all-features
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: symthaea-hlb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            symthaea-hlb/target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('symthaea-hlb/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
+      - run: cargo test -p symthaea-core --lib
+      - run: cargo test -p symthaea --lib
+
+  test-release:
+    name: Test Release (Benchmarks)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: symthaea-hlb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            symthaea-hlb/target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('symthaea-hlb/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+      - run: cargo test --release -- --ignored
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: symthaea-hlb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            symthaea-hlb/target
+          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('symthaea-hlb/**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-clippy-
+      - run: cargo clippy -- -D warnings
