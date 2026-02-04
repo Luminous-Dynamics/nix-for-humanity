@@ -133,11 +133,14 @@ impl HierarchicalCfC {
             let tau_min = (tau_center * 0.5).max(1e-4);
             let tau_max = tau_center * 2.0;
 
-            // Input dimension: first layer gets raw input, others get previous layer + integration
+            // Input dimension: first layer gets raw input, others get output from up_projection
+            // which projects to THIS layer's hidden dim (next_hidden in the projection creation)
             let layer_input_dim = if i == 0 {
                 config.input_dim
             } else {
-                hidden_dims[i - 1]
+                // After bottom-up integration, current_input has dimension hidden_dims[i]
+                // because up_projections[i-1] has shape (hidden_dims[i], hidden_dims[i-1])
+                hidden_dims[i]
             };
 
             let hidden_dim = hidden_dims[i];
@@ -741,7 +744,7 @@ mod tests {
         }
 
         // Slow layer should gradually stabilize
-        let early_variance: f32 = slow_outputs[0..5]
+        let _early_variance: f32 = slow_outputs[0..5]
             .iter()
             .map(|o| o.iter().map(|x| x.abs()).sum::<f32>())
             .sum::<f32>()

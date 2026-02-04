@@ -1,5 +1,6 @@
 # Build artifacts
 target/
+target-test/
 symthaea-core/target/
 
 # Python cache

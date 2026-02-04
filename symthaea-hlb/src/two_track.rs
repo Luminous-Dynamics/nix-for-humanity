@@ -649,7 +649,17 @@ impl TwoTrackProcessor {
         };
 
         let bridge = self.bridge.as_ref().unwrap();
-        let cfc_input = bridge.encode_with_temporal_context(&semantic_hv, &current_temporal_state);
+        let bridge_encoded = bridge.encode_with_temporal_context(&semantic_hv, &current_temporal_state);
+
+        // Pad bridge output to match CfC input_dim if needed
+        // Bridge outputs cfc_hidden_dim, but CfC expects input_dim
+        let cfc_input: Vec<f32> = if bridge_encoded.len() < self.config.input_dim {
+            let mut padded = bridge_encoded;
+            padded.resize(self.config.input_dim, 0.0);
+            padded
+        } else {
+            bridge_encoded[..self.config.input_dim].to_vec()
+        };
         let cfc_input_array = Array1::from_vec(cfc_input);
 
         let temporal_output = self.cfc_temporal.forward(&cfc_input_array, self.config.cfc_delta_t);
@@ -663,7 +673,15 @@ impl TwoTrackProcessor {
 
         // === BRIDGE-ENHANCED FUSION ===
         // Use bridge to decode temporal back to semantic for fusion
-        let temporal_semantic = bridge.decode_with_semantic_context(&temporal_state, &semantic_hv);
+        // Pad temporal state to cfc_hidden_dim if needed (bridge expects cfc_hidden_dim)
+        let temporal_for_decode: Vec<f32> = if temporal_state.len() < self.config.cfc_hidden_dim {
+            let mut padded = temporal_state.clone();
+            padded.resize(self.config.cfc_hidden_dim, 0.0);
+            padded
+        } else {
+            temporal_state[..self.config.cfc_hidden_dim].to_vec()
+        };
+        let temporal_semantic = bridge.decode_with_semantic_context(&temporal_for_decode, &semantic_hv);
 
         let (sem_weight, temp_weight) = self.config.fusion_weights;
         let fused = self.weighted_hv_fusion(&semantic_hv, &temporal_semantic, sem_weight, temp_weight);
