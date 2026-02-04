@@ -500,8 +500,8 @@ pub struct PlasmaControlLoop {
     /// Configuration
     config: PlasmaControlConfig,
 
-    /// Phi monitor for tracking consciousness levels
-    phi_monitor: PhiMonitor,
+    /// Phi monitor for tracking consciousness levels (reserved for future use)
+    _phi_monitor: PhiMonitor,
 
     /// FEP active inference agent for learning optimal control
     fep_agent: Option<ActiveInferenceAgent>,
@@ -529,8 +529,10 @@ pub struct PlasmaControlLoop {
 #[derive(Debug, Clone)]
 struct SoftLandingState {
     start_time: Instant,
-    initial_phi: f64,
-    target_phi: f64,
+    /// Reserved for soft landing trajectory calculation
+    _initial_phi: f64,
+    /// Reserved for soft landing trajectory calculation
+    _target_phi: f64,
     phase: SoftLandingPhase,
 }
 
@@ -570,7 +572,7 @@ pub struct PlasmaControlStats {
 
 impl PlasmaControlLoop {
     /// Create a new plasma control loop
-    pub fn new(config: PlasmaControlConfig, phi_monitor: PhiMonitor) -> Self {
+    pub fn new(config: PlasmaControlConfig, _phi_monitor: PhiMonitor) -> Self {
         let fep_agent = if config.enable_td_learning {
             let fep_config = ActiveInferenceAgentConfig {
                 state_dim: 8,
@@ -592,7 +594,7 @@ impl PlasmaControlLoop {
 
         Self {
             config,
-            phi_monitor,
+            _phi_monitor,
             fep_agent,
             phi_history: VecDeque::with_capacity(1000),
             current_assessment: None,
@@ -735,8 +737,8 @@ impl PlasmaControlLoop {
     pub fn initiate_soft_landing(&mut self, current_phi: f64) {
         self.soft_landing_state = Some(SoftLandingState {
             start_time: Instant::now(),
-            initial_phi: current_phi,
-            target_phi: 0.0,
+            _initial_phi: current_phi,
+            _target_phi: 0.0,
             phase: SoftLandingPhase::PowerRampDown,
         });
     }

@@ -7,9 +7,9 @@
 //! This module is organized into submodules for maintainability:
 //!
 //! - [`core`]: Core types and TieredPhi calculator with tier implementations
-//! - [`dynamics`]: Temporal dynamics tracking and attractor analysis
-//! - [`analysis`]: Multi-scale pyramid and entropy/complexity analysis
-//! - [`advanced`]: Cross-topology transfer, causal intervention, and modularity analysis
+//! - `dynamics` (planned): Temporal dynamics tracking and attractor analysis
+//! - `analysis` (planned): Multi-scale pyramid and entropy/complexity analysis
+//! - `advanced` (planned): Cross-topology transfer, causal intervention, and modularity analysis
 //!
 //! # The Problem
 //!

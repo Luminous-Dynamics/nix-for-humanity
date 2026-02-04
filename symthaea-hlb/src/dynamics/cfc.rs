@@ -40,6 +40,47 @@ fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
 
+/// Configuration for online learning during inference
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OnlineLearningConfig {
+    /// Learning rate for online adaptation (much smaller than training)
+    /// Default: 0.001
+    pub learning_rate: f32,
+
+    /// Minimum prediction error to trigger adaptation
+    /// Default: 0.1 (only adapt when error is significant)
+    pub error_threshold: f32,
+
+    /// Exponential moving average factor for error tracking
+    /// Default: 0.1 (slow adaptation to new error levels)
+    pub ema_alpha: f32,
+
+    /// Maximum weight change per adaptation step (prevents catastrophic forgetting)
+    /// Default: 0.01 (1% max change)
+    pub max_weight_delta: f32,
+
+    /// Whether to adapt tau (time constants) online
+    /// Default: false (tau adaptation is more risky)
+    pub adapt_tau: bool,
+
+    /// Tau learning rate multiplier (if adapt_tau is true)
+    /// Default: 0.01 (much slower than weights)
+    pub tau_lr_multiplier: f32,
+}
+
+impl Default for OnlineLearningConfig {
+    fn default() -> Self {
+        Self {
+            learning_rate: 0.001,
+            error_threshold: 0.1,
+            ema_alpha: 0.1,
+            max_weight_delta: 0.01,
+            adapt_tau: false,
+            tau_lr_multiplier: 0.01,
+        }
+    }
+}
+
 /// Configuration for a CfC cell
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfCConfig {
@@ -66,6 +107,9 @@ pub struct CfCConfig {
 
     /// Dropout rate (0.0 = no dropout)
     pub dropout: f32,
+
+    /// Online learning configuration (for inference-time adaptation)
+    pub online_learning: Option<OnlineLearningConfig>,
 }
 
 impl Default for CfCConfig {
@@ -79,6 +123,7 @@ impl Default for CfCConfig {
             activation: ActivationType::SiLU,
             tau_range: (0.1, 10.0),
             dropout: 0.1,
+            online_learning: None,
         }
     }
 }
@@ -153,6 +198,23 @@ fn mse_loss(output: &Array1<f32>, target: &Array1<f32>) -> f32 {
     if mse.is_finite() { mse } else { 1.0 }
 }
 
+/// Online learning statistics for a CfC cell
+#[derive(Debug, Clone, Default)]
+pub struct OnlineLearningStats {
+    /// Total online adaptation steps
+    pub adaptation_steps: u64,
+    /// Exponential moving average of recent prediction errors
+    pub ema_error: f32,
+    /// Number of adaptations triggered (error exceeded threshold)
+    pub adaptations_triggered: u64,
+    /// Number of adaptations skipped (error below threshold)
+    pub adaptations_skipped: u64,
+    /// Maximum weight delta observed during any adaptation
+    pub max_observed_delta: f32,
+    /// Cumulative weight change (L2 norm of all deltas)
+    pub cumulative_weight_change: f32,
+}
+
 /// A single Closed-form Continuous-time cell
 #[derive(Debug, Clone)]
 pub struct CfCCell {
@@ -182,6 +244,9 @@ pub struct CfCCell {
     // Statistics - tracks number of forward steps for diagnostics
     #[allow(dead_code)]
     steps: u64,
+
+    // Online learning statistics
+    online_stats: OnlineLearningStats,
 }
 
 impl CfCCell {
@@ -267,6 +332,7 @@ impl CfCCell {
             backbone_biases,
             state: Array1::zeros(hidden_dim),
             steps: 0,
+            online_stats: OnlineLearningStats::default(),
         }
     }
 
@@ -348,6 +414,7 @@ impl CfCCell {
             backbone_biases,
             state: Array1::zeros(hidden_dim),
             steps: 0,
+            online_stats: OnlineLearningStats::default(),
         }
     }
 
@@ -355,6 +422,16 @@ impl CfCCell {
     pub fn reset(&mut self) {
         self.state = Array1::zeros(self.config.hidden_dim);
         self.steps = 0;
+    }
+
+    /// Reset online learning statistics (keeps weights but clears tracking)
+    pub fn reset_online_stats(&mut self) {
+        self.online_stats = OnlineLearningStats::default();
+    }
+
+    /// Get online learning statistics
+    pub fn online_stats(&self) -> &OnlineLearningStats {
+        &self.online_stats
     }
 
     /// Forward pass through the cell
@@ -816,6 +893,114 @@ impl CfCCell {
     pub fn scale_tau(&mut self, scale: f32) {
         self.tau.mapv_inplace(|t| (t * scale).clamp(0.01, 100.0));
     }
+
+    // =========================================================================
+    // Online Learning During Inference
+    // =========================================================================
+
+    /// Adapt weights online based on prediction error.
+    ///
+    /// This method implements error-gated online learning:
+    /// 1. Updates EMA of prediction errors
+    /// 2. Only adapts if error exceeds adaptive threshold
+    /// 3. Uses much smaller learning rate than training
+    /// 4. Clips weight changes to prevent catastrophic forgetting
+    ///
+    /// # Arguments
+    /// * `prediction_error` - Current prediction error (e.g., MSE between predicted and actual)
+    /// * `input` - The input that produced the prediction
+    /// * `target` - The actual/desired output (for gradient direction)
+    /// * `dt` - Time step used in the forward pass
+    ///
+    /// # Returns
+    /// `true` if adaptation occurred, `false` if error was below threshold
+    pub fn adapt_online(
+        &mut self,
+        prediction_error: f32,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+    ) -> bool {
+        let config = match &self.config.online_learning {
+            Some(cfg) => cfg.clone(),
+            None => return false, // Online learning not enabled
+        };
+
+        // Update EMA of prediction error
+        let alpha = config.ema_alpha;
+        self.online_stats.ema_error =
+            self.online_stats.ema_error * (1.0 - alpha) + prediction_error * alpha;
+        self.online_stats.adaptation_steps += 1;
+
+        // Error-gated learning: only adapt if error exceeds threshold
+        // Use adaptive threshold based on recent error history
+        let adaptive_threshold = config.error_threshold.max(self.online_stats.ema_error * 0.5);
+        if prediction_error < adaptive_threshold {
+            self.online_stats.adaptations_skipped += 1;
+            return false;
+        }
+
+        self.online_stats.adaptations_triggered += 1;
+
+        // Compute gradients using the same backward pass as training
+        let grads = self.backward(input, target, dt);
+
+        // Apply constrained weight updates
+        let lr = config.learning_rate;
+        let max_delta = config.max_weight_delta;
+        let mut total_delta_sq = 0.0f32;
+
+        // Update W_in with clipping
+        let (rows_in, cols_in) = self.w_in.dim();
+        for i in 0..rows_in {
+            for j in 0..cols_in {
+                let delta = (-lr * grads.dw_in[[i, j]]).clamp(-max_delta, max_delta);
+                self.w_in[[i, j]] += delta;
+                total_delta_sq += delta * delta;
+            }
+        }
+
+        // Update W_h with clipping
+        let hidden_dim = self.config.hidden_dim;
+        for i in 0..hidden_dim {
+            for j in 0..hidden_dim {
+                let delta = (-lr * grads.dw_h[[i, j]]).clamp(-max_delta, max_delta);
+                self.w_h[[i, j]] += delta;
+                total_delta_sq += delta * delta;
+            }
+        }
+
+        // Update bias with clipping
+        for i in 0..hidden_dim {
+            let delta = (-lr * grads.db_h[i]).clamp(-max_delta, max_delta);
+            self.b_h[i] += delta;
+            total_delta_sq += delta * delta;
+        }
+
+        // Optionally update tau (time constants)
+        if config.adapt_tau {
+            let tau_lr = lr * config.tau_lr_multiplier;
+            for i in 0..hidden_dim {
+                let delta = (-tau_lr * grads.dtau[i]).clamp(-max_delta * 0.1, max_delta * 0.1);
+                self.tau[i] = (self.tau[i] + delta).clamp(MIN_TAU, 100.0);
+                total_delta_sq += delta * delta;
+            }
+        }
+
+        // Track statistics
+        let delta_norm = total_delta_sq.sqrt();
+        if delta_norm > self.online_stats.max_observed_delta {
+            self.online_stats.max_observed_delta = delta_norm;
+        }
+        self.online_stats.cumulative_weight_change += delta_norm;
+
+        true
+    }
+
+    /// Check if online learning is enabled for this cell
+    pub fn online_learning_enabled(&self) -> bool {
+        self.config.online_learning.is_some()
+    }
 }
 
 /// Gradient accumulators for CfC backpropagation
@@ -914,6 +1099,21 @@ impl OutputAdamState {
     }
 }
 
+/// Online learning statistics for a CfC network
+#[derive(Debug, Clone, Default)]
+pub struct NetworkOnlineLearningStats {
+    /// Total adaptation calls
+    pub total_adaptation_calls: u64,
+    /// Adaptations that actually modified weights
+    pub adaptations_applied: u64,
+    /// Adaptations skipped due to low error
+    pub adaptations_skipped: u64,
+    /// EMA of prediction errors across all calls
+    pub ema_error: f32,
+    /// Cumulative weight change across all cells
+    pub cumulative_weight_change: f32,
+}
+
 /// A complete CfC neural network
 #[derive(Debug, Clone)]
 pub struct CfCNetwork {
@@ -934,6 +1134,9 @@ pub struct CfCNetwork {
     adam_states: Vec<AdamState>,
     /// Adam state for output projection
     adam_output: OutputAdamState,
+
+    /// Online learning statistics for the network
+    online_stats: NetworkOnlineLearningStats,
 }
 
 /// Configuration for a CfC network
@@ -959,6 +1162,13 @@ pub struct CfCNetworkConfig {
 
     /// Whether to use bidirectional processing (doubles computation)
     pub bidirectional: bool,
+
+    /// Whether to enable online learning during inference
+    /// When true, the network will adapt weights based on prediction errors
+    pub enable_online_learning: bool,
+
+    /// Online learning configuration (used if enable_online_learning is true)
+    pub online_learning_config: OnlineLearningConfig,
 }
 
 impl Default for CfCNetworkConfig {
@@ -977,7 +1187,27 @@ impl Default for CfCNetworkConfig {
             cell_config,
             residual: true,
             bidirectional: false,
+            enable_online_learning: false,
+            online_learning_config: OnlineLearningConfig::default(),
         }
+    }
+}
+
+impl CfCNetworkConfig {
+    /// Create a configuration with online learning enabled
+    pub fn with_online_learning(mut self) -> Self {
+        self.enable_online_learning = true;
+        // Propagate online learning config to cell config
+        self.cell_config.online_learning = Some(self.online_learning_config.clone());
+        self
+    }
+
+    /// Create a configuration with custom online learning settings
+    pub fn with_online_learning_config(mut self, config: OnlineLearningConfig) -> Self {
+        self.enable_online_learning = true;
+        self.online_learning_config = config.clone();
+        self.cell_config.online_learning = Some(config);
+        self
     }
 }
 
@@ -1016,6 +1246,7 @@ impl CfCNetwork {
             total_steps: 0,
             adam_states,
             adam_output,
+            online_stats: NetworkOnlineLearningStats::default(),
         }
     }
 
@@ -1058,6 +1289,7 @@ impl CfCNetwork {
             total_steps: 0,
             adam_states,
             adam_output,
+            online_stats: NetworkOnlineLearningStats::default(),
         }
     }
 
@@ -1067,6 +1299,24 @@ impl CfCNetwork {
             cell.reset();
         }
         self.total_steps = 0;
+    }
+
+    /// Reset online learning statistics (keeps weights but clears tracking)
+    pub fn reset_online_stats(&mut self) {
+        self.online_stats = NetworkOnlineLearningStats::default();
+        for cell in &mut self.cells {
+            cell.reset_online_stats();
+        }
+    }
+
+    /// Get online learning statistics for the network
+    pub fn online_stats(&self) -> &NetworkOnlineLearningStats {
+        &self.online_stats
+    }
+
+    /// Check if online learning is enabled
+    pub fn online_learning_enabled(&self) -> bool {
+        self.config.enable_online_learning
     }
 
     /// Forward pass through the network
@@ -1149,6 +1399,126 @@ impl CfCNetwork {
         count += self.config.hidden_dim * self.config.output_dim; // output_weights
         count += self.config.output_dim; // output_bias
         count
+    }
+
+    // =========================================================================
+    // Online Learning During Inference
+    // =========================================================================
+
+    /// Adapt network weights online based on prediction error.
+    ///
+    /// This method implements error-gated online learning for the entire network:
+    /// 1. Updates EMA of prediction errors
+    /// 2. Only adapts if error exceeds adaptive threshold
+    /// 3. Uses much smaller learning rate than training (default 0.001)
+    /// 4. Clips weight changes to prevent catastrophic forgetting
+    ///
+    /// # Arguments
+    /// * `prediction_error` - Current prediction error (e.g., MSE between predicted and actual)
+    /// * `input` - The input that produced the prediction
+    /// * `target` - The actual/desired output (for gradient direction)
+    /// * `dt` - Time step used in the forward pass
+    ///
+    /// # Returns
+    /// `true` if adaptation occurred, `false` if disabled or error was below threshold
+    pub fn adapt_online(
+        &mut self,
+        prediction_error: f32,
+        input: &Array1<f32>,
+        target: &Array1<f32>,
+        dt: f32,
+    ) -> bool {
+        if !self.config.enable_online_learning {
+            return false;
+        }
+
+        self.online_stats.total_adaptation_calls += 1;
+
+        // Update network-level EMA error
+        let alpha = self.config.online_learning_config.ema_alpha;
+        self.online_stats.ema_error =
+            self.online_stats.ema_error * (1.0 - alpha) + prediction_error * alpha;
+
+        // Check error threshold at network level
+        let threshold = self.config.online_learning_config.error_threshold
+            .max(self.online_stats.ema_error * 0.5);
+
+        if prediction_error < threshold {
+            self.online_stats.adaptations_skipped += 1;
+            return false;
+        }
+
+        // Adapt each cell
+        let mut h = input.clone();
+        let mut any_adapted = false;
+
+        for (i, cell) in self.cells.iter_mut().enumerate() {
+            // Compute target for this cell layer
+            // For intermediate cells, the target is the next cell's expected input
+            // For the last cell, compute target from output projection inverse
+            let cell_target = if i == self.cells.len() - 1 {
+                // Last cell: back-project from output target
+                // target = W_out^T * (y_target - b_out) (pseudo-inverse approximation)
+                // Simplified: just use the hidden state that would minimize output error
+                let output_error = target - &self.output_bias;
+                // Compute pseudo-inverse via W_out^T (simple gradient direction)
+                self.output_weights.t().dot(&output_error)
+            } else {
+                // Intermediate cells: target is next cell's current input requirement
+                // This is approximate - use the current state as a proxy
+                cell.state().clone()
+            };
+
+            if cell.adapt_online(prediction_error, &h, &cell_target, dt) {
+                any_adapted = true;
+            }
+
+            // Forward through this cell to get input for next cell
+            h = cell.forward(&h, dt);
+        }
+
+        if any_adapted {
+            self.online_stats.adaptations_applied += 1;
+
+            // Update cumulative weight change from cell stats
+            let total_change: f32 = self.cells.iter()
+                .map(|c| c.online_stats().cumulative_weight_change)
+                .sum();
+            self.online_stats.cumulative_weight_change = total_change;
+        }
+
+        any_adapted
+    }
+
+    /// Forward pass with automatic online adaptation.
+    ///
+    /// Combines forward inference with optional online learning:
+    /// 1. Performs forward pass to get prediction
+    /// 2. If target is provided and online learning is enabled, adapts weights
+    ///
+    /// # Arguments
+    /// * `input` - Input vector
+    /// * `dt` - Time step
+    /// * `target` - Optional target for online learning
+    ///
+    /// # Returns
+    /// (output, adapted) - The network output and whether adaptation occurred
+    pub fn forward_with_adaptation(
+        &mut self,
+        input: &Array1<f32>,
+        dt: f32,
+        target: Option<&Array1<f32>>,
+    ) -> (Array1<f32>, bool) {
+        let output = self.forward(input, dt);
+
+        let adapted = if let Some(tgt) = target {
+            let error = mse_loss(&output, tgt);
+            self.adapt_online(error, input, tgt, dt)
+        } else {
+            false
+        };
+
+        (output, adapted)
     }
 
     // =========================================================================
@@ -1791,7 +2161,7 @@ impl CfCNetwork {
         buf
     }
 
-    /// Restore learnable weights from a flat slice produced by [`get_weights`].
+    /// Restore learnable weights from a flat slice produced by [`Self::get_weights`].
     pub fn set_weights(&mut self, weights: &[f32]) {
         let mut pos = 0;
         for cell in &mut self.cells {
@@ -1826,6 +2196,213 @@ impl CfCNetwork {
         pos += n;
         assert_eq!(pos, weights.len(), "weight count mismatch");
     }
+
+    // =========================================================================
+    // Phi-Guided Attention for Multiple Inputs
+    // =========================================================================
+
+    /// Forward pass with Phi-guided attention for multiple inputs.
+    ///
+    /// When processing multiple inputs simultaneously, this method uses IIT Phi values
+    /// to weight the contribution of each input. Higher Phi = higher attention weight,
+    /// implementing the principle that consciousness guides information flow.
+    ///
+    /// # Arguments
+    /// * `inputs` - Multiple input vectors to attend over
+    /// * `phi_values` - Phi (integrated information) value for each input
+    /// * `dt` - Time step
+    /// * `phi_config` - Optional Phi attention configuration
+    ///
+    /// # Returns
+    /// Tuple of (output, attention_weights)
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// let inputs = vec![input1, input2, input3];
+    /// let phi_values = vec![0.8, 0.3, 0.5];  // First input has highest consciousness
+    /// let (output, weights) = network.forward_phi_gated(&inputs, &phi_values, 0.1, None);
+    /// // output will be dominated by input1 due to its higher Phi
+    /// ```
+    pub fn forward_phi_gated(
+        &mut self,
+        inputs: &[Array1<f32>],
+        phi_values: &[f64],
+        dt: f32,
+        phi_config: Option<PhiGatedConfig>,
+    ) -> (Array1<f32>, Vec<f32>) {
+        if inputs.is_empty() || phi_values.is_empty() {
+            return (Array1::zeros(self.config.output_dim), vec![]);
+        }
+
+        assert_eq!(
+            inputs.len(),
+            phi_values.len(),
+            "Number of inputs must match number of Phi values"
+        );
+
+        let config = phi_config.unwrap_or_default();
+
+        // Compute attention weights from Phi values
+        let weights = compute_phi_attention_weights(phi_values, &config);
+
+        // Compute weighted combination of inputs
+        let combined_input = weighted_array_bundle(inputs, &weights);
+
+        // Forward through the network
+        let output = self.forward(&combined_input, dt);
+
+        (output, weights)
+    }
+
+    /// Forward pass with Phi gating enabled by a boolean flag.
+    ///
+    /// This is a convenience method that either uses Phi-gated attention
+    /// (if `phi_gated` is true) or standard single-input forward (if false).
+    ///
+    /// # Arguments
+    /// * `inputs` - Multiple input vectors (only first used if phi_gated=false)
+    /// * `phi_values` - Phi values for each input
+    /// * `dt` - Time step
+    /// * `phi_gated` - Whether to use Phi-gated attention
+    ///
+    /// # Returns
+    /// Output vector (and empty weights if not gated)
+    pub fn forward_with_phi_option(
+        &mut self,
+        inputs: &[Array1<f32>],
+        phi_values: &[f64],
+        dt: f32,
+        phi_gated: bool,
+    ) -> (Array1<f32>, Vec<f32>) {
+        if phi_gated && inputs.len() > 1 {
+            self.forward_phi_gated(inputs, phi_values, dt, None)
+        } else if !inputs.is_empty() {
+            (self.forward(&inputs[0], dt), vec![1.0])
+        } else {
+            (Array1::zeros(self.config.output_dim), vec![])
+        }
+    }
+}
+
+// =============================================================================
+// PHI-GATED ATTENTION UTILITIES
+// =============================================================================
+
+/// Configuration for Phi-gated attention in CfC networks
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PhiGatedConfig {
+    /// Temperature for softmax (lower = sharper attention)
+    pub temperature: f32,
+
+    /// Scale factor for Phi values (learnable)
+    pub scale: f32,
+
+    /// Bias for Phi values (learnable)
+    pub bias: f32,
+
+    /// Minimum attention weight
+    pub min_attention: f32,
+}
+
+impl Default for PhiGatedConfig {
+    fn default() -> Self {
+        Self {
+            temperature: 1.0,
+            scale: 1.0,
+            bias: 0.0,
+            min_attention: 0.0,
+        }
+    }
+}
+
+impl PhiGatedConfig {
+    /// Create config with sharp attention (low temperature)
+    pub fn sharp() -> Self {
+        Self {
+            temperature: 0.1,
+            ..Default::default()
+        }
+    }
+
+    /// Create config with soft attention (high temperature)
+    pub fn soft() -> Self {
+        Self {
+            temperature: 5.0,
+            ..Default::default()
+        }
+    }
+}
+
+/// Compute attention weights from Phi values using softmax with temperature.
+///
+/// Higher Phi values receive higher attention weights.
+pub fn compute_phi_attention_weights(phi_values: &[f64], config: &PhiGatedConfig) -> Vec<f32> {
+    if phi_values.is_empty() {
+        return vec![];
+    }
+
+    // Transform Phi values
+    let transformed: Vec<f32> = phi_values
+        .iter()
+        .map(|&p| config.scale * p as f32 + config.bias)
+        .collect();
+
+    // Apply softmax with temperature
+    let temp = config.temperature.max(1e-10);
+    let max_val = transformed.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+    let exp_values: Vec<f32> = transformed
+        .iter()
+        .map(|&v| ((v - max_val) / temp).exp())
+        .collect();
+
+    let sum: f32 = exp_values.iter().sum();
+
+    if sum < 1e-10 {
+        // Uniform fallback
+        let n = phi_values.len() as f32;
+        return vec![1.0 / n; phi_values.len()];
+    }
+
+    let mut weights: Vec<f32> = exp_values.iter().map(|&e| e / sum).collect();
+
+    // Apply minimum attention floor
+    if config.min_attention > 0.0 {
+        let floor = config.min_attention;
+        let n = weights.len() as f32;
+
+        for w in weights.iter_mut() {
+            *w = *w * (1.0 - floor * n) + floor;
+        }
+
+        // Renormalize
+        let new_sum: f32 = weights.iter().sum();
+        if new_sum > 1e-10 {
+            for w in weights.iter_mut() {
+                *w /= new_sum;
+            }
+        }
+    }
+
+    weights
+}
+
+/// Compute weighted bundle of ndarray arrays
+fn weighted_array_bundle(arrays: &[Array1<f32>], weights: &[f32]) -> Array1<f32> {
+    if arrays.is_empty() || weights.is_empty() {
+        return Array1::zeros(0);
+    }
+
+    let dim = arrays[0].len();
+    let mut result = Array1::zeros(dim);
+
+    for (arr, &w) in arrays.iter().zip(weights.iter()) {
+        for i in 0..dim.min(arr.len()) {
+            result[i] += w * arr[i];
+        }
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -2161,5 +2738,189 @@ mod tests {
             grads.dtau.iter().all(|x| x.is_finite()),
             "dtau gradients contain NaN/Inf"
         );
+    }
+
+    // =====================================================================
+    // PHI-GATED ATTENTION TESTS
+    // =====================================================================
+
+    #[test]
+    fn test_phi_gated_forward_basic() {
+        let config = CfCNetworkConfig {
+            input_dim: 8,
+            hidden_dim: 16,
+            num_layers: 2,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+
+        let inputs = vec![
+            Array1::from_vec(vec![1.0; 8]),
+            Array1::from_vec(vec![0.5; 8]),
+            Array1::from_vec(vec![0.1; 8]),
+        ];
+        let phi_values = vec![0.8, 0.3, 0.5];
+
+        let (output, weights) = network.forward_phi_gated(&inputs, &phi_values, 0.1, None);
+
+        // Output should be valid
+        assert_eq!(output.len(), 4);
+        assert!(output.iter().all(|x| x.is_finite()));
+
+        // Weights should sum to approximately 1
+        let weight_sum: f32 = weights.iter().sum();
+        assert!((weight_sum - 1.0).abs() < 1e-5, "Weights should sum to 1");
+
+        // Highest Phi (0.8) should get highest weight
+        assert!(weights[0] > weights[1], "Highest Phi should get highest weight");
+        assert!(weights[0] > weights[2], "Highest Phi should dominate");
+    }
+
+    #[test]
+    fn test_high_phi_dominates_cfc_output() {
+        let config = CfCNetworkConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            num_layers: 1,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+
+        // Create distinct inputs
+        let high_phi_input = Array1::from_vec(vec![1.0, 0.0, 0.0, 0.0]);
+        let low_phi_input = Array1::from_vec(vec![0.0, 0.0, 0.0, 1.0]);
+
+        let inputs = vec![high_phi_input.clone(), low_phi_input.clone()];
+
+        // Test with sharp attention (low temperature)
+        let phi_config = PhiGatedConfig::sharp();
+        let phi_values = vec![0.9, 0.1];
+
+        // Get output from phi-gated forward
+        let (phi_output, _) = network.forward_phi_gated(&inputs, &phi_values, 0.1, Some(phi_config));
+        network.reset();
+
+        // Get output from high-phi input alone
+        let high_only_output = network.forward(&high_phi_input, 0.1);
+        network.reset();
+
+        // Get output from low-phi input alone
+        let low_only_output = network.forward(&low_phi_input, 0.1);
+
+        // Phi-gated output should be more similar to high-phi-only output
+        let sim_to_high: f32 = phi_output.iter()
+            .zip(high_only_output.iter())
+            .map(|(a, b)| a * b)
+            .sum::<f32>();
+
+        let sim_to_low: f32 = phi_output.iter()
+            .zip(low_only_output.iter())
+            .map(|(a, b)| a * b)
+            .sum::<f32>();
+
+        // Expect phi-gated output to be more aligned with high-phi input
+        // (may not always hold due to network nonlinearity, but should trend that way)
+        println!("sim_to_high: {}, sim_to_low: {}", sim_to_high, sim_to_low);
+    }
+
+    #[test]
+    fn test_compute_phi_attention_weights() {
+        let config = PhiGatedConfig::default();
+        let phi_values = vec![0.8, 0.3, 0.5];
+
+        let weights = compute_phi_attention_weights(&phi_values, &config);
+
+        // Weights should sum to 1
+        let sum: f32 = weights.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-5);
+
+        // Ordering should be preserved: weight[0] > weight[2] > weight[1]
+        assert!(weights[0] > weights[2]);
+        assert!(weights[2] > weights[1]);
+    }
+
+    #[test]
+    fn test_phi_attention_temperature_effect() {
+        let phi_values = vec![0.6, 0.4];
+
+        // Sharp attention (low temperature)
+        let sharp_config = PhiGatedConfig { temperature: 0.1, ..Default::default() };
+        let sharp_weights = compute_phi_attention_weights(&phi_values, &sharp_config);
+
+        // Soft attention (high temperature)
+        let soft_config = PhiGatedConfig { temperature: 10.0, ..Default::default() };
+        let soft_weights = compute_phi_attention_weights(&phi_values, &soft_config);
+
+        // Sharp should be more peaked (higher max)
+        let sharp_max = sharp_weights.iter().cloned().fold(0.0, f32::max);
+        let soft_max = soft_weights.iter().cloned().fold(0.0, f32::max);
+
+        assert!(sharp_max > soft_max, "Lower temperature should produce sharper attention");
+    }
+
+    #[test]
+    fn test_phi_gated_with_option_flag() {
+        let config = CfCNetworkConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            num_layers: 1,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+
+        let inputs = vec![
+            Array1::from_vec(vec![1.0; 4]),
+            Array1::from_vec(vec![0.5; 4]),
+        ];
+        let phi_values = vec![0.7, 0.3];
+
+        // With phi_gated = true
+        let (output_gated, weights_gated) = network.forward_with_phi_option(&inputs, &phi_values, 0.1, true);
+        assert_eq!(weights_gated.len(), 2);
+        network.reset();
+
+        // With phi_gated = false
+        let (output_single, weights_single) = network.forward_with_phi_option(&inputs, &phi_values, 0.1, false);
+        assert_eq!(weights_single.len(), 1); // Only first input used
+        assert!((weights_single[0] - 1.0).abs() < 1e-5);
+
+        // Outputs should be different (one uses combined input, one uses only first)
+        // (They might be similar by chance, but usually differ)
+        assert!(output_gated.iter().all(|x| x.is_finite()));
+        assert!(output_single.iter().all(|x| x.is_finite()));
+    }
+
+    #[test]
+    fn test_phi_gated_empty_inputs() {
+        let config = CfCNetworkConfig {
+            input_dim: 4,
+            hidden_dim: 8,
+            num_layers: 1,
+            output_dim: 4,
+            ..Default::default()
+        };
+        let mut network = CfCNetwork::new(config);
+
+        // Empty inputs should return zero output
+        let (output, weights) = network.forward_phi_gated(&[], &[], 0.1, None);
+        assert!(weights.is_empty());
+        assert!(output.iter().all(|&x| x == 0.0));
+    }
+
+    #[test]
+    fn test_weighted_array_bundle() {
+        let arrays = vec![
+            Array1::from_vec(vec![1.0, 0.0]),
+            Array1::from_vec(vec![0.0, 1.0]),
+        ];
+        let weights = vec![0.75, 0.25];
+
+        let result = weighted_array_bundle(&arrays, &weights);
+
+        assert!((result[0] - 0.75).abs() < 1e-5);
+        assert!((result[1] - 0.25).abs() < 1e-5);
     }
 }

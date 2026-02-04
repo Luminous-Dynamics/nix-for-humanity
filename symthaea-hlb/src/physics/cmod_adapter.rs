@@ -899,8 +899,8 @@ pub struct CModStream {
     current_shot: usize,
     /// Current sample index within shot
     current_sample: usize,
-    /// Playback speed multiplier (1.0 = real-time)
-    playback_speed: f32,
+    /// Playback speed multiplier (1.0 = real-time) - reserved for rate limiting
+    _playback_speed: f32,
     /// Whether to loop when reaching end
     loop_playback: bool,
     /// Last emit time for rate limiting
@@ -911,12 +911,12 @@ pub struct CModStream {
 
 impl CModStream {
     /// Create a new stream from shots
-    pub fn new(shots: Vec<CModShot>, playback_speed: f32) -> Self {
+    pub fn new(shots: Vec<CModShot>, _playback_speed: f32) -> Self {
         Self {
             shots,
             current_shot: 0,
             current_sample: 0,
-            playback_speed,
+            _playback_speed,
             loop_playback: false,
             last_emit_time: None,
             last_sample_time_ms: None,
@@ -1043,8 +1043,8 @@ pub struct CModHdcEncoder {
     level_vectors: Vec<RealHV>,
     /// Number of quantization levels
     num_levels: usize,
-    /// Sensor names for debugging
-    sensor_names: Vec<&'static str>,
+    /// Sensor names for debugging - reserved for diagnostics
+    _sensor_names: Vec<&'static str>,
 }
 
 impl CModHdcEncoder {
@@ -1072,7 +1072,7 @@ impl CModHdcEncoder {
             sensor_bases,
             level_vectors,
             num_levels,
-            sensor_names: Self::SENSOR_NAMES.to_vec(),
+            _sensor_names: Self::SENSOR_NAMES.to_vec(),
         }
     }
 

@@ -74,6 +74,7 @@ use symthaea_core::genesis::GenesisSeed;
 use crate::dynamics::cfc::{CfCNetwork, CfCNetworkConfig, CfCConfig};
 use crate::embeddings::{HdcBridge, BridgeConfig};
 use crate::hdc::{HV16};
+use crate::bridges::{HdcCfcBridge, HdcCfcBridgeConfig};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -114,6 +115,15 @@ pub struct TwoTrackConfig {
 
     /// Learning rate for CfC training
     pub cfc_learning_rate: f32,
+
+    /// Enable HDC-CfC bridge for bidirectional semantic-temporal translation
+    pub enable_bridge: bool,
+
+    /// Bridge intermediate dimension (if bridge enabled)
+    pub bridge_intermediate_dim: usize,
+
+    /// Number of attention heads in bridge
+    pub bridge_attention_heads: usize,
 }
 
 impl Default for TwoTrackConfig {
@@ -130,6 +140,9 @@ impl Default for TwoTrackConfig {
             genesis_phrase: None,
             cfc_delta_t: 0.02, // 50Hz
             cfc_learning_rate: 0.001,
+            enable_bridge: false, // Off by default for backward compatibility
+            bridge_intermediate_dim: 512,
+            bridge_attention_heads: 4,
         }
     }
 }
@@ -159,6 +172,30 @@ impl TwoTrackConfig {
             hdc_dim: 2048,
             cfc_hidden_dim: 64,
             cfc_layers: 1,
+            enable_bridge: false,
+            ..Default::default()
+        }
+    }
+
+    /// Create config with HDC-CfC bridge enabled for bidirectional translation
+    pub fn with_bridge() -> Self {
+        Self {
+            enable_bridge: true,
+            bridge_intermediate_dim: 512,
+            bridge_attention_heads: 4,
+            ..Default::default()
+        }
+    }
+
+    /// Create high-fidelity config with bridge and larger dimensions
+    pub fn high_fidelity() -> Self {
+        Self {
+            cfc_hidden_dim: 256,
+            cfc_layers: 4,
+            cfc_output_dim: 128,
+            enable_bridge: true,
+            bridge_intermediate_dim: 1024,
+            bridge_attention_heads: 8,
             ..Default::default()
         }
     }
@@ -286,6 +323,13 @@ fn hv16_to_continuous(hv16: &HV16, dim: usize) -> ContinuousHV {
 ///    This captures "when" and "how" patterns evolve.
 ///
 /// The fusion layer combines both tracks into a unified representation.
+///
+/// ## Optional Bridge Enhancement
+///
+/// When `config.enable_bridge` is true, an HDC-CfC bridge is created that enables:
+/// - Bidirectional translation between semantic and temporal representations
+/// - Temporal context injection into semantic processing
+/// - Semantic priors for temporal state interpretation
 #[derive(Debug)]
 pub struct TwoTrackProcessor {
     /// Configuration
@@ -312,8 +356,11 @@ pub struct TwoTrackProcessor {
     /// Total steps processed
     total_steps: u64,
 
-    /// Optional genesis seed for deterministic operations
-    genesis: Option<GenesisSeed>,
+    /// Optional genesis seed for deterministic operations - reserved for future use
+    _genesis: Option<GenesisSeed>,
+
+    /// Optional HDC-CfC bridge for bidirectional semantic-temporal translation
+    bridge: Option<HdcCfcBridge>,
 }
 
 impl TwoTrackProcessor {
@@ -339,6 +386,8 @@ impl TwoTrackProcessor {
             },
             residual: true,
             bidirectional: false,
+            enable_online_learning: false,
+            online_learning_config: Default::default(),
         };
 
         let genesis = config.genesis_phrase.as_ref().map(|p| GenesisSeed::from_phrase(p));
@@ -362,6 +411,27 @@ impl TwoTrackProcessor {
             config.seed + 2,
         );
 
+        // Create optional bridge if enabled
+        let bridge = if config.enable_bridge {
+            let bridge_config = HdcCfcBridgeConfig {
+                hdc_dim: config.hdc_dim,
+                cfc_hidden_dim: config.cfc_hidden_dim,
+                intermediate_dim: config.bridge_intermediate_dim,
+                num_attention_heads: config.bridge_attention_heads,
+                learning_rate: config.cfc_learning_rate,
+                seed: config.seed + 100,
+                genesis_phrase: config.genesis_phrase.clone(),
+                ..Default::default()
+            };
+            if let Some(ref g) = genesis {
+                Some(HdcCfcBridge::from_genesis(bridge_config, g, "two_track_bridge"))
+            } else {
+                Some(HdcCfcBridge::new(bridge_config))
+            }
+        } else {
+            None
+        };
+
         Self {
             config,
             hdc_projector,
@@ -371,7 +441,8 @@ impl TwoTrackProcessor {
             prev_semantic: None,
             temporal_magnitude_avg: 0.0,
             total_steps: 0,
-            genesis,
+            _genesis: genesis,
+            bridge,
         }
     }
 
@@ -501,6 +572,150 @@ impl TwoTrackProcessor {
     /// Get total steps processed
     pub fn total_steps(&self) -> u64 {
         self.total_steps
+    }
+
+    /// Check if bridge is enabled
+    pub fn has_bridge(&self) -> bool {
+        self.bridge.is_some()
+    }
+
+    /// Get reference to bridge (if enabled)
+    pub fn bridge(&self) -> Option<&HdcCfcBridge> {
+        self.bridge.as_ref()
+    }
+
+    /// Get mutable reference to bridge (if enabled)
+    pub fn bridge_mut(&mut self) -> Option<&mut HdcCfcBridge> {
+        self.bridge.as_mut()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BRIDGE-ENHANCED METHODS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Encode an HDC semantic vector to CfC-compatible temporal input using the bridge
+    ///
+    /// This provides a learned, attention-based projection from HDC to CfC space,
+    /// which can capture more nuanced semantic-to-temporal mappings than simple
+    /// linear projections.
+    ///
+    /// Returns None if bridge is not enabled.
+    pub fn encode_semantic_to_temporal(&self, hv: &ContinuousHV) -> Option<Vec<f32>> {
+        self.bridge.as_ref().map(|b| b.encode_semantic_to_temporal(hv))
+    }
+
+    /// Decode CfC temporal state to HDC semantic vector using the bridge
+    ///
+    /// This provides a learned reconstruction of semantic meaning from temporal
+    /// dynamics, enabling interpretation of CfC states in semantic terms.
+    ///
+    /// Returns None if bridge is not enabled.
+    pub fn decode_temporal_to_semantic(&self, state: &[f32]) -> Option<ContinuousHV> {
+        self.bridge.as_ref().map(|b| b.decode_temporal_to_semantic(state))
+    }
+
+    /// Process with bridge-enhanced fusion
+    ///
+    /// When bridge is enabled, this uses the bridge for more sophisticated
+    /// semantic-temporal interaction:
+    /// 1. Standard HDC projection for semantic track
+    /// 2. Bridge-enhanced encoding with temporal context for CfC input
+    /// 3. Bridge-enhanced decoding for temporal contribution to fusion
+    ///
+    /// Falls back to standard processing if bridge is not enabled.
+    pub fn process_with_bridge(&mut self, embedding: &[f32]) -> TwoTrackOutput {
+        if self.bridge.is_none() {
+            return self.process(embedding);
+        }
+
+        let input = self.normalize_input(embedding);
+
+        // === SEMANTIC TRACK (HDC) ===
+        let semantic_hv = self.hdc_projector.project(&input);
+
+        let semantic_stability = if let Some(ref prev) = self.prev_semantic {
+            semantic_hv.similarity(prev)
+        } else {
+            1.0
+        };
+        self.prev_semantic = Some(semantic_hv.clone());
+
+        // === TEMPORAL TRACK (CfC) with bridge-enhanced input ===
+        // Use bridge to encode semantic HV with temporal context
+        let current_temporal_state: Vec<f32> = if let Some(state) = self.cfc_temporal.state().last() {
+            state.iter().cloned().collect()
+        } else {
+            vec![0.0; self.config.cfc_hidden_dim]
+        };
+
+        let bridge = self.bridge.as_ref().unwrap();
+        let cfc_input = bridge.encode_with_temporal_context(&semantic_hv, &current_temporal_state);
+        let cfc_input_array = Array1::from_vec(cfc_input);
+
+        let temporal_output = self.cfc_temporal.forward(&cfc_input_array, self.config.cfc_delta_t);
+        let temporal_state: Vec<f32> = temporal_output.iter().cloned().collect();
+
+        // Track temporal confidence
+        let magnitude = temporal_state.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let alpha = 0.1f32;
+        self.temporal_magnitude_avg = alpha * magnitude + (1.0 - alpha) * self.temporal_magnitude_avg;
+        let temporal_confidence = 1.0 / (1.0 + (magnitude - self.temporal_magnitude_avg).abs());
+
+        // === BRIDGE-ENHANCED FUSION ===
+        // Use bridge to decode temporal back to semantic for fusion
+        let temporal_semantic = bridge.decode_with_semantic_context(&temporal_state, &semantic_hv);
+
+        let (sem_weight, temp_weight) = self.config.fusion_weights;
+        let fused = self.weighted_hv_fusion(&semantic_hv, &temporal_semantic, sem_weight, temp_weight);
+
+        self.total_steps += 1;
+
+        TwoTrackOutput {
+            semantic_hv,
+            temporal_state,
+            fused,
+            semantic_stability,
+            temporal_confidence,
+        }
+    }
+
+    /// Train the bridge on roundtrip reconstruction
+    ///
+    /// Returns the reconstruction loss, or None if bridge is not enabled.
+    pub fn train_bridge(&mut self, hv: &ContinuousHV) -> Option<f32> {
+        self.bridge.as_mut().map(|b| b.train_step(hv))
+    }
+
+    /// Measure bridge roundtrip similarity
+    ///
+    /// Returns the cosine similarity between original and reconstructed HV,
+    /// or None if bridge is not enabled.
+    pub fn measure_bridge_roundtrip(&self, hv: &ContinuousHV) -> Option<f32> {
+        self.bridge.as_ref().map(|b| b.measure_roundtrip_similarity(hv))
+    }
+
+    /// Get bridge reconstruction loss EMA
+    pub fn bridge_loss(&self) -> Option<f32> {
+        self.bridge.as_ref().map(|b| b.reconstruction_loss())
+    }
+
+    /// Weighted fusion of two HVs
+    fn weighted_hv_fusion(&self, a: &ContinuousHV, b: &ContinuousHV, w_a: f32, w_b: f32) -> ContinuousHV {
+        let dim = a.dim().max(b.dim());
+
+        let values: Vec<f32> = (0..dim)
+            .map(|i| {
+                let va = if i < a.values.len() { a.values[i] } else { 0.0 };
+                let vb = if i < b.values.len() { b.values[i] } else { 0.0 };
+                w_a * va + w_b * vb
+            })
+            .collect();
+
+        if self.config.normalize_before_fusion {
+            ContinuousHV::from_vec(values).normalize()
+        } else {
+            ContinuousHV::from_vec(values)
+        }
     }
 
     /// Normalize input to expected dimension
@@ -880,5 +1095,170 @@ mod tests {
         // Same genesis should produce identical semantic outputs
         let sim = out1.semantic_hv.similarity(&out2.semantic_hv);
         assert_eq!(sim, 1.0, "Same genesis should produce identical semantic HVs");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BRIDGE INTEGRATION TESTS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_bridge_disabled_by_default() {
+        let config = TwoTrackConfig::default();
+        let processor = TwoTrackProcessor::new(config);
+
+        assert!(!processor.has_bridge(), "Bridge should be disabled by default");
+        assert!(processor.bridge().is_none());
+    }
+
+    #[test]
+    fn test_bridge_enabled_with_config() {
+        let config = TwoTrackConfig::with_bridge();
+        let processor = TwoTrackProcessor::new(config);
+
+        assert!(processor.has_bridge(), "Bridge should be enabled with with_bridge()");
+        assert!(processor.bridge().is_some());
+    }
+
+    #[test]
+    fn test_encode_semantic_to_temporal_requires_bridge() {
+        let config_no_bridge = TwoTrackConfig::default();
+        let processor_no_bridge = TwoTrackProcessor::new(config_no_bridge);
+
+        let hv = ContinuousHV::random_default(42);
+        assert!(processor_no_bridge.encode_semantic_to_temporal(&hv).is_none());
+
+        let config_with_bridge = TwoTrackConfig::with_bridge();
+        let processor_with_bridge = TwoTrackProcessor::new(config_with_bridge);
+
+        let encoded = processor_with_bridge.encode_semantic_to_temporal(&hv);
+        assert!(encoded.is_some());
+        assert_eq!(encoded.unwrap().len(), 128); // cfc_hidden_dim
+    }
+
+    #[test]
+    fn test_decode_temporal_to_semantic_requires_bridge() {
+        let config_no_bridge = TwoTrackConfig::default();
+        let processor_no_bridge = TwoTrackProcessor::new(config_no_bridge);
+
+        let temporal_state = vec![0.5f32; 128];
+        assert!(processor_no_bridge.decode_temporal_to_semantic(&temporal_state).is_none());
+
+        let config_with_bridge = TwoTrackConfig::with_bridge();
+        let processor_with_bridge = TwoTrackProcessor::new(config_with_bridge);
+
+        let decoded = processor_with_bridge.decode_temporal_to_semantic(&temporal_state);
+        assert!(decoded.is_some());
+        assert_eq!(decoded.unwrap().dim(), HDC_DIMENSION);
+    }
+
+    #[test]
+    fn test_process_with_bridge_fallback() {
+        // When bridge is disabled, process_with_bridge should fall back to process
+        let config = TwoTrackConfig::default();
+        let mut processor = TwoTrackProcessor::new(config);
+
+        let embedding: Vec<f32> = (0..256).map(|i| (i as f32 * 0.01).sin()).collect();
+
+        let out1 = processor.process(&embedding);
+        processor.reset();
+        let out2 = processor.process_with_bridge(&embedding);
+
+        // Should be identical when bridge is disabled
+        let sim = out1.semantic_hv.similarity(&out2.semantic_hv);
+        assert!(sim > 0.99, "process_with_bridge should match process when bridge disabled");
+    }
+
+    #[test]
+    fn test_bridge_roundtrip_measurement() {
+        let config = TwoTrackConfig::with_bridge();
+        let processor = TwoTrackProcessor::new(config);
+
+        let hv = ContinuousHV::random_default(42);
+        let similarity = processor.measure_bridge_roundtrip(&hv);
+
+        assert!(similarity.is_some());
+        // Untrained bridge will have some similarity (random projections)
+        let sim = similarity.unwrap();
+        assert!(sim > -1.0 && sim <= 1.0, "Similarity should be in valid range");
+    }
+
+    #[test]
+    fn test_bridge_training() {
+        let config = TwoTrackConfig {
+            enable_bridge: true,
+            hdc_dim: 1024,  // Smaller for faster test
+            bridge_intermediate_dim: 128,
+            ..Default::default()
+        };
+        let mut processor = TwoTrackProcessor::new(config);
+
+        // Train the bridge
+        let hv = ContinuousHV::random(1024, 42);
+        let loss1 = processor.train_bridge(&hv).unwrap();
+
+        // Train more
+        for i in 0..10 {
+            let hv_i = ContinuousHV::random(1024, i as u64 + 100);
+            let _ = processor.train_bridge(&hv_i);
+        }
+
+        let loss2 = processor.bridge_loss().unwrap();
+
+        // Loss should be finite
+        assert!(loss1.is_finite(), "Loss should be finite");
+        assert!(loss2.is_finite(), "Final loss should be finite");
+    }
+
+    #[test]
+    fn test_process_with_bridge_works() {
+        let config = TwoTrackConfig::with_bridge();
+        let mut processor = TwoTrackProcessor::new(config);
+
+        let embedding: Vec<f32> = (0..256).map(|i| (i as f32 * 0.01).sin()).collect();
+
+        // Process with bridge should complete without error
+        let output = processor.process_with_bridge(&embedding);
+
+        assert_eq!(output.semantic_hv.dim(), HDC_DIMENSION);
+        assert!(!output.temporal_state.is_empty());
+        assert_eq!(output.fused.dim(), HDC_DIMENSION);
+    }
+
+    #[test]
+    fn test_bridge_deterministic_with_genesis() {
+        let config1 = TwoTrackConfig {
+            enable_bridge: true,
+            genesis_phrase: Some("test_bridge_genesis".to_string()),
+            ..Default::default()
+        };
+        let config2 = TwoTrackConfig {
+            enable_bridge: true,
+            genesis_phrase: Some("test_bridge_genesis".to_string()),
+            ..Default::default()
+        };
+
+        let processor1 = TwoTrackProcessor::new(config1);
+        let processor2 = TwoTrackProcessor::new(config2);
+
+        let hv = ContinuousHV::random_default(42);
+
+        let encoded1 = processor1.encode_semantic_to_temporal(&hv).unwrap();
+        let encoded2 = processor2.encode_semantic_to_temporal(&hv).unwrap();
+
+        // Same genesis should produce identical encodings
+        for (a, b) in encoded1.iter().zip(encoded2.iter()) {
+            assert!((a - b).abs() < 1e-6, "Genesis should make bridge deterministic");
+        }
+    }
+
+    #[test]
+    fn test_high_fidelity_config() {
+        let config = TwoTrackConfig::high_fidelity();
+
+        assert!(config.enable_bridge);
+        assert_eq!(config.cfc_hidden_dim, 256);
+        assert_eq!(config.cfc_layers, 4);
+        assert_eq!(config.bridge_intermediate_dim, 1024);
+        assert_eq!(config.bridge_attention_heads, 8);
     }
 }
