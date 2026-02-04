@@ -239,6 +239,11 @@ desktop = ["notifications", "systemd"]
 # Disabled until mycelix-sdk is available as a proper crate
 mycelix = ["sha3"]  # Mycelix-ready (hashing only, SDK integration pending)
 
+# GPU acceleration for CfC networks
+gpu = ["burn", "burn-ndarray"]  # GPU acceleration via Burn/WGPU for CfC networks
+cuda = ["gpu"]  # CUDA backend (requires CUDA toolkit)
+cfc-gpu = ["gpu"]  # Alias for CfC GPU acceleration
+
 # Module compilation gates (only flags actually referenced in cfg attributes)
 integration_module = []        # Integration module in lib.rs
 observability_module = []      # Observability module in lib.rs
@@ -502,6 +507,15 @@ required-features = ["magi_loop"]
 name = "modern_embeddings_demo"
 required-features = ["neural-bridge"]
 
+# Reasoning Engine examples
+[[example]]
+name = "conscious_reasoning_demo"
+required-features = ["reasoning_engine"]
+
+[[example]]
+name = "counterfactual_planning"
+required-features = ["reasoning_engine"]
+
 # End-to-end pipeline demo (no required features)
 [[example]]
 name = "full_pipeline"
@@ -557,6 +571,18 @@ harness = false
 name = "reasoning_engine"
 harness = false
 required-features = ["reasoning_engine"]
+
+[[bench]]
+name = "verified_performance"
+harness = false
+
+[[bench]]
+name = "cfc_gpu"
+harness = false
+
+[[bench]]
+name = "streaming"
+harness = false
 
 [profile.test]
 inherits = "dev"

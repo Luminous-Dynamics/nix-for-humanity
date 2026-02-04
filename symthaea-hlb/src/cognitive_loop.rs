@@ -44,6 +44,35 @@
 //! println!("Prediction error: {}", result.prediction_error);
 //! println!("Attention variance: {}", service.stats().attention_variance);
 //! ```
+//!
+//! ## Deterministic Reproducibility (Genesis Seeding)
+//!
+//! For full reproducibility, use the genesis phrase to seed all randomness:
+//!
+//! ```rust,ignore
+//! use symthaea::cognitive_loop::CognitiveLoopBuilder;
+//!
+//! // Two instances with identical phrases produce identical outputs
+//! let loop_a = CognitiveLoopBuilder::new()
+//!     .with_genesis_phrase("We hold these truths...")
+//!     .build()?;
+//!
+//! let loop_b = CognitiveLoopBuilder::new()
+//!     .seeded("We hold these truths...")  // Alias for with_genesis_phrase
+//!     .build()?;
+//!
+//! // loop_a and loop_b will produce identical outputs for identical inputs
+//! ```
+//!
+//! ### What Genesis Seeds
+//!
+//! - **CfC network weights**: `cognitive_loop::cfc::cell_N`
+//! - **HdcLtc bridge**: `cognitive_loop::hdc_ltc`
+//! - **Exploration RNG**: `cognitive_loop::exploration`
+//! - **Causal enhancer**: `causal_enhancer`
+//!
+//! All randomness flows through SHAKE-256 domain-separated streams, ensuring
+//! identical phrase + domain produces identical values on any machine, forever.
 
 use anyhow::Result;
 use rand::Rng;
@@ -4802,6 +4831,13 @@ impl CognitiveLoopService {
         &self.stats
     }
 
+    /// Get the configuration used to create this service.
+    ///
+    /// Useful for verifying that genesis seeding is correctly configured.
+    pub fn config(&self) -> &CognitiveLoopConfig {
+        &self.config
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // CAUSAL ENHANCEMENT ACCESSORS
     // ═══════════════════════════════════════════════════════════════════════════
@@ -6049,6 +6085,55 @@ impl CognitiveLoopBuilder {
     /// Default is 100 cycles.
     pub fn with_causal_discovery_interval(mut self, interval: usize) -> Self {
         self.config.causal_discovery_interval = interval;
+        self
+    }
+
+    /// Set a genesis phrase for deterministic initialization.
+    ///
+    /// When set, all HDC vectors, network weights, and exploration randomness
+    /// are derived from this phrase via SHAKE-256 domain separation, making
+    /// the cognitive loop fully reproducible.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let loop_a = CognitiveLoopBuilder::new()
+    ///     .with_genesis_phrase("We hold these truths...")
+    ///     .build()?;
+    ///
+    /// let loop_b = CognitiveLoopBuilder::new()
+    ///     .with_genesis_phrase("We hold these truths...")
+    ///     .build()?;
+    ///
+    /// // loop_a and loop_b will produce identical outputs for identical inputs
+    /// ```
+    pub fn with_genesis_phrase(mut self, phrase: impl Into<String>) -> Self {
+        self.config.genesis_phrase = Some(phrase.into());
+        // Disable async training for determinism (training order matters)
+        self.config.async_training = false;
+        self
+    }
+
+    /// Alias for `with_genesis_phrase` using the term from the Genesis module.
+    pub fn seeded(self, phrase: impl Into<String>) -> Self {
+        self.with_genesis_phrase(phrase)
+    }
+
+    /// Set the temporal backend (CfC or HdcLtcUnified)
+    pub fn with_temporal_backend(mut self, backend: TemporalBackend) -> Self {
+        self.config.temporal_backend = backend;
+        self
+    }
+
+    /// Enable or disable async training
+    ///
+    /// Note: When a genesis phrase is set, async training is automatically
+    /// disabled to ensure determinism.
+    pub fn with_async_training(mut self, enabled: bool) -> Self {
+        // Only allow if no genesis phrase is set
+        if self.config.genesis_phrase.is_none() {
+            self.config.async_training = enabled;
+        }
         self
     }
 

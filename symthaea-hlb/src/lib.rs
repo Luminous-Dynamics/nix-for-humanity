@@ -240,6 +240,10 @@ pub mod exploration;
 // Attention: Phi-guided attention mechanisms
 pub mod attention;
 
+// Visualization: Attention debugging and interpretation tools
+// Provides ASCII heatmaps, JSON export, and attention flow graphs
+pub mod visualization;
+
 // Two-Track Architecture: HDC semantics + CfC temporal
 // Combines HDC for semantic meaning with CfC for temporal patterns
 pub mod two_track;
@@ -247,6 +251,10 @@ pub mod two_track;
 // Bridges: Cross-representation translation between HDC and CfC
 // Enables bidirectional semantic-temporal information flow
 pub mod bridges;
+
+// Inference: Production-ready streaming and batch inference
+// Provides real-time processing with configurable latency/throughput tradeoffs
+pub mod inference;
 
 // ============================================================================
 // Modules with Known Import Issues (Conditionally Compiled)

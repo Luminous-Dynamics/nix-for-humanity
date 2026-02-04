@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod cfc;
+pub mod cfc_gpu;
 pub mod hierarchical_cfc;
 pub mod cfc_coherence;
 pub mod temporal_signatures;
@@ -211,3 +212,4 @@ pub use hierarchical_cfc::{
     HierarchicalCfC, HierarchicalCfCConfig, HierarchicalOutput,
     DEFAULT_TIME_CONSTANTS
 };
+pub use cfc_gpu::{GpuCfcNetwork, GpuCfcConfig, GpuCfcStats, GpuBackend};

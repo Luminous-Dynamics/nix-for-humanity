@@ -72,6 +72,7 @@ mod holochain;
 mod service;
 mod federated_cfc;
 mod federated_network;
+mod checkpoint;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
@@ -119,6 +120,15 @@ pub use federated_network::{
     LocalChannelBackend, TcpBackend,
     FederatedCoordinator, CoordinatorStats, CoordinatorEvent,
     create_test_network,
+};
+
+// Federated Learning Checkpointing - fault-tolerant distributed training
+pub use checkpoint::{
+    FederatedCheckpoint, CheckpointedConfig, NodeState, BufferedGradient,
+    IncrementalCheckpoint, NodeCheckpoint,
+    CheckpointConfig, CheckpointManager,
+    RecoveryResult, NodeRejoinRequest, NodeRejoinResponse,
+    recover_coordinator, process_node_rejoin,
 };
 
 // ============================================================================

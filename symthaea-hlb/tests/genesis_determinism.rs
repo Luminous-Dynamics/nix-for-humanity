@@ -265,3 +265,131 @@ fn cognitive_loop_genesis_determinism_across_instantiations() {
         "Two independent loop instantiations with same genesis must produce identical cycle history"
     );
 }
+
+// =============================================================================
+// BUILDER-BASED GENESIS SEEDING TESTS
+// =============================================================================
+// These tests verify that CognitiveLoopBuilder::with_genesis_phrase() and
+// CognitiveLoopBuilder::seeded() produce deterministic results.
+
+use symthaea::cognitive_loop::CognitiveLoopBuilder;
+
+#[test]
+fn builder_with_genesis_phrase_produces_identical_cycles() {
+    let phrase = "builder-genesis-determinism-test";
+
+    let mut loop_a = CognitiveLoopBuilder::new()
+        .with_genesis_phrase(phrase)
+        .build()
+        .expect("Failed to build genesis-seeded loop A");
+
+    let mut loop_b = CognitiveLoopBuilder::new()
+        .with_genesis_phrase(phrase)
+        .build()
+        .expect("Failed to build genesis-seeded loop B");
+
+    let snapshots_a = collect_cycle_snapshots(&mut loop_a, 50);
+    let snapshots_b = collect_cycle_snapshots(&mut loop_b, 50);
+
+    for (i, (a, b)) in snapshots_a.iter().zip(snapshots_b.iter()).enumerate() {
+        assert_eq!(
+            a, b,
+            "Builder-based genesis loop diverged at cycle {i}"
+        );
+    }
+}
+
+#[test]
+fn builder_seeded_alias_produces_identical_results() {
+    let phrase = "seeded-alias-test";
+
+    // Use with_genesis_phrase
+    let mut loop_phrase = CognitiveLoopBuilder::new()
+        .with_genesis_phrase(phrase)
+        .build()
+        .expect("Failed to build with_genesis_phrase loop");
+
+    // Use seeded (alias)
+    let mut loop_seeded = CognitiveLoopBuilder::new()
+        .seeded(phrase)
+        .build()
+        .expect("Failed to build seeded loop");
+
+    let snapshots_phrase = collect_cycle_snapshots(&mut loop_phrase, 50);
+    let snapshots_seeded = collect_cycle_snapshots(&mut loop_seeded, 50);
+
+    assert_eq!(
+        snapshots_phrase, snapshots_seeded,
+        "seeded() alias must produce identical results to with_genesis_phrase()"
+    );
+}
+
+#[test]
+fn builder_genesis_disables_async_training() {
+    // Create a loop with genesis phrase using builder
+    let config = CognitiveLoopBuilder::new()
+        .with_genesis_phrase("async-training-disabled")
+        .with_async_training(true) // Try to enable - should be ignored
+        .build()
+        .expect("Failed to build loop")
+        .config()
+        .clone();
+
+    // Genesis phrase should disable async training
+    assert!(
+        !config.async_training,
+        "Genesis phrase must disable async training for determinism"
+    );
+}
+
+#[test]
+fn builder_with_temporal_backend_and_genesis() {
+    let phrase = "hdc-ltc-backend-genesis";
+
+    let mut loop_a = CognitiveLoopBuilder::new()
+        .with_temporal_backend(TemporalBackend::HdcLtcUnified)
+        .with_genesis_phrase(phrase)
+        .build()
+        .expect("Failed to build HdcLtc genesis loop A");
+
+    let mut loop_b = CognitiveLoopBuilder::new()
+        .with_temporal_backend(TemporalBackend::HdcLtcUnified)
+        .with_genesis_phrase(phrase)
+        .build()
+        .expect("Failed to build HdcLtc genesis loop B");
+
+    let snapshots_a = collect_cycle_snapshots(&mut loop_a, 30);
+    let snapshots_b = collect_cycle_snapshots(&mut loop_b, 30);
+
+    assert_eq!(
+        snapshots_a, snapshots_b,
+        "HdcLtc backend with genesis must produce identical cycles"
+    );
+}
+
+#[test]
+fn builder_different_phrases_produce_different_outputs() {
+    let mut loop_alpha = CognitiveLoopBuilder::new()
+        .with_genesis_phrase("alpha-phrase-unique")
+        .build()
+        .expect("Failed to build alpha loop");
+
+    let mut loop_beta = CognitiveLoopBuilder::new()
+        .with_genesis_phrase("beta-phrase-different")
+        .build()
+        .expect("Failed to build beta loop");
+
+    let snapshots_alpha = collect_cycle_snapshots(&mut loop_alpha, 20);
+    let snapshots_beta = collect_cycle_snapshots(&mut loop_beta, 20);
+
+    let differing = snapshots_alpha
+        .iter()
+        .zip(snapshots_beta.iter())
+        .filter(|(a, b)| a.output != b.output)
+        .count();
+
+    assert!(
+        differing > 0,
+        "Different genesis phrases via builder must yield different outputs"
+    );
+}
