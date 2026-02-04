@@ -34,6 +34,7 @@ fn cfc_config() -> CfCNetworkConfig {
         cell_config,
         residual: true,
         bidirectional: false,
+        ..Default::default()
     }
 }
 

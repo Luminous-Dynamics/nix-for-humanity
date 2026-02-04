@@ -11351,6 +11351,7 @@ dependencies = [
  "egui",
  "futures",
  "half",
+ "hex",
  "hf-hub",
  "hound",
  "html2text",

@@ -71,6 +71,7 @@ mod hyperfeel;
 mod holochain;
 mod service;
 mod federated_cfc;
+mod federated_network;
 
 // Iroh and handshake modules compile always (with stub implementations when feature disabled)
 mod iroh;
@@ -109,6 +110,15 @@ pub use service::{NetworkService, ServiceStats, PeerEvent, SwarmBridge, Collecti
 // Federated CfC Learning - trust-weighted gradient aggregation
 pub use federated_cfc::{
     FederatedAggregator, GradientMessage, DifferentialPrivacyConfig,
+};
+
+// Federated Network Communication - channel and TCP backends
+pub use federated_network::{
+    FederatedNetworkConfig, FederatedMessage, FederatedNode, NodeAddress,
+    NetworkBackend, NetworkResult, NetworkError,
+    LocalChannelBackend, TcpBackend,
+    FederatedCoordinator, CoordinatorStats, CoordinatorEvent,
+    create_test_network,
 };
 
 // ============================================================================

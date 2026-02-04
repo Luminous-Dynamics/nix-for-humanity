@@ -136,6 +136,7 @@ lru = "0.16"
 rand = "0.8"
 rand_chacha = "0.3"  # Deterministic RNG for reproducible JL projections
 blake3 = "1.5"
+hex = "0.4"     # Hex encoding for node IDs in federated network
 md5 = "0.7"  # For experience module topic hashing
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1.10"  # For Thalamus pattern matching
@@ -250,6 +251,11 @@ physiology_module = []         # Physiology integration in school
 mycelix_module = []            # Mycelix governance hooks
 databases_module = []          # Database backends in experience module
 magi_loop = []                 # MAGI Loop world-grounded prediction (recursive_improvement)
+epistemic_conflict = []        # Epistemic conflict detection + reliability + Φ_eff
+conscious_tool_gate = ["epistemic_conflict"]  # Consciousness-gated tool use (requires epistemic_conflict)
+temporal_planning = ["epistemic_conflict", "magi_loop"]  # ForkedState + MCTS + EVS
+counterfactual = ["epistemic_conflict"]  # Causal queries v0 with reference harness
+reasoning_engine = ["epistemic_conflict", "conscious_tool_gate", "temporal_planning", "counterfactual"]  # Full ConsciousReasoningEngine
 nvml = []                      # NVIDIA Management Library for GPU monitoring
 network = []                   # Mycelix network client (real HTTP fetching)
 partnership_module = []        # Partnership module for Φ_dyad computation
@@ -546,6 +552,11 @@ required-features = ["neural-bridge"]
 [[bench]]
 name = "hdc_benchmarks"
 harness = false
+
+[[bench]]
+name = "reasoning_engine"
+harness = false
+required-features = ["reasoning_engine"]
 
 [profile.test]
 inherits = "dev"

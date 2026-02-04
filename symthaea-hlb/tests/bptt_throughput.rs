@@ -22,6 +22,7 @@ fn make_config() -> CfCNetworkConfig {
         activation: ActivationType::SiLU,
         tau_range: (0.1, 10.0),
         dropout: 0.0,
+        ..Default::default()
     };
     CfCNetworkConfig {
         input_dim: 32,
@@ -31,6 +32,7 @@ fn make_config() -> CfCNetworkConfig {
         cell_config,
         residual: true,
         bidirectional: false,
+        ..Default::default()
     }
 }
 

@@ -193,7 +193,12 @@ pub enum DynamicsError {
 }
 
 // Re-export key types
-pub use cfc::{CfCNetwork, CfCCell, CfCConfig};
+pub use cfc::{
+    CfCNetwork, CfCCell, CfCConfig, CfCNetworkConfig,
+    OnlineLearningConfig, OnlineLearningStats, NetworkOnlineLearningStats,
+    // Phi-gated attention
+    PhiGatedConfig, compute_phi_attention_weights,
+};
 pub use cfc_coherence::{
     CfCCoherenceBridge, CoherenceConfig, TemporalCoherenceMetrics, CoherenceSummary
 };
@@ -202,3 +207,7 @@ pub use temporal_signatures::{
     TrajectoryFeatures, TemporalStateSummary
 };
 pub use world_model::{HierarchicalCfCWorldModel, WorldModelConfig, WorldModelLayer};
+pub use hierarchical_cfc::{
+    HierarchicalCfC, HierarchicalCfCConfig, HierarchicalOutput,
+    DEFAULT_TIME_CONSTANTS
+};

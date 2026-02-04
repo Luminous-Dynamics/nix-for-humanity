@@ -234,9 +234,19 @@ pub mod hdc_ltc_bridge;
 // Dynamics: attractor networks, temporal evolution
 pub mod dynamics;
 
+// Exploration: Surprise-driven exploration using FEP prediction errors
+pub mod exploration;
+
+// Attention: Phi-guided attention mechanisms
+pub mod attention;
+
 // Two-Track Architecture: HDC semantics + CfC temporal
 // Combines HDC for semantic meaning with CfC for temporal patterns
 pub mod two_track;
+
+// Bridges: Cross-representation translation between HDC and CfC
+// Enables bidirectional semantic-temporal information flow
+pub mod bridges;
 
 // ============================================================================
 // Modules with Known Import Issues (Conditionally Compiled)
@@ -325,6 +335,10 @@ pub mod infrastructure;
 
 // Intelligence (enabled - 0 errors)
 pub mod intelligence;
+
+// Causal: Causal discovery integration with cognitive loop
+// Tracks (input, output) pairs and discovers causal structure for attention weighting
+pub mod causal;
 
 // Substrate (enabled - 0 errors)
 pub mod substrate;

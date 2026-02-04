@@ -56,6 +56,7 @@ fn cfc_online_learning_reduces_prediction_error() {
         cell_config,
         residual: false,
         bidirectional: false,
+        ..Default::default()
     };
 
     let mut net = CfCNetwork::new(net_config);
@@ -169,6 +170,7 @@ fn test_bptt_learning_convergence() {
         cell_config,
         residual: false,
         bidirectional: false,
+        ..Default::default()
     };
 
     let mut net = CfCNetwork::new(net_config);

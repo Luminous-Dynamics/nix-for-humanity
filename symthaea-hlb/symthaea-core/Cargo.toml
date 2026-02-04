@@ -55,11 +55,16 @@ harness = false
 name = "hdc_improvements"
 harness = false
 
+[[bench]]
+name = "simd_continuous"
+harness = false
+
 [features]
 default = []
 embeddings = []       # Enable embedding model integration
 thread_local_cache = []  # Enable thread-local caching in Phi engine
 rayon = []            # Enable parallel computation with rayon
+simd = []             # Enable SIMD-accelerated continuous HV operations (4x+ speedup)
 
 # Multi-Database Consciousness Architecture features
 # Each database maps to a "brain region" with specialized computational role

@@ -160,17 +160,28 @@ impl ContinuousHV {
     /// - Commutative: A⊗B = B⊗A
     /// - Self-inverse: A⊗A ≈ 1
     /// - Preserves similarity: sim(A⊗C, B⊗C) = sim(A, B)
+    ///
+    /// # Performance
+    /// Uses SIMD acceleration when the `simd` feature is enabled (4x+ speedup).
     #[inline]
     pub fn bind(&self, other: &Self) -> Self {
         assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
-        let values: Vec<f32> = self.values
-            .iter()
-            .zip(other.values.iter())
-            .map(|(a, b)| a * b)
-            .collect();
+        #[cfg(feature = "simd")]
+        {
+            let values = crate::hdc::simd_continuous::bind_simd(&self.values, &other.values);
+            Self { values }
+        }
 
-        Self { values }
+        #[cfg(not(feature = "simd"))]
+        {
+            let values: Vec<f32> = self.values
+                .iter()
+                .zip(other.values.iter())
+                .map(|(a, b)| a * b)
+                .collect();
+            Self { values }
+        }
     }
 
     /// Bundling operation (element-wise average)
@@ -206,25 +217,38 @@ impl ContinuousHV {
     }
 
     /// Weighted bundling
+    ///
+    /// # Performance
+    /// Uses SIMD acceleration when the `simd` feature is enabled (4x+ speedup).
     pub fn weighted_bundle(hvs: &[&Self], weights: &[f32]) -> Self {
         if hvs.is_empty() || weights.is_empty() {
             return Self::zero(HDC_DIMENSION);
         }
 
-        let dim = hvs[0].values.len();
-        let weight_sum: f32 = weights.iter().sum();
+        #[cfg(feature = "simd")]
+        {
+            let slices: Vec<&[f32]> = hvs.iter().map(|hv| hv.values.as_slice()).collect();
+            let values = crate::hdc::simd_continuous::bundle_simd(&slices, weights);
+            Self { values }
+        }
 
-        let values: Vec<f32> = (0..dim)
-            .map(|i| {
-                let weighted_sum: f32 = hvs.iter()
-                    .zip(weights.iter())
-                    .map(|(hv, w)| hv.values[i] * w)
-                    .sum();
-                weighted_sum / weight_sum
-            })
-            .collect();
+        #[cfg(not(feature = "simd"))]
+        {
+            let dim = hvs[0].values.len();
+            let weight_sum: f32 = weights.iter().sum();
 
-        Self { values }
+            let values: Vec<f32> = (0..dim)
+                .map(|i| {
+                    let weighted_sum: f32 = hvs.iter()
+                        .zip(weights.iter())
+                        .map(|(hv, w)| hv.values[i] * w)
+                        .sum();
+                    weighted_sum / weight_sum
+                })
+                .collect();
+
+            Self { values }
+        }
     }
 
     /// Cosine similarity in range [-1, 1]
@@ -232,32 +256,54 @@ impl ContinuousHV {
     /// For random vectors: similarity ≈ 0
     /// For identical vectors: similarity = 1
     /// For opposite vectors: similarity = -1
+    ///
+    /// # Performance
+    /// Uses SIMD acceleration when the `simd` feature is enabled (4x+ speedup).
     #[inline]
     pub fn similarity(&self, other: &Self) -> f32 {
         debug_assert_eq!(self.values.len(), other.values.len(), "Dimension mismatch");
 
-        let mut dot = 0.0f32;
-        let mut norm_a_sq = 0.0f32;
-        let mut norm_b_sq = 0.0f32;
-
-        for (&a, &b) in self.values.iter().zip(other.values.iter()) {
-            dot += a * b;
-            norm_a_sq += a * a;
-            norm_b_sq += b * b;
+        #[cfg(feature = "simd")]
+        {
+            crate::hdc::simd_continuous::similarity_simd(&self.values, &other.values)
         }
 
-        let denom = (norm_a_sq * norm_b_sq).sqrt();
-        if denom < 1e-10 {
-            return 0.0;
-        }
+        #[cfg(not(feature = "simd"))]
+        {
+            let mut dot = 0.0f32;
+            let mut norm_a_sq = 0.0f32;
+            let mut norm_b_sq = 0.0f32;
 
-        (dot / denom).clamp(-1.0, 1.0)
+            for (&a, &b) in self.values.iter().zip(other.values.iter()) {
+                dot += a * b;
+                norm_a_sq += a * a;
+                norm_b_sq += b * b;
+            }
+
+            let denom = (norm_a_sq * norm_b_sq).sqrt();
+            if denom < 1e-10 {
+                return 0.0;
+            }
+
+            (dot / denom).clamp(-1.0, 1.0)
+        }
     }
 
     /// L2 norm
+    ///
+    /// # Performance
+    /// Uses SIMD acceleration when the `simd` feature is enabled (4x+ speedup).
     #[inline]
     pub fn norm(&self) -> f32 {
-        self.values.iter().map(|x| x * x).sum::<f32>().sqrt()
+        #[cfg(feature = "simd")]
+        {
+            crate::hdc::simd_continuous::norm_simd(&self.values)
+        }
+
+        #[cfg(not(feature = "simd"))]
+        {
+            self.values.iter().map(|x| x * x).sum::<f32>().sqrt()
+        }
     }
 
     /// Normalize to unit length

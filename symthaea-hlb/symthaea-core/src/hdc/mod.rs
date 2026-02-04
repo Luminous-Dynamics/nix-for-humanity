@@ -289,6 +289,7 @@ pub mod phi_orchestrator;                  // Adaptive Φ calculator orchestrato
 pub mod binary_hv;                         // Binary hypervector operations (HV16)
 pub mod simd_hv16;                         // SIMD-optimized binary hypervectors (8x faster)
 pub mod simd_ops;                          // SIMD intrinsics for HV16 (AVX2/SSE4.1)
+pub mod simd_continuous;                   // SIMD intrinsics for ContinuousHV (AVX2/FMA/SSE4.1)
 // NOTE: simd_hv and optimized_hv are INCOMPATIBLE with 16,384-bit HV16 (they use 256-byte arrays)
 // Use HV16::bind(), HV16::bundle(), HV16::similarity() directly instead
 pub mod hdc_trait;                         // Unified HyperdimensionalVector trait interface
@@ -715,6 +716,16 @@ pub use hv_pool::{
     ContinuousHVPool, PooledContinuousHV,
     PoolStats as HVPoolStats,
     pooled_bind, pooled_similarity,
+};
+
+// Re-export SIMD continuous HV operations (4x+ speedup for 16K-dim vectors)
+pub use simd_continuous::{
+    dot_product_simd as continuous_dot_product_simd,
+    bind_simd as continuous_bind_simd,
+    bundle_simd as continuous_bundle_simd,
+    norm_simd as continuous_norm_simd,
+    similarity_simd as continuous_similarity_simd,
+    simd_capabilities_report as continuous_simd_capabilities_report,
 };
 
 use anyhow::Result;

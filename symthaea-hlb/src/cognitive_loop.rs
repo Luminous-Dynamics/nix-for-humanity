@@ -83,6 +83,9 @@ use crate::consciousness::stability_regime::{StabilityRegimeProcessor, RegimeTra
 use crate::consciousness::primitive_discovery::{PrimitiveDiscoveryService, DiscoveryServiceConfig};
 use symthaea_core::hdc::phi_topology_validation::real_hv_to_hv16;
 
+// Causal discovery integration
+use crate::causal::{CausalLoopEnhancer, CausalEnhancerConfig, CausalGraph, DiscoveredRelationship};
+
 #[cfg(feature = "neural-bridge")]
 use crate::perception::NeuralBridge;
 
@@ -203,6 +206,33 @@ pub struct CognitiveLoopConfig {
     /// samples over a channel and receives updated weights via non-blocking
     /// `try_recv` at the top of each cycle.
     pub async_training: bool,
+
+    /// Enable online learning during inference.
+    /// When true, the CfC network will adapt weights based on prediction errors
+    /// after each forward pass, using a small learning rate to prevent
+    /// catastrophic forgetting.
+    pub enable_online_learning: bool,
+
+    /// Enable causal discovery integration.
+    /// When true, the cognitive loop tracks (input, output) pairs and
+    /// periodically runs causal discovery to:
+    /// - Weight attention (causal parents get more weight)
+    /// - Guide exploration (intervene on discovered causes)
+    pub causal_enhancement: bool,
+
+    /// Interval (in cycles) between causal discovery runs.
+    /// Only used when `causal_enhancement` is true.
+    /// Lower values = more frequent discovery but higher compute cost.
+    pub causal_discovery_interval: usize,
+
+    /// Enable episodic memory replay for high-Phi moment consolidation.
+    /// When true, the system stores high-consciousness episodes and periodically
+    /// replays them to reinforce important patterns.
+    pub episodic_replay: bool,
+
+    /// Configuration for episodic memory replay.
+    /// Only used when `episodic_replay` is true.
+    pub episodic_replay_config: crate::memory::episodic_replay::EpisodicReplayConfig,
 }
 
 impl Default for CognitiveLoopConfig {
@@ -224,6 +254,11 @@ impl Default for CognitiveLoopConfig {
             genesis_phrase: None,
             training_method: TrainingMethod::default(),
             async_training: true,
+            enable_online_learning: false,
+            causal_enhancement: false,
+            causal_discovery_interval: 100,
+            episodic_replay: false,
+            episodic_replay_config: crate::memory::episodic_replay::EpisodicReplayConfig::default(),
         }
     }
 }
@@ -3207,6 +3242,25 @@ pub struct LoopStats {
 
     /// Semantic Memory: Total entries stored
     pub semantic_entries_stored: u64,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ONLINE LEARNING STATS (Inference-time adaptation)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Online Learning: Total adaptation calls
+    pub online_adaptation_calls: u64,
+
+    /// Online Learning: Adaptations that modified weights
+    pub online_adaptations_applied: u64,
+
+    /// Online Learning: Adaptations skipped due to low error
+    pub online_adaptations_skipped: u64,
+
+    /// Online Learning: EMA of prediction errors during online learning
+    pub online_ema_error: f32,
+
+    /// Online Learning: Cumulative weight change from online adaptation
+    pub online_cumulative_weight_change: f32,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3618,6 +3672,25 @@ pub struct CognitiveLoopService {
     /// Background training thread handle (when `config.async_training` is true
     /// and the backend is CfC).  `None` for synchronous training or HdcLtc backend.
     async_trainer: Option<AsyncTrainerHandle>,
+
+    /// Causal loop enhancer for discovering causal structure in (input, output) pairs.
+    /// When enabled via `config.causal_enhancement`, this:
+    /// - Tracks recent (input, output) pairs
+    /// - Periodically runs causal discovery
+    /// - Weights attention based on discovered causal parents
+    /// - Suggests interventions for exploration
+    causal_enhancer: Option<CausalLoopEnhancer>,
+
+    /// Episodic memory replay for high-Phi moment consolidation.
+    /// When enabled via `config.episodic_replay`, stores high-consciousness episodes
+    /// and periodically replays them to reinforce important patterns.
+    phi_episodic_replay: Option<crate::memory::episodic_replay::EpisodicMemory>,
+
+    /// Conscious Reasoning Engine: unified 7-step reasoning cycle
+    /// Composes epistemic conflict, temporal planning, counterfactual reasoning,
+    /// and tool gating with tiered degradation (Tier 0/1/2).
+    #[cfg(feature = "reasoning_engine")]
+    reasoning_engine: Option<crate::consciousness::reasoning_engine::ConsciousReasoningEngine>,
 }
 
 impl CognitiveLoopService {
@@ -3691,6 +3764,31 @@ impl CognitiveLoopService {
                 TemporalNetwork::CfC(cfc) => Some(AsyncTrainerHandle::spawn(cfc.clone())),
                 _ => None,
             }
+        } else {
+            None
+        };
+
+        // Build optional causal enhancer (needs config fields before move)
+        let causal_enhancer = if config.causal_enhancement {
+            let causal_config = CausalEnhancerConfig {
+                discovery_interval: config.causal_discovery_interval,
+                seed: config.genesis_phrase.as_ref()
+                    .map(|p| symthaea_core::genesis::GenesisSeed::from_phrase(p)
+                        .domain("causal_enhancer")
+                        .gen::<u64>())
+                    .unwrap_or(42),
+                ..Default::default()
+            };
+            Some(CausalLoopEnhancer::with_config(causal_config))
+        } else {
+            None
+        };
+
+        // Build optional episodic replay (needs config fields before move)
+        let phi_episodic_replay = if config.episodic_replay {
+            Some(crate::memory::episodic_replay::EpisodicMemory::new(
+                config.episodic_replay_config.clone()
+            ))
         } else {
             None
         };
@@ -3776,6 +3874,10 @@ impl CognitiveLoopService {
                 }
             },
             async_trainer,
+            causal_enhancer,
+            phi_episodic_replay,
+            #[cfg(feature = "reasoning_engine")]
+            reasoning_engine: Some(crate::consciousness::reasoning_engine::ConsciousReasoningEngine::new()),
         })
     }
 
@@ -4292,6 +4394,45 @@ impl CognitiveLoopService {
         let unified_phi = (coherence_phi + voice_phi + flow_phi).clamp(0.0, 1.0) as f64;
         self.unification_engine.update_phi(unified_phi);
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // 10h.1 Conscious Reasoning Engine: unified 7-step reasoning cycle
+        // ═══════════════════════════════════════════════════════════════════════
+        // When the reasoning_engine feature is enabled, run the full conscious
+        // reasoning cycle (conflict detection → Φ_eff → planning → gating →
+        // counterfactual → telemetry) with tiered degradation.
+        #[cfg(feature = "reasoning_engine")]
+        if let Some(ref mut reasoning_engine) = self.reasoning_engine {
+            use crate::consciousness::epistemic_conflict::MultiTheoryMetrics as ECMetrics;
+            use crate::consciousness::reasoning_engine::ReasoningContext;
+
+            // Build theory metrics from available consciousness signals
+            let ec_metrics = ECMetrics {
+                phi: unified_phi,
+                gwt: coherence as f64,
+                ast: self.prediction_confidence as f64,
+                pp: (1.0 - prediction_error as f64).clamp(0.0, 1.0),
+                rpt: pattern_confidence as f64,
+                embodiment: self.fep_learning_signal as f64,
+                unified: unified_phi,
+            };
+
+            // Compute available budget: 20ms target cycle minus time already spent
+            let elapsed_us = cycle_start.elapsed().as_micros() as u64;
+            let available_us = 20_000u64.saturating_sub(elapsed_us);
+
+            let reasoning_ctx = ReasoningContext {
+                theory_metrics: ec_metrics,
+                phi: unified_phi,
+                available_budget_us: available_us,
+                available_actions: Vec::new(), // populated by external action providers
+                tool: None, // populated by shell integration
+                recent_utility: 0.5,
+                cycle_id: self.stats.total_cycles as u64,
+            };
+
+            let _reasoning_result = reasoning_engine.reason(&reasoning_ctx);
+        }
+
         // Get adaptive learning rate (respects pause_learning and all modulations)
         // Include flow state boost, curiosity novelty bonus, and semantic context
         let base_lr = self.combined_learning_rate();
@@ -4473,6 +4614,93 @@ impl CognitiveLoopService {
         self.stats.semantic_avg_retrieved_error = self.semantic_memory.stats().avg_retrieved_error;
         self.stats.semantic_entries_stored = self.semantic_memory.stats().total_stored;
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // CAUSAL ENHANCEMENT: Track (input, output) pairs and discover causal structure
+        // ═══════════════════════════════════════════════════════════════════════
+        // When enabled, the causal enhancer:
+        // - Records each (compressed_state, output) pair
+        // - Periodically runs causal discovery to find structure
+        // - Logs discovered causal relationships
+        if let Some(ref mut enhancer) = self.causal_enhancer {
+            // Record this cycle's (input, output) pair
+            enhancer.record_cycle_from_f32(&compressed_state, &output);
+
+            // Check if it's time to run causal discovery
+            if enhancer.should_discover() {
+                let causal_graph = enhancer.run_discovery();
+
+                // Log discovered relationships
+                if !causal_graph.is_empty() {
+                    tracing::info!(
+                        edges = causal_graph.edges.len(),
+                        cycle = self.stats.total_cycles,
+                        "Causal structure discovered in cognitive loop"
+                    );
+                    enhancer.log_discoveries();
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // EPISODIC REPLAY: Store high-Phi moments and periodically replay
+        // ═══════════════════════════════════════════════════════════════════════
+        // When enabled, the episodic replay system:
+        // - Stores episodes that exceed the Phi threshold
+        // - Periodically replays high-Phi episodes to reinforce important patterns
+        // - Uses Phi-weighted sampling to prioritize most conscious moments
+        if let Some(ref mut replay) = self.phi_episodic_replay {
+            // Get coherence summary for Phi estimation and overall coherence
+            let coherence_summary = self.coherence_bridge.summary();
+            // Use smoothed coherence as a proxy for Phi (both measure integration)
+            let current_phi = coherence_summary.smoothed_coherence as f64;
+
+            // Create episode from this cycle
+            let input_hv = symthaea_core::hdc::unified_hv::ContinuousHV::from_vec(
+                compressed_state.clone()
+            );
+            let output_hv = symthaea_core::hdc::unified_hv::ContinuousHV::from_vec(
+                output.clone()
+            );
+
+            let episode = crate::memory::episodic_replay::Episode::with_metadata(
+                input_hv,
+                output_hv,
+                current_phi,
+                self.stats.total_cycles as u64,
+                prediction_error,
+                self.emotion_contagion.smoothed_valence,
+                coherence_summary.coherence,
+            );
+
+            // Store if Phi exceeds threshold
+            let stored = replay.store_if_significant(episode);
+            if stored {
+                tracing::trace!(
+                    phi = current_phi,
+                    cycle = self.stats.total_cycles,
+                    "High-Phi episode stored for replay"
+                );
+            }
+
+            // Check if we should run a replay session
+            if replay.should_replay() {
+                // Get CfC network for training (only works with CfC backend)
+                if let TemporalNetwork::CfC(ref mut cfc) = self.temporal_network {
+                    let learning_rate = self.config.cfc_config.learning_rate;
+                    let result = replay.replay_session(cfc, learning_rate);
+
+                    if !result.skipped {
+                        tracing::debug!(
+                            episodes = result.episodes_replayed,
+                            avg_loss = result.average_loss,
+                            avg_phi = result.average_phi,
+                            "Episodic replay session completed"
+                        );
+                    }
+                }
+            }
+        }
+
         CycleResult {
             output,
             prediction_error,
@@ -4574,9 +4802,127 @@ impl CognitiveLoopService {
         &self.stats
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CAUSAL ENHANCEMENT ACCESSORS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Check if causal enhancement is enabled
+    pub fn causal_enhancement_enabled(&self) -> bool {
+        self.causal_enhancer.is_some()
+    }
+
+    /// Get the current causal graph (if causal enhancement is enabled)
+    pub fn causal_graph(&self) -> Option<&CausalGraph> {
+        self.causal_enhancer.as_ref().map(|e| e.current_graph())
+    }
+
+    /// Get discovered causal relationships history
+    pub fn causal_discoveries(&self) -> Option<&[DiscoveredRelationship]> {
+        self.causal_enhancer.as_ref().map(|e| e.discovered_relationships())
+    }
+
+    /// Get causal enhancer statistics
+    pub fn causal_stats(&self) -> Option<crate::causal::CausalLoopStats> {
+        self.causal_enhancer.as_ref().map(|e| e.stats().clone())
+    }
+
+    /// Check if any causal structure has been discovered
+    pub fn has_causal_structure(&self) -> bool {
+        self.causal_enhancer.as_ref()
+            .map(|e| e.has_causal_structure())
+            .unwrap_or(false)
+    }
+
+    /// Force a causal discovery run (useful for testing)
+    pub fn force_causal_discovery(&mut self) -> Option<CausalGraph> {
+        self.causal_enhancer.as_mut().map(|e| e.run_discovery())
+    }
+
+    /// Get causal attention weights for a target dimension
+    ///
+    /// Returns weights that give more attention to causal parents of the target.
+    /// Returns None if causal enhancement is disabled.
+    pub fn causal_attention_weights(&mut self, target_dim: usize) -> Option<Vec<f32>> {
+        self.causal_enhancer.as_mut().map(|e| e.causal_attention_weights(target_dim))
+    }
+
+    /// Suggest an intervention based on discovered causal structure
+    ///
+    /// Returns (dimension_to_intervene, suggested_value) if exploration is triggered.
+    pub fn suggest_causal_intervention(&mut self) -> Option<(usize, f64)> {
+        self.causal_enhancer.as_mut().and_then(|e| e.suggest_intervention())
+    }
+
     /// Get encoder statistics
     pub fn encoder_stats(&self) -> &symthaea_core::hdc::predictive_encoder::EncoderStats {
         self.encoder.stats()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EPISODIC REPLAY ACCESSORS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Check if episodic replay is enabled
+    pub fn episodic_replay_enabled(&self) -> bool {
+        self.phi_episodic_replay.is_some()
+    }
+
+    /// Get episodic replay statistics
+    pub fn episodic_replay_stats(&self) -> Option<crate::memory::episodic_replay::EpisodicMemoryStats> {
+        self.phi_episodic_replay.as_ref().map(|r| r.stats())
+    }
+
+    /// Get the number of stored episodes
+    pub fn episodic_replay_count(&self) -> usize {
+        self.phi_episodic_replay.as_ref().map(|r| r.len()).unwrap_or(0)
+    }
+
+    /// Get top N episodes by Phi (highest consciousness moments)
+    pub fn top_phi_episodes(&self, n: usize) -> Vec<crate::memory::episodic_replay::Episode> {
+        self.phi_episodic_replay.as_ref()
+            .map(|r| r.get_top_episodes(n))
+            .unwrap_or_default()
+    }
+
+    /// Force an episodic replay session (useful for testing or manual consolidation)
+    pub fn force_episodic_replay(&mut self, learning_rate: f32) -> Option<crate::memory::episodic_replay::ReplaySessionResult> {
+        if let Some(ref mut replay) = self.phi_episodic_replay {
+            if let TemporalNetwork::CfC(ref mut cfc) = self.temporal_network {
+                // Temporarily bypass should_replay check by manually running replay
+                let batch = replay.sample_replay_batch(self.config.episodic_replay_config.batch_size);
+                if batch.is_empty() {
+                    return Some(crate::memory::episodic_replay::ReplaySessionResult {
+                        episodes_replayed: 0,
+                        average_loss: 0.0,
+                        average_phi: 0.0,
+                        skipped: true,
+                    });
+                }
+
+                let mut total_loss = 0.0;
+                let mut total_phi = 0.0;
+
+                for episode in &batch {
+                    let loss = replay.replay_training_step(
+                        cfc,
+                        episode,
+                        learning_rate,
+                        self.config.episodic_replay_config.replay_dt,
+                    );
+                    total_loss += loss;
+                    total_phi += episode.phi;
+                }
+
+                let n = batch.len();
+                return Some(crate::memory::episodic_replay::ReplaySessionResult {
+                    episodes_replayed: n,
+                    average_loss: total_loss / n as f32,
+                    average_phi: total_phi / n as f64,
+                    skipped: false,
+                });
+            }
+        }
+        None
     }
 
     /// Get CfC state diversity (activation variance across cells)
@@ -5684,6 +6030,25 @@ impl CognitiveLoopBuilder {
 
     pub fn with_buffer_size(mut self, size: usize) -> Self {
         self.config.buffer_size = size;
+        self
+    }
+
+    /// Enable causal discovery integration
+    ///
+    /// When enabled, the cognitive loop tracks (input, output) pairs and
+    /// periodically runs causal discovery to weight attention based on
+    /// discovered causal structure.
+    pub fn with_causal_enhancement(mut self, enabled: bool) -> Self {
+        self.config.causal_enhancement = enabled;
+        self
+    }
+
+    /// Set the interval (in cycles) between causal discovery runs
+    ///
+    /// Lower values = more frequent discovery but higher compute cost.
+    /// Default is 100 cycles.
+    pub fn with_causal_discovery_interval(mut self, interval: usize) -> Self {
+        self.config.causal_discovery_interval = interval;
         self
     }
 

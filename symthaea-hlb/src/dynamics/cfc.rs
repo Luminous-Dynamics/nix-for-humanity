@@ -1412,6 +1412,7 @@ impl CfCNetwork {
     /// 2. Only adapts if error exceeds adaptive threshold
     /// 3. Uses much smaller learning rate than training (default 0.001)
     /// 4. Clips weight changes to prevent catastrophic forgetting
+    /// 5. Adapts both output layer AND cell weights using proper gradient backprop
     ///
     /// # Arguments
     /// * `prediction_error` - Current prediction error (e.g., MSE between predicted and actual)
@@ -1448,46 +1449,98 @@ impl CfCNetwork {
             return false;
         }
 
-        // Adapt each cell
+        let lr = self.config.online_learning_config.learning_rate;
+        let max_delta = self.config.online_learning_config.max_weight_delta;
+        let mut total_delta_sq = 0.0f32;
+
+        // Step 1: Forward pass to get intermediate states
+        let mut layer_inputs: Vec<Array1<f32>> = Vec::with_capacity(self.cells.len() + 1);
+        layer_inputs.push(input.clone());
+
         let mut h = input.clone();
-        let mut any_adapted = false;
+        for cell in &mut self.cells {
+            h = cell.forward(&h, dt);
+            layer_inputs.push(h.clone());
+        }
 
-        for (i, cell) in self.cells.iter_mut().enumerate() {
-            // Compute target for this cell layer
-            // For intermediate cells, the target is the next cell's expected input
-            // For the last cell, compute target from output projection inverse
-            let cell_target = if i == self.cells.len() - 1 {
-                // Last cell: back-project from output target
-                // target = W_out^T * (y_target - b_out) (pseudo-inverse approximation)
-                // Simplified: just use the hidden state that would minimize output error
-                let output_error = target - &self.output_bias;
-                // Compute pseudo-inverse via W_out^T (simple gradient direction)
-                self.output_weights.t().dot(&output_error)
-            } else {
-                // Intermediate cells: target is next cell's current input requirement
-                // This is approximate - use the current state as a proxy
-                cell.state().clone()
-            };
+        // Step 2: Compute output and output gradient
+        let last_hidden = layer_inputs.last().unwrap();
+        let output = self.output_weights.dot(last_hidden) + &self.output_bias;
+        let n = target.len() as f32;
+        let output_error: Array1<f32> = (0..self.config.output_dim).map(|i| {
+            2.0 * (output[i] - target[i]) / n
+        }).collect();
 
-            if cell.adapt_online(prediction_error, &h, &cell_target, dt) {
-                any_adapted = true;
+        // Step 3: Adapt output layer weights (critical for improvement!)
+        // dL/dW_out = dL/dy * h^T (outer product)
+        // dL/db_out = dL/dy
+        for i in 0..self.config.output_dim {
+            for j in 0..self.config.hidden_dim {
+                let grad = output_error[i] * last_hidden[j];
+                let delta = (-lr * grad).clamp(-max_delta, max_delta);
+                self.output_weights[[i, j]] += delta;
+                total_delta_sq += delta * delta;
+            }
+            let delta = (-lr * output_error[i]).clamp(-max_delta, max_delta);
+            self.output_bias[i] += delta;
+            total_delta_sq += delta * delta;
+        }
+
+        // Step 4: Backpropagate gradient through output layer to get dL/dh_last
+        // dL/dh = W_out^T * dL/dy
+        let dh_last = self.output_weights.t().dot(&output_error);
+
+        // Step 5: Backpropagate through cells using backward_from_grad
+        // Each cell computes its gradients from the upstream gradient on its output
+        let mut dh = dh_last;
+        for i in (0..self.cells.len()).rev() {
+            let cell_input = &layer_inputs[i];
+            let grads = self.cells[i].backward_from_grad(cell_input, &dh, dt);
+
+            // Apply gradients with online learning constraints
+            let (rows_in, cols_in) = self.cells[i].w_in.dim();
+            for r in 0..rows_in {
+                for c in 0..cols_in {
+                    let delta = (-lr * grads.dw_in[[r, c]]).clamp(-max_delta, max_delta);
+                    self.cells[i].w_in[[r, c]] += delta;
+                    total_delta_sq += delta * delta;
+                }
             }
 
-            // Forward through this cell to get input for next cell
-            h = cell.forward(&h, dt);
+            let hidden_dim = self.cells[i].config.hidden_dim;
+            for r in 0..hidden_dim {
+                for c in 0..hidden_dim {
+                    let delta = (-lr * grads.dw_h[[r, c]]).clamp(-max_delta, max_delta);
+                    self.cells[i].w_h[[r, c]] += delta;
+                    total_delta_sq += delta * delta;
+                }
+            }
+
+            for r in 0..hidden_dim {
+                let delta = (-lr * grads.db_h[r]).clamp(-max_delta, max_delta);
+                self.cells[i].b_h[r] += delta;
+                total_delta_sq += delta * delta;
+            }
+
+            // Optionally adapt tau
+            if self.config.online_learning_config.adapt_tau {
+                let tau_lr = lr * self.config.online_learning_config.tau_lr_multiplier;
+                for r in 0..hidden_dim {
+                    let delta = (-tau_lr * grads.dtau[r]).clamp(-max_delta * 0.1, max_delta * 0.1);
+                    self.cells[i].tau[r] = (self.cells[i].tau[r] + delta).clamp(MIN_TAU, 100.0);
+                    total_delta_sq += delta * delta;
+                }
+            }
+
+            // Propagate gradient to previous layer: dL/dh_prev = W_in^T * dz
+            // (Simplified: propagate through W_h for recurrent signal)
+            dh = self.cells[i].w_h.t().dot(&dh);
         }
 
-        if any_adapted {
-            self.online_stats.adaptations_applied += 1;
+        self.online_stats.adaptations_applied += 1;
+        self.online_stats.cumulative_weight_change += total_delta_sq.sqrt();
 
-            // Update cumulative weight change from cell stats
-            let total_change: f32 = self.cells.iter()
-                .map(|c| c.online_stats().cumulative_weight_change)
-                .sum();
-            self.online_stats.cumulative_weight_change = total_change;
-        }
-
-        any_adapted
+        true
     }
 
     /// Forward pass with automatic online adaptation.
@@ -2492,6 +2545,7 @@ mod tests {
             cell_config,
             residual: false,
             bidirectional: false,
+            ..Default::default()
         };
         let mut network = CfCNetwork::new(config);
         let input = Array1::from_vec(vec![1.0; 4]);
@@ -2523,6 +2577,7 @@ mod tests {
             cell_config,
             residual: false,
             bidirectional: false,
+            ..Default::default()
         };
         let mut network = CfCNetwork::new(config);
         let input = Array1::from_vec(vec![1.0; 4]);

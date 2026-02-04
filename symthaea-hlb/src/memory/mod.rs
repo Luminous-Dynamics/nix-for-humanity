@@ -2,10 +2,12 @@
 //!
 //! This module provides memory systems for consciousness persistence,
 //! including episodic memory (hippocampus), conversation memory,
-//! semantic memory (HDC-based similarity lookup), and memory consolidation systems.
+//! semantic memory (HDC-based similarity lookup), episodic replay for
+//! high-Phi moment consolidation, and memory consolidation systems.
 
 pub mod coherence_tracker;
 pub mod conversation_memory;
+pub mod episodic_replay;
 pub mod hippocampus;
 pub mod semantic_memory;
 
@@ -15,3 +17,7 @@ pub use hippocampus::{
     EmotionalValence, HippocampusStats,
 };
 pub use semantic_memory::{SemanticMemory, SemanticEntry, SemanticMemoryStats};
+pub use episodic_replay::{
+    EpisodicMemory, EpisodicReplayConfig, Episode,
+    EpisodicMemoryStats, ReplaySessionResult,
+};
