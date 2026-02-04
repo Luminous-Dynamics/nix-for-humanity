@@ -747,6 +747,42 @@ pub async fn dimensional_sweep(
     ))
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// METRICS ENDPOINTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Prometheus metrics endpoint (text exposition format)
+///
+/// Returns metrics in Prometheus text format for scraping by Prometheus server.
+/// Standard endpoint: GET /metrics
+pub async fn metrics_prometheus() -> (StatusCode, [(axum::http::header::HeaderName, &'static str); 1], String) {
+    let metrics = crate::api::metrics::global();
+
+    // Increment request counter
+    metrics.increment("api_requests_total");
+
+    let body = metrics.to_prometheus_text();
+
+    (
+        StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
+        body,
+    )
+}
+
+/// JSON metrics endpoint
+///
+/// Returns metrics as JSON for programmatic access.
+/// Endpoint: GET /v1/metrics
+pub async fn metrics_json() -> Json<crate::api::metrics::MetricsSnapshot> {
+    let metrics = crate::api::metrics::global();
+
+    // Increment request counter
+    metrics.increment("api_requests_total");
+
+    Json(metrics.to_json())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

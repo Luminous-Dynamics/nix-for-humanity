@@ -22,6 +22,7 @@
 //! ```
 
 pub mod handlers;
+pub mod metrics;
 pub mod models;
 pub mod state;
 
@@ -159,6 +160,9 @@ pub fn create_router_with_config(config: ApiConfig) -> Router {
         .route("/v1/datasets/:dataset_id", get(handlers::get_dataset))
         .route("/v1/compare", post(handlers::compare_models))
         .route("/v1/dimensional-sweep", post(handlers::dimensional_sweep))
+        // Metrics endpoints
+        .route("/metrics", get(handlers::metrics_prometheus))       // Prometheus scrape endpoint
+        .route("/v1/metrics", get(handlers::metrics_json))          // JSON metrics
         // Health check
         .route("/health", get(handlers::health_check))
         .route("/v1/health", get(handlers::health_check))
