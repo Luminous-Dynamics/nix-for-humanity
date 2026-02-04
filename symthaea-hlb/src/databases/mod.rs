@@ -275,6 +275,71 @@ pub struct SearchResult {
     pub similarity: f32,
 }
 
+/// Statistics about the database state and health.
+///
+/// Provides observability into the database for monitoring and debugging.
+/// Values are backend-specific - some fields may be zero if not applicable.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use symthaea::databases::{SqliteMemory, ConsciousnessDatabase};
+///
+/// let db = SqliteMemory::in_memory()?;
+/// let stats = db.stats().await?;
+///
+/// println!("Total records: {}", stats.total_records);
+/// println!("Database size: {} bytes", stats.database_size_bytes);
+/// println!("Cache hit ratio: {:.1}%", stats.cache_hit_ratio * 100.0);
+/// ```
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct DatabaseStats {
+    /// Total number of memory records stored.
+    pub total_records: usize,
+
+    /// Size of the database on disk (bytes). 0 for in-memory databases.
+    pub database_size_bytes: u64,
+
+    /// Number of database pages (for page-based backends like SQLite).
+    pub page_count: u64,
+
+    /// Size of each database page (bytes).
+    pub page_size: u64,
+
+    /// Amount of free space in the database file (bytes).
+    pub freelist_count: u64,
+
+    /// Cache hit ratio (0.0 to 1.0). Backend-specific.
+    pub cache_hit_ratio: f64,
+
+    /// Number of cache hits since startup.
+    pub cache_hits: u64,
+
+    /// Number of cache misses since startup.
+    pub cache_misses: u64,
+
+    /// Average query latency in microseconds. 0 if not measured.
+    pub avg_query_latency_us: u64,
+
+    /// Total number of queries executed.
+    pub total_queries: u64,
+
+    /// Memory type distribution: (type_name, count).
+    pub memory_type_counts: Vec<(String, usize)>,
+
+    /// Average phi value across all memories.
+    pub avg_phi: f64,
+
+    /// Oldest memory timestamp (milliseconds since epoch).
+    pub oldest_timestamp_ms: u64,
+
+    /// Newest memory timestamp (milliseconds since epoch).
+    pub newest_timestamp_ms: u64,
+
+    /// Backend-specific status string (e.g., "wal", "journal", "in_memory").
+    pub backend_status: String,
+}
+
 // ============================================================================
 // Database Trait
 // ============================================================================
@@ -315,6 +380,19 @@ pub trait ConsciousnessDatabase: Send + Sync {
 
     /// Check if the database connection is healthy.
     async fn health_check(&self) -> DbResult<bool>;
+
+    /// Get statistics about the database for observability.
+    ///
+    /// Returns detailed metrics about database size, performance, and content
+    /// distribution. Useful for monitoring and debugging.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let stats = db.stats().await?;
+    /// println!("Records: {}, Size: {} bytes", stats.total_records, stats.database_size_bytes);
+    /// ```
+    async fn stats(&self) -> DbResult<DatabaseStats>;
 }
 
 // Re-exports

@@ -65,7 +65,7 @@
 //! serializes database operations, SQLite in WAL mode can handle concurrent
 //! reads efficiently.
 
-use super::{ConsciousnessDatabase, DbResult, DatabaseError, MemoryRecord, MemoryType, SearchResult};
+use super::{ConsciousnessDatabase, DbResult, DatabaseError, DatabaseStats, MemoryRecord, MemoryType, SearchResult};
 use symthaea_core::hdc::binary_hv::HV16;
 use async_trait::async_trait;
 use rusqlite::{Connection, params};
@@ -434,6 +434,127 @@ impl ConsciousnessDatabase for SqliteMemory {
 
         Ok(true)
     }
+
+    async fn stats(&self) -> DbResult<DatabaseStats> {
+        let conn = self.conn.lock_resilient("sqlite");
+
+        // Get total record count
+        let total_records: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM memories",
+            [],
+            |row| row.get(0)
+        ).map_err(|e| DatabaseError::QueryFailed(format!("Count query failed: {}", e)))?;
+
+        // Get SQLite pragma values for database metrics
+        let page_size: i64 = conn.query_row(
+            "PRAGMA page_size",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(4096);
+
+        let page_count: i64 = conn.query_row(
+            "PRAGMA page_count",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        let freelist_count: i64 = conn.query_row(
+            "PRAGMA freelist_count",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        // Get cache statistics
+        let cache_hits: i64 = conn.query_row(
+            "SELECT cache_hit FROM pragma_database_list() LIMIT 1",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        let cache_misses: i64 = conn.query_row(
+            "SELECT cache_miss FROM pragma_database_list() LIMIT 1",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        // Calculate cache hit ratio
+        let total_cache_ops = cache_hits + cache_misses;
+        let cache_hit_ratio = if total_cache_ops > 0 {
+            cache_hits as f64 / total_cache_ops as f64
+        } else {
+            0.0
+        };
+
+        // Get memory type distribution
+        let mut type_counts_stmt = conn.prepare(
+            "SELECT memory_type, COUNT(*) as cnt FROM memories GROUP BY memory_type ORDER BY cnt DESC"
+        ).map_err(|e| DatabaseError::QueryFailed(format!("Type counts query failed: {}", e)))?;
+
+        let memory_type_counts: Vec<(String, usize)> = type_counts_stmt
+            .query_map([], |row| {
+                let mt: String = row.get(0)?;
+                let cnt: i64 = row.get(1)?;
+                Ok((mt, cnt as usize))
+            })
+            .map_err(|e| DatabaseError::QueryFailed(format!("Type counts failed: {}", e)))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        // Get average phi
+        let avg_phi: f64 = conn.query_row(
+            "SELECT COALESCE(AVG(phi), 0.0) FROM memories",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0.0);
+
+        // Get timestamp range
+        let oldest_timestamp_ms: i64 = conn.query_row(
+            "SELECT COALESCE(MIN(timestamp_ms), 0) FROM memories",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        let newest_timestamp_ms: i64 = conn.query_row(
+            "SELECT COALESCE(MAX(timestamp_ms), 0) FROM memories",
+            [],
+            |row| row.get(0)
+        ).unwrap_or(0);
+
+        // Get journal mode for backend status
+        let journal_mode: String = conn.query_row(
+            "PRAGMA journal_mode",
+            [],
+            |row| row.get(0)
+        ).unwrap_or_else(|_| "unknown".to_string());
+
+        // Calculate database size
+        let database_size_bytes = (page_count as u64) * (page_size as u64);
+
+        // Determine backend status
+        let backend_status = if self.path == ":memory:" {
+            "in_memory".to_string()
+        } else {
+            format!("file:{}", journal_mode)
+        };
+
+        Ok(DatabaseStats {
+            total_records: total_records as usize,
+            database_size_bytes,
+            page_count: page_count as u64,
+            page_size: page_size as u64,
+            freelist_count: freelist_count as u64,
+            cache_hit_ratio,
+            cache_hits: cache_hits as u64,
+            cache_misses: cache_misses as u64,
+            avg_query_latency_us: 0, // Not tracked yet
+            total_queries: 0,        // Not tracked yet
+            memory_type_counts,
+            avg_phi,
+            oldest_timestamp_ms: oldest_timestamp_ms as u64,
+            newest_timestamp_ms: newest_timestamp_ms as u64,
+            backend_status,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -512,5 +633,50 @@ mod tests {
 
         // Clean up
         let _ = std::fs::remove_file(&db_path);
+    }
+
+    #[tokio::test]
+    async fn test_sqlite_stats() {
+        let db = SqliteMemory::in_memory().unwrap();
+
+        // Initial stats should show empty database
+        let stats = db.stats().await.unwrap();
+        assert_eq!(stats.total_records, 0);
+        assert_eq!(stats.backend_status, "in_memory");
+        assert!(stats.page_size > 0);
+
+        // Store some memories
+        for i in 0..5 {
+            let record = MemoryRecord {
+                id: format!("stats-test-{}", i),
+                encoding: HV16::random(i as u64),
+                timestamp_ms: 1000000000 + i as u64 * 1000,
+                memory_type: if i % 2 == 0 { MemoryType::Episodic } else { MemoryType::Semantic },
+                content: format!("Test memory {}", i),
+                valence: 0.5,
+                arousal: 0.5,
+                phi: 0.5 + i as f64 * 0.1,
+                topics: vec!["test".to_string()],
+                metadata: "{}".to_string(),
+            };
+            db.store(record).await.unwrap();
+        }
+
+        // Stats should reflect stored data
+        let stats = db.stats().await.unwrap();
+        assert_eq!(stats.total_records, 5);
+        assert!(stats.database_size_bytes > 0);
+
+        // Check memory type distribution
+        assert!(!stats.memory_type_counts.is_empty());
+        let total_type_count: usize = stats.memory_type_counts.iter().map(|(_, c)| c).sum();
+        assert_eq!(total_type_count, 5);
+
+        // Check phi average (0.5 + 0.6 + 0.7 + 0.8 + 0.9) / 5 = 0.7
+        assert!((stats.avg_phi - 0.7).abs() < 0.01);
+
+        // Check timestamp range
+        assert_eq!(stats.oldest_timestamp_ms, 1000000000);
+        assert_eq!(stats.newest_timestamp_ms, 1000004000);
     }
 }
