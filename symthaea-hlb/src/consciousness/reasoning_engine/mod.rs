@@ -25,9 +25,11 @@
 
 pub mod types;
 pub mod narrative;
+pub mod telemetry;
 
 pub use types::{ReasoningContext, ReasoningResult, ReasoningEvent, PosthocOutcome};
 pub use narrative::generate_narrative;
+pub use telemetry::{TelemetrySink, TelemetryError, TelemetryExporter, JsonLinesSink, CsvSink, MultiSink};
 
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -44,6 +46,11 @@ use crate::consciousness::temporal_planning::{
 use crate::consciousness::counterfactual::{
     CausalDAG, CausalQuery, CounterfactualReasoner, CausalQueryOutcome,
 };
+
+#[cfg(feature = "magi_loop")]
+use crate::consciousness::recursive_improvement::DreamFeedbackBridge;
+#[cfg(feature = "magi_loop")]
+use crate::consciousness::temporal_planning::dream_integration::apply_dream_priors;
 
 /// The Conscious Reasoning Engine.
 ///
@@ -66,6 +73,12 @@ pub struct ConsciousReasoningEngine {
     pending_posthoc: Option<PosthocOutcome>,
     /// Simulation state for MCTS (updated externally or from defaults).
     simulation_state: Option<ForkedState>,
+    /// Dream feedback bridge for retroactive self-improvement (magi_loop feature).
+    #[cfg(feature = "magi_loop")]
+    dream_bridge: Option<DreamFeedbackBridge>,
+    /// Context hash for dream prior lookups.
+    #[cfg(feature = "magi_loop")]
+    context_hash: u64,
 }
 
 impl ConsciousReasoningEngine {
@@ -80,7 +93,29 @@ impl ConsciousReasoningEngine {
             max_events: 100,
             pending_posthoc: None,
             simulation_state: None,
+            #[cfg(feature = "magi_loop")]
+            dream_bridge: None,
+            #[cfg(feature = "magi_loop")]
+            context_hash: 0,
         }
+    }
+
+    /// Set the dream feedback bridge for retroactive self-improvement.
+    #[cfg(feature = "magi_loop")]
+    pub fn set_dream_bridge(&mut self, bridge: DreamFeedbackBridge) {
+        self.dream_bridge = Some(bridge);
+    }
+
+    /// Get the dream feedback bridge.
+    #[cfg(feature = "magi_loop")]
+    pub fn dream_bridge(&self) -> Option<&DreamFeedbackBridge> {
+        self.dream_bridge.as_ref()
+    }
+
+    /// Set the context hash for dream prior lookups.
+    #[cfg(feature = "magi_loop")]
+    pub fn set_context_hash(&mut self, hash: u64) {
+        self.context_hash = hash;
     }
 
     /// Set the simulation state for MCTS planning.
@@ -193,6 +228,18 @@ impl ConsciousReasoningEngine {
                 .cloned()
                 .unwrap_or_else(|| default_simulation_state());
 
+            // Apply dream priors to boost actions based on retroactive feedback
+            #[cfg(feature = "magi_loop")]
+            let actions = {
+                let mut actions = ctx.available_actions.clone();
+                if let Some(ref bridge) = self.dream_bridge {
+                    apply_dream_priors(&mut actions, bridge, self.context_hash);
+                }
+                actions
+            };
+            #[cfg(not(feature = "magi_loop"))]
+            let actions = &ctx.available_actions;
+
             if r >= thresholds::R_PLAN_MIN {
                 // Full MCTS
                 let config = if budget.tier == BudgetTier::Tier1 {
@@ -201,11 +248,19 @@ impl ConsciousReasoningEngine {
                     MctsConfig::tier2()
                 };
                 event.did_simulate = true;
-                MctsPlanner::plan(&sim_state, &ctx.available_actions, &config, &budget)
+                #[cfg(feature = "magi_loop")]
+                let result = MctsPlanner::plan(&sim_state, &actions, &config, &budget);
+                #[cfg(not(feature = "magi_loop"))]
+                let result = MctsPlanner::plan(&sim_state, actions, &config, &budget);
+                result
             } else if r >= thresholds::R_EPISTEMIC_MIN {
                 // Epistemic rollouts only
                 event.did_simulate = true;
-                MctsPlanner::epistemic_rollout(&sim_state, &ctx.available_actions, &budget)
+                #[cfg(feature = "magi_loop")]
+                let result = MctsPlanner::epistemic_rollout(&sim_state, &actions, &budget);
+                #[cfg(not(feature = "magi_loop"))]
+                let result = MctsPlanner::epistemic_rollout(&sim_state, actions, &budget);
+                result
             } else {
                 MctsResult::no_plan()
             }

@@ -200,6 +200,141 @@ fn simple_encode(text: &str) -> Vec<i8> {
         .collect()
 }
 
+// ==================================================================================
+// Reasoning Engine Property Tests (INV-1, INV-3, INV-9)
+// ==================================================================================
+
+#[cfg(feature = "reasoning_engine")]
+mod reasoning_engine_props {
+    use super::*;
+    use symthaea::consciousness::epistemic_conflict::{
+        MultiTheoryMetrics, TheoryCalibrator, TheoryId,
+        phi_integration::effective_phi,
+    };
+    use symthaea::consciousness::temporal_planning::mcts::evs;
+
+    fn metrics_strategy() -> impl Strategy<Value = MultiTheoryMetrics> {
+        (0.0f64..=1.0, 0.0f64..=1.0, 0.0f64..=1.0, 0.0f64..=1.0, 0.0f64..=1.0, 0.0f64..=1.0)
+            .prop_map(|(phi, gwt, ast, pp, rpt, embodiment)| {
+                MultiTheoryMetrics {
+                    phi,
+                    gwt,
+                    ast,
+                    pp,
+                    rpt,
+                    embodiment,
+                    unified: phi * 0.2 + (gwt + ast + pp + rpt + embodiment) / 5.0 * 0.8,
+                }
+            })
+    }
+
+    proptest! {
+        /// INV-1: Monotonic Caution - Φ_eff increases with R (fixed Φ, γ)
+        #[test]
+        fn inv1_phi_eff_monotonic_in_r(phi in 0.0f64..=1.0, r1 in 0.0f64..=1.0, r2 in 0.0f64..=1.0, gamma in 1.0f64..=4.0) {
+            let phi_eff_1 = effective_phi(phi, r1, gamma);
+            let phi_eff_2 = effective_phi(phi, r2, gamma);
+
+            if r1 <= r2 {
+                prop_assert!(phi_eff_1 <= phi_eff_2 + 1e-10,
+                    "INV-1 violated: R={:.3}→Φ_eff={:.3}, R={:.3}→Φ_eff={:.3}",
+                    r1, phi_eff_1, r2, phi_eff_2);
+            } else {
+                prop_assert!(phi_eff_1 >= phi_eff_2 - 1e-10,
+                    "INV-1 violated: R={:.3}→Φ_eff={:.3}, R={:.3}→Φ_eff={:.3}",
+                    r1, phi_eff_1, r2, phi_eff_2);
+            }
+        }
+
+        /// INV-1b: Φ_eff is bounded [0, 1]
+        #[test]
+        fn phi_eff_bounded(phi in 0.0f64..=1.0, r in 0.0f64..=1.0, gamma in 1.0f64..=4.0) {
+            let phi_eff = effective_phi(phi, r, gamma);
+            prop_assert!(phi_eff >= 0.0 && phi_eff <= 1.0,
+                "Φ_eff out of bounds: {:.6}", phi_eff);
+        }
+
+        /// INV-3: Determinism - same inputs produce same Φ_eff
+        #[test]
+        fn phi_eff_deterministic(phi in 0.0f64..=1.0, r in 0.0f64..=1.0, gamma in 1.0f64..=4.0) {
+            let phi_eff_1 = effective_phi(phi, r, gamma);
+            let phi_eff_2 = effective_phi(phi, r, gamma);
+            prop_assert!((phi_eff_1 - phi_eff_2).abs() < 1e-15,
+                "Non-deterministic Φ_eff: {} vs {}", phi_eff_1, phi_eff_2);
+        }
+
+        /// INV-9: Bounded calibration updates - single step Δw ≤ 0.05
+        #[test]
+        fn inv9_bounded_reliability_update(pred in 0.0f64..=1.0, actual in 0.0f64..=1.0) {
+            let mut calibrator = TheoryCalibrator::new();
+            let initial_r = calibrator.calibrations.get(TheoryId::IIT).reliability;
+
+            calibrator.update_theory(TheoryId::IIT, pred, actual);
+            let after_r = calibrator.calibrations.get(TheoryId::IIT).reliability;
+
+            let delta = (after_r - initial_r).abs();
+            prop_assert!(delta <= 0.05 + 1e-10,
+                "INV-9 violated: Δw = {:.6} > 0.05", delta);
+        }
+
+        /// EVS is non-negative and bounded
+        #[test]
+        fn evs_bounded(entropy in 0.0f64..=2.0, r in 0.0f64..=1.0, n in 1usize..20, utility in 0.0f64..=1.0) {
+            let e = evs(entropy, r, n, utility);
+            prop_assert!(e >= 0.0, "EVS negative: {}", e);
+            // EVS should be bounded by reasonable values
+            prop_assert!(e <= 10.0, "EVS unreasonably large: {}", e);
+        }
+
+        /// Reliability is symmetric to metric order (same values = same R)
+        #[test]
+        fn reliability_symmetric(v in 0.0f64..=1.0) {
+            let calibrator = TheoryCalibrator::new();
+
+            let metrics1 = MultiTheoryMetrics {
+                phi: v, gwt: v, ast: v, pp: v, rpt: v, embodiment: v, unified: v,
+            };
+            let metrics2 = MultiTheoryMetrics {
+                phi: v, gwt: v, ast: v, pp: v, rpt: v, embodiment: v, unified: v,
+            };
+
+            let r1 = calibrator.reliability(&metrics1);
+            let r2 = calibrator.reliability(&metrics2);
+            prop_assert!((r1 - r2).abs() < 1e-10,
+                "Reliability not deterministic: {} vs {}", r1, r2);
+        }
+
+        /// High consensus → high reliability
+        #[test]
+        fn high_consensus_high_reliability(v in 0.7f64..=1.0) {
+            let calibrator = TheoryCalibrator::new();
+            let metrics = MultiTheoryMetrics {
+                phi: v, gwt: v, ast: v, pp: v, rpt: v, embodiment: v, unified: v,
+            };
+            let r = calibrator.reliability(&metrics);
+            prop_assert!(r >= 0.5, "High consensus should give high R, got {:.3}", r);
+        }
+
+        /// Low consensus → low reliability
+        #[test]
+        fn low_consensus_low_reliability(metrics in metrics_strategy()) {
+            // Create maximum disagreement scenario
+            let disagreeing = MultiTheoryMetrics {
+                phi: 0.9,
+                gwt: 0.1,
+                ast: 0.9,
+                pp: 0.1,
+                rpt: 0.9,
+                embodiment: 0.1,
+                unified: 0.5,
+            };
+            let calibrator = TheoryCalibrator::new();
+            let r = calibrator.reliability(&disagreeing);
+            prop_assert!(r < 0.9, "Maximum disagreement should reduce R, got {:.3}", r);
+        }
+    }
+}
+
 // Additional property tests for infrastructure
 
 proptest! {

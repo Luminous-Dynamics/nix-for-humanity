@@ -619,8 +619,8 @@ impl ResolutionExecutor {
                 test_pattern,
                 pass_threshold,
             } => {
-                // Use as_ref() to avoid cloning the Option's inner String
-                let resolver = TestSuiteResolver::cargo_test(test_pattern.as_ref().map(String::as_str).map(str::to_owned))
+                // Wrap in Some since cargo_test expects Option<String>
+                let resolver = TestSuiteResolver::cargo_test(Some(test_pattern.clone()))
                     .with_pass_threshold(*pass_threshold);
                 resolver.execute(timeout)
             }
@@ -728,7 +728,7 @@ impl ResolutionExecutor {
         // Directly match on the authority instead of cloning the prediction
         match authority {
             ResolutionAuthority::TestSuite { test_pattern, pass_threshold } => {
-                let resolver = TestSuiteResolver::cargo_test(test_pattern.clone())
+                let resolver = TestSuiteResolver::cargo_test(Some(test_pattern.clone()))
                     .with_pass_threshold(*pass_threshold);
                 resolver.execute(timeout)
             }
