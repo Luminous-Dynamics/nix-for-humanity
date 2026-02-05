@@ -3720,6 +3720,10 @@ pub struct CognitiveLoopService {
     /// and tool gating with tiered degradation (Tier 0/1/2).
     #[cfg(feature = "reasoning_engine")]
     reasoning_engine: Option<crate::consciousness::reasoning_engine::ConsciousReasoningEngine>,
+
+    /// Telemetry exporter for persisting ReasoningEvents to disk.
+    #[cfg(feature = "reasoning_engine")]
+    telemetry_exporter: Option<crate::consciousness::reasoning_engine::TelemetryExporter>,
 }
 
 impl CognitiveLoopService {
@@ -3907,12 +3911,33 @@ impl CognitiveLoopService {
             phi_episodic_replay,
             #[cfg(feature = "reasoning_engine")]
             reasoning_engine: Some(crate::consciousness::reasoning_engine::ConsciousReasoningEngine::new()),
+            #[cfg(feature = "reasoning_engine")]
+            telemetry_exporter: None, // Set via set_telemetry_exporter()
         })
     }
 
     /// Get the current temporal backend type
     pub fn temporal_backend(&self) -> TemporalBackend {
         self.temporal_network.backend_type()
+    }
+
+    /// Set a telemetry exporter for persisting ReasoningEvents.
+    ///
+    /// Example:
+    /// ```rust,ignore
+    /// use symthaea::consciousness::reasoning_engine::{JsonLinesSink, TelemetryExporter};
+    /// let sink = JsonLinesSink::new("reasoning_events.jsonl")?;
+    /// service.set_telemetry_exporter(TelemetryExporter::new(Box::new(sink)));
+    /// ```
+    #[cfg(feature = "reasoning_engine")]
+    pub fn set_telemetry_exporter(&mut self, exporter: crate::consciousness::reasoning_engine::TelemetryExporter) {
+        self.telemetry_exporter = Some(exporter);
+    }
+
+    /// Get access to the reasoning engine for direct queries.
+    #[cfg(feature = "reasoning_engine")]
+    pub fn reasoning_engine(&self) -> Option<&crate::consciousness::reasoning_engine::ConsciousReasoningEngine> {
+        self.reasoning_engine.as_ref()
     }
 
     /// Process a pre-computed text embedding through the neural bridge and
@@ -4459,7 +4484,20 @@ impl CognitiveLoopService {
                 cycle_id: self.stats.total_cycles as u64,
             };
 
-            let _reasoning_result = reasoning_engine.reason(&reasoning_ctx);
+            let reasoning_result = reasoning_engine.reason(&reasoning_ctx);
+
+            // Export telemetry if exporter is configured
+            if let Some(ref exporter) = self.telemetry_exporter {
+                if let Some(event) = reasoning_engine.last_event() {
+                    let _ = exporter.export(event);
+                }
+            }
+
+            // Use reasoning result to modulate behavior
+            // Higher Φ_eff = more confident, lower = more cautious
+            self.prediction_confidence = (self.prediction_confidence * 0.9
+                + reasoning_result.phi_eff as f32 * 0.1)
+                .clamp(0.0, 1.0);
         }
 
         // Get adaptive learning rate (respects pause_learning and all modulations)

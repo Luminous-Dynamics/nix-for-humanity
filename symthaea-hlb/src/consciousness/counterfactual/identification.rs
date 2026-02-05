@@ -473,6 +473,8 @@ impl CausalReferenceHarness {
     }
 
     /// Build the standard test suite with known causal DAGs.
+    ///
+    /// Contains textbook examples from Pearl's causal inference literature.
     fn build_test_suite() -> Vec<(CausalDAG, CausalQuery, f64)> {
         let mut suite = Vec::new();
 
@@ -496,6 +498,46 @@ impl CausalReferenceHarness {
             vec![(0, 1)],
         );
         suite.push((direct, CausalQuery { treatment: 0, outcome: 1, conditioning: vec![] }, 0.0));
+
+        // Test 4: Fork with direct effect: X ← Z → Y, X → Y
+        // Identifiable via backdoor adjustment on Z
+        let fork_direct = CausalDAG::new(
+            vec!["X".into(), "Y".into(), "Z".into()],
+            vec![(2, 0), (2, 1), (0, 1)],
+        );
+        suite.push((fork_direct, CausalQuery { treatment: 0, outcome: 1, conditioning: vec![] }, 0.0));
+
+        // Test 5: Diamond: X → A, X → B, A → Y, B → Y
+        // Identifiable: no confounders
+        let diamond = CausalDAG::new(
+            vec!["X".into(), "A".into(), "B".into(), "Y".into()],
+            vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+        );
+        suite.push((diamond, CausalQuery { treatment: 0, outcome: 3, conditioning: vec![] }, 0.0));
+
+        // Test 6: M-bias with direct effect: A → X, A → M, B → M, B → Y, X → Y
+        // Identifiable: A is a valid backdoor adjustment set
+        let m_bias = CausalDAG::new(
+            vec!["X".into(), "Y".into(), "A".into(), "B".into(), "M".into()],
+            vec![(2, 0), (2, 4), (3, 4), (3, 1), (0, 1)],
+        );
+        suite.push((m_bias, CausalQuery { treatment: 0, outcome: 1, conditioning: vec![] }, 0.0));
+
+        // Test 7: Sequential mediator X → M1 → M2 → Y
+        // Identifiable: no confounders
+        let seq_med = CausalDAG::new(
+            vec!["X".into(), "M1".into(), "M2".into(), "Y".into()],
+            vec![(0, 1), (1, 2), (2, 3)],
+        );
+        suite.push((seq_med, CausalQuery { treatment: 0, outcome: 3, conditioning: vec![] }, 0.0));
+
+        // Test 8: Parallel mediators X → M1 → Y, X → M2 → Y
+        // Identifiable: no confounders
+        let par_med = CausalDAG::new(
+            vec!["X".into(), "M1".into(), "M2".into(), "Y".into()],
+            vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+        );
+        suite.push((par_med, CausalQuery { treatment: 0, outcome: 3, conditioning: vec![] }, 0.0));
 
         suite
     }

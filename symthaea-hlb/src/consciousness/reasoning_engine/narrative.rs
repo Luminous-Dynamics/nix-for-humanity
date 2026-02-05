@@ -4,16 +4,158 @@
 //! Narrative generation is NOT budget-critical — it runs only in
 //! Tier 2 when remaining budget > 3ms, and is always deferred if
 //! budget is tight.
+//!
+//! ## Caching
+//!
+//! Narratives are cached based on a hash of the input parameters.
+//! If the consciousness state hasn't changed significantly, the
+//! cached narrative is returned to save computation.
 
 use crate::consciousness::epistemic_conflict::{ConflictKind, ConflictMatrix};
 use crate::consciousness::tool_gate::types::GateResult;
 use crate::consciousness::temporal_planning::types::MctsResult;
 use crate::consciousness::counterfactual::CausalQueryOutcome;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+/// Global narrative cache (thread-safe via Mutex).
+static NARRATIVE_CACHE: Mutex<Option<NarrativeCache>> = Mutex::new(None);
+
+/// Narrative cache for avoiding redundant generation.
+#[derive(Debug)]
+pub struct NarrativeCache {
+    /// Cache entries: hash → (narrative, generation_count).
+    entries: HashMap<u64, (String, u64)>,
+    /// Maximum cache size.
+    max_size: usize,
+    /// Total cache hits.
+    pub hits: u64,
+    /// Total cache misses.
+    pub misses: u64,
+}
+
+impl NarrativeCache {
+    pub fn new(max_size: usize) -> Self {
+        Self {
+            entries: HashMap::with_capacity(max_size),
+            max_size,
+            hits: 0,
+            misses: 0,
+        }
+    }
+
+    /// Get a cached narrative if available.
+    pub fn get(&mut self, hash: u64) -> Option<String> {
+        if let Some((narrative, count)) = self.entries.get_mut(&hash) {
+            *count += 1;
+            self.hits += 1;
+            Some(narrative.clone())
+        } else {
+            self.misses += 1;
+            None
+        }
+    }
+
+    /// Insert a narrative into the cache.
+    pub fn insert(&mut self, hash: u64, narrative: String) {
+        if self.entries.len() >= self.max_size {
+            // Evict least-used entry
+            if let Some((&key, _)) = self.entries.iter().min_by_key(|(_, (_, count))| *count) {
+                self.entries.remove(&key);
+            }
+        }
+        self.entries.insert(hash, (narrative, 1));
+    }
+
+    /// Cache hit rate.
+    pub fn hit_rate(&self) -> f64 {
+        let total = self.hits + self.misses;
+        if total == 0 {
+            0.0
+        } else {
+            self.hits as f64 / total as f64
+        }
+    }
+}
+
+impl Default for NarrativeCache {
+    fn default() -> Self {
+        Self::new(64) // Default cache size
+    }
+}
+
+/// Compute a hash for narrative caching.
+fn compute_narrative_hash(
+    phi_eff: f64,
+    reliability: f64,
+    dominant_kind: Option<ConflictKind>,
+    plan_iterations: Option<u32>,
+    gate_allowed: Option<bool>,
+) -> u64 {
+    use std::hash::{Hash, Hasher};
+    use std::collections::hash_map::DefaultHasher;
+
+    let mut hasher = DefaultHasher::new();
+
+    // Quantize phi_eff and reliability to reduce cache misses for tiny changes
+    let phi_bucket = (phi_eff * 20.0) as u64; // 5% buckets
+    let r_bucket = (reliability * 20.0) as u64;
+
+    phi_bucket.hash(&mut hasher);
+    r_bucket.hash(&mut hasher);
+    dominant_kind.map(|k| k as u8).hash(&mut hasher);
+    plan_iterations.hash(&mut hasher);
+    gate_allowed.hash(&mut hasher);
+
+    hasher.finish()
+}
 
 /// Generate a narrative from reasoning components.
 ///
 /// Returns `None` if there's nothing interesting to narrate.
+/// Uses caching to avoid regenerating identical narratives.
 pub fn generate_narrative(
+    phi_eff: f64,
+    reliability: f64,
+    conflicts: &ConflictMatrix,
+    plan: Option<&MctsResult>,
+    gate: Option<&GateResult>,
+    counterfactual: Option<&CausalQueryOutcome>,
+) -> Option<String> {
+    // Check cache first
+    let hash = compute_narrative_hash(
+        phi_eff,
+        reliability,
+        conflicts.dominant_kind,
+        plan.map(|p| p.iterations),
+        gate.map(|g| g.is_allowed()),
+    );
+
+    // Try to get from cache
+    {
+        let mut cache_guard = NARRATIVE_CACHE.lock().ok()?;
+        let cache = cache_guard.get_or_insert_with(NarrativeCache::default);
+        if let Some(cached) = cache.get(hash) {
+            return Some(cached);
+        }
+    }
+
+    // Generate narrative
+    let narrative = generate_narrative_uncached(phi_eff, reliability, conflicts, plan, gate, counterfactual);
+
+    // Store in cache
+    if let Some(ref text) = narrative {
+        if let Ok(mut cache_guard) = NARRATIVE_CACHE.lock() {
+            let cache = cache_guard.get_or_insert_with(NarrativeCache::default);
+            cache.insert(hash, text.clone());
+        }
+    }
+
+    narrative
+}
+
+/// Generate narrative without caching (internal implementation).
+fn generate_narrative_uncached(
     phi_eff: f64,
     reliability: f64,
     conflicts: &ConflictMatrix,

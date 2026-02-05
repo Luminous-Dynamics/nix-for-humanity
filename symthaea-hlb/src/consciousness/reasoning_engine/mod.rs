@@ -52,6 +52,56 @@ use crate::consciousness::recursive_improvement::DreamFeedbackBridge;
 #[cfg(feature = "magi_loop")]
 use crate::consciousness::temporal_planning::dream_integration::apply_dream_priors;
 
+/// EVS utility tracker for calibrating simulation value.
+#[derive(Debug, Clone, Default)]
+pub struct EvsUtilityTracker {
+    /// Total simulations performed.
+    pub total_simulations: u64,
+    /// Simulations where outcome improved vs. no-simulation baseline.
+    pub improved_outcomes: u64,
+    /// Running average of simulation utility.
+    pub avg_utility: f64,
+    /// Exponential moving average decay factor.
+    decay: f64,
+}
+
+impl EvsUtilityTracker {
+    pub fn new() -> Self {
+        Self {
+            total_simulations: 0,
+            improved_outcomes: 0,
+            avg_utility: 0.5, // Prior: simulation is moderately useful
+            decay: 0.95,
+        }
+    }
+
+    /// Record whether simulation improved the outcome.
+    pub fn record(&mut self, simulated: bool, outcome_improved: bool) {
+        if simulated {
+            self.total_simulations += 1;
+            let utility = if outcome_improved { 1.0 } else { 0.0 };
+            self.avg_utility = self.decay * self.avg_utility + (1.0 - self.decay) * utility;
+            if outcome_improved {
+                self.improved_outcomes += 1;
+            }
+        }
+    }
+
+    /// Get the current utility estimate for simulation.
+    pub fn utility(&self) -> f64 {
+        self.avg_utility
+    }
+
+    /// Get the improvement rate.
+    pub fn improvement_rate(&self) -> f64 {
+        if self.total_simulations == 0 {
+            0.5 // Prior
+        } else {
+            self.improved_outcomes as f64 / self.total_simulations as f64
+        }
+    }
+}
+
 /// The Conscious Reasoning Engine.
 ///
 /// Composes all Phase A-C subsystems into a unified reasoning cycle
@@ -73,6 +123,10 @@ pub struct ConsciousReasoningEngine {
     pending_posthoc: Option<PosthocOutcome>,
     /// Simulation state for MCTS (updated externally or from defaults).
     simulation_state: Option<ForkedState>,
+    /// EVS utility tracker for calibrating simulation value.
+    evs_tracker: EvsUtilityTracker,
+    /// Whether the last cycle simulated (for posthoc tracking).
+    last_simulated: bool,
     /// Dream feedback bridge for retroactive self-improvement (magi_loop feature).
     #[cfg(feature = "magi_loop")]
     dream_bridge: Option<DreamFeedbackBridge>,
@@ -93,11 +147,18 @@ impl ConsciousReasoningEngine {
             max_events: 100,
             pending_posthoc: None,
             simulation_state: None,
+            evs_tracker: EvsUtilityTracker::new(),
+            last_simulated: false,
             #[cfg(feature = "magi_loop")]
             dream_bridge: None,
             #[cfg(feature = "magi_loop")]
             context_hash: 0,
         }
+    }
+
+    /// Get the EVS utility tracker.
+    pub fn evs_tracker(&self) -> &EvsUtilityTracker {
+        &self.evs_tracker
     }
 
     /// Set the dream feedback bridge for retroactive self-improvement.
@@ -131,6 +192,9 @@ impl ConsciousReasoningEngine {
             prediction_error,
         });
         self.calibrator.record_outcome(gate_passed, outcome_good);
+
+        // Track EVS utility: did simulation help?
+        self.evs_tracker.record(self.last_simulated, outcome_good);
     }
 
     /// Get the current calibrator (for external reads).
@@ -208,16 +272,19 @@ impl ConsciousReasoningEngine {
             event.wall_time_us = wall_time_us;
             event.budget_tier = BudgetTier::Tier0;
             event.tier_selected_reason = tier_reason(&budget, r);
+            self.last_simulated = false;
             self.emit_event(event);
             return ReasoningResult::tier0(phi_eff, r, gamma, conflicts, gate, wall_time_us);
         }
 
         // ── STEP 3: DECIDE (should simulate?) ──────────────────────────
+        // Factor in learned EVS utility from past simulation outcomes
+        let utility_prior = ctx.recent_utility * self.evs_tracker.utility();
         let evs_val = evs(
             conflicts.total_entropy,
             r,
             ctx.available_actions.len(),
-            ctx.recent_utility,
+            utility_prior,
         );
         event.evs = evs_val;
 
@@ -296,6 +363,7 @@ impl ConsciousReasoningEngine {
             event.budget_tier = BudgetTier::Tier1;
             event.budget_exceeded = budget.exceeded();
             event.tier_selected_reason = tier_reason(&budget, r);
+            self.last_simulated = event.did_simulate;
             self.emit_event(event);
             return ReasoningResult::tier1(
                 phi_eff, r, gamma, conflicts, plan, gate, wall_time_us, budget.exceeded(),
@@ -334,6 +402,7 @@ impl ConsciousReasoningEngine {
         event.budget_tier = BudgetTier::Tier2;
         event.budget_exceeded = budget.exceeded();
         event.tier_selected_reason = tier_reason(&budget, r);
+        self.last_simulated = event.did_simulate;
         self.emit_event(event);
 
         ReasoningResult::tier2(
