@@ -2,7 +2,7 @@
 
 **Version:** 0.5.0
 **Last Updated:** February 2026
-**Total Features:** 52
+**Total Features:** 52 (Audited: Feb 2026 - all verified in use)
 
 ---
 
@@ -99,24 +99,35 @@ These are compile guards only - dependencies not yet added:
 
 These enable specific modules and examples:
 
-| Feature | Purpose |
-|---------|---------|
-| `integration_module` | Integration patterns |
-| `observability_module` | Metrics and tracing |
-| `full_consciousness` | Extended consciousness submodules |
-| `full_perception` | Extended perception submodules |
-| `full_language` | Advanced grammar/parsers |
-| `benchmarks_module` | Benchmark examples |
-| `consciousness_module` | Consciousness examples |
-| `embeddings_module` | Embedding examples |
-| `language_module` | Language examples |
-| `brain_module` | Brain subsystem examples |
-| `soul_module` | Soul/identity examples |
-| `school_module` | Learning examples |
-| `physiology_module` | Physiology integration |
-| `magi_loop` | MAGI world-grounded prediction |
-| `partnership_module` | Phi_dyad computation |
-| `web_research_module` | Epistemic verification |
+| Feature | Purpose | Used In |
+|---------|---------|---------|
+| `integration_module` | Integration patterns | lib.rs (1 cfg) |
+| `observability_module` | Metrics and tracing | lib.rs (1 cfg) |
+| `full_consciousness` | Extended consciousness submodules | consciousness/mod.rs, brain/mod.rs (36 cfg) |
+| `full_perception` | Extended perception submodules | perception/mod.rs (9 cfg) |
+| `full_language` | Advanced grammar/parsers | language/mod.rs (7 cfg) |
+| `benchmarks_module` | Benchmark examples | [[example]] required-features |
+| `consciousness_module` | Consciousness examples | [[example]] required-features |
+| `embeddings_module` | Embedding examples | [[example]] required-features |
+| `language_module` | Language examples | [[example]] required-features |
+| `brain_module` | Brain subsystem examples | [[example]] required-features |
+| `soul_module` | Soul/identity examples | [[example]] required-features |
+| `school_module` | Learning examples | [[example]] required-features |
+| `school_lookahead` | CfC-based lookahead in school | school/mod.rs (2 cfg) |
+| `physiology_module` | Physiology integration in school | school/mod.rs (2 cfg) |
+| `mycelix_module` | Mycelix governance hooks | brain/mod.rs, consciousness/mod.rs (2 cfg) |
+| `databases_module` | Database backends in experience | experience/mod.rs (3 cfg) |
+| `magi_loop` | MAGI world-grounded prediction | symthaea.rs, dream modules (30 cfg) |
+| `epistemic_conflict` | Conflict detection + reliability | consciousness/mod.rs, language/ (6 cfg) |
+| `conscious_tool_gate` | Consciousness-gated tool use | consciousness/mod.rs (1 cfg) |
+| `temporal_planning` | ForkedState + MCTS + EVS | consciousness/mod.rs (1 cfg) |
+| `counterfactual` | Causal queries with harness | consciousness/mod.rs (1 cfg) |
+| `reasoning_engine` | Full ConsciousReasoningEngine | consciousness/mod.rs (1 cfg) |
+| `nvml` | NVIDIA GPU monitoring | substrate/mod.rs (1 cfg) |
+| `network` | Mycelix network client | mycelix/network.rs (3 cfg) |
+| `partnership_module` | Phi_dyad computation | [[example]] required-features |
+| `web_research_module` | Epistemic verification | lib.rs (1 cfg) |
+| `webcam` | Live webcam capture | perception/video/ (5 cfg) |
 
 ---
 
@@ -194,6 +205,12 @@ neural-bridge
 desktop
 ├── notifications (zbus)
 └── systemd (libsystemd)
+
+reasoning_engine
+├── epistemic_conflict
+├── conscious_tool_gate (epistemic_conflict)
+├── temporal_planning (epistemic_conflict, magi_loop)
+└── counterfactual (epistemic_conflict)
 ```
 
 ---
