@@ -304,6 +304,52 @@ pub struct SensitivityIndex {
     pub rank: usize,
 }
 
+/// Morris method elementary effect for a parameter.
+///
+/// The Morris (1991) screening method efficiently identifies which parameters
+/// have important effects on the output.
+#[derive(Debug, Clone)]
+pub struct MorrisEffect {
+    /// Parameter name
+    pub parameter: String,
+    /// μ* — absolute mean of elementary effects (importance)
+    pub mu_star: f64,
+    /// σ — standard deviation of elementary effects (nonlinearity/interactions)
+    pub sigma: f64,
+    /// Importance rank
+    pub rank: usize,
+}
+
+/// Single entry in a tornado (one-at-a-time) diagram.
+#[derive(Debug, Clone)]
+pub struct TornadoEntry {
+    /// Parameter name
+    pub parameter: String,
+    /// Output value when parameter is at 5th percentile
+    pub output_low: f64,
+    /// Output value when parameter is at 95th percentile
+    pub output_high: f64,
+    /// Swing (output_high - output_low)
+    pub swing: f64,
+    /// Importance rank (by swing)
+    pub rank: usize,
+}
+
+/// Feasibility probability decomposition.
+#[derive(Debug, Clone)]
+pub struct FeasibilityProbability {
+    /// Probability of meeting dose safety limit
+    pub p_dose_safe: f64,
+    /// Probability of meeting temperature safety limit
+    pub p_temp_safe: f64,
+    /// Probability of meeting lifetime requirement
+    pub p_lifetime_met: f64,
+    /// Overall feasibility probability (joint)
+    pub p_feasible: f64,
+    /// Primary failure mode (most likely to fail)
+    pub primary_failure_mode: String,
+}
+
 /// Monte Carlo analysis results
 #[derive(Debug, Clone)]
 pub struct MonteCarloResults {
@@ -323,6 +369,8 @@ pub struct MonteCarloResults {
     pub feasibility_rate: f64,
     /// Sensitivity indices
     pub sensitivities: Vec<SensitivityIndex>,
+    /// Feasibility probability decomposition
+    pub feasibility: Option<FeasibilityProbability>,
 }
 
 impl MonteCarloResults {
@@ -451,6 +499,36 @@ impl UncertaintyEngine {
         // Calculate sensitivities
         let sensitivities = self.calculate_sensitivities(&samples);
 
+        // Compute feasibility probability decomposition
+        let n = n_samples as f64;
+        let p_dose_safe = samples.iter()
+            .filter(|s| s.dose_rate < conditions.max_dose_rate * 1.1)
+            .count() as f64 / n;
+        let p_temp_safe = samples.iter()
+            .filter(|s| s.max_temperature < 1200.0)
+            .count() as f64 / n;
+        let p_lifetime_met = samples.iter()
+            .filter(|s| s.lifetime_years > 10.0)
+            .count() as f64 / n;
+
+        let failure_rates = [
+            (1.0 - p_dose_safe, "Dose rate exceeds limit"),
+            (1.0 - p_temp_safe, "Temperature exceeds limit"),
+            (1.0 - p_lifetime_met, "Lifetime below minimum"),
+        ];
+        let primary_failure_mode = failure_rates.iter()
+            .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+            .map(|(_, mode)| mode.to_string())
+            .unwrap_or_else(|| "None".to_string());
+
+        let feasibility = FeasibilityProbability {
+            p_dose_safe,
+            p_temp_safe,
+            p_lifetime_met,
+            p_feasible: feasibility_rate,
+            primary_failure_mode,
+        };
+
         MonteCarloResults {
             n_samples,
             samples,
@@ -460,6 +538,7 @@ impl UncertaintyEngine {
             mass_stats,
             feasibility_rate,
             sensitivities,
+            feasibility: Some(feasibility),
         }
     }
 
@@ -571,6 +650,207 @@ impl UncertaintyEngine {
 
         sensitivities
     }
+
+    /// Morris (1991) screening method for global sensitivity analysis.
+    ///
+    /// Generates `n_trajectories` random trajectories through parameter space,
+    /// perturbing one parameter at a time by a fixed grid step (delta).
+    /// Computes elementary effects for each parameter, yielding:
+    /// - μ* (importance): absolute mean of elementary effects
+    /// - σ (nonlinearity/interactions): std dev of elementary effects
+    ///
+    /// The `output_selector` closure extracts a scalar output from a MonteCarloSample.
+    pub fn morris_sensitivity<F>(
+        &self,
+        conditions: &OperatingConditions,
+        n_trajectories: usize,
+        seed: u64,
+        output_selector: F,
+    ) -> Vec<MorrisEffect>
+    where
+        F: Fn(&MonteCarloSample) -> f64,
+    {
+        let mut rng = StdRng::seed_from_u64(seed);
+        let k = self.parameters.parameters.len();
+        let delta = 0.5; // Grid step in normalized [0,1] space
+
+        // For each parameter, collect elementary effects across trajectories
+        let mut effects: Vec<Vec<f64>> = vec![vec![]; k];
+
+        for _ in 0..n_trajectories {
+            // Generate random base point in normalized space [0,1]^k
+            let base: Vec<f64> = (0..k).map(|_| rng.gen::<f64>()).collect();
+
+            // Compute output at base point
+            let base_params = self.normalized_to_actual(&base);
+            let base_sample = self.evaluate_at_params(conditions, &base_params, 0);
+            let base_output = output_selector(&base_sample);
+
+            // Generate random permutation for trajectory direction
+            let mut perm: Vec<usize> = (0..k).collect();
+            for i in (1..k).rev() {
+                let j = rng.gen_range(0..=i);
+                perm.swap(i, j);
+            }
+
+            // Walk along the trajectory, perturbing one parameter at a time
+            let mut current = base.clone();
+            let mut current_output = base_output;
+
+            for &idx in &perm {
+                // Perturb parameter idx by delta
+                let new_val = if current[idx] + delta <= 1.0 {
+                    current[idx] + delta
+                } else {
+                    current[idx] - delta
+                };
+                current[idx] = new_val;
+
+                let params = self.normalized_to_actual(&current);
+                let sample = self.evaluate_at_params(conditions, &params, 0);
+                let new_output = output_selector(&sample);
+
+                // Elementary effect
+                let ee = (new_output - current_output) / delta;
+                effects[idx].push(ee);
+                current_output = new_output;
+            }
+        }
+
+        // Compute Morris statistics
+        let mut morris: Vec<MorrisEffect> = effects.iter().enumerate().map(|(i, ees)| {
+            let n = ees.len() as f64;
+            if n == 0.0 {
+                return MorrisEffect {
+                    parameter: self.parameters.parameters[i].name.clone(),
+                    mu_star: 0.0,
+                    sigma: 0.0,
+                    rank: 0,
+                };
+            }
+            let mu_star = ees.iter().map(|e| e.abs()).sum::<f64>() / n;
+            let mean = ees.iter().sum::<f64>() / n;
+            let sigma = (ees.iter().map(|e| (e - mean).powi(2)).sum::<f64>() / n).sqrt();
+            MorrisEffect {
+                parameter: self.parameters.parameters[i].name.clone(),
+                mu_star,
+                sigma,
+                rank: 0,
+            }
+        }).collect();
+
+        // Rank by μ*
+        morris.sort_by(|a, b| b.mu_star.partial_cmp(&a.mu_star).unwrap());
+        for (i, m) in morris.iter_mut().enumerate() {
+            m.rank = i + 1;
+        }
+
+        morris
+    }
+
+    /// One-at-a-time tornado diagram.
+    ///
+    /// For each parameter, evaluates the output at the 5th and 95th percentile
+    /// bounds while holding all other parameters at nominal. Returns entries
+    /// sorted by swing (high - low).
+    pub fn tornado_diagram<F>(
+        &self,
+        conditions: &OperatingConditions,
+        output_selector: F,
+    ) -> Vec<TornadoEntry>
+    where
+        F: Fn(&MonteCarloSample) -> f64,
+    {
+        // Baseline: all parameters at nominal
+        let nominal_params: HashMap<String, f64> = self.parameters.parameters.iter()
+            .map(|p| (p.name.clone(), p.nominal))
+            .collect();
+        let baseline_sample = self.evaluate_at_params(conditions, &nominal_params, 0);
+        let _baseline_output = output_selector(&baseline_sample);
+
+        let mut entries: Vec<TornadoEntry> = self.parameters.parameters.iter().map(|param| {
+            let (low_bound, high_bound) = param.confidence_interval_95();
+
+            // Evaluate at low bound
+            let mut low_params = nominal_params.clone();
+            low_params.insert(param.name.clone(), low_bound);
+            let low_sample = self.evaluate_at_params(conditions, &low_params, 0);
+            let output_low = output_selector(&low_sample);
+
+            // Evaluate at high bound
+            let mut high_params = nominal_params.clone();
+            high_params.insert(param.name.clone(), high_bound);
+            let high_sample = self.evaluate_at_params(conditions, &high_params, 0);
+            let output_high = output_selector(&high_sample);
+
+            let swing = (output_high - output_low).abs();
+
+            TornadoEntry {
+                parameter: param.name.clone(),
+                output_low,
+                output_high,
+                swing,
+                rank: 0,
+            }
+        }).collect();
+
+        // Sort by swing (descending)
+        entries.sort_by(|a, b| b.swing.partial_cmp(&a.swing).unwrap());
+        for (i, entry) in entries.iter_mut().enumerate() {
+            entry.rank = i + 1;
+        }
+
+        entries
+    }
+
+    /// Convert normalized [0,1]^k vector to actual parameter values.
+    fn normalized_to_actual(&self, normalized: &[f64]) -> HashMap<String, f64> {
+        self.parameters.parameters.iter().enumerate().map(|(i, param)| {
+            let (low, high) = param.confidence_interval_95();
+            let value = low + normalized[i] * (high - low);
+            (param.name.clone(), value)
+        }).collect()
+    }
+
+    /// Evaluate the model at specific parameter values, returning a MonteCarloSample.
+    fn evaluate_at_params(
+        &self,
+        conditions: &OperatingConditions,
+        params: &HashMap<String, f64>,
+        index: usize,
+    ) -> MonteCarloSample {
+        let engine = CoupledPhysicsEngine::from_genesis(&self.genesis);
+        let result = engine.simulate(conditions);
+
+        let dose_factor = params.get("neutron_cross_section_factor").unwrap_or(&1.0)
+            * params.get("dose_conversion_factor").unwrap_or(&1.0);
+        let temp_factor = 1.0 / params.get("hea_thermal_conductivity").unwrap_or(&15.0) * 15.0;
+        let lifetime_factor = params.get("hea_healing_factor").unwrap_or(&1.0)
+            * (params.get("fatigue_coefficient").unwrap_or(&1e10) / 1e10);
+
+        let adjusted_dose = result.geometry_shielding.shielding.final_dose * dose_factor;
+        let adjusted_temp = result.thermal_profile.t_max * temp_factor.sqrt();
+        let base_lifetime = if result.pulse_thermal.fatigue_lifetime_years > 0.0 {
+            result.pulse_thermal.fatigue_lifetime_years
+        } else {
+            result.pulse_thermal.lifetime_years.max(10.0)
+        };
+        let adjusted_lifetime = base_lifetime * lifetime_factor;
+
+        let is_feasible = adjusted_dose < conditions.max_dose_rate * 1.1
+            && adjusted_temp < 1200.0
+            && adjusted_lifetime > 10.0;
+
+        MonteCarloSample {
+            index,
+            parameters: params.clone(),
+            dose_rate: adjusted_dose,
+            max_temperature: adjusted_temp,
+            lifetime_years: adjusted_lifetime,
+            total_mass: result.geometry_shielding.total_mass_kg,
+            is_feasible,
+        }
+    }
 }
 
 /// Calculate Pearson correlation coefficient
@@ -664,5 +944,88 @@ mod tests {
         for (i, sens) in results.sensitivities.iter().enumerate() {
             assert_eq!(sens.rank, i + 1);
         }
+    }
+
+    // === Direction C: Uncertainty & Sensitivity Tests ===
+
+    #[test]
+    fn test_feasibility_probability_computed() {
+        let genesis = GenesisSeed::from_phrase("feasibility test");
+        let engine = UncertaintyEngine::new(&genesis);
+        let conditions = OperatingConditions::consumer();
+
+        let results = engine.monte_carlo(&conditions, 20, 42);
+
+        let fp = results.feasibility.expect("Should have feasibility probability");
+        assert!(fp.p_dose_safe >= 0.0 && fp.p_dose_safe <= 1.0);
+        assert!(fp.p_temp_safe >= 0.0 && fp.p_temp_safe <= 1.0);
+        assert!(fp.p_lifetime_met >= 0.0 && fp.p_lifetime_met <= 1.0);
+        assert!(fp.p_feasible >= 0.0 && fp.p_feasible <= 1.0);
+        assert!(!fp.primary_failure_mode.is_empty());
+    }
+
+    #[test]
+    fn test_morris_sensitivity() {
+        let genesis = GenesisSeed::from_phrase("morris test");
+        let engine = UncertaintyEngine::new(&genesis);
+        let conditions = OperatingConditions::consumer();
+
+        let morris = engine.morris_sensitivity(
+            &conditions, 5, 42,
+            |s| s.dose_rate,
+        );
+
+        // Should have one entry per parameter
+        assert_eq!(morris.len(), engine.parameters.parameters.len());
+        // Should be ranked
+        for (i, m) in morris.iter().enumerate() {
+            assert_eq!(m.rank, i + 1);
+        }
+        // μ* should be non-negative
+        for m in &morris {
+            assert!(m.mu_star >= 0.0);
+            assert!(m.sigma >= 0.0);
+        }
+    }
+
+    #[test]
+    fn test_tornado_sorted_by_swing() {
+        let genesis = GenesisSeed::from_phrase("tornado test");
+        let engine = UncertaintyEngine::new(&genesis);
+        let conditions = OperatingConditions::consumer();
+
+        let tornado = engine.tornado_diagram(
+            &conditions,
+            |s| s.dose_rate,
+        );
+
+        assert!(!tornado.is_empty());
+        // Should be sorted by swing descending
+        for i in 1..tornado.len() {
+            assert!(
+                tornado[i - 1].swing >= tornado[i].swing,
+                "Tornado should be sorted by swing: {:.4} >= {:.4}",
+                tornado[i - 1].swing, tornado[i].swing
+            );
+        }
+        // Ranks should be sequential
+        for (i, entry) in tornado.iter().enumerate() {
+            assert_eq!(entry.rank, i + 1);
+        }
+    }
+
+    #[test]
+    fn test_mc_percentiles_ordered() {
+        let genesis = GenesisSeed::from_phrase("percentile test");
+        let engine = UncertaintyEngine::new(&genesis);
+        let conditions = OperatingConditions::consumer();
+
+        let results = engine.monte_carlo(&conditions, 50, 42);
+
+        // p5 < p50 < p95 for all outputs
+        assert!(results.dose_stats.p5 <= results.dose_stats.p50);
+        assert!(results.dose_stats.p50 <= results.dose_stats.p95);
+        assert!(results.temp_stats.p5 <= results.temp_stats.p50);
+        assert!(results.temp_stats.p50 <= results.temp_stats.p95);
     }
 }

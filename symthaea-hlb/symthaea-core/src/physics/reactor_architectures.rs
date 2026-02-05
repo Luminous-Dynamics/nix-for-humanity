@@ -173,6 +173,253 @@ pub struct ShieldingSystem {
     pub attenuation_factor: f64,
 }
 
+/// Thermal constraint result from cooling analysis.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThermalConstraint {
+    /// Cooling method used
+    pub cooling_method: CoolingMethod,
+    /// Maximum heat flux for this cooling method (W/m²)
+    pub max_heat_flux_w_m2: f64,
+    /// Minimum required surface area to reject heat (m²)
+    pub min_surface_area_m2: f64,
+    /// Minimum volume forced by thermal limits (m³) — sphere assumption
+    pub min_volume_m3: f64,
+    /// Whether thermal limits are binding (forced volume increase)
+    pub is_binding: bool,
+}
+
+impl ThermalConstraint {
+    /// Compute thermal constraint for a given power and cooling method.
+    pub fn compute(power_w: f64, cooling: &CoolingMethod) -> Self {
+        let max_heat_flux = match cooling {
+            CoolingMethod::Passive => 500.0,
+            CoolingMethod::ForcedAir => 5_000.0,
+            CoolingMethod::WaterLoop => 50_000.0,
+            CoolingMethod::LiquidMetal => 500_000.0,
+            CoolingMethod::HeatPipe => 100_000.0,
+            CoolingMethod::MoltenSalt => 200_000.0,
+            CoolingMethod::DirectConversion => 1_000_000.0,
+        };
+
+        let min_area = power_w / max_heat_flux;
+        // Sphere: A = 4πr², V = 4/3 πr³ → r = √(A/4π), V = 4/3 π (A/4π)^(3/2)
+        let r = (min_area / (4.0 * PI)).sqrt();
+        let min_vol = 4.0 / 3.0 * PI * r.powi(3);
+
+        ThermalConstraint {
+            cooling_method: *cooling,
+            max_heat_flux_w_m2: max_heat_flux,
+            min_surface_area_m2: min_area,
+            min_volume_m3: min_vol,
+            is_binding: false, // Set by caller after comparing with design volume
+        }
+    }
+}
+
+/// Detailed mass breakdown replacing simple mass_kg = shielding + core × 12000.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MassBreakdown {
+    /// Fuel mass — PdD core (core_volume × 12000 kg/m³)
+    pub fuel_kg: f64,
+    /// Structural mass — HEA shell (shell_volume × 7200 × 1.3 for flanges/welds)
+    pub structure_kg: f64,
+    /// Shielding mass
+    pub shielding_kg: f64,
+    /// Cooling system mass
+    pub cooling_kg: f64,
+    /// Trigger system mass
+    pub trigger_kg: f64,
+    /// Balance of plant (12% of subtotal)
+    pub bop_kg: f64,
+    /// Containment vessel
+    pub containment_kg: f64,
+    /// Total system mass
+    pub total_kg: f64,
+}
+
+impl MassBreakdown {
+    /// Compute mass breakdown from reactor parameters.
+    pub fn compute(
+        core_volume_m3: f64,
+        shell_volume_m3: f64,
+        shielding_mass_kg: f64,
+        cooling_method: &CoolingMethod,
+        power_w: f64,
+        trigger_footprint_m3: f64,
+    ) -> Self {
+        let fuel_kg = core_volume_m3 * 12000.0; // Pd density
+        let structure_kg = shell_volume_m3 * 7200.0 * 1.3; // HEA × 1.3 for flanges/welds
+
+        let cooling_kg = match cooling_method {
+            CoolingMethod::Passive => 0.5,
+            CoolingMethod::ForcedAir => 2.0 + power_w * 0.0001,
+            CoolingMethod::WaterLoop => 5.0 + power_w * 0.001,
+            CoolingMethod::HeatPipe => 3.0 + power_w * 0.0005,
+            CoolingMethod::LiquidMetal => 10.0 + power_w * 0.005,
+            CoolingMethod::MoltenSalt => 15.0 + power_w * 0.003,
+            CoolingMethod::DirectConversion => 5.0 + power_w * 0.002,
+        };
+
+        // Trigger mass: footprint × 500 kg/m³, clamped 0.5–1000 kg
+        let trigger_kg = (trigger_footprint_m3 * 500.0).clamp(0.5, 1000.0);
+
+        let containment_kg = 5.0 + power_w * 0.001;
+
+        let subtotal = fuel_kg + structure_kg + shielding_mass_kg
+            + cooling_kg + trigger_kg + containment_kg;
+        let bop_kg = subtotal * 0.12; // 12% balance of plant
+
+        let total_kg = subtotal + bop_kg;
+
+        MassBreakdown {
+            fuel_kg,
+            structure_kg,
+            shielding_kg: shielding_mass_kg,
+            cooling_kg,
+            trigger_kg,
+            bop_kg,
+            containment_kg,
+            total_kg,
+        }
+    }
+}
+
+/// Detailed cost breakdown replacing simple cost = $50k + power×5.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostBreakdown {
+    /// Core materials (Pd, Galinstan, HEA)
+    pub core_materials_usd: f64,
+    /// Shielding cost
+    pub shielding_usd: f64,
+    /// Trigger system cost
+    pub trigger_usd: f64,
+    /// Cooling system cost
+    pub cooling_usd: f64,
+    /// Balance of plant (15% of subtotal)
+    pub bop_usd: f64,
+    /// Engineering (20% of subtotal)
+    pub engineering_usd: f64,
+    /// Assembly and testing (25% of subtotal)
+    pub assembly_usd: f64,
+    /// Total cost
+    pub total_usd: f64,
+}
+
+impl CostBreakdown {
+    /// Compute cost breakdown from reactor parameters.
+    pub fn compute(
+        fuel_mass_kg: f64,
+        structure_mass_kg: f64,
+        shielding_mass_kg: f64,
+        cooling_method: &CoolingMethod,
+        cooling_mass_kg: f64,
+        trigger_cost_usd: f64,
+    ) -> Self {
+        // Core materials: Pd at $70k/kg × 0.3 (30% Pd by mass) + Galinstan × $150/kg × 0.7 + HEA × $500/kg
+        let pd_fraction = 0.3;
+        let galinstan_fraction = 0.7;
+        let core_materials = fuel_mass_kg * (pd_fraction * 70_000.0 + galinstan_fraction * 150.0)
+            + structure_mass_kg * 500.0;
+
+        let shielding_cost = shielding_mass_kg * 50.0;
+
+        let cooling_cost = match cooling_method {
+            CoolingMethod::Passive => 500.0,
+            CoolingMethod::ForcedAir => 1000.0 + cooling_mass_kg * 50.0,
+            CoolingMethod::WaterLoop => 2000.0 + cooling_mass_kg * 80.0,
+            CoolingMethod::HeatPipe => 3000.0 + cooling_mass_kg * 90.0,
+            CoolingMethod::LiquidMetal => cooling_mass_kg * 100.0,
+            CoolingMethod::MoltenSalt => cooling_mass_kg * 120.0,
+            CoolingMethod::DirectConversion => 5000.0 + cooling_mass_kg * 150.0,
+        };
+
+        let subtotal = core_materials + shielding_cost + trigger_cost_usd + cooling_cost;
+        let bop = subtotal * 0.15;
+        let engineering = subtotal * 0.20;
+        let assembly = subtotal * 0.25;
+
+        let total = subtotal + bop + engineering + assembly;
+
+        CostBreakdown {
+            core_materials_usd: core_materials,
+            shielding_usd: shielding_cost,
+            trigger_usd: trigger_cost_usd,
+            cooling_usd: cooling_cost,
+            bop_usd: bop,
+            engineering_usd: engineering,
+            assembly_usd: assembly,
+            total_usd: total,
+        }
+    }
+}
+
+/// Fuel cycle analysis for a reactor design.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FuelCycle {
+    /// Deuterium consumption rate (g/s)
+    pub d_consumption_g_s: f64,
+    /// Deuterium consumption rate (g/year)
+    pub d_consumption_g_year: f64,
+    /// Initial deuterium loading (g)
+    pub initial_loading_g: f64,
+    /// Loading time (hours) — gas loading at 1-10 atm
+    pub loading_time_hours: f64,
+    /// Refueling interval (years) — when D/Pd drops from 0.7 to 0.5
+    pub refueling_interval_years: f64,
+    /// Duty cycle (operating / (operating + loading)) per refuel
+    pub duty_cycle: f64,
+    /// Tritium accumulation from p+T branch at 50% (g/year)
+    pub tritium_accumulation_g_year: f64,
+}
+
+impl FuelCycle {
+    /// Compute fuel cycle for a D-D reactor.
+    pub fn compute(
+        reactions_per_second: f64,
+        pd_mass_kg: f64,
+        loading_ratio: f64,
+    ) -> Self {
+        // D consumption: 2 deuterons per reaction, each 2.014 amu
+        let amu_to_g = 1.6605e-24;
+        let d_per_reaction = 2.0;
+        let d_consumption_g_s = reactions_per_second * d_per_reaction * 2.014 * amu_to_g;
+        let seconds_per_year = 3.156e7;
+        let d_consumption_g_year = d_consumption_g_s * seconds_per_year;
+
+        // Initial loading: Pd_mass × loading_ratio × (M_D / M_Pd)
+        let initial_loading_g = pd_mass_kg * 1000.0 * loading_ratio * (2.014 / 106.42);
+
+        // Loading time: 24-72 hours depending on loading ratio
+        let loading_time_hours = 24.0 + 48.0 * loading_ratio;
+
+        // Refueling interval: when loading drops from initial ratio to 0.5
+        let usable_d_g = initial_loading_g * (loading_ratio - 0.5) / loading_ratio;
+        let refueling_interval_years = if d_consumption_g_year > 0.0 {
+            (usable_d_g / d_consumption_g_year).max(0.1)
+        } else {
+            100.0 // Effectively never
+        };
+
+        // Duty cycle
+        let operating_hours = refueling_interval_years * 8760.0;
+        let duty_cycle = operating_hours / (operating_hours + loading_time_hours);
+
+        // Tritium accumulation: 50% of reactions produce T
+        let tritium_rate_g_s = reactions_per_second * 0.5 * 3.016 * amu_to_g;
+        let tritium_accumulation_g_year = tritium_rate_g_s * seconds_per_year;
+
+        FuelCycle {
+            d_consumption_g_s,
+            d_consumption_g_year,
+            initial_loading_g,
+            loading_time_hours,
+            refueling_interval_years,
+            duty_cycle: duty_cycle.clamp(0.0, 1.0),
+            tritium_accumulation_g_year,
+        }
+    }
+}
+
 /// Complete reactor architecture specification
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReactorSpec {
@@ -194,9 +441,9 @@ pub struct ReactorSpec {
     pub power_w: f64,
     /// Overall dimensions (m³)
     pub volume_m3: f64,
-    /// Total system mass (kg)
+    /// Total system mass (kg) — computed from mass_breakdown if available
     pub mass_kg: f64,
-    /// Estimated cost (USD)
+    /// Estimated cost (USD) — computed from cost_breakdown if available
     pub cost_usd: f64,
     /// Expected lifetime (years)
     pub lifetime_years: f64,
@@ -208,6 +455,14 @@ pub struct ReactorSpec {
     pub challenges: Vec<String>,
     /// Estimated fusion yield
     pub yield_estimate: FusionYieldEstimate,
+    /// Detailed mass breakdown
+    pub mass_breakdown: Option<MassBreakdown>,
+    /// Detailed cost breakdown
+    pub cost_breakdown: Option<CostBreakdown>,
+    /// Fuel cycle analysis
+    pub fuel_cycle: Option<FuelCycle>,
+    /// Thermal constraint analysis
+    pub thermal_constraint: Option<ThermalConstraint>,
 }
 
 /// Reactor design parameters
@@ -296,13 +551,77 @@ impl ReactorDesigner {
         }
     }
 
+    /// Apply thermal constraint and detailed breakdowns to a reactor spec.
+    /// If thermal limits force a larger volume, this adjusts the spec accordingly.
+    fn apply_engineering_realism(&self, mut spec: ReactorSpec) -> ReactorSpec {
+        // Thermal constraint
+        let tc = ThermalConstraint::compute(spec.power_w, &spec.cooling.method);
+        let mut thermal = tc;
+        if thermal.min_volume_m3 > spec.volume_m3 {
+            thermal.is_binding = true;
+            spec.volume_m3 = thermal.min_volume_m3;
+        }
+        spec.thermal_constraint = Some(thermal);
+
+        // Mass breakdown
+        let core_volume = spec.power_w / 50_000.0_f64.max(0.0001);
+        let core_radius = (3.0 * core_volume / (4.0 * PI)).powf(1.0 / 3.0);
+        let shell_thickness = 0.01 + core_radius * 0.2;
+        let shell_outer = core_radius + shell_thickness;
+        let shell_volume = 4.0 / 3.0 * PI * (shell_outer.powi(3) - core_radius.powi(3));
+
+        let mb = MassBreakdown::compute(
+            core_volume,
+            shell_volume,
+            spec.shielding.total_mass_kg,
+            &spec.cooling.method,
+            spec.power_w,
+            spec.trigger.footprint_m3,
+        );
+        spec.mass_kg = mb.total_kg;
+        spec.mass_breakdown = Some(mb);
+
+        // Cost breakdown
+        let fuel_mass = core_volume * 12000.0;
+        let struct_mass = shell_volume * 7200.0 * 1.3;
+        let cooling_mass = match spec.cooling.method {
+            CoolingMethod::Passive => 0.5,
+            CoolingMethod::ForcedAir => 2.0 + spec.power_w * 0.0001,
+            CoolingMethod::WaterLoop => 5.0 + spec.power_w * 0.001,
+            CoolingMethod::HeatPipe => 3.0 + spec.power_w * 0.0005,
+            CoolingMethod::LiquidMetal => 10.0 + spec.power_w * 0.005,
+            CoolingMethod::MoltenSalt => 15.0 + spec.power_w * 0.003,
+            CoolingMethod::DirectConversion => 5.0 + spec.power_w * 0.002,
+        };
+        let cb = CostBreakdown::compute(
+            fuel_mass,
+            struct_mass,
+            spec.shielding.total_mass_kg,
+            &spec.cooling.method,
+            cooling_mass,
+            spec.trigger.cost_estimate_usd,
+        );
+        spec.cost_usd = cb.total_usd;
+        spec.cost_breakdown = Some(cb);
+
+        // Fuel cycle
+        let fc = FuelCycle::compute(
+            spec.yield_estimate.reactions_per_second,
+            fuel_mass / 1000.0, // convert to kg
+            spec.fuel.loading_ratio.unwrap_or(0.7),
+        );
+        spec.fuel_cycle = Some(fc);
+
+        spec
+    }
+
     /// Design optimal reactor for given parameters
     pub fn design(&self, params: &ReactorDesignParams) -> ReactorSpec {
         // Select architecture based on constraints
         let architecture = self.select_architecture(params);
 
         // Design the reactor
-        match architecture {
+        let spec = match architecture {
             ReactorArchitecture::SparkV1 => self.design_spark_v1(params),
             ReactorArchitecture::FlowReactor => self.design_flow_reactor(params),
             ReactorArchitecture::AneutronicCore => self.design_aneutronic(params),
@@ -310,7 +629,9 @@ impl ReactorDesigner {
             ReactorArchitecture::MoltenSalt => self.design_molten_salt(params),
             ReactorArchitecture::ModularCell => self.design_modular(params),
             ReactorArchitecture::MagnetizedTarget => self.design_magnetized(params),
-        }
+        };
+
+        self.apply_engineering_realism(spec)
     }
 
     /// Select best architecture for given constraints
@@ -377,12 +698,16 @@ impl ReactorDesigner {
             loading_ratio: Some(0.7),
         };
 
+        let cooling_method = if params.target_power_w > 100_000.0 {
+            CoolingMethod::LiquidMetal
+        } else if params.target_power_w > 1_000.0 {
+            CoolingMethod::WaterLoop
+        } else {
+            CoolingMethod::Passive
+        };
+
         let cooling = CoolingSystem {
-            method: if params.target_power_w > 100_000.0 {
-                CoolingMethod::LiquidMetal
-            } else {
-                CoolingMethod::Passive
-            },
+            method: cooling_method,
             coolant: "Galinstan".to_string(),
             inlet_temp_k: 300.0,
             outlet_temp_k: 350.0,
@@ -432,6 +757,10 @@ impl ReactorDesigner {
                 "Limited fuel lifetime".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -508,6 +837,10 @@ impl ReactorDesigner {
                 "Corrosion management".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -588,6 +921,10 @@ impl ReactorDesigner {
                 "Side D-D reactions produce some neutrons".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -656,6 +993,10 @@ impl ReactorDesigner {
                 "Difficult to scale up".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -728,6 +1069,10 @@ impl ReactorDesigner {
                 "Regulatory complexity".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -813,6 +1158,10 @@ impl ReactorDesigner {
                 "Complex manufacturing".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -885,6 +1234,10 @@ impl ReactorDesigner {
                 "Complex pulsed power system".to_string(),
             ],
             yield_estimate,
+            mass_breakdown: None,
+            cost_breakdown: None,
+            fuel_cycle: None,
+            thermal_constraint: None,
         }
     }
 
@@ -904,7 +1257,7 @@ impl ReactorDesigner {
             .map(|arch| {
                 let mut p = params.clone();
                 // Override architecture selection
-                match arch {
+                let spec = match arch {
                     ReactorArchitecture::SparkV1 => self.design_spark_v1(&p),
                     ReactorArchitecture::FlowReactor => self.design_flow_reactor(&p),
                     ReactorArchitecture::AneutronicCore => {
@@ -915,7 +1268,8 @@ impl ReactorDesigner {
                     ReactorArchitecture::MoltenSalt => self.design_molten_salt(&p),
                     ReactorArchitecture::ModularCell => self.design_modular(&p),
                     ReactorArchitecture::MagnetizedTarget => self.design_magnetized(&p),
-                }
+                };
+                self.apply_engineering_realism(spec)
             })
             .collect()
     }
@@ -1060,6 +1414,115 @@ mod tests {
 
             // Power should scale approximately linearly
             assert!((spec.power_w - power).abs() < power * 0.1);
+        }
+    }
+
+    // === Direction B: Engineering Realism Tests ===
+
+    #[test]
+    fn test_mass_components_sum_to_total() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let spec = designer.design(&params);
+
+        let mb = spec.mass_breakdown.expect("Should have mass breakdown");
+        let sum = mb.fuel_kg + mb.structure_kg + mb.shielding_kg
+            + mb.cooling_kg + mb.trigger_kg + mb.bop_kg + mb.containment_kg;
+        assert!(
+            (sum - mb.total_kg).abs() < 0.01,
+            "Mass components ({:.2}) should sum to total ({:.2})",
+            sum, mb.total_kg
+        );
+        assert_eq!(spec.mass_kg, mb.total_kg);
+    }
+
+    #[test]
+    fn test_cost_components_sum_to_total() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let spec = designer.design(&params);
+
+        let cb = spec.cost_breakdown.expect("Should have cost breakdown");
+        let subtotal = cb.core_materials_usd + cb.shielding_usd + cb.trigger_usd + cb.cooling_usd;
+        let total = subtotal + cb.bop_usd + cb.engineering_usd + cb.assembly_usd;
+        assert!(
+            (total - cb.total_usd).abs() < 0.01,
+            "Cost components ({:.2}) should sum to total ({:.2})",
+            total, cb.total_usd
+        );
+        assert_eq!(spec.cost_usd, cb.total_usd);
+    }
+
+    #[test]
+    fn test_thermal_forces_larger_volume_at_high_power() {
+        let designer = ReactorDesigner::new();
+        // High power with passive cooling should force volume increase
+        let params = ReactorDesignParams {
+            target_power_w: 100_000.0, // 100kW
+            ..Default::default()
+        };
+        let spec = designer.design(&params);
+        let tc = spec.thermal_constraint.expect("Should have thermal constraint");
+        // Thermal min volume should be significant for high power
+        assert!(tc.min_volume_m3 > 0.0);
+        assert!(tc.min_surface_area_m2 > 0.0);
+    }
+
+    #[test]
+    fn test_fuel_cycle_duty_in_range() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let spec = designer.design(&params);
+
+        let fc = spec.fuel_cycle.expect("Should have fuel cycle");
+        assert!(
+            fc.duty_cycle > 0.0 && fc.duty_cycle <= 1.0,
+            "Duty cycle ({:.4}) should be in (0, 1]",
+            fc.duty_cycle
+        );
+        assert!(fc.d_consumption_g_s >= 0.0);
+        assert!(fc.initial_loading_g > 0.0);
+        assert!(fc.loading_time_hours > 0.0);
+    }
+
+    #[test]
+    fn test_thermal_constraint_scales_with_power() {
+        let tc_low = ThermalConstraint::compute(100.0, &CoolingMethod::Passive);
+        let tc_high = ThermalConstraint::compute(100_000.0, &CoolingMethod::Passive);
+        assert!(
+            tc_high.min_surface_area_m2 > tc_low.min_surface_area_m2,
+            "Higher power should need more surface area"
+        );
+        assert!(
+            tc_high.min_volume_m3 > tc_low.min_volume_m3,
+            "Higher power should need more volume"
+        );
+    }
+
+    #[test]
+    fn test_cooling_method_max_flux_ordering() {
+        // Liquid metal should handle more heat than passive
+        let passive = ThermalConstraint::compute(10_000.0, &CoolingMethod::Passive);
+        let liquid = ThermalConstraint::compute(10_000.0, &CoolingMethod::LiquidMetal);
+        assert!(liquid.max_heat_flux_w_m2 > passive.max_heat_flux_w_m2);
+        assert!(liquid.min_surface_area_m2 < passive.min_surface_area_m2);
+    }
+
+    #[test]
+    fn test_all_architectures_have_breakdowns() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let specs = designer.compare_all(&params);
+
+        for spec in &specs {
+            assert!(spec.mass_breakdown.is_some(),
+                    "{} should have mass breakdown", spec.name);
+            assert!(spec.cost_breakdown.is_some(),
+                    "{} should have cost breakdown", spec.name);
+            assert!(spec.fuel_cycle.is_some(),
+                    "{} should have fuel cycle", spec.name);
+            assert!(spec.thermal_constraint.is_some(),
+                    "{} should have thermal constraint", spec.name);
         }
     }
 }

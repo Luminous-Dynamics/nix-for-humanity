@@ -577,6 +577,159 @@ impl EconomicEngine {
     }
 }
 
+/// Result of break-even analysis for a single parameter.
+#[derive(Debug, Clone)]
+pub struct BreakEvenResult {
+    /// Parameter name
+    pub parameter: String,
+    /// Current value
+    pub current_value: f64,
+    /// Break-even value (where LCOE = target)
+    pub break_even_value: f64,
+    /// Improvement factor needed (break_even / current)
+    pub improvement_factor: f64,
+    /// Whether the improvement is achievable (<10×)
+    pub achievable: bool,
+    /// Target LCOE used ($/MWh)
+    pub target_lcoe: f64,
+}
+
+impl EconomicEngine {
+    /// Break-even analysis: find the parameter values where LCOE equals a target.
+    ///
+    /// Uses binary search on each parameter (capital cost, capacity factor,
+    /// lifetime, O&M) to find the value where LCOE = target_lcoe.
+    ///
+    /// Default target: $120/MWh (US grid parity).
+    pub fn break_even_analysis(
+        &self,
+        capital: &CapitalCosts,
+        om: &OmCosts,
+        fuel: &FuelCosts,
+        target_lcoe: f64,
+    ) -> Vec<BreakEvenResult> {
+        let mut results = Vec::new();
+        let baseline = self.calculate_lcoe(capital, om, fuel);
+
+        // 1. Break-even on capital cost (search for multiplier)
+        if baseline.lcoe_usd_mwh > target_lcoe {
+            let be = self.binary_search_break_even(0.01, 10.0, target_lcoe, |factor| {
+                let mut cap = capital.clone();
+                cap.fusion_core_usd *= factor;
+                cap.shielding_usd *= factor;
+                cap.power_conversion_usd *= factor;
+                cap.balance_of_plant_usd *= factor;
+                cap.installation_usd *= factor;
+                self.calculate_lcoe(&cap, om, fuel).lcoe_usd_mwh
+            });
+            results.push(BreakEvenResult {
+                parameter: "Capital cost multiplier".to_string(),
+                current_value: 1.0,
+                break_even_value: be,
+                improvement_factor: if be < 1.0 { 1.0 / be } else { be },
+                achievable: be > 0.1,
+                target_lcoe,
+            });
+        } else {
+            results.push(BreakEvenResult {
+                parameter: "Capital cost multiplier".to_string(),
+                current_value: 1.0,
+                break_even_value: 1.0,
+                improvement_factor: 1.0,
+                achievable: true,
+                target_lcoe,
+            });
+        }
+
+        // 2. Break-even on capacity factor
+        {
+            let be = self.binary_search_break_even(0.1, 0.99, target_lcoe, |cf| {
+                let mut eng = self.clone();
+                eng.capacity_factor = cf;
+                eng.calculate_lcoe(capital, om, fuel).lcoe_usd_mwh
+            });
+            results.push(BreakEvenResult {
+                parameter: "Capacity factor".to_string(),
+                current_value: self.capacity_factor,
+                break_even_value: be,
+                improvement_factor: be / self.capacity_factor,
+                achievable: be <= 0.99,
+                target_lcoe,
+            });
+        }
+
+        // 3. Break-even on lifetime
+        {
+            let be = self.binary_search_break_even(1.0, 100.0, target_lcoe, |lt| {
+                let mut eng = self.clone();
+                eng.lifetime_years = lt;
+                eng.calculate_lcoe(capital, om, fuel).lcoe_usd_mwh
+            });
+            results.push(BreakEvenResult {
+                parameter: "Lifetime (years)".to_string(),
+                current_value: self.lifetime_years,
+                break_even_value: be,
+                improvement_factor: be / self.lifetime_years,
+                achievable: be < self.lifetime_years * 10.0,
+                target_lcoe,
+            });
+        }
+
+        // 4. Break-even on O&M multiplier
+        {
+            let be = self.binary_search_break_even(0.01, 10.0, target_lcoe, |factor| {
+                let mut o = om.clone();
+                o.fixed_usd_kw_year *= factor;
+                o.variable_usd_mwh *= factor;
+                o.overhaul_cost_usd *= factor;
+                self.calculate_lcoe(capital, &o, fuel).lcoe_usd_mwh
+            });
+            results.push(BreakEvenResult {
+                parameter: "O&M cost multiplier".to_string(),
+                current_value: 1.0,
+                break_even_value: be,
+                improvement_factor: if be < 1.0 { 1.0 / be } else { be },
+                achievable: be > 0.1,
+                target_lcoe,
+            });
+        }
+
+        results
+    }
+
+    /// Binary search for parameter value where LCOE = target.
+    /// `eval_fn` maps parameter value → LCOE.
+    fn binary_search_break_even<F>(&self, low: f64, high: f64, target: f64, eval_fn: F) -> f64
+    where
+        F: Fn(f64) -> f64,
+    {
+        let mut lo = low;
+        let mut hi = high;
+        let lcoe_lo = eval_fn(lo);
+        let lcoe_hi = eval_fn(hi);
+
+        // Determine search direction
+        let increasing = lcoe_hi > lcoe_lo;
+
+        for _ in 0..50 {
+            let mid = (lo + hi) / 2.0;
+            let lcoe_mid = eval_fn(mid);
+
+            if (lcoe_mid - target).abs() < 0.01 {
+                return mid;
+            }
+
+            if increasing {
+                if lcoe_mid > target { hi = mid; } else { lo = mid; }
+            } else {
+                if lcoe_mid > target { lo = mid; } else { hi = mid; }
+            }
+        }
+
+        (lo + hi) / 2.0
+    }
+}
+
 impl Clone for EconomicEngine {
     fn clone(&self) -> Self {
         Self {
@@ -585,6 +738,254 @@ impl Clone for EconomicEngine {
             capacity_factor: self.capacity_factor,
             power_kw: self.power_kw,
         }
+    }
+}
+
+// =============================================================================
+// Direction D: Comparative Benchmarking
+// =============================================================================
+
+/// Data point for a Ragone plot (specific power vs energy density).
+#[derive(Debug, Clone)]
+pub struct RagoneDataPoint {
+    /// Technology or configuration name
+    pub name: String,
+    /// Specific power (W/kg)
+    pub specific_power_w_kg: f64,
+    /// Energy density (Wh/kg)
+    pub energy_density_wh_kg: f64,
+    /// Category for grouping in plots
+    pub category: String,
+}
+
+/// Ragone plot comparison of LCF against reference technologies.
+#[derive(Debug, Clone)]
+pub struct RagoneComparison {
+    /// All data points (LCF + reference technologies)
+    pub data_points: Vec<RagoneDataPoint>,
+}
+
+impl RagoneComparison {
+    /// Build a Ragone comparison including LCF data from a scaling study
+    /// and 9 reference technologies.
+    ///
+    /// `lcf_data` is a list of (name, power_w, mass_kg, lifetime_hours) tuples
+    /// from the scaling study results.
+    pub fn build(lcf_data: &[(String, f64, f64, f64)]) -> Self {
+        let mut data_points = Vec::new();
+
+        // Add LCF data points from scaling study
+        for (name, power_w, mass_kg, lifetime_hours) in lcf_data {
+            if *mass_kg > 0.0 {
+                let specific_power = power_w / mass_kg;
+                let energy_density = power_w * lifetime_hours / mass_kg;
+                data_points.push(RagoneDataPoint {
+                    name: name.clone(),
+                    specific_power_w_kg: specific_power,
+                    energy_density_wh_kg: energy_density,
+                    category: "LCF Reactor".to_string(),
+                });
+            }
+        }
+
+        // Reference technologies (representative values from literature)
+        let references = vec![
+            ("Li-ion Battery", 300.0, 250.0, "Electrochemical"),
+            ("PEM Fuel Cell", 500.0, 1_000.0, "Electrochemical"),
+            ("Diesel Generator", 1_000.0, 12_000.0, "Combustion"),
+            ("Pu-238 RTG", 5.0, 500_000.0, "Nuclear (Decay)"),
+            ("Solar + Battery", 100.0, 200.0, "Renewable"),
+            ("SMR Fission", 10.0, 1.0e8, "Nuclear (Fission)"),
+            ("Micro Gas Turbine", 2_000.0, 3_000.0, "Combustion"),
+            ("Supercapacitor", 10_000.0, 10.0, "Electrochemical"),
+            ("Hydrogen FC System", 300.0, 800.0, "Electrochemical"),
+        ];
+
+        for (name, sp, ed, cat) in references {
+            data_points.push(RagoneDataPoint {
+                name: name.to_string(),
+                specific_power_w_kg: sp,
+                energy_density_wh_kg: ed,
+                category: cat.to_string(),
+            });
+        }
+
+        Self { data_points }
+    }
+}
+
+/// Scale-aware cost comparison at a specific power level.
+#[derive(Debug, Clone)]
+pub struct ScaleCostPoint {
+    /// Technology name
+    pub technology: String,
+    /// Cost per watt ($/W)
+    pub cost_per_w: f64,
+    /// LCOE at this scale ($/MWh)
+    pub lcoe_usd_mwh: f64,
+}
+
+/// Scale-aware $/W and LCOE comparison across power levels.
+#[derive(Debug, Clone)]
+pub struct ScaleAwareComparison {
+    /// Power level (W) for this comparison
+    pub power_w: f64,
+    /// Cost comparisons at this scale
+    pub technologies: Vec<ScaleCostPoint>,
+}
+
+impl ScaleAwareComparison {
+    /// Build comparisons across multiple power levels.
+    ///
+    /// Uses power-law scaling for $/W for each competing technology.
+    /// `lcf_points` is a list of (power_w, cost_usd, lcoe_usd_mwh) from the scaling study.
+    pub fn build_all(
+        power_levels: &[f64],
+        lcf_points: &[(f64, f64, f64)],
+    ) -> Vec<ScaleAwareComparison> {
+        power_levels.iter().map(|&power_w| {
+            let mut technologies = Vec::new();
+
+            // Find closest LCF data point
+            if let Some(&(_, cost_usd, lcoe)) = lcf_points.iter()
+                .min_by(|a, b| (a.0 - power_w).abs().partial_cmp(&(b.0 - power_w).abs()).unwrap())
+            {
+                technologies.push(ScaleCostPoint {
+                    technology: "LCF Reactor".to_string(),
+                    cost_per_w: cost_usd / power_w,
+                    lcoe_usd_mwh: lcoe,
+                });
+            }
+
+            // Competing technologies with power-law $/W scaling
+            // Format: (name, ref_cost_per_w at 1kW, scaling_exponent, base_lcoe)
+            let competitors: Vec<(&str, f64, f64, f64)> = vec![
+                // Solar + battery: $3/W at 1kW, improves at scale
+                ("Solar + Battery", 3.0, -0.15, 80.0),
+                // Diesel generator: $0.50/W at 1kW
+                ("Diesel Generator", 0.50, -0.10, 250.0),
+                // Grid connection: $0.01/W at 1kW (just connection cost)
+                ("Grid Connection", 0.01, -0.05, 120.0),
+                // RTG: $300/W at 1kW (extremely expensive)
+                ("Pu-238 RTG", 300.0, -0.05, 50_000.0),
+                // PEM fuel cell: $5/W at 1kW
+                ("PEM Fuel Cell", 5.0, -0.20, 200.0),
+                // Micro-nuclear (SMR): $20/W at 1MW reference
+                ("Micro-Nuclear (SMR)", 20.0, -0.30, 90.0),
+            ];
+
+            let power_kw = power_w / 1000.0;
+            for (name, ref_cpw, exp, base_lcoe) in competitors {
+                // Power-law: $/W = ref × (P/1kW)^exp
+                let cost_per_w = ref_cpw * (power_kw).powf(exp);
+                // LCOE also scales (very roughly) with size
+                let lcoe = base_lcoe * (power_kw / 1.0).powf(exp * 0.5);
+                technologies.push(ScaleCostPoint {
+                    technology: name.to_string(),
+                    cost_per_w,
+                    lcoe_usd_mwh: lcoe,
+                });
+            }
+
+            ScaleAwareComparison {
+                power_w,
+                technologies,
+            }
+        }).collect()
+    }
+}
+
+/// Technology readiness assessment.
+#[derive(Debug, Clone)]
+pub struct ReadinessComparison {
+    /// Technology name
+    pub technology: String,
+    /// Technology Readiness Level (1-9)
+    pub trl: u8,
+    /// Estimated years to deployment
+    pub years_to_deployment: f64,
+    /// R&D funding needed (USD)
+    pub rd_funding_needed_usd: f64,
+    /// Key technical risks
+    pub key_risks: Vec<String>,
+}
+
+impl ReadinessComparison {
+    /// Assessment for LCF (Lattice Confinement Fusion).
+    pub fn lcf_assessment() -> Self {
+        Self {
+            technology: "Lattice Confinement Fusion".to_string(),
+            trl: 3, // Experimental proof of concept (NASA 2020 results)
+            years_to_deployment: 15.0,
+            rd_funding_needed_usd: 500_000_000.0, // $500M estimated
+            key_risks: vec![
+                "Reaction rate enhancement reproducibility".to_string(),
+                "Lattice degradation under sustained operation".to_string(),
+                "Net energy gain (Q > 1) not yet demonstrated".to_string(),
+                "Scaling from microgram to engineering scale".to_string(),
+                "Neutron shielding for compact form factors".to_string(),
+            ],
+        }
+    }
+
+    /// Assessments for competing technologies.
+    pub fn competing_technologies() -> Vec<Self> {
+        vec![
+            Self {
+                technology: "Magnetic Confinement (Tokamak)".to_string(),
+                trl: 6,
+                years_to_deployment: 15.0,
+                rd_funding_needed_usd: 25_000_000_000.0, // ITER-class
+                key_risks: vec![
+                    "Plasma disruptions".to_string(),
+                    "First-wall materials lifetime".to_string(),
+                    "Tritium breeding ratio > 1".to_string(),
+                ],
+            },
+            Self {
+                technology: "Inertial Confinement (NIF-type)".to_string(),
+                trl: 5,
+                years_to_deployment: 25.0,
+                rd_funding_needed_usd: 10_000_000_000.0,
+                key_risks: vec![
+                    "Driver efficiency (laser → target)".to_string(),
+                    "Target manufacturing at scale".to_string(),
+                    "Rep-rate operation".to_string(),
+                ],
+            },
+            Self {
+                technology: "Small Modular Reactor (Fission)".to_string(),
+                trl: 7,
+                years_to_deployment: 5.0,
+                rd_funding_needed_usd: 2_000_000_000.0,
+                key_risks: vec![
+                    "Regulatory approval timeline".to_string(),
+                    "Public acceptance".to_string(),
+                    "Supply chain for HALEU fuel".to_string(),
+                ],
+            },
+            Self {
+                technology: "Advanced Geothermal".to_string(),
+                trl: 6,
+                years_to_deployment: 5.0,
+                rd_funding_needed_usd: 1_000_000_000.0,
+                key_risks: vec![
+                    "Deep drilling costs".to_string(),
+                    "Reservoir sustainability".to_string(),
+                ],
+            },
+            Self {
+                technology: "Compact Fusion (Private)".to_string(),
+                trl: 4,
+                years_to_deployment: 10.0,
+                rd_funding_needed_usd: 5_000_000_000.0,
+                key_risks: vec![
+                    "Plasma confinement at high beta".to_string(),
+                    "Engineering Q > 10".to_string(),
+                    "Neutron damage to compact structures".to_string(),
+                ],
+            },
+        ]
     }
 }
 
@@ -656,5 +1057,170 @@ mod tests {
 
         // Solar should have lower CO2
         assert!(solar.co2_kg_mwh < grid.co2_kg_mwh);
+    }
+
+    // === Direction C: Break-Even Analysis Tests ===
+
+    #[test]
+    fn test_break_even_analysis_returns_four_params() {
+        let engine = EconomicEngine::consumer(5.0);
+        let capital = CapitalCosts::consumer_5kw();
+        let om = OmCosts::consumer();
+        let fuel = FuelCosts::dd_fusion();
+
+        let results = engine.break_even_analysis(&capital, &om, &fuel, 120.0);
+
+        assert_eq!(results.len(), 4, "Should have 4 break-even parameters");
+        assert_eq!(results[0].parameter, "Capital cost multiplier");
+        assert_eq!(results[1].parameter, "Capacity factor");
+        assert_eq!(results[2].parameter, "Lifetime (years)");
+        assert_eq!(results[3].parameter, "O&M cost multiplier");
+
+        // All improvement factors should be positive
+        for r in &results {
+            assert!(
+                r.improvement_factor > 0.0,
+                "Improvement factor for {} should be positive, got {}",
+                r.parameter, r.improvement_factor
+            );
+            assert_eq!(r.target_lcoe, 120.0);
+        }
+    }
+
+    #[test]
+    fn test_break_even_capacity_factor_bounded() {
+        let engine = EconomicEngine::consumer(5.0);
+        let capital = CapitalCosts::consumer_5kw();
+        let om = OmCosts::consumer();
+        let fuel = FuelCosts::dd_fusion();
+
+        let results = engine.break_even_analysis(&capital, &om, &fuel, 120.0);
+        let cf_result = &results[1];
+
+        // Capacity factor should be between 0.1 and 0.99
+        assert!(
+            cf_result.break_even_value >= 0.1 && cf_result.break_even_value <= 0.99,
+            "Capacity factor break-even should be in [0.1, 0.99], got {}",
+            cf_result.break_even_value
+        );
+    }
+
+    // === Direction D: Comparative Benchmarking Tests ===
+
+    #[test]
+    fn test_ragone_includes_lcf_and_references() {
+        let lcf_data = vec![
+            ("LCF 1kW".to_string(), 1_000.0, 50.0, 200_000.0),
+            ("LCF 100kW".to_string(), 100_000.0, 500.0, 200_000.0),
+        ];
+        let ragone = RagoneComparison::build(&lcf_data);
+
+        // Should have LCF points + 9 references = 11 total
+        assert_eq!(ragone.data_points.len(), 11);
+
+        // LCF points should have correct category
+        let lcf_points: Vec<_> = ragone.data_points.iter()
+            .filter(|p| p.category == "LCF Reactor")
+            .collect();
+        assert_eq!(lcf_points.len(), 2);
+
+        // All points should have positive specific power and energy density
+        for point in &ragone.data_points {
+            assert!(point.specific_power_w_kg > 0.0,
+                "{} should have positive specific power", point.name);
+            assert!(point.energy_density_wh_kg > 0.0,
+                "{} should have positive energy density", point.name);
+        }
+    }
+
+    #[test]
+    fn test_scale_aware_comparison_all_power_levels() {
+        let power_levels = vec![1_000.0, 10_000.0, 1_000_000.0];
+        let lcf_points = vec![
+            (1_000.0, 50_000.0, 500.0),
+            (10_000.0, 100_000.0, 300.0),
+            (1_000_000.0, 5_000_000.0, 150.0),
+        ];
+
+        let comparisons = ScaleAwareComparison::build_all(&power_levels, &lcf_points);
+        assert_eq!(comparisons.len(), 3);
+
+        for comp in &comparisons {
+            // Should have LCF + 6 competitors = 7 technologies
+            assert_eq!(comp.technologies.len(), 7,
+                "Should have 7 technologies at {:.0}W", comp.power_w);
+
+            // All should have positive cost per watt
+            for tech in &comp.technologies {
+                assert!(tech.cost_per_w > 0.0,
+                    "{} at {:.0}W should have positive $/W", tech.technology, comp.power_w);
+                assert!(tech.lcoe_usd_mwh > 0.0,
+                    "{} at {:.0}W should have positive LCOE", tech.technology, comp.power_w);
+            }
+        }
+    }
+
+    #[test]
+    fn test_readiness_trl_in_range() {
+        let lcf = ReadinessComparison::lcf_assessment();
+        assert!(lcf.trl >= 1 && lcf.trl <= 9,
+            "LCF TRL should be in [1,9], got {}", lcf.trl);
+        assert!(!lcf.key_risks.is_empty());
+        assert!(lcf.years_to_deployment > 0.0);
+        assert!(lcf.rd_funding_needed_usd > 0.0);
+
+        let competitors = ReadinessComparison::competing_technologies();
+        assert!(!competitors.is_empty());
+        for comp in &competitors {
+            assert!(comp.trl >= 1 && comp.trl <= 9,
+                "{} TRL should be in [1,9], got {}", comp.technology, comp.trl);
+            assert!(!comp.key_risks.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_ragone_reference_values_reasonable() {
+        let ragone = RagoneComparison::build(&[]);
+
+        // Should have exactly 9 reference technologies
+        assert_eq!(ragone.data_points.len(), 9);
+
+        // RTG should have highest energy density (long lifetime)
+        let rtg = ragone.data_points.iter()
+            .find(|p| p.name.contains("RTG"))
+            .expect("Should have RTG");
+        assert!(rtg.energy_density_wh_kg > 100_000.0);
+
+        // Supercapacitor should have highest specific power
+        let supercap = ragone.data_points.iter()
+            .find(|p| p.name.contains("Supercapacitor"))
+            .expect("Should have Supercapacitor");
+        assert!(supercap.specific_power_w_kg > 5_000.0);
+    }
+
+    #[test]
+    fn test_scale_aware_cost_decreases_with_scale() {
+        let power_levels = vec![1_000.0, 1_000_000.0];
+        let lcf_points = vec![
+            (1_000.0, 100_000.0, 500.0),
+            (1_000_000.0, 5_000_000.0, 100.0),
+        ];
+
+        let comparisons = ScaleAwareComparison::build_all(&power_levels, &lcf_points);
+
+        // For technologies with negative scaling exponents, $/W should decrease at larger scale
+        let small = &comparisons[0];
+        let large = &comparisons[1];
+
+        // Solar should be cheaper per watt at larger scale
+        let solar_small = small.technologies.iter()
+            .find(|t| t.technology.contains("Solar"))
+            .unwrap();
+        let solar_large = large.technologies.iter()
+            .find(|t| t.technology.contains("Solar"))
+            .unwrap();
+        assert!(solar_large.cost_per_w < solar_small.cost_per_w,
+            "Solar $/W should decrease with scale: {:.2} vs {:.2}",
+            solar_large.cost_per_w, solar_small.cost_per_w);
     }
 }
