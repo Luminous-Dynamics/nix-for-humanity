@@ -59,14 +59,14 @@
 
 use crate::swarm::federated_cfc::GradientMessage;
 use crate::swarm::federated_network::{
-    FederatedCoordinator, FederatedNetworkConfig, FederatedNode, NodeAddress,
+    FederatedCoordinator, FederatedNetworkConfig, FederatedNode,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Read as IoRead, Write as IoWrite};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 // ============================================================================
 // CHECKPOINT DATA STRUCTURES

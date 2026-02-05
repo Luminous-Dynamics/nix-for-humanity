@@ -41,9 +41,7 @@ use burn::{
     tensor::{backend::Backend, Tensor},
 };
 
-use super::cfc::{
-    ActivationType, CfCConfig, CfCNetworkConfig, OnlineLearningConfig,
-};
+use super::cfc::{ActivationType, CfCNetworkConfig};
 
 // =============================================================================
 // GPU BACKEND SELECTION
@@ -215,6 +213,7 @@ struct CpuCfcLayer {
     state: Array1<f32>,
     /// Configuration
     hidden_dim: usize,
+    #[allow(dead_code)] // Stored for layer introspection/serialization
     input_dim: usize,
     activation: ActivationType,
 }
@@ -276,6 +275,7 @@ impl CpuCfcLayer {
         new_state
     }
 
+    #[allow(dead_code)] // Batch API reserved for GPU acceleration path
     fn forward_batch(&mut self, inputs: &[Array1<f32>], dts: &[f32]) -> Vec<Array1<f32>> {
         inputs.iter().zip(dts.iter())
             .map(|(input, dt)| self.forward(input, *dt))

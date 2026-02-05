@@ -120,7 +120,6 @@ pub use streaming::{
     StreamingStats,
 };
 
-#[cfg(feature = "tokio")]
 pub use streaming::AsyncStreamingInference;
 
 // ═══════════════════════════════════════════════════════════════════════════════

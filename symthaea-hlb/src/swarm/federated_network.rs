@@ -488,7 +488,7 @@ pub trait NetworkBackend: Send + Sync {
 // ============================================================================
 
 /// Message wrapper with source address for channel routing
-struct ChannelEnvelope {
+pub struct ChannelEnvelope {
     source: NodeAddress,
     message: FederatedMessage,
 }
@@ -1622,7 +1622,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_gradient_sharing() {
-        let mut coordinators = create_test_network(3, 10).await;
+        let coordinators = create_test_network(3, 10).await;
 
         // Update weights on coordinator 0
         coordinators[0].update_weights(vec![1.0; 10]);
@@ -1664,7 +1664,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_full_sync_round() {
-        let mut coordinators = create_test_network(3, 4).await;
+        let coordinators = create_test_network(3, 4).await;
 
         // Set different initial weights for each coordinator
         coordinators[0].update_weights(vec![1.0, 0.0, 0.0, 0.0]);
