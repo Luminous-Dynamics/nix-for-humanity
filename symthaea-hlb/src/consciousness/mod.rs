@@ -67,6 +67,35 @@ pub mod primitive_consciousness;
 pub mod stability_regime;
 
 // ============================================================================
+// Conscious Reasoning Engine subsystems (cfg-gated)
+// ============================================================================
+
+// Epistemic conflict detection: 15 pairwise theory conflicts, typed ConflictKind,
+// reliability R, effective Φ = Φ × R^γ, calibration with bounded updates (INV-9)
+#[cfg(feature = "epistemic_conflict")]
+pub mod epistemic_conflict;
+
+// Consciousness-gated tool use: risk lattice, two-signal gating (Φ_eff + confidence),
+// fallback strategies, NixOS backward compatibility
+#[cfg(feature = "conscious_tool_gate")]
+pub mod tool_gate;
+
+// Temporal planning: ForkedState + micro-MCTS + EVS + dream integration
+#[cfg(feature = "temporal_planning")]
+pub mod temporal_planning;
+
+// Counterfactual reasoning v0: backdoor/frontdoor identification,
+// HDC graph surgery, semantic role substitution, reference harness
+#[cfg(feature = "counterfactual")]
+pub mod counterfactual;
+
+// Unified Conscious Reasoning Engine: composes conflict detection, temporal
+// planning, counterfactual reasoning, and tool gating into a 7-step cycle
+// with tiered degradation (Tier 0 ≤2ms, Tier 1 ≤8ms, Tier 2 ≤20ms)
+#[cfg(feature = "reasoning_engine")]
+pub mod reasoning_engine;
+
+// ============================================================================
 // Modules with external dependencies (cfg-gated)
 // ============================================================================
 

@@ -252,6 +252,21 @@ medium = 0.8
 large = 1.2
 
 # =============================================================================
+# Conscious Reasoning Engine Calibration
+# =============================================================================
+[reasoning_engine]
+# γ parameter for Φ_eff = Φ × R^γ
+gamma = 2.0
+gamma_version = 0
+gamma_min = 1.0
+gamma_max = 4.0
+delta_gamma_max = 0.1
+# Minimum posthoc observations before γ re-estimation
+gamma_min_observations = 200
+# INV-9 bounded calibration step sizes
+delta_w_max = 0.05
+
+# =============================================================================
 # CI/CD Integration
 # =============================================================================
 [ci]
