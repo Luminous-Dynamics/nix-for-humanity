@@ -34,6 +34,7 @@ use super::geometry::{GeometryOptimizer, GeometryWeights, EngineGeometry};
 use super::pulse_dynamics::{PulseDynamics, PulseProfile, ThermalCycling};
 use super::high_entropy_alloys::HEADesigner;
 use super::advanced_materials::AdvancedMaterials;
+use super::trigger_systems::{LcfPhysicsConstants, GamowIntegrationResult, DDChannelResult};
 
 /// Operating conditions for coupled simulation
 #[derive(Debug, Clone)]
@@ -195,6 +196,108 @@ pub struct PulseThermalResult {
     pub limiting_factor: String,
 }
 
+/// Tritium inventory tracking for D-D reactors.
+///
+/// D-D fusion produces tritium at 50% of reactions (T+p channel).
+/// This struct tracks accumulation, decay, and regulatory limits.
+#[derive(Debug, Clone)]
+pub struct TritiumInventory {
+    /// Tritium production rate from D-D reactions (g/year)
+    pub production_rate_g_year: f64,
+    /// Current inventory (grams) - accumulates over time
+    pub inventory_g: f64,
+    /// Equilibrium inventory accounting for decay (grams)
+    /// T1/2 = 12.32 years → λ = 0.0563/year
+    pub equilibrium_inventory_g: f64,
+    /// Activity (Ci) - 1g T = 9,650 Ci
+    pub activity_ci: f64,
+    /// Years until regulatory limit reached (10 Ci for exempt, 25,000 Ci for license)
+    pub years_to_exempt_limit: f64,
+    /// Whether a tritium license would be required
+    pub requires_license: bool,
+}
+
+impl TritiumInventory {
+    /// Compute tritium inventory from D-D reaction branching results.
+    ///
+    /// `branching`: D-D channel results from `dd_branched_yield()`
+    /// `operating_years`: Time reactor has been operating
+    pub fn from_branching(branching: &DDChannelResult, operating_years: f64) -> Self {
+        let production_rate_g_year = branching.tritium_production_rate_g_s * 3600.0 * 24.0 * 365.25;
+
+        // Tritium decay: T1/2 = 12.32 years, λ = ln(2)/12.32 = 0.0563/year
+        let decay_constant = 0.0563;
+
+        // Equilibrium: production = decay → I_eq = P/λ
+        let equilibrium_inventory_g = if decay_constant > 0.0 {
+            production_rate_g_year / decay_constant
+        } else {
+            0.0
+        };
+
+        // Current inventory (with decay): I(t) = I_eq × (1 - e^(-λt))
+        let inventory_g = equilibrium_inventory_g * (1.0 - (-decay_constant * operating_years).exp());
+
+        // Activity: 1 gram T = 9,650 Ci
+        let activity_ci = inventory_g * 9650.0;
+
+        // Time to reach exempt limit (10 Ci ≈ 0.001g)
+        // Solve: 9650 × I_eq × (1 - e^(-λt)) = 10
+        // For small t: I(t) ≈ P × t, so t ≈ 10/(9650 × P)
+        let years_to_exempt_limit = if production_rate_g_year > 0.0 {
+            let target_g = 10.0 / 9650.0;
+            if equilibrium_inventory_g <= target_g {
+                f64::INFINITY
+            } else {
+                -(1.0 - target_g / equilibrium_inventory_g).ln() / decay_constant
+            }
+        } else {
+            f64::INFINITY
+        };
+
+        // License required if equilibrium activity > 25,000 Ci
+        let requires_license = equilibrium_inventory_g * 9650.0 > 25_000.0;
+
+        Self {
+            production_rate_g_year,
+            inventory_g,
+            equilibrium_inventory_g,
+            activity_ci,
+            years_to_exempt_limit,
+            requires_license,
+        }
+    }
+
+    /// Zero inventory (for non-D-D reactions or pre-operation)
+    pub fn zero() -> Self {
+        Self {
+            production_rate_g_year: 0.0,
+            inventory_g: 0.0,
+            equilibrium_inventory_g: 0.0,
+            activity_ci: 0.0,
+            years_to_exempt_limit: f64::INFINITY,
+            requires_license: false,
+        }
+    }
+}
+
+/// Gamow-integrated reaction rate results for the coupled simulation.
+#[derive(Debug, Clone)]
+pub struct ReactionRateResult {
+    /// Gamow integration result from physics
+    pub gamow: GamowIntegrationResult,
+    /// D-D branching with neutron/tritium tracking
+    pub branching: DDChannelResult,
+    /// Tritium inventory projection
+    pub tritium: TritiumInventory,
+    /// Effective lattice temperature used (K)
+    pub lattice_temp_k: f64,
+    /// Screening energy used (eV)
+    pub screening_ue_ev: f64,
+    /// Number of phonon modes assumed
+    pub phonon_modes: u32,
+}
+
 /// Complete coupled simulation result
 #[derive(Debug, Clone)]
 pub struct CoupledSimulationResult {
@@ -214,6 +317,8 @@ pub struct CoupledSimulationResult {
     pub geometry_shielding: GeometryShieldingResult,
     /// Pulse and thermal cycling
     pub pulse_thermal: PulseThermalResult,
+    /// Gamow-integrated reaction rate (for D-D reactions)
+    pub reaction_rate: Option<ReactionRateResult>,
     /// Overall feasibility
     pub feasible: bool,
     /// Limiting factors
@@ -275,7 +380,10 @@ impl CoupledPhysicsEngine {
             &thermal_profile,
         );
 
-        // Step 6: Assess feasibility
+        // Step 6: Calculate Gamow-integrated reaction rate (for D-D)
+        let reaction_rate = self.calculate_reaction_rate(conditions, &thermal_profile);
+
+        // Step 7: Assess feasibility
         let (feasible, limiting_factors, recommendations) = self.assess_feasibility(
             conditions,
             &thermal_profile,
@@ -292,10 +400,70 @@ impl CoupledPhysicsEngine {
             effective_healing_rate: effective_healing,
             geometry_shielding: geo_shield,
             pulse_thermal,
+            reaction_rate,
             feasible,
             limiting_factors,
             recommendations,
         }
+    }
+
+    /// Calculate Gamow-integrated reaction rate using enhanced physics.
+    ///
+    /// Uses the full Gamow peak integration from trigger_systems for D-D reactions,
+    /// including temperature-dependent screening, phonon enhancement, and multi-channel
+    /// branching with neutron/tritium tracking.
+    fn calculate_reaction_rate(
+        &self,
+        conditions: &OperatingConditions,
+        thermal_profile: &TemperatureProfile,
+    ) -> Option<ReactionRateResult> {
+        // Only compute for D-D reactions (the enhanced physics is D-D specific)
+        if conditions.reaction != FusionReaction::DD {
+            return None;
+        }
+
+        // Use the lattice temperature from thermal profile
+        // Core center is where fusion happens
+        let lattice_temp_k = thermal_profile.t_core_center;
+
+        // Screening energy: use PdD value (measured ~300eV at 300K)
+        // Temperature-adjusted via the new method
+        let measured_ue_ev = 300.0;
+        let screening_ue_ev = LcfPhysicsConstants::screening_energy_at_temperature(measured_ue_ev, lattice_temp_k);
+
+        // Phonon modes: assume 2 coherent modes for PdD lattice
+        let phonon_modes = 2u32;
+
+        // Gamow integration with all enhancements
+        let gamow = LcfPhysicsConstants::dd_reaction_rate_integrated(
+            lattice_temp_k,
+            screening_ue_ev,
+            phonon_modes,
+        );
+
+        // Scale reaction rate by power and estimate total reactions/s
+        // At steady state: Power = reactions/s × Q_value × e
+        // Q_DD ≈ 3.65 MeV average (mix of channels)
+        // reactions/s = Power_W / (3.65 × 1.6e-13)
+        let power_w = conditions.power_kw * 1000.0;
+        let q_value_j = 3.65e6 * 1.6e-19;
+        let total_reaction_rate_s = power_w / q_value_j;
+
+        // Branching with neutron/tritium tracking
+        // Use Gamow peak energy as effective CM energy
+        let branching = LcfPhysicsConstants::dd_branched_yield(total_reaction_rate_s, gamow.gamow_peak_kev);
+
+        // Tritium inventory projection (assume 1 year of operation for snapshot)
+        let tritium = TritiumInventory::from_branching(&branching, 1.0);
+
+        Some(ReactionRateResult {
+            gamow,
+            branching,
+            tritium,
+            lattice_temp_k,
+            screening_ue_ev,
+            phonon_modes,
+        })
     }
 
     /// Select optimal materials for conditions
@@ -602,5 +770,73 @@ mod tests {
         // Industrial should have larger mass
         let consumer_result = engine.simulate(&OperatingConditions::consumer());
         assert!(result.geometry_shielding.total_mass_kg > consumer_result.geometry_shielding.total_mass_kg);
+    }
+
+    // === New tests for Gamow integration and tritium inventory ===
+
+    #[test]
+    fn test_dd_reaction_rate_computed_for_dd() {
+        let engine = setup();
+        let conditions = OperatingConditions::consumer(); // Uses D-D
+        let result = engine.simulate(&conditions);
+
+        // D-D conditions should have reaction rate computed
+        let rr = result.reaction_rate.expect("D-D should have reaction rate");
+
+        // Check Gamow integration result
+        assert!(rr.gamow.gamow_peak_kev > 0.0);
+        assert!(rr.gamow.gamow_width_kev > 0.0);
+        assert!(rr.gamow.screening_enhancement >= 1.0);
+
+        // Check branching
+        assert!(rr.branching.total_reaction_rate_s > 0.0);
+        assert!(rr.branching.neutron_production_rate_s > 0.0);
+
+        // Check tritium inventory
+        assert!(rr.tritium.production_rate_g_year > 0.0);
+    }
+
+    #[test]
+    fn test_no_reaction_rate_for_dt() {
+        let engine = setup();
+        let conditions = OperatingConditions::industrial(); // Uses D-T
+        let result = engine.simulate(&conditions);
+
+        // D-T doesn't use the Gamow integration (it's D-D specific)
+        assert!(result.reaction_rate.is_none());
+    }
+
+    #[test]
+    fn test_tritium_inventory_decay() {
+        use super::DDChannelResult;
+
+        // Create a mock branching result
+        let branching = DDChannelResult {
+            total_reaction_rate_s: 1e15,
+            total_thermal_power_w: 1000.0,
+            neutron_production_rate_s: 5e14,
+            tritium_production_rate_g_s: 1e-12, // ~0.03 g/year
+            channels: vec![],
+        };
+
+        let inv_1yr = TritiumInventory::from_branching(&branching, 1.0);
+        let inv_10yr = TritiumInventory::from_branching(&branching, 10.0);
+
+        // Inventory should increase with time but approach equilibrium
+        assert!(inv_10yr.inventory_g > inv_1yr.inventory_g);
+        assert!(inv_10yr.inventory_g < inv_10yr.equilibrium_inventory_g);
+
+        // Activity should be positive
+        assert!(inv_1yr.activity_ci > 0.0);
+    }
+
+    #[test]
+    fn test_tritium_zero_for_no_production() {
+        let inv = TritiumInventory::zero();
+
+        assert_eq!(inv.production_rate_g_year, 0.0);
+        assert_eq!(inv.inventory_g, 0.0);
+        assert_eq!(inv.activity_ci, 0.0);
+        assert!(!inv.requires_license);
     }
 }

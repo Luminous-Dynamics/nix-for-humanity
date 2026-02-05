@@ -482,6 +482,9 @@ pub struct ReactorDesignParams {
     pub allow_neutrons: bool,
     /// TRL requirement
     pub min_trl: u8,
+    /// Risk adjustment factor (0.0 = ignore risk, 1.0 = full risk adjustment)
+    /// When > 0, scores are multiplied by estimated feasibility probability.
+    pub risk_weight: f64,
 }
 
 impl Default for ReactorDesignParams {
@@ -494,6 +497,7 @@ impl Default for ReactorDesignParams {
             max_mass_kg: 1000.0,
             allow_neutrons: true,
             min_trl: 4,
+            risk_weight: 0.0, // Default: no risk adjustment
         }
     }
 }
@@ -509,6 +513,7 @@ impl ReactorDesignParams {
             max_mass_kg: 500.0,
             allow_neutrons: false,  // Consumer wants aneutronic
             min_trl: 6,
+            risk_weight: 0.5, // Moderate risk consideration for consumer
         }
     }
 
@@ -522,6 +527,7 @@ impl ReactorDesignParams {
             max_mass_kg: 5000.0,
             allow_neutrons: true,
             min_trl: 3,
+            risk_weight: 0.0, // No risk adjustment for prototypes
         }
     }
 
@@ -535,6 +541,7 @@ impl ReactorDesignParams {
             max_mass_kg: 10_000_000.0,
             allow_neutrons: true,
             min_trl: 5,
+            risk_weight: 0.8, // Higher risk consideration for industrial
         }
     }
 }
@@ -1332,7 +1339,75 @@ impl ReactorDesigner {
             }
         }
 
-        (score - penalties).max(0.0)
+        let base_score = (score - penalties).max(0.0);
+
+        // Risk adjustment: multiply by feasibility probability if enabled
+        if params.risk_weight > 0.0 {
+            let p_feasible = self.estimate_feasibility_probability(spec, params);
+            let risk_factor = 1.0 - params.risk_weight * (1.0 - p_feasible);
+            base_score * risk_factor
+        } else {
+            base_score
+        }
+    }
+
+    /// Estimate feasibility probability for a reactor spec.
+    ///
+    /// This is a simplified model based on how well the spec meets constraints
+    /// and known risk factors for each architecture type.
+    fn estimate_feasibility_probability(&self, spec: &ReactorSpec, params: &ReactorDesignParams) -> f64 {
+        let mut p_feasible = 1.0;
+
+        // TRL penalty: lower TRL = higher uncertainty
+        let trl_factor = match spec.trl {
+            1..=2 => 0.3,  // Lab concept
+            3 => 0.5,      // Proof of concept
+            4 => 0.7,      // Validated in lab
+            5 => 0.8,      // Validated in environment
+            6 => 0.9,      // Demonstrated
+            7..=9 => 0.95, // Operational
+            _ => 0.5,
+        };
+        p_feasible *= trl_factor;
+
+        // Cost margin: if over budget, reduce probability
+        if spec.cost_usd > params.max_cost_usd {
+            let overage = spec.cost_usd / params.max_cost_usd;
+            p_feasible *= (2.0 - overage).max(0.1);
+        }
+
+        // Volume margin: if over constraint, reduce probability
+        if spec.volume_m3 > params.max_volume_m3 {
+            let overage = spec.volume_m3 / params.max_volume_m3;
+            p_feasible *= (2.0 - overage).max(0.1);
+        }
+
+        // Mass margin: if over constraint, reduce probability
+        if spec.mass_kg > params.max_mass_kg {
+            let overage = spec.mass_kg / params.max_mass_kg;
+            p_feasible *= (2.0 - overage).max(0.1);
+        }
+
+        // Architecture-specific risk factors
+        let arch_factor = match spec.architecture {
+            ReactorArchitecture::PulsedElectrolysis => 0.9, // Simple, well-understood
+            ReactorArchitecture::ModularCell => 0.85,       // Configurable, moderate risk
+            ReactorArchitecture::SparkV1 => 0.75,           // Original design, thermal challenges
+            ReactorArchitecture::FlowReactor => 0.7,        // Complex plumbing
+            ReactorArchitecture::AneutronicCore => 0.6,     // He-3 availability
+            ReactorArchitecture::MoltenSalt => 0.65,        // Corrosion challenges
+            ReactorArchitecture::MagnetizedTarget => 0.5,   // Plasma containment
+        };
+        p_feasible *= arch_factor;
+
+        // Thermal constraint binding: if thermal limit is forcing volume up, add uncertainty
+        if let Some(ref tc) = spec.thermal_constraint {
+            if tc.is_binding {
+                p_feasible *= 0.85; // 15% penalty for thermal-limited designs
+            }
+        }
+
+        p_feasible.clamp(0.05, 0.99)
     }
 }
 
@@ -1523,6 +1598,82 @@ mod tests {
                     "{} should have fuel cycle", spec.name);
             assert!(spec.thermal_constraint.is_some(),
                     "{} should have thermal constraint", spec.name);
+        }
+    }
+
+    // === Risk-adjusted scoring tests ===
+
+    #[test]
+    fn test_risk_adjusted_scoring_reduces_scores() {
+        let designer = ReactorDesigner::new();
+
+        // Without risk adjustment
+        let params_no_risk = ReactorDesignParams {
+            target_power_w: 10_000.0,
+            risk_weight: 0.0,
+            ..Default::default()
+        };
+        let ranked_no_risk = designer.rank(&params_no_risk);
+
+        // With risk adjustment
+        let params_risk = ReactorDesignParams {
+            target_power_w: 10_000.0,
+            risk_weight: 1.0,
+            ..Default::default()
+        };
+        let ranked_risk = designer.rank(&params_risk);
+
+        // Risk-adjusted scores should be <= non-risk-adjusted scores
+        for (i, ((_, score_no_risk), (_, score_risk))) in
+            ranked_no_risk.iter().zip(ranked_risk.iter()).enumerate()
+        {
+            assert!(
+                *score_risk <= *score_no_risk + 0.01, // Small tolerance for floating point
+                "Risk-adjusted score {} ({:.2}) should be <= non-risk ({:.2})",
+                i, score_risk, score_no_risk
+            );
+        }
+    }
+
+    #[test]
+    fn test_feasibility_probability_in_range() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let specs = designer.compare_all(&params);
+
+        for spec in &specs {
+            let p = designer.estimate_feasibility_probability(spec, &params);
+            assert!(
+                p >= 0.05 && p <= 0.99,
+                "{:?} feasibility ({:.3}) should be in [0.05, 0.99]",
+                spec.architecture, p
+            );
+        }
+    }
+
+    #[test]
+    fn test_higher_trl_higher_feasibility() {
+        let designer = ReactorDesigner::new();
+        let params = ReactorDesignParams::default();
+        let specs = designer.compare_all(&params);
+
+        // Group by TRL and check that higher TRL tends to have higher base feasibility
+        let low_trl: Vec<_> = specs.iter().filter(|s| s.trl <= 4).collect();
+        let high_trl: Vec<_> = specs.iter().filter(|s| s.trl >= 6).collect();
+
+        if !low_trl.is_empty() && !high_trl.is_empty() {
+            let avg_low: f64 = low_trl.iter()
+                .map(|s| designer.estimate_feasibility_probability(s, &params))
+                .sum::<f64>() / low_trl.len() as f64;
+            let avg_high: f64 = high_trl.iter()
+                .map(|s| designer.estimate_feasibility_probability(s, &params))
+                .sum::<f64>() / high_trl.len() as f64;
+
+            assert!(
+                avg_high >= avg_low * 0.8, // High TRL should have better or similar feasibility
+                "High TRL avg ({:.3}) should be >= 80% of low TRL avg ({:.3})",
+                avg_high, avg_low
+            );
         }
     }
 }

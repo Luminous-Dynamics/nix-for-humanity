@@ -346,6 +346,7 @@ impl ScalingStudy {
             max_mass_kg: (power_w / 10.0).max(10.0), // ~100g/W
             allow_neutrons: true,
             min_trl: 3,
+            risk_weight: 0.0, // No risk adjustment for scaling study
         };
 
         let reactor = self.reactor_designer.design(&params);
