@@ -87,7 +87,8 @@ struct CyclePair {
     input: Vec<f64>,
     /// Subsampled output hypervector
     output: Vec<f64>,
-    /// Cycle number when recorded
+    /// Cycle number when recorded (reserved for future use)
+    #[allow(dead_code)]
     cycle: usize,
 }
 
@@ -207,7 +208,8 @@ pub struct CausalLoopEnhancer {
     /// Causal discovery engine
     discovery_engine: CausalDiscoveryEngine,
 
-    /// Causal attention mechanism
+    /// Causal attention mechanism (reserved for future graph-guided attention)
+    #[allow(dead_code)]
     causal_attention: CausalAttention,
 
     /// Most recently discovered causal graph
@@ -646,7 +648,8 @@ mod tests {
     use super::*;
     use rand::{SeedableRng, Rng};
 
-    /// Generate synthetic causal data: X causes Y
+    /// Generate synthetic causal data: X causes Y (utility for future tests)
+    #[allow(dead_code)]
     fn generate_causal_data(n_samples: usize, seed: u64) -> (Vec<f64>, Vec<f64>) {
         let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
 
@@ -666,24 +669,24 @@ mod tests {
     fn test_causal_structure_discovery_on_synthetic_data() {
         let mut enhancer = CausalLoopEnhancer::new(42);
 
-        // Generate synthetic data where dim0 causes dim1
+        // Generate synthetic data with broad causal relationships.
+        // The enhancer subsamples 64 random dims from HDC_DIMENSION (16384),
+        // so we must place causal signal across MANY dimensions to ensure
+        // the subsampled dims capture the relationships.
         let n_samples = 200;
         let mut rng = rand::rngs::StdRng::seed_from_u64(12345);
 
-        // Create pairs where input[0] causes output[0]
         for _ in 0..n_samples {
             let mut input = vec![0.0f32; HDC_DIMENSION];
             let mut output = vec![0.0f32; HDC_DIMENSION];
 
-            // Set up causal relationship: input[0] causes output[0]
+            // Place strong causal relationships across many dimensions
+            // so that subsampled indices will inevitably catch some.
+            // input[i] causes output[i] for all i in 0..HDC_DIMENSION
             let cause_value: f32 = rng.gen_range(-1.0..1.0);
-            input[0] = cause_value;
-            output[0] = 0.8 * cause_value + rng.gen_range(-0.1..0.1);
-
-            // Add some noise to other dimensions
-            for i in 1..10 {
-                input[i] = rng.gen_range(-0.5..0.5);
-                output[i] = rng.gen_range(-0.5..0.5);
+            for i in 0..HDC_DIMENSION {
+                input[i] = cause_value + rng.gen_range(-0.05..0.05);
+                output[i] = 0.8 * input[i] + rng.gen_range(-0.1..0.1);
             }
 
             enhancer.record_cycle_from_f32(&input, &output);

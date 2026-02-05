@@ -771,6 +771,9 @@ mod tests {
         let config = EpisodicReplayConfig {
             phi_threshold: 0.1,
             min_episodes_for_replay: 5,
+            // Use uniform sampling for deterministic batch size behavior.
+            // Phi-weighted sampling has a separate test.
+            phi_weighted_sampling: false,
             ..Default::default()
         };
         let mut memory = EpisodicMemory::new(config);

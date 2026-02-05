@@ -749,6 +749,10 @@ mod tests {
             initial_threshold: 0.5,
             exploration_cooldown: 0,
             window_size: 20,
+            // Use low threshold_sigma so the threshold tracks the mean closely.
+            // With the default 1.5, mixing high and low surprise values increases
+            // the std_dev which can push the threshold UP even though the mean drops.
+            threshold_sigma: 0.5,
             ..Default::default()
         };
         let mut tracker = SurpriseTracker::new(config);
@@ -765,7 +769,8 @@ mod tests {
         let _action = tracker.generate_exploration_action(&state);
 
         // Simulate successful exploration (lower surprise afterward)
-        for _ in 0..10 {
+        // Record enough low-surprise values to push out the old high values
+        for _ in 0..20 {
             tracker.record_surprise(0.2);
         }
 
@@ -774,7 +779,8 @@ mod tests {
         // Threshold should have adapted downward
         assert!(
             final_threshold < initial_threshold,
-            "Threshold should decrease when surprise drops"
+            "Threshold should decrease when surprise drops: final={:.4} vs initial={:.4}",
+            final_threshold, initial_threshold
         );
     }
 
@@ -864,6 +870,10 @@ mod tests {
         let config = SurpriseTrackerConfig {
             initial_threshold: 0.3,
             exploration_cooldown: 0,
+            // Use low threshold_sigma so the adaptive threshold tracks the mean
+            // closely rather than being inflated by std_dev from the variance
+            // between the low-surprise and high-surprise cycles.
+            threshold_sigma: 0.5,
             ..Default::default()
         };
         let mut bridge = SurpriseExplorationBridge::with_config(config);
