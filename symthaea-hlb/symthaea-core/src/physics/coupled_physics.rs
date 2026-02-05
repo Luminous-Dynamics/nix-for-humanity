@@ -249,7 +249,7 @@ impl TritiumInventory {
             if equilibrium_inventory_g <= target_g {
                 f64::INFINITY
             } else {
-                -(1.0 - target_g / equilibrium_inventory_g).ln() / decay_constant
+                -((1.0_f64 - target_g / equilibrium_inventory_g).ln()) / decay_constant
             }
         } else {
             f64::INFINITY

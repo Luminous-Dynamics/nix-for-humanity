@@ -20,6 +20,7 @@ mod thermal_transport;
 mod neutron_shielding;
 mod geometry;
 mod pulse_dynamics;
+mod trigger_systems;
 mod coupled_physics;
 mod spark_prototype_spec;
 mod design_space;
