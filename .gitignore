@@ -57,3 +57,13 @@ rust/target/
 .env
 secrets/
 ssl/
+
+# === Accidentally committed data ===
+.postgres/
+*/.postgres/
+node_modules/
+*/node_modules/
+
+sapient-hrm/
+sapient-hrm/
+rust/target/
